@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flashcards — {{COURSE_NAME}}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="style.css">
+{{THEME_LINKS}}
+    <!-- All flashcard styles are in style.css -->
+</head>
+<body data-page="flashcards">
+    <div class="container">
+        <nav>
+            <a href="index.html" class="nav-btn prev-btn">&larr; Dashboard</a>
+        </nav>
+
+        <div class="module-header">
+            <div class="module-tag" style="background: var(--cyan); color: var(--bg-dark); padding: 0.2rem 0.8rem; border-radius: 4px;">FLASHCARDS</div>
+            <h1>Concept Recall</h1>
+            <p class="module-desc">Quick two-sided cards for drilling concepts. Flip, rate, repeat.</p>
+        </div>
+
+        <!-- Config section -->
+        <div id="fc-config" class="lesson">
+            <h2>Session Setup</h2>
+            <div style="margin-bottom: 1.5rem;">
+                <label style="color: var(--text-dim); display: block; margin-bottom: 0.5rem;">Module</label>
+                <div id="fc-module-options" style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                    <!-- JS populates module filter buttons -->
+                </div>
+            </div>
+            <div style="margin-bottom: 1.5rem;">
+                <label style="color: var(--text-dim); display: block; margin-bottom: 0.5rem;">Cards</label>
+                <div id="fc-count-options" style="display: flex; gap: 0.5rem;">
+                    <!-- JS populates count buttons -->
+                </div>
+            </div>
+            <div style="margin-bottom: 1.5rem;">
+                <label style="color: var(--text-dim); display: block; margin-bottom: 0.5rem;">Mode</label>
+                <div id="fc-mode-options" style="display: flex; gap: 0.5rem;">
+                    <!-- JS populates mode buttons -->
+                </div>
+            </div>
+            <button onclick="startFlashcardSession()" class="quick-btn primary" style="width: 100%; padding: 1rem; font-size: 1.1rem;">Start Session</button>
+            <p id="fc-start-hint" style="color: var(--orange); font-size: 0.85rem; margin-top: 0.5rem; display: none;"></p>
+        </div>
+
+        <!-- Session view -->
+        <div id="fc-session" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <span id="fc-progress-label" style="color: var(--text-dim);">Card 1 of 20</span>
+                <span id="fc-module-label" style="color: var(--cyan); font-size: 0.85rem;">Module 2</span>
+            </div>
+            <div style="height: 4px; background: var(--bg-lighter); border-radius: 2px; margin-bottom: 1.5rem;">
+                <div id="fc-progress-bar" style="height: 100%; background: var(--cyan); border-radius: 2px; transition: width 0.3s; width: 0%;"></div>
+            </div>
+
+            <div id="fc-card" class="flashcard" onclick="flipCard()">
+                <div class="flashcard-inner">
+                    <div class="flashcard-front">
+                        <div id="fc-question" style="font-size: 1.1rem; line-height: 1.6;"></div>
+                    </div>
+                    <div class="flashcard-back">
+                        <div id="fc-answer" style="font-size: 1rem; line-height: 1.6;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="fc-actions" style="display: flex; gap: 1rem; justify-content: center; margin-top: 1.5rem;">
+                <button id="fc-flip-btn" onclick="flipCard()" class="quick-btn" style="flex: 1;">Flip Card</button>
+            </div>
+            <div id="fc-rating" style="display: none; gap: 1rem; justify-content: center; margin-top: 1rem;">
+                <button onclick="rateCard(1)" class="quick-btn" style="flex: 1; border-color: var(--red); color: var(--red);">Didn't know</button>
+                <button onclick="rateCard(3)" class="quick-btn" style="flex: 1; border-color: var(--orange); color: var(--orange);">Partially</button>
+                <button onclick="rateCard(5)" class="quick-btn" style="flex: 1; border-color: var(--green-bright); color: var(--green-bright);">Knew it</button>
+            </div>
+            <div class="fc-keyboard-hint">
+                <kbd>Space</kbd> flip &middot; <kbd>&larr;</kbd> didn't know &middot; <kbd>&darr;</kbd> partially &middot; <kbd>&rarr;</kbd> knew it
+            </div>
+        </div>
+
+        <!-- Results view -->
+        <div id="fc-results" style="display: none;">
+            <div class="lesson" style="text-align: center;">
+                <h2>Session Complete</h2>
+                <div class="progress-stats" id="fc-results-stats" style="grid-template-columns: repeat(4, 1fr); margin: 1.5rem 0;"></div>
+                <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 1.5rem;">
+                    <button onclick="resetFlashcards()" class="quick-btn primary">New Session</button>
+                    <a href="index.html" class="quick-btn">Dashboard</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="nav-buttons" style="margin-top: 2rem;">
+            <a href="index.html" class="nav-btn prev-btn">&larr; Dashboard</a>
+            <a href="daily-practice.html" class="nav-btn next-btn">Daily Practice &rarr;</a>
+        </div>
+    </div>
+
+    <script src="course-data.js"></script>
+    <script src="course-config.js"></script>
+    <script src="flashcard-data.js"></script>
+    <script src="srs.js"></script>
+    <script src="flashcard-engine.js"></script>
+    <script src="theme.js"></script>
+    <script src="sidebar.js"></script>
+</body>
+</html>

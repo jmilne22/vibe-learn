@@ -1,0 +1,17 @@
+[data-theme="everforest-dark"] {
+    --bg-dark: #2b3339;
+    --bg-card: #2f383e;
+    --bg-code: #232a2e;
+    --bg-lighter: #3a454a;
+    --green-bright: #a7c080;
+    --green-dim: #83c092;
+    --green-glow: rgba(167, 192, 128, 0.18);
+    --orange: #e69875;
+    --purple: #d699b6;
+    --blue: #7fbbb3;
+    --cyan: #83c092;
+    --red: #e67e80;
+    --text-main: #d3c6aa;
+    --text-dim: #a7a7a7;
+    --border: #3a454a;
+}

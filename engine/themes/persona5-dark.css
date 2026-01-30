@@ -1,0 +1,499 @@
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Bebas+Neue&family=Archivo+Black&display=swap');
+
+/* ============================================
+   Persona 5 Royal Theme
+   "Pop Punk" — bold, clean, angular
+   P5R palette: #d92323 red, #0d0d0d near-black, #ffffff white
+   Ransom-note typography, diagonal stripes, selective skew
+   ============================================ */
+
+[data-theme="persona5-dark"] {
+    --bg-dark: #0d0d0d;
+    --bg-card: #141414;
+    --bg-code: #1a1a1a;
+    --bg-lighter: #222;
+    --green-bright: #00ff41;
+    --green-dim: #00cc33;
+    --green-glow: rgba(0, 255, 65, 0.15);
+    --orange: #ff6b6b;
+    --purple: #ff1744;
+    --blue: #00e5ff;
+    --cyan: #18ffff;
+    --red: #d92323;
+    --text-main: #ffffff;
+    --text: #ffffff;
+    --text-dim: #888;
+    --border: #2a2a2a;
+}
+
+/* --- Typography --- */
+[data-theme="persona5-dark"] {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+}
+
+[data-theme="persona5-dark"] h1,
+[data-theme="persona5-dark"] h2,
+[data-theme="persona5-dark"] .module-num,
+[data-theme="persona5-dark"] .track-title,
+[data-theme="persona5-dark"] .session-title {
+    font-family: 'Bebas Neue', 'Archivo Black', sans-serif;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+[data-theme="persona5-dark"] .stat-value,
+[data-theme="persona5-dark"] .session-countdown {
+    font-family: 'Archivo Black', sans-serif;
+}
+
+/* --- Body: Subtle diagonal stripe background --- */
+[data-theme="persona5-dark"] body {
+    background:
+        repeating-linear-gradient(
+            -55deg,
+            transparent,
+            transparent 18px,
+            rgba(217, 35, 35, 0.025) 18px,
+            rgba(217, 35, 35, 0.025) 20px
+        ),
+        var(--bg-dark);
+}
+
+/* --- Scrollbar --- */
+[data-theme="persona5-dark"] ::-webkit-scrollbar { width: 6px; }
+[data-theme="persona5-dark"] ::-webkit-scrollbar-track { background: #0a0a0a; }
+[data-theme="persona5-dark"] ::-webkit-scrollbar-thumb { background: var(--red); }
+[data-theme="persona5-dark"] ::-webkit-scrollbar-thumb:hover { background: #ff2233; }
+
+/* --- Selection --- */
+[data-theme="persona5-dark"] ::selection {
+    background: var(--red);
+    color: #fff;
+}
+
+/* --- Links --- */
+[data-theme="persona5-dark"] a { color: var(--red); text-decoration: none; }
+[data-theme="persona5-dark"] a:hover { color: #ff3838; }
+[data-theme="persona5-dark"] .breadcrumb a,
+[data-theme="persona5-dark"] .sidebar-header a { color: var(--red); }
+
+/* --- Inline code --- */
+[data-theme="persona5-dark"] code:not(.code-block code) {
+    background: rgba(217, 35, 35, 0.1);
+    color: #ff5555;
+    border: 1px solid rgba(217, 35, 35, 0.2);
+    border-radius: 0;
+}
+
+/* --- Container left accent --- */
+[data-theme="persona5-dark"] .container { position: relative; }
+[data-theme="persona5-dark"] .container::before {
+    content: '';
+    position: absolute;
+    left: -3px;
+    top: 0;
+    width: 3px;
+    height: 100%;
+    background: var(--red);
+}
+
+/* --- Module tag: angular label --- */
+[data-theme="persona5-dark"] .module-tag {
+    display: inline-block;
+    background: var(--red);
+    color: #fff;
+    padding: 0.2rem 1.2rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    transform: skewX(-8deg);
+    border: none;
+}
+
+/* --- H1: bold with diagonal underline --- */
+[data-theme="persona5-dark"] h1 {
+    font-size: 2.5rem;
+    color: #fff;
+    position: relative;
+    padding-bottom: 0.75rem;
+}
+[data-theme="persona5-dark"] h1::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 120px;
+    height: 4px;
+    background: var(--red);
+    transform: skewX(-20deg);
+}
+
+/* --- Module description --- */
+[data-theme="persona5-dark"] .module-desc {
+    border-left: 3px solid var(--red);
+    padding-left: 1rem;
+}
+
+/* --- H2: ransom-note first letter, diagonal underline --- */
+[data-theme="persona5-dark"] h2 {
+    position: relative;
+    padding-bottom: 0.75rem;
+    margin-bottom: 1.5rem;
+    border-bottom: none;
+}
+[data-theme="persona5-dark"] h2::first-letter {
+    background: var(--red);
+    color: #fff;
+    padding: 0 0.15em;
+    margin-right: 0.05em;
+}
+[data-theme="persona5-dark"] h2::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 60px;
+    height: 3px;
+    background: var(--red);
+    transform: skewX(-20deg);
+}
+
+/* --- Lessons: red top border --- */
+[data-theme="persona5-dark"] .lesson {
+    position: relative;
+    border-top: 3px solid var(--red);
+    border-radius: 0;
+}
+
+/* --- Tips, Warnings, Info --- */
+[data-theme="persona5-dark"] .tip,
+[data-theme="persona5-dark"] .warning,
+[data-theme="persona5-dark"] .info {
+    border: 1px solid #2a2a2a;
+    border-radius: 0;
+    position: relative;
+}
+[data-theme="persona5-dark"] .tip::before,
+[data-theme="persona5-dark"] .warning::before,
+[data-theme="persona5-dark"] .info::before {
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-family: 'Barlow Condensed', sans-serif;
+}
+[data-theme="persona5-dark"] .tip {
+    background: rgba(0, 255, 65, 0.05);
+    border-left: 4px solid var(--green-bright);
+}
+[data-theme="persona5-dark"] .warning {
+    background: rgba(217, 35, 35, 0.05);
+    border-left: 4px solid var(--red);
+}
+[data-theme="persona5-dark"] .info {
+    background: rgba(0, 229, 255, 0.05);
+    border-left: 4px solid var(--blue);
+}
+
+/* --- Code blocks: clean border, red left accent --- */
+[data-theme="persona5-dark"] .code-block {
+    border: 2px solid #222 !important;
+    border-left: 4px solid var(--red) !important;
+    border-radius: 0 !important;
+    box-shadow: none;
+}
+[data-theme="persona5-dark"] pre { border: none; }
+[data-theme="persona5-dark"] .code-header {
+    background: #0d0d0d !important;
+    color: #fff !important;
+    border: none !important;
+    border-bottom: 1px solid #2a2a2a !important;
+    border-left: 4px solid var(--red) !important;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    border-radius: 0 !important;
+}
+[data-theme="persona5-dark"] .code-header.python { border-left-color: #3776ab !important; }
+[data-theme="persona5-dark"] .code-header.go { border-left-color: #00add8 !important; }
+
+/* --- Nav buttons: angular parallelogram --- */
+[data-theme="persona5-dark"] .nav-btn {
+    transform: skewX(-5deg);
+    border: 2px solid var(--red) !important;
+    border-radius: 0;
+    background: var(--bg-card);
+    box-shadow: none;
+    transition: all 0.2s ease;
+    font-weight: 700;
+}
+[data-theme="persona5-dark"] .nav-btn > * {
+    display: inline-block;
+    transform: skewX(5deg);
+}
+[data-theme="persona5-dark"] .nav-btn:hover {
+    background: var(--red) !important;
+    color: #fff !important;
+    transform: skewX(-5deg) translateY(-2px);
+    box-shadow: 0 6px 20px rgba(217, 35, 35, 0.35);
+}
+
+/* --- Cards: clean borders, red left accent on hover --- */
+[data-theme="persona5-dark"] .card,
+[data-theme="persona5-dark"] .stat-card,
+[data-theme="persona5-dark"] .module-item {
+    border: 2px solid #2a2a2a !important;
+    border-radius: 0 !important;
+    box-shadow: none;
+    position: relative;
+}
+
+[data-theme="persona5-dark"] .module-card {
+    border: 2px solid #2a2a2a;
+    border-radius: 0;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+[data-theme="persona5-dark"] .module-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 3px;
+    height: 100%;
+    background: var(--red);
+    transition: width 0.2s ease;
+}
+[data-theme="persona5-dark"] .module-card:hover {
+    border-color: var(--red);
+    transform: translateX(-3px);
+    box-shadow: 3px 0 0 var(--red);
+}
+[data-theme="persona5-dark"] .module-card:hover::before {
+    width: 5px;
+}
+
+/* --- Session timer --- */
+[data-theme="persona5-dark"] .session-timer,
+[data-theme="persona5-dark"] .floating-session-timer {
+    border: 2px solid var(--red) !important;
+    border-radius: 0 !important;
+    box-shadow: none;
+}
+
+/* --- Buttons: bold, uppercase, red hover --- */
+[data-theme="persona5-dark"] button:not(.sidebar-toggle),
+[data-theme="persona5-dark"] .quick-btn,
+[data-theme="persona5-dark"] .data-btn {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border: 2px solid #333 !important;
+    border-radius: 0 !important;
+    box-shadow: none;
+    transition: all 0.15s ease;
+}
+[data-theme="persona5-dark"] button:not(.sidebar-toggle):hover,
+[data-theme="persona5-dark"] .quick-btn:hover,
+[data-theme="persona5-dark"] .data-btn:hover {
+    background: var(--red) !important;
+    color: #fff !important;
+    border-color: var(--red) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(217, 35, 35, 0.3);
+}
+
+/* --- Module numbers: red angular badge --- */
+[data-theme="persona5-dark"] .module-num {
+    background: var(--red);
+    color: #fff;
+    padding: 0.2rem 0.6rem;
+    font-weight: 900;
+    display: inline-block;
+    transform: skewX(-5deg);
+    border: none;
+    box-shadow: none;
+}
+
+/* --- Progress bars --- */
+[data-theme="persona5-dark"] .session-progress {
+    border: 1px solid #333;
+    border-radius: 0;
+    height: 10px;
+}
+[data-theme="persona5-dark"] .session-progress-bar {
+    background: var(--red) !important;
+    border-radius: 0;
+}
+
+/* --- Checkboxes --- */
+[data-theme="persona5-dark"] .module-checkbox {
+    border: 2px solid #444 !important;
+    border-radius: 0 !important;
+}
+[data-theme="persona5-dark"] .module-checkbox:checked {
+    background: var(--red) !important;
+    border-color: var(--red) !important;
+}
+
+/* --- Track titles: diagonal stripe banner --- */
+[data-theme="persona5-dark"] .track-title {
+    background:
+        repeating-linear-gradient(
+            -55deg,
+            var(--red),
+            var(--red) 10px,
+            #b91c1c 10px,
+            #b91c1c 20px
+        );
+    color: #fff;
+    padding: 0.75rem 2rem;
+    margin: 1.5rem -1.5rem;
+    font-size: 1.3rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    position: relative;
+    border: none;
+    box-shadow: none;
+    transform: skewX(-3deg);
+}
+[data-theme="persona5-dark"] .track-title > * {
+    display: inline-block;
+    transform: skewX(3deg);
+}
+[data-theme="persona5-dark"] .track-title::before {
+    content: '\25B6';
+    margin-right: 0.5rem;
+}
+
+/* --- Stats: clean, readable (no text-stroke) --- */
+[data-theme="persona5-dark"] .stat-value {
+    color: var(--red);
+    text-shadow: none;
+    -webkit-text-stroke: 0;
+}
+
+/* --- Session countdown --- */
+[data-theme="persona5-dark"] .session-countdown {
+    color: var(--red);
+    font-size: 1.4rem;
+    text-shadow: none;
+    -webkit-text-stroke: 0;
+}
+
+/* --- Sidebar: red accent, clean hover --- */
+[data-theme="persona5-dark"] .sidebar {
+    background: #0a0a0a;
+    border-right: 2px solid var(--red);
+}
+[data-theme="persona5-dark"] .sidebar-link {
+    border-left: 3px solid transparent;
+    transition: all 0.15s ease;
+    position: relative;
+}
+[data-theme="persona5-dark"] .sidebar-link::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--red);
+    opacity: 0;
+    z-index: -1;
+    transition: opacity 0.15s ease;
+}
+[data-theme="persona5-dark"] .sidebar-link:hover {
+    color: #fff;
+    background: transparent;
+}
+[data-theme="persona5-dark"] .sidebar-link:hover::before { opacity: 0.1; }
+[data-theme="persona5-dark"] .sidebar-link.active {
+    color: #fff;
+    background: transparent;
+    border-left-color: var(--red);
+}
+[data-theme="persona5-dark"] .sidebar-link.active::before { opacity: 0.18; }
+[data-theme="persona5-dark"] .sidebar-module-num {
+    color: var(--red);
+    opacity: 1;
+}
+
+/* --- Module links --- */
+[data-theme="persona5-dark"] .module-link {
+    position: relative;
+    padding-left: 1.5rem;
+}
+[data-theme="persona5-dark"] .module-link::before {
+    content: '\25B6';
+    position: absolute;
+    left: 0.25rem;
+    color: var(--red);
+    font-weight: 900;
+    font-size: 0.7rem;
+}
+
+/* --- Dashboard panel buttons --- */
+[data-theme="persona5-dark"] .session-start-btn {
+    background: var(--red) !important;
+    color: #fff !important;
+    border-color: var(--red) !important;
+}
+[data-theme="persona5-dark"] .session-start-btn:hover {
+    background: #ff2233 !important;
+    box-shadow: 0 4px 16px rgba(217, 35, 35, 0.3);
+}
+[data-theme="persona5-dark"] .resume-btn {
+    background: var(--red) !important;
+    color: #fff !important;
+}
+[data-theme="persona5-dark"] .resume-btn:hover {
+    background: #ff2233 !important;
+    box-shadow: 0 4px 16px rgba(217, 35, 35, 0.3);
+}
+
+/* --- Quick action buttons --- */
+[data-theme="persona5-dark"] .quick-btn.primary {
+    background: var(--red) !important;
+    color: #fff !important;
+    border-color: var(--red) !important;
+}
+[data-theme="persona5-dark"] .quick-btn.primary:hover {
+    background: #ff2233 !important;
+    box-shadow: 0 6px 24px rgba(217, 35, 35, 0.4);
+}
+
+/* --- Exercise blocks --- */
+[data-theme="persona5-dark"] .exercise {
+    border: 1px solid #2a2a2a;
+    border-left: 4px solid var(--red);
+    border-radius: 0;
+}
+
+/* --- Staggered entrance animations --- */
+@keyframes p5SlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+[data-theme="persona5-dark"] .lesson,
+[data-theme="persona5-dark"] .module-card {
+    animation: p5SlideIn 0.25s ease-out both;
+}
+[data-theme="persona5-dark"] .lesson:nth-child(2) { animation-delay: 0.04s; }
+[data-theme="persona5-dark"] .lesson:nth-child(3) { animation-delay: 0.08s; }
+[data-theme="persona5-dark"] .lesson:nth-child(4) { animation-delay: 0.12s; }
+[data-theme="persona5-dark"] .lesson:nth-child(5) { animation-delay: 0.16s; }
+[data-theme="persona5-dark"] .lesson:nth-child(6) { animation-delay: 0.2s; }
+[data-theme="persona5-dark"] .module-card:nth-child(2) { animation-delay: 0.04s; }
+[data-theme="persona5-dark"] .module-card:nth-child(3) { animation-delay: 0.08s; }
+[data-theme="persona5-dark"] .module-card:nth-child(4) { animation-delay: 0.12s; }
+[data-theme="persona5-dark"] .module-card:nth-child(5) { animation-delay: 0.16s; }
+[data-theme="persona5-dark"] .module-card:nth-child(6) { animation-delay: 0.2s; }
+[data-theme="persona5-dark"] .module-card:nth-child(7) { animation-delay: 0.24s; }
+[data-theme="persona5-dark"] .module-card:nth-child(8) { animation-delay: 0.28s; }

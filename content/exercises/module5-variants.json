@@ -1,0 +1,427 @@
+{
+  "conceptLinks": {
+    "Maps": "#lesson-maps",
+    "Slices": "#lesson-slices",
+    "Generics": "#lesson-generics",
+    "Structs & Methods": "#lesson-structs",
+    "Stacks": "#lesson-stacks",
+    "Comma-Ok Pattern": "#lesson-comma-ok",
+    "make() Function": "#lesson-make"
+  },
+  "sharedContent": {},
+  "variants": {
+    "warmups": [
+      {
+        "id": "warmup_1",
+        "concept": "Maps",
+        "variants": [
+          {
+            "id": "v1",
+            "title": "Remove Duplicate Strings",
+            "description": "Write <code>func unique(items []string) []string</code> that removes duplicates from a string slice, preserving the original order.",
+            "hints": [
+              "Use a <code>map[string]bool</code> to track which items you have already seen.",
+              "Only <code>append</code> to the result slice when the item is not in the map."
+            ],
+            "solution": "func unique(items []string) []string {\n    seen := make(map[string]bool)\n    result := make([]string, 0)\n    for _, item := range items {\n        if !seen[item] {\n            seen[item] = true\n            result = append(result, item)\n        }\n    }\n    return result\n}",
+            "annotations": [
+              { "type": "idiom", "label": "Map as Set", "text": "In Go, a <code>map[T]bool</code> is the idiomatic way to implement a set since Go has no built-in set type." },
+              { "type": "complexity", "label": "O(n)", "text": "Single pass through the slice with O(1) map lookups gives O(n) total time." }
+            ]
+          },
+          {
+            "id": "v2",
+            "title": "Remove Duplicate Integers",
+            "description": "Write <code>func uniqueInts(nums []int) []int</code> that removes duplicate integers from a slice, preserving the original order.",
+            "hints": [
+              "Use a <code>map[int]bool</code> to track seen numbers.",
+              "Iterate with <code>range</code> and only append unseen values."
+            ],
+            "solution": "func uniqueInts(nums []int) []int {\n    seen := make(map[int]bool)\n    result := make([]int, 0)\n    for _, n := range nums {\n        if !seen[n] {\n            seen[n] = true\n            result = append(result, n)\n        }\n    }\n    return result\n}",
+            "annotations": [
+              { "type": "idiom", "label": "Zero Value Lookup", "text": "Accessing a missing map key returns the zero value (<code>false</code> for bool), so <code>!seen[n]</code> works without the comma-ok pattern." },
+              { "type": "gotcha", "label": "Order Not Guaranteed", "text": "Maps in Go have no guaranteed iteration order. Using a map as a 'seen' set while appending to a slice is how you preserve original order." }
+            ]
+          },
+          {
+            "id": "v3",
+            "title": "Unique Characters",
+            "description": "Write <code>func uniqueChars(s string) string</code> that returns a string with duplicate characters removed, preserving the first occurrence order.",
+            "hints": [
+              "Convert the string to <code>[]rune</code> or iterate with <code>range</code> to handle Unicode.",
+              "Use a <code>map[rune]bool</code> to track seen characters."
+            ],
+            "solution": "func uniqueChars(s string) string {\n    seen := make(map[rune]bool)\n    result := make([]rune, 0)\n    for _, ch := range s {\n        if !seen[ch] {\n            seen[ch] = true\n            result = append(result, ch)\n        }\n    }\n    return string(result)\n}",
+            "annotations": [
+              { "type": "gotcha", "label": "Rune vs Byte", "text": "Iterating a string with <code>range</code> yields runes (Unicode code points), not bytes. This correctly handles multi-byte characters like emoji." },
+              { "type": "idiom", "label": "Rune Slice Conversion", "text": "Build a <code>[]rune</code> and convert back with <code>string(result)</code> to produce the final string." }
+            ]
+          },
+          {
+            "id": "v4",
+            "title": "Unique by Last Occurrence",
+            "description": "Write <code>func uniqueLast(items []string) []string</code> that removes duplicates but keeps the <strong>last</strong> occurrence of each item instead of the first.",
+            "hints": [
+              "One approach: iterate in reverse and use a seen map, then reverse the result.",
+              "Another approach: first pass to record last index, second pass to collect."
+            ],
+            "solution": "func uniqueLast(items []string) []string {\n    lastIdx := make(map[string]int)\n    for i, item := range items {\n        lastIdx[item] = i\n    }\n    result := make([]string, 0)\n    for i, item := range items {\n        if lastIdx[item] == i {\n            result = append(result, item)\n        }\n    }\n    return result\n}",
+            "annotations": [
+              { "type": "alternative", "label": "Reverse Approach", "text": "An alternative is to iterate backward, use a seen map, collect items, then reverse the result slice." },
+              { "type": "complexity", "label": "O(n)", "text": "Two passes through the slice: one to record last indices, one to collect. Both are O(n)." }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "warmup_2",
+        "concept": "Generics",
+        "variants": [
+          {
+            "id": "v1",
+            "title": "Merge String Maps",
+            "description": "Write <code>func merge[K comparable, V any](a, b map[K]V) map[K]V</code> that merges two maps. Values from <code>b</code> override values from <code>a</code> when keys conflict.",
+            "hints": [
+              "Create a new map with <code>make(map[K]V)</code>.",
+              "Copy all entries from <code>a</code> first, then copy all from <code>b</code> to let <code>b</code> override."
+            ],
+            "solution": "func merge[K comparable, V any](a, b map[K]V) map[K]V {\n    result := make(map[K]V)\n    for k, v := range a {\n        result[k] = v\n    }\n    for k, v := range b {\n        result[k] = v\n    }\n    return result\n}",
+            "annotations": [
+              { "type": "idiom", "label": "Generic Constraints", "text": "The <code>comparable</code> constraint is required for map keys because Go maps need keys that support <code>==</code> and <code>!=</code>." },
+              { "type": "gotcha", "label": "Nil Map Write", "text": "Writing to a nil map panics. Always use <code>make()</code> to initialize a map before writing to it." }
+            ]
+          },
+          {
+            "id": "v2",
+            "title": "Merge with Priority Flag",
+            "description": "Write <code>func mergeWith[K comparable, V any](a, b map[K]V, preferA bool) map[K]V</code>. If <code>preferA</code> is true, values from <code>a</code> take priority on conflicts; otherwise <code>b</code> wins.",
+            "hints": [
+              "Start by copying both maps into the result.",
+              "Control which map you copy second to determine which one overrides."
+            ],
+            "solution": "func mergeWith[K comparable, V any](a, b map[K]V, preferA bool) map[K]V {\n    result := make(map[K]V)\n    if preferA {\n        for k, v := range b {\n            result[k] = v\n        }\n        for k, v := range a {\n            result[k] = v\n        }\n    } else {\n        for k, v := range a {\n            result[k] = v\n        }\n        for k, v := range b {\n            result[k] = v\n        }\n    }\n    return result\n}",
+            "annotations": [
+              { "type": "idiom", "label": "Copy Order Matters", "text": "When merging maps, the map copied second wins on conflicts. This is a common Go idiom for setting defaults then overriding." },
+              { "type": "alternative", "label": "Conditional Insert", "text": "Alternatively, copy both maps in any order but check existence with the comma-ok pattern before overwriting." }
+            ]
+          },
+          {
+            "id": "v3",
+            "title": "Merge Integer Maps with Sum",
+            "description": "Write <code>func mergeSum(a, b map[string]int) map[string]int</code> that merges two maps by <strong>summing</strong> values for shared keys instead of overriding.",
+            "hints": [
+              "Create a result map, copy all from <code>a</code>, then for each entry in <code>b</code> add to the existing value.",
+              "Remember that accessing a missing int map key returns <code>0</code>."
+            ],
+            "solution": "func mergeSum(a, b map[string]int) map[string]int {\n    result := make(map[string]int)\n    for k, v := range a {\n        result[k] += v\n    }\n    for k, v := range b {\n        result[k] += v\n    }\n    return result\n}",
+            "annotations": [
+              { "type": "idiom", "label": "Zero Value Addition", "text": "In Go, <code>result[k] += v</code> works even if <code>k</code> is not yet in the map because the zero value for <code>int</code> is <code>0</code>." },
+              { "type": "complexity", "label": "O(n+m)", "text": "Iterates through both maps once, where n and m are the sizes of maps a and b." }
+            ]
+          },
+          {
+            "id": "v4",
+            "title": "Merge Multiple Maps",
+            "description": "Write <code>func mergeAll[K comparable, V any](maps ...map[K]V) map[K]V</code> that merges any number of maps. Later maps override earlier ones on conflicts.",
+            "hints": [
+              "Use a variadic parameter <code>...map[K]V</code>.",
+              "Iterate through each map in order, copying entries into a single result map."
+            ],
+            "solution": "func mergeAll[K comparable, V any](maps ...map[K]V) map[K]V {\n    result := make(map[K]V)\n    for _, m := range maps {\n        for k, v := range m {\n            result[k] = v\n        }\n    }\n    return result\n}",
+            "annotations": [
+              { "type": "idiom", "label": "Variadic Generics", "text": "Combining generics with variadic parameters (<code>...map[K]V</code>) creates flexible, reusable utility functions." },
+              { "type": "gotcha", "label": "Nil Map in Variadic", "text": "Ranging over a nil map is safe in Go (zero iterations), so nil entries in the variadic list won't panic." }
+            ]
+          }
+        ]
+      }
+    ],
+    "challenges": [
+      {
+        "id": "challenge_1",
+        "block": 1,
+        "difficulty": 2,
+        "concept": "Structs & Methods",
+        "variants": [
+          {
+            "id": "v1",
+            "title": "Simple String Cache",
+            "description": "Implement a <code>Cache</code> struct with <code>Get(key string) (string, bool)</code> and <code>Set(key, value string)</code> methods. <code>Get</code> returns the value and whether the key exists.",
+            "functionSignature": "func NewCache() *Cache",
+            "testCases": [
+              { "input": "c := NewCache(); c.Set(\"name\", \"Go\"); c.Get(\"name\")", "output": "\"Go\", true" },
+              { "input": "c := NewCache(); c.Get(\"missing\")", "output": "\"\", false" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "What underlying data structure naturally maps keys to values? How do you check if a key exists in Go?" },
+              { "title": "\ud83d\udca1 Hint", "content": "Use a struct wrapping a <code>map[string]string</code>. The comma-ok pattern <code>val, ok := m[key]</code> gives you both the value and existence." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. Define Cache struct with a map field\n2. NewCache initializes the map with make()\n3. Get uses comma-ok on the map\n4. Set assigns to the map</pre>" }
+            ],
+            "solution": "type Cache struct {\n    data map[string]string\n}\n\nfunc NewCache() *Cache {\n    return &Cache{data: make(map[string]string)}\n}\n\nfunc (c *Cache) Get(key string) (string, bool) {\n    val, ok := c.data[key]\n    return val, ok\n}\n\nfunc (c *Cache) Set(key, value string) {\n    c.data[key] = value\n}",
+            "difficulty": 2,
+            "annotations": [
+              { "type": "idiom", "label": "Constructor Function", "text": "Go uses <code>NewXxx()</code> constructor functions instead of constructors. This ensures the internal map is properly initialized." },
+              { "type": "gotcha", "label": "Uninitialized Map", "text": "A struct with a map field has a nil map by default. Writing to it panics. Always provide a constructor." }
+            ]
+          },
+          {
+            "id": "v2",
+            "title": "Cache with Default Values",
+            "description": "Implement a <code>Cache</code> with <code>GetOrDefault(key, defaultVal string) string</code> and <code>Set(key, value string)</code>. If the key does not exist, return the provided default.",
+            "functionSignature": "func NewCache() *Cache",
+            "testCases": [
+              { "input": "c := NewCache(); c.Set(\"lang\", \"Go\"); c.GetOrDefault(\"lang\", \"Rust\")", "output": "\"Go\"" },
+              { "input": "c := NewCache(); c.GetOrDefault(\"lang\", \"Rust\")", "output": "\"Rust\"" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "How do you distinguish between a key that exists with an empty value and a key that does not exist at all?" },
+              { "title": "\ud83d\udca1 Hint", "content": "Use the comma-ok pattern. If <code>ok</code> is false, return the default value instead." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. Look up key with comma-ok\n2. If ok is true, return the stored value\n3. If ok is false, return the default value</pre>" }
+            ],
+            "solution": "type Cache struct {\n    data map[string]string\n}\n\nfunc NewCache() *Cache {\n    return &Cache{data: make(map[string]string)}\n}\n\nfunc (c *Cache) GetOrDefault(key, defaultVal string) string {\n    if val, ok := c.data[key]; ok {\n        return val\n    }\n    return defaultVal\n}\n\nfunc (c *Cache) Set(key, value string) {\n    c.data[key] = value\n}",
+            "difficulty": 2,
+            "annotations": [
+              { "type": "idiom", "label": "Comma-Ok Pattern", "text": "The comma-ok pattern <code>val, ok := m[key]</code> is idiomatic Go for distinguishing missing keys from zero values." },
+              { "type": "pattern", "label": "Default Value Pattern", "text": "Providing a default parameter is a common alternative to returning (value, bool) tuples when you always want a usable result." }
+            ]
+          },
+          {
+            "id": "v3",
+            "title": "Cache with Delete",
+            "description": "Implement a <code>Cache</code> with <code>Get(key string) (string, bool)</code>, <code>Set(key, value string)</code>, and <code>Delete(key string) bool</code>. Delete returns true if the key existed.",
+            "functionSignature": "func NewCache() *Cache",
+            "testCases": [
+              { "input": "c := NewCache(); c.Set(\"a\", \"1\"); c.Delete(\"a\")", "output": "true" },
+              { "input": "c := NewCache(); c.Delete(\"missing\")", "output": "false" },
+              { "input": "c := NewCache(); c.Set(\"a\", \"1\"); c.Delete(\"a\"); c.Get(\"a\")", "output": "\"\", false" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "How do you remove a key from a map in Go? How can you tell if the key was there before you removed it?" },
+              { "title": "\ud83d\udca1 Hint", "content": "Use <code>delete(m, key)</code> to remove a map entry. Check existence with the comma-ok pattern before deleting to know the return value." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. Delete: check if key exists, delete it, return whether it existed\n2. Get: comma-ok lookup\n3. Set: simple assignment</pre>" }
+            ],
+            "solution": "type Cache struct {\n    data map[string]string\n}\n\nfunc NewCache() *Cache {\n    return &Cache{data: make(map[string]string)}\n}\n\nfunc (c *Cache) Get(key string) (string, bool) {\n    val, ok := c.data[key]\n    return val, ok\n}\n\nfunc (c *Cache) Set(key, value string) {\n    c.data[key] = value\n}\n\nfunc (c *Cache) Delete(key string) bool {\n    _, ok := c.data[key]\n    if ok {\n        delete(c.data, key)\n    }\n    return ok\n}",
+            "difficulty": 2,
+            "annotations": [
+              { "type": "stdlib", "label": "delete() Builtin", "text": "The built-in <code>delete(m, key)</code> removes a key from a map. It is a no-op if the key does not exist and does not panic on nil maps." },
+              { "type": "gotcha", "label": "Delete on Nil Map", "text": "Calling <code>delete()</code> on a nil map does not panic, but reading from a nil map after construction could indicate a bug." }
+            ]
+          },
+          {
+            "id": "v4",
+            "title": "Cache with Size Limit",
+            "description": "Implement a <code>Cache</code> with a maximum capacity. <code>Set</code> should reject new keys (return false) when the cache is full. Updating existing keys is always allowed.",
+            "functionSignature": "func NewCache(maxSize int) *Cache",
+            "testCases": [
+              { "input": "c := NewCache(2); c.Set(\"a\", \"1\"); c.Set(\"b\", \"2\"); c.Set(\"c\", \"3\")", "output": "true, true, false" },
+              { "input": "c := NewCache(1); c.Set(\"a\", \"1\"); c.Set(\"a\", \"2\"); c.Get(\"a\")", "output": "true, true, (\"2\", true)" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "How do you track the capacity? When should a Set be rejected vs allowed? What about updating an existing key?" },
+              { "title": "\ud83d\udca1 Hint", "content": "Store <code>maxSize</code> in the struct. In Set, check if the key already exists (update is OK) or if <code>len(data) < maxSize</code> (room for new key)." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. Store maxSize in struct alongside the map\n2. Set: if key exists, update and return true\n3. Set: if len(map) >= maxSize, return false\n4. Set: otherwise, add and return true</pre>" }
+            ],
+            "solution": "type Cache struct {\n    data    map[string]string\n    maxSize int\n}\n\nfunc NewCache(maxSize int) *Cache {\n    return &Cache{\n        data:    make(map[string]string),\n        maxSize: maxSize,\n    }\n}\n\nfunc (c *Cache) Get(key string) (string, bool) {\n    val, ok := c.data[key]\n    return val, ok\n}\n\nfunc (c *Cache) Set(key, value string) bool {\n    if _, ok := c.data[key]; ok {\n        c.data[key] = value\n        return true\n    }\n    if len(c.data) >= c.maxSize {\n        return false\n    }\n    c.data[key] = value\n    return true\n}",
+            "difficulty": 3,
+            "annotations": [
+              { "type": "idiom", "label": "len() on Maps", "text": "The built-in <code>len()</code> returns the number of entries in a map, which is the idiomatic way to check map size." },
+              { "type": "pattern", "label": "Capacity Guard", "text": "Checking capacity before insertion is a common pattern for bounded data structures. In production, consider an LRU eviction policy instead of hard rejection." }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "challenge_2",
+        "block": 1,
+        "difficulty": 2,
+        "concept": "Generics",
+        "variants": [
+          {
+            "id": "v1",
+            "title": "Generic Filter",
+            "description": "Write <code>func Filter[T any](items []T, pred func(T) bool) []T</code> that returns a new slice containing only elements for which the predicate returns true.",
+            "functionSignature": "func Filter[T any](items []T, pred func(T) bool) []T",
+            "testCases": [
+              { "input": "Filter([]int{1, 2, 3, 4, 5}, func(n int) bool { return n%2 == 0 })", "output": "[]int{2, 4}" },
+              { "input": "Filter([]string{\"go\", \"rust\", \"zig\"}, func(s string) bool { return len(s) == 2 })", "output": "[]string{\"go\"}" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "How do you build a new slice from a subset of elements? What determines which elements to keep?" },
+              { "title": "\ud83d\udca1 Hint", "content": "Create an empty result slice. Range over items, call <code>pred(item)</code>, and append if it returns true." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. Create empty result slice\n2. For each item:\n   - Call pred(item)\n   - If true, append to result\n3. Return result</pre>" }
+            ],
+            "solution": "func Filter[T any](items []T, pred func(T) bool) []T {\n    result := make([]T, 0)\n    for _, item := range items {\n        if pred(item) {\n            result = append(result, item)\n        }\n    }\n    return result\n}",
+            "difficulty": 2,
+            "annotations": [
+              { "type": "idiom", "label": "Generic Functions", "text": "Go 1.18+ supports type parameters. <code>[T any]</code> means T can be any type. The function works with int, string, or any other type." },
+              { "type": "complexity", "label": "O(n)", "text": "Single pass through the slice. The predicate is called once per element." }
+            ]
+          },
+          {
+            "id": "v2",
+            "title": "Generic Map (Transform)",
+            "description": "Write <code>func Map[T any, U any](items []T, fn func(T) U) []U</code> that applies a transformation function to each element and returns a new slice.",
+            "functionSignature": "func Map[T any, U any](items []T, fn func(T) U) []U",
+            "testCases": [
+              { "input": "Map([]int{1, 2, 3}, func(n int) int { return n * 2 })", "output": "[]int{2, 4, 6}" },
+              { "input": "Map([]string{\"go\", \"rust\"}, func(s string) int { return len(s) })", "output": "[]int{2, 4}" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "You need to transform each element from type T to type U. What does the result slice look like?" },
+              { "title": "\ud83d\udca1 Hint", "content": "Pre-allocate <code>result := make([]U, len(items))</code> since you know the output size. Assign <code>result[i] = fn(items[i])</code>." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. Allocate result slice of same length\n2. For each index and item:\n   - result[i] = fn(item)\n3. Return result</pre>" }
+            ],
+            "solution": "func Map[T any, U any](items []T, fn func(T) U) []U {\n    result := make([]U, len(items))\n    for i, item := range items {\n        result[i] = fn(item)\n    }\n    return result\n}",
+            "difficulty": 2,
+            "annotations": [
+              { "type": "idiom", "label": "Two Type Parameters", "text": "Generic functions can have multiple type parameters. <code>[T any, U any]</code> allows input and output to be different types." },
+              { "type": "alternative", "label": "Pre-allocate vs Append", "text": "When the output length equals the input length, pre-allocate with <code>make([]U, len(items))</code> instead of using append for better performance." }
+            ]
+          },
+          {
+            "id": "v3",
+            "title": "Generic Reduce",
+            "description": "Write <code>func Reduce[T any, U any](items []T, initial U, fn func(U, T) U) U</code> that reduces a slice to a single value by applying a function cumulatively.",
+            "functionSignature": "func Reduce[T any, U any](items []T, initial U, fn func(U, T) U) U",
+            "testCases": [
+              { "input": "Reduce([]int{1, 2, 3, 4}, 0, func(acc, n int) int { return acc + n })", "output": "10" },
+              { "input": "Reduce([]string{\"a\", \"b\", \"c\"}, \"\", func(acc, s string) string { return acc + s })", "output": "\"abc\"" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "You need to accumulate a result by processing each element. What is the starting value and how does it change with each element?" },
+              { "title": "\ud83d\udca1 Hint", "content": "Start with <code>acc := initial</code>. For each item, update <code>acc = fn(acc, item)</code>. Return acc at the end." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. Set accumulator = initial value\n2. For each item:\n   - accumulator = fn(accumulator, item)\n3. Return accumulator</pre>" }
+            ],
+            "solution": "func Reduce[T any, U any](items []T, initial U, fn func(U, T) U) U {\n    acc := initial\n    for _, item := range items {\n        acc = fn(acc, item)\n    }\n    return acc\n}",
+            "difficulty": 3,
+            "annotations": [
+              { "type": "pattern", "label": "Fold/Reduce", "text": "Reduce (also called fold) is a fundamental functional programming pattern. It can express sum, product, concatenation, and many other aggregations." },
+              { "type": "complexity", "label": "O(n)", "text": "Single pass through the slice. Total complexity depends on the provided function." }
+            ]
+          },
+          {
+            "id": "v4",
+            "title": "Generic Contains",
+            "description": "Write <code>func Contains[T comparable](items []T, target T) bool</code> that returns true if the target element is found in the slice.",
+            "functionSignature": "func Contains[T comparable](items []T, target T) bool",
+            "testCases": [
+              { "input": "Contains([]int{1, 2, 3}, 2)", "output": "true" },
+              { "input": "Contains([]string{\"go\", \"rust\"}, \"python\")", "output": "false" },
+              { "input": "Contains([]int{}, 1)", "output": "false" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "Why does this function need the <code>comparable</code> constraint instead of <code>any</code>?" },
+              { "title": "\ud83d\udca1 Hint", "content": "Loop through items, compare each with <code>==</code>. Return true on first match, false after the loop." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. For each item:\n   - If item == target, return true\n2. Return false (not found)</pre>" }
+            ],
+            "solution": "func Contains[T comparable](items []T, target T) bool {\n    for _, item := range items {\n        if item == target {\n            return true\n        }\n    }\n    return false\n}",
+            "difficulty": 2,
+            "annotations": [
+              { "type": "idiom", "label": "Comparable Constraint", "text": "The <code>comparable</code> constraint is needed because <code>==</code> is not defined for all types (e.g., slices, maps, functions cannot be compared)." },
+              { "type": "stdlib", "label": "slices.Contains", "text": "Go 1.21+ provides <code>slices.Contains()</code> in the standard library, but implementing it yourself teaches the underlying pattern." }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "challenge_3",
+        "block": 2,
+        "difficulty": 3,
+        "concept": "Stacks",
+        "variants": [
+          {
+            "id": "v1",
+            "title": "Balanced Brackets",
+            "description": "Write <code>func isBalanced(s string) bool</code> that checks if a string of brackets <code>()[]{}</code> is properly balanced. Non-bracket characters should be ignored.",
+            "functionSignature": "func isBalanced(s string) bool",
+            "testCases": [
+              { "input": "\"({[]})\"", "output": "true" },
+              { "input": "\"([)]\"", "output": "false" },
+              { "input": "\"((())\"", "output": "false" },
+              { "input": "\"\"", "output": "true" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "When you see a closing bracket, what do you need to check? What data structure helps you remember the most recent unmatched opening bracket?" },
+              { "title": "\ud83d\udca1 Hint", "content": "Use a slice as a stack. Push opening brackets, pop on closing brackets and check if they match. The stack should be empty at the end." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. Create bracket pairs map: closing -> opening\n2. For each character:\n   - Opening bracket? Push to stack\n   - Closing bracket? Pop and verify match\n3. Return: is stack empty?</pre>" }
+            ],
+            "solution": "func isBalanced(s string) bool {\n    stack := make([]rune, 0)\n    pairs := map[rune]rune{')': '(', ']': '[', '}': '{'}\n\n    for _, ch := range s {\n        switch ch {\n        case '(', '[', '{':\n            stack = append(stack, ch)\n        case ')', ']', '}':\n            if len(stack) == 0 || stack[len(stack)-1] != pairs[ch] {\n                return false\n            }\n            stack = stack[:len(stack)-1]\n        }\n    }\n    return len(stack) == 0\n}",
+            "difficulty": 3,
+            "annotations": [
+              { "type": "idiom", "label": "Slice as Stack", "text": "Go has no built-in stack type. Use a slice with <code>append()</code> for push and <code>s[:len(s)-1]</code> for pop." },
+              { "type": "complexity", "label": "O(n)", "text": "Single pass through the string. Each character is pushed and popped at most once." }
+            ]
+          },
+          {
+            "id": "v2",
+            "title": "Valid HTML Tags",
+            "description": "Write <code>func isValidHTML(s string) bool</code> that checks if simple HTML tags are properly nested. Tags are like <code>&lt;b&gt;</code> and <code>&lt;/b&gt;</code>. Self-closing tags and attributes are not used.",
+            "functionSignature": "func isValidHTML(s string) bool",
+            "testCases": [
+              { "input": "\"<b><i></i></b>\"", "output": "true" },
+              { "input": "\"<b><i></b></i>\"", "output": "false" },
+              { "input": "\"<p></p><div></div>\"", "output": "true" },
+              { "input": "\"<p>\"", "output": "false" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "This is the bracket matching problem but with named tags. What needs to match when you encounter a closing tag?" },
+              { "title": "\ud83d\udca1 Hint", "content": "Extract tag names between < and >. Push opening tags onto a stack. When you see a closing tag (starts with /), pop and check if the names match." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. Parse tag names from the string\n2. For each tag:\n   - Opening tag? Push name to stack\n   - Closing tag? Pop and verify name matches\n3. Return: is stack empty?</pre>" }
+            ],
+            "solution": "func isValidHTML(s string) bool {\n    stack := make([]string, 0)\n    i := 0\n    for i < len(s) {\n        if s[i] == '<' {\n            j := i + 1\n            for j < len(s) && s[j] != '>' {\n                j++\n            }\n            if j >= len(s) {\n                return false\n            }\n            tag := s[i+1 : j]\n            if len(tag) > 0 && tag[0] == '/' {\n                name := tag[1:]\n                if len(stack) == 0 || stack[len(stack)-1] != name {\n                    return false\n                }\n                stack = stack[:len(stack)-1]\n            } else {\n                stack = append(stack, tag)\n            }\n            i = j + 1\n        } else {\n            i++\n        }\n    }\n    return len(stack) == 0\n}",
+            "difficulty": 3,
+            "annotations": [
+              { "type": "pattern", "label": "Stack-Based Parsing", "text": "Stacks are fundamental to parsing nested structures. Compilers and interpreters use this same pattern for syntax analysis." },
+              { "type": "gotcha", "label": "String Slicing", "text": "Go string slicing <code>s[i:j]</code> operates on bytes. For ASCII HTML tags this is fine, but be careful with Unicode content." }
+            ]
+          },
+          {
+            "id": "v3",
+            "title": "Reverse Polish Notation",
+            "description": "Write <code>func evalRPN(tokens []string) int</code> that evaluates an expression in Reverse Polish Notation. Supports <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code> (integer division).",
+            "functionSignature": "func evalRPN(tokens []string) int",
+            "testCases": [
+              { "input": "[]string{\"2\", \"3\", \"+\"}", "output": "5" },
+              { "input": "[]string{\"4\", \"13\", \"5\", \"/\", \"+\"}", "output": "6" },
+              { "input": "[]string{\"3\", \"4\", \"*\", \"2\", \"-\"}", "output": "10" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "In RPN, operators act on the two most recent numbers. What data structure naturally gives you access to the most recent items?" },
+              { "title": "\ud83d\udca1 Hint", "content": "Use a stack. Push numbers. When you see an operator, pop two numbers, apply the operator, push the result. The final answer is the last item on the stack." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. For each token:\n   - Number? Parse and push to stack\n   - Operator? Pop b, pop a, push a op b\n2. Return top of stack</pre>" }
+            ],
+            "solution": "func evalRPN(tokens []string) int {\n    stack := make([]int, 0)\n    for _, tok := range tokens {\n        switch tok {\n        case \"+\", \"-\", \"*\", \"/\":\n            b := stack[len(stack)-1]\n            a := stack[len(stack)-2]\n            stack = stack[:len(stack)-2]\n            switch tok {\n            case \"+\":\n                stack = append(stack, a+b)\n            case \"-\":\n                stack = append(stack, a-b)\n            case \"*\":\n                stack = append(stack, a*b)\n            case \"/\":\n                stack = append(stack, a/b)\n            }\n        default:\n            n, _ := strconv.Atoi(tok)\n            stack = append(stack, n)\n        }\n    }\n    return stack[0]\n}",
+            "difficulty": 3,
+            "annotations": [
+              { "type": "pattern", "label": "Stack-Based Evaluation", "text": "RPN evaluation is a classic stack application. Calculators like the HP-48 use this notation because it eliminates the need for parentheses." },
+              { "type": "gotcha", "label": "Operand Order", "text": "When popping two operands, the first popped is the right operand (b) and the second is the left (a). Getting this wrong breaks subtraction and division." },
+              { "type": "complexity", "label": "O(n)", "text": "Each token is processed exactly once. Stack operations are O(1) amortized." }
+            ]
+          },
+          {
+            "id": "v4",
+            "title": "Min Stack",
+            "description": "Implement a <code>MinStack</code> that supports <code>Push(val int)</code>, <code>Pop() int</code>, <code>Top() int</code>, and <code>Min() int</code>. All operations must be O(1).",
+            "functionSignature": "func NewMinStack() *MinStack",
+            "testCases": [
+              { "input": "s := NewMinStack(); s.Push(3); s.Push(1); s.Push(2); s.Min()", "output": "1" },
+              { "input": "s := NewMinStack(); s.Push(3); s.Push(1); s.Pop(); s.Min()", "output": "3" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "If you only track one minimum value, what happens when you pop that minimum? How can you remember the previous minimum?" },
+              { "title": "\ud83d\udca1 Hint", "content": "Use two stacks: one for values and one for minimums. When pushing, also push the current minimum onto the min stack. When popping, pop from both." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. Maintain two parallel stacks: values and mins\n2. Push: push value; push min(value, current min) to mins\n3. Pop: pop from both stacks\n4. Min: peek at top of mins stack</pre>" }
+            ],
+            "solution": "type MinStack struct {\n    values []int\n    mins   []int\n}\n\nfunc NewMinStack() *MinStack {\n    return &MinStack{}\n}\n\nfunc (s *MinStack) Push(val int) {\n    s.values = append(s.values, val)\n    if len(s.mins) == 0 || val <= s.mins[len(s.mins)-1] {\n        s.mins = append(s.mins, val)\n    } else {\n        s.mins = append(s.mins, s.mins[len(s.mins)-1])\n    }\n}\n\nfunc (s *MinStack) Pop() int {\n    val := s.values[len(s.values)-1]\n    s.values = s.values[:len(s.values)-1]\n    s.mins = s.mins[:len(s.mins)-1]\n    return val\n}\n\nfunc (s *MinStack) Top() int {\n    return s.values[len(s.values)-1]\n}\n\nfunc (s *MinStack) Min() int {\n    return s.mins[len(s.mins)-1]\n}",
+            "difficulty": 3,
+            "annotations": [
+              { "type": "pattern", "label": "Auxiliary Stack", "text": "Using a parallel stack to track metadata (like minimums) is a classic pattern for achieving O(1) operations on additional properties." },
+              { "type": "complexity", "label": "O(1) all ops", "text": "Push, Pop, Top, and Min are all O(1) time. The trade-off is O(n) extra space for the mins stack." },
+              { "type": "alternative", "label": "Space Optimization", "text": "An optimization: only push to the min stack when the new value is less than or equal to the current min, and only pop from it when the popped value equals the current min." }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

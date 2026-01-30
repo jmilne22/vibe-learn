@@ -1,0 +1,345 @@
+{
+  "conceptLinks": {
+    "Custom Errors": "#lesson-custom-errors",
+    "errors.As": "#lesson-errors-as",
+    "errors.Is": "#lesson-errors-is",
+    "Error Interface": "#lesson-error-interface",
+    "Table-Driven Tests": "#lesson-table-tests",
+    "t.Run": "#lesson-subtests",
+    "Test Coverage": "#lesson-coverage",
+    "Interfaces": "#lesson-interfaces",
+    "Mock Testing": "#lesson-mocks",
+    "fmt.Errorf": "#lesson-errorf"
+  },
+  "sharedContent": {},
+  "variants": {
+    "warmups": [
+      {
+        "id": "warmup_1",
+        "concept": "Custom Errors",
+        "variants": [
+          {
+            "id": "v1",
+            "title": "Validation Error",
+            "description": "Create a <code>ValidationError</code> struct with <code>Field</code> and <code>Message</code> string fields. Implement the <code>error</code> interface. Write a <code>validateAge</code> function that returns a <code>*ValidationError</code> if age is negative. Use <code>errors.As</code> to extract the error.",
+            "hints": [
+              "Implement <code>Error() string</code> on a pointer receiver: <code>func (e *ValidationError) Error() string</code>.",
+              "Return <code>&amp;ValidationError{Field: \"age\", Message: \"must be non-negative\"}</code> for invalid input.",
+              "Use <code>var ve *ValidationError; errors.As(err, &amp;ve)</code> to extract the typed error."
+            ],
+            "solution": "type ValidationError struct {\n    Field   string\n    Message string\n}\n\nfunc (e *ValidationError) Error() string {\n    return fmt.Sprintf(\"%s: %s\", e.Field, e.Message)\n}\n\nfunc validateAge(age int) error {\n    if age < 0 {\n        return &ValidationError{Field: \"age\", Message: \"must be non-negative\"}\n    }\n    return nil\n}\n\n// Usage:\nerr := validateAge(-1)\nvar ve *ValidationError\nif errors.As(err, &ve) {\n    fmt.Println(\"Field:\", ve.Field)\n}",
+            "annotations": [
+              { "type": "idiom", "label": "Error Interface", "text": "Any type with an <code>Error() string</code> method satisfies the <code>error</code> interface. Use pointer receivers so the struct can be extracted with <code>errors.As</code>." },
+              { "type": "gotcha", "label": "Pointer Receiver", "text": "If <code>Error()</code> is defined on <code>*ValidationError</code>, you must return <code>&ValidationError{}</code> (a pointer), not <code>ValidationError{}</code> (a value)." }
+            ]
+          },
+          {
+            "id": "v2",
+            "title": "Not Found Error",
+            "description": "Create a <code>NotFoundError</code> struct with <code>Resource</code> and <code>ID</code> string fields. Implement the <code>error</code> interface. Write a <code>findUser</code> function that returns this error when the user is not found.",
+            "hints": [
+              "Format the error message as <code>\"resource not found: users/123\"</code>.",
+              "Return <code>&amp;NotFoundError{Resource: \"users\", ID: id}</code>.",
+              "Test with <code>errors.As</code> to verify you can extract the Resource and ID fields."
+            ],
+            "solution": "type NotFoundError struct {\n    Resource string\n    ID       string\n}\n\nfunc (e *NotFoundError) Error() string {\n    return fmt.Sprintf(\"not found: %s/%s\", e.Resource, e.ID)\n}\n\nfunc findUser(id string) (string, error) {\n    users := map[string]string{\"1\": \"Alice\", \"2\": \"Bob\"}\n    if name, ok := users[id]; ok {\n        return name, nil\n    }\n    return \"\", &NotFoundError{Resource: \"users\", ID: id}\n}\n\n// Usage:\n_, err := findUser(\"99\")\nvar nfe *NotFoundError\nif errors.As(err, &nfe) {\n    fmt.Println(nfe.Resource, nfe.ID)\n}",
+            "annotations": [
+              { "type": "idiom", "label": "Typed Error Fields", "text": "Custom error types carry structured data (Resource, ID) that callers can inspect programmatically, unlike plain error strings." },
+              { "type": "pattern", "label": "Lookup with Error", "text": "Returning (value, error) is the standard Go pattern. When the lookup fails, return the zero value and a descriptive error." }
+            ]
+          },
+          {
+            "id": "v3",
+            "title": "Rate Limit Error",
+            "description": "Create a <code>RateLimitError</code> struct with <code>RetryAfter time.Duration</code>. Implement the <code>error</code> interface. Write a function that returns this error, and use <code>errors.As</code> to read the retry duration.",
+            "hints": [
+              "Import <code>time</code> for <code>time.Duration</code>.",
+              "Format: <code>\"rate limited: retry after 5s\"</code> using <code>e.RetryAfter</code>.",
+              "After extraction with <code>errors.As</code>, use <code>rle.RetryAfter</code> to access the duration."
+            ],
+            "solution": "type RateLimitError struct {\n    RetryAfter time.Duration\n}\n\nfunc (e *RateLimitError) Error() string {\n    return fmt.Sprintf(\"rate limited: retry after %s\", e.RetryAfter)\n}\n\nfunc callAPI() error {\n    return &RateLimitError{RetryAfter: 5 * time.Second}\n}\n\n// Usage:\nerr := callAPI()\nvar rle *RateLimitError\nif errors.As(err, &rle) {\n    fmt.Println(\"Wait:\", rle.RetryAfter)\n}",
+            "annotations": [
+              { "type": "idiom", "label": "Actionable Errors", "text": "Custom errors should carry information the caller can act on. <code>RetryAfter</code> tells the caller exactly how long to wait." },
+              { "type": "stdlib", "label": "time.Duration", "text": "<code>time.Duration</code> is an <code>int64</code> nanosecond count. Constants like <code>5 * time.Second</code> make durations readable." }
+            ]
+          },
+          {
+            "id": "v4",
+            "title": "Multi-Field Validation Error",
+            "description": "Create a <code>ValidationErrors</code> type (a slice of <code>ValidationError</code>) that implements the <code>error</code> interface. Write a <code>validateUser</code> function that collects multiple validation errors and returns them all at once.",
+            "hints": [
+              "Define <code>type ValidationErrors []ValidationError</code> as a named slice type.",
+              "Implement <code>Error()</code> to join all error messages with <code>\"; \"</code>.",
+              "Collect errors into the slice, then return nil if empty or the slice if not."
+            ],
+            "solution": "type ValidationError struct {\n    Field   string\n    Message string\n}\n\ntype ValidationErrors []ValidationError\n\nfunc (ve ValidationErrors) Error() string {\n    msgs := make([]string, len(ve))\n    for i, e := range ve {\n        msgs[i] = fmt.Sprintf(\"%s: %s\", e.Field, e.Message)\n    }\n    return strings.Join(msgs, \"; \")\n}\n\nfunc validateUser(name string, age int) error {\n    var errs ValidationErrors\n    if name == \"\" {\n        errs = append(errs, ValidationError{Field: \"name\", Message: \"required\"})\n    }\n    if age < 0 {\n        errs = append(errs, ValidationError{Field: \"age\", Message: \"must be non-negative\"})\n    }\n    if len(errs) > 0 {\n        return errs\n    }\n    return nil\n}",
+            "annotations": [
+              { "type": "idiom", "label": "Named Slice Type", "text": "Defining <code>type ValidationErrors []ValidationError</code> lets you attach methods to a slice, including satisfying the <code>error</code> interface." },
+              { "type": "gotcha", "label": "Return nil, Not Empty Slice", "text": "Return <code>nil</code> (not an empty slice) for no errors. An empty non-nil slice assigned to an <code>error</code> interface is non-nil, which would incorrectly indicate an error." }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "warmup_2",
+        "concept": "Table-Driven Tests",
+        "variants": [
+          {
+            "id": "v1",
+            "title": "Table-Driven Test for Reverse",
+            "description": "Write a table-driven test for a <code>reverse(s string) string</code> function. Include test cases for: empty string, single character, regular string, and Unicode string.",
+            "hints": [
+              "Define a struct with <code>input</code> and <code>want</code> fields.",
+              "Use <code>t.Run(tt.input, func(t *testing.T) { ... })</code> for subtests.",
+              "Use <code>t.Errorf</code> to report mismatches with both expected and actual values."
+            ],
+            "solution": "func TestReverse(t *testing.T) {\n    tests := []struct {\n        input, want string\n    }{\n        {\"\", \"\"},\n        {\"a\", \"a\"},\n        {\"hello\", \"olleh\"},\n        {\"\\u4e16\\u754c\", \"\\u754c\\u4e16\"},\n    }\n    for _, tt := range tests {\n        t.Run(tt.input, func(t *testing.T) {\n            if got := reverse(tt.input); got != tt.want {\n                t.Errorf(\"reverse(%q) = %q, want %q\", tt.input, got, tt.want)\n            }\n        })\n    }\n}",
+            "annotations": [
+              { "type": "idiom", "label": "Table-Driven Tests", "text": "Table-driven tests are the canonical Go testing pattern. Define test cases as a slice of structs, then loop and run each with <code>t.Run()</code>." },
+              { "type": "idiom", "label": "tt Convention", "text": "The variable name <code>tt</code> (for 'test table') is a widely used convention in Go table-driven tests." }
+            ]
+          },
+          {
+            "id": "v2",
+            "title": "Table-Driven Test for FizzBuzz",
+            "description": "Write a table-driven test for a <code>fizzBuzz(n int) string</code> function that returns \"Fizz\" for multiples of 3, \"Buzz\" for 5, \"FizzBuzz\" for both, or the number as a string.",
+            "hints": [
+              "Include test cases for: regular numbers, multiples of 3, multiples of 5, and multiples of 15.",
+              "Use <code>fmt.Sprintf(\"%d\", tt.input)</code> as the subtest name for clarity.",
+              "Test edge cases like 0 and 1."
+            ],
+            "solution": "func TestFizzBuzz(t *testing.T) {\n    tests := []struct {\n        input int\n        want  string\n    }{\n        {1, \"1\"},\n        {3, \"Fizz\"},\n        {5, \"Buzz\"},\n        {15, \"FizzBuzz\"},\n        {7, \"7\"},\n        {30, \"FizzBuzz\"},\n    }\n    for _, tt := range tests {\n        t.Run(fmt.Sprintf(\"%d\", tt.input), func(t *testing.T) {\n            if got := fizzBuzz(tt.input); got != tt.want {\n                t.Errorf(\"fizzBuzz(%d) = %q, want %q\", tt.input, got, tt.want)\n            }\n        })\n    }\n}",
+            "annotations": [
+              { "type": "idiom", "label": "Subtest Names", "text": "Use <code>t.Run(name, ...)</code> so that each test case can be run independently with <code>go test -run TestFizzBuzz/15</code>." },
+              { "type": "gotcha", "label": "Order Matters in FizzBuzz", "text": "Check divisibility by 15 first (or check 3 and 5 separately). A common bug is checking 3 and 5 independently without handling the 15 case." }
+            ]
+          },
+          {
+            "id": "v3",
+            "title": "Table-Driven Test with Errors",
+            "description": "Write a table-driven test for a <code>divide(a, b float64) (float64, error)</code> function. Include cases for normal division and division by zero.",
+            "hints": [
+              "Add a <code>wantErr bool</code> field to your test struct.",
+              "When <code>wantErr</code> is true, check that error is non-nil. When false, check that error is nil and the value is correct.",
+              "Use a small epsilon for float comparison or compare formatted strings."
+            ],
+            "solution": "func TestDivide(t *testing.T) {\n    tests := []struct {\n        name    string\n        a, b    float64\n        want    float64\n        wantErr bool\n    }{\n        {\"normal\", 10, 2, 5, false},\n        {\"decimal result\", 7, 2, 3.5, false},\n        {\"divide by zero\", 10, 0, 0, true},\n        {\"zero numerator\", 0, 5, 0, false},\n    }\n    for _, tt := range tests {\n        t.Run(tt.name, func(t *testing.T) {\n            got, err := divide(tt.a, tt.b)\n            if tt.wantErr {\n                if err == nil {\n                    t.Error(\"expected error, got nil\")\n                }\n                return\n            }\n            if err != nil {\n                t.Fatalf(\"unexpected error: %v\", err)\n            }\n            if got != tt.want {\n                t.Errorf(\"divide(%v, %v) = %v, want %v\", tt.a, tt.b, got, tt.want)\n            }\n        })\n    }\n}",
+            "annotations": [
+              { "type": "idiom", "label": "wantErr Pattern", "text": "Adding a <code>wantErr bool</code> field to test structs is the standard Go pattern for testing functions that return errors." },
+              { "type": "gotcha", "label": "Float Comparison", "text": "Floating point comparison with <code>==</code> can fail due to rounding. For precise work, compare with an epsilon: <code>math.Abs(got - want) < 1e-9</code>." }
+            ]
+          },
+          {
+            "id": "v4",
+            "title": "Table-Driven Test for Word Count",
+            "description": "Write a table-driven test for a <code>wordCount(s string) map[string]int</code> function. Include cases for empty strings, single words, multiple words, and repeated words.",
+            "hints": [
+              "Use <code>reflect.DeepEqual</code> to compare maps.",
+              "Include edge cases: empty string, extra whitespace, mixed case (if your function is case-sensitive).",
+              "Give each test case a descriptive name."
+            ],
+            "solution": "func TestWordCount(t *testing.T) {\n    tests := []struct {\n        name  string\n        input string\n        want  map[string]int\n    }{\n        {\n            name:  \"empty string\",\n            input: \"\",\n            want:  map[string]int{},\n        },\n        {\n            name:  \"single word\",\n            input: \"hello\",\n            want:  map[string]int{\"hello\": 1},\n        },\n        {\n            name:  \"multiple words\",\n            input: \"go is fun\",\n            want:  map[string]int{\"go\": 1, \"is\": 1, \"fun\": 1},\n        },\n        {\n            name:  \"repeated words\",\n            input: \"go go go\",\n            want:  map[string]int{\"go\": 3},\n        },\n    }\n    for _, tt := range tests {\n        t.Run(tt.name, func(t *testing.T) {\n            got := wordCount(tt.input)\n            if !reflect.DeepEqual(got, tt.want) {\n                t.Errorf(\"wordCount(%q) = %v, want %v\", tt.input, got, tt.want)\n            }\n        })\n    }\n}",
+            "annotations": [
+              { "type": "stdlib", "label": "reflect.DeepEqual", "text": "<code>reflect.DeepEqual</code> compares maps, slices, and nested structures by value. It is the standard way to compare complex types in tests." },
+              { "type": "gotcha", "label": "Nil vs Empty Map", "text": "<code>reflect.DeepEqual(nil, map[string]int{})</code> is false. Make sure your function and test agree on whether to return nil or an empty map for no input." }
+            ]
+          }
+        ]
+      }
+    ],
+    "challenges": [
+      {
+        "id": "challenge_1",
+        "block": 1,
+        "difficulty": 2,
+        "concept": "Test Coverage",
+        "variants": [
+          {
+            "id": "v1",
+            "title": "Full Coverage for Absolute Value",
+            "description": "Write a function <code>func abs(n int) int</code> that returns the absolute value. Then write tests to achieve 100% coverage. Use <code>go test -cover</code> to verify.",
+            "functionSignature": "func abs(n int) int",
+            "testCases": [
+              { "input": "abs(5)", "output": "5" },
+              { "input": "abs(-3)", "output": "3" },
+              { "input": "abs(0)", "output": "0" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "How many code paths does an if/else have? What inputs trigger each path?" },
+              { "title": "\ud83d\udca1 Hint", "content": "The function has two branches: <code>n < 0</code> (return <code>-n</code>) and the else case (return <code>n</code>). Test both a positive and negative number to cover both branches." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. Write the function with an if/else\n2. Test with a positive number (covers else branch)\n3. Test with a negative number (covers if branch)\n4. Test with zero (edge case)\n5. Run: go test -cover</pre>" }
+            ],
+            "solution": "func abs(n int) int {\n    if n < 0 {\n        return -n\n    }\n    return n\n}\n\nfunc TestAbs(t *testing.T) {\n    tests := []struct {\n        input, want int\n    }{\n        {5, 5},\n        {-3, 3},\n        {0, 0},\n    }\n    for _, tt := range tests {\n        t.Run(fmt.Sprintf(\"%d\", tt.input), func(t *testing.T) {\n            if got := abs(tt.input); got != tt.want {\n                t.Errorf(\"abs(%d) = %d, want %d\", tt.input, got, tt.want)\n            }\n        })\n    }\n}",
+            "difficulty": 2,
+            "annotations": [
+              { "type": "idiom", "label": "go test -cover", "text": "Run <code>go test -cover</code> to see the coverage percentage. Use <code>-coverprofile=c.out</code> and <code>go tool cover -html=c.out</code> for a visual report." },
+              { "type": "pattern", "label": "Branch Coverage", "text": "To achieve 100% coverage, you need at least one test input that triggers each branch in your code (if, else, switch cases)." }
+            ]
+          },
+          {
+            "id": "v2",
+            "title": "Coverage for Grade Calculator",
+            "description": "Write <code>func grade(score int) (string, error)</code> that returns a letter grade: A (90-100), B (80-89), C (70-79), D (60-69), F (0-59), or error for out-of-range. Achieve 100% coverage.",
+            "functionSignature": "func grade(score int) (string, error)",
+            "testCases": [
+              { "input": "grade(95)", "output": "\"A\", nil" },
+              { "input": "grade(85)", "output": "\"B\", nil" },
+              { "input": "grade(42)", "output": "\"F\", nil" },
+              { "input": "grade(-1)", "output": "\"\", error" },
+              { "input": "grade(101)", "output": "\"\", error" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "How many distinct code paths does this function have? Each grade range plus the error case is a separate path." },
+              { "title": "\ud83d\udca1 Hint", "content": "Use a switch with range checks or cascading if/else. You need at least one test for each grade letter plus both error conditions (negative and over 100)." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. Validate range (0-100), return error if invalid\n2. Use switch/case for grade ranges\n3. Test one value per grade: 95, 85, 75, 65, 42\n4. Test both boundaries: -1 and 101\n5. Run: go test -cover</pre>" }
+            ],
+            "solution": "func grade(score int) (string, error) {\n    if score < 0 || score > 100 {\n        return \"\", fmt.Errorf(\"score %d out of range 0-100\", score)\n    }\n    switch {\n    case score >= 90:\n        return \"A\", nil\n    case score >= 80:\n        return \"B\", nil\n    case score >= 70:\n        return \"C\", nil\n    case score >= 60:\n        return \"D\", nil\n    default:\n        return \"F\", nil\n    }\n}\n\nfunc TestGrade(t *testing.T) {\n    tests := []struct {\n        name    string\n        score   int\n        want    string\n        wantErr bool\n    }{\n        {\"A grade\", 95, \"A\", false},\n        {\"B grade\", 85, \"B\", false},\n        {\"C grade\", 75, \"C\", false},\n        {\"D grade\", 65, \"D\", false},\n        {\"F grade\", 42, \"F\", false},\n        {\"too low\", -1, \"\", true},\n        {\"too high\", 101, \"\", true},\n    }\n    for _, tt := range tests {\n        t.Run(tt.name, func(t *testing.T) {\n            got, err := grade(tt.score)\n            if tt.wantErr {\n                if err == nil {\n                    t.Error(\"expected error\")\n                }\n                return\n            }\n            if err != nil {\n                t.Fatalf(\"unexpected error: %v\", err)\n            }\n            if got != tt.want {\n                t.Errorf(\"grade(%d) = %q, want %q\", tt.score, got, tt.want)\n            }\n        })\n    }\n}",
+            "difficulty": 2,
+            "annotations": [
+              { "type": "idiom", "label": "Tagless Switch", "text": "A <code>switch</code> without a tag expression (just <code>switch {</code>) evaluates each case as a boolean, acting like cascading if/else. Idiomatic for range checks." },
+              { "type": "complexity", "label": "O(1)", "text": "A fixed number of comparisons regardless of input. The function has constant time complexity." }
+            ]
+          },
+          {
+            "id": "v3",
+            "title": "Coverage for Password Validator",
+            "description": "Write <code>func validatePassword(pw string) []string</code> that returns a list of validation failures. Check: minimum 8 characters, at least one uppercase, one lowercase, and one digit. Achieve 100% coverage.",
+            "functionSignature": "func validatePassword(pw string) []string",
+            "testCases": [
+              { "input": "validatePassword(\"Abc12345\")", "output": "[]string{} (empty)" },
+              { "input": "validatePassword(\"short\")", "output": "[\"at least 8 characters\", \"one uppercase\", \"one digit\"]" },
+              { "input": "validatePassword(\"alllowercase1\")", "output": "[\"one uppercase\"]" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "Each validation rule is a separate code path. How do you test each rule independently?" },
+              { "title": "\ud83d\udca1 Hint", "content": "Use <code>unicode.IsUpper</code>, <code>unicode.IsLower</code>, <code>unicode.IsDigit</code> to check character classes. Each check is independent, so test passwords that fail each rule individually." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. Check length >= 8\n2. Loop through runes, track hasUpper, hasLower, hasDigit\n3. Collect failure messages in a slice\n4. Test: valid password, too short, missing uppercase,\n   missing lowercase, missing digit</pre>" }
+            ],
+            "solution": "func validatePassword(pw string) []string {\n    var errors []string\n    if len(pw) < 8 {\n        errors = append(errors, \"at least 8 characters\")\n    }\n    var hasUpper, hasLower, hasDigit bool\n    for _, ch := range pw {\n        if unicode.IsUpper(ch) {\n            hasUpper = true\n        }\n        if unicode.IsLower(ch) {\n            hasLower = true\n        }\n        if unicode.IsDigit(ch) {\n            hasDigit = true\n        }\n    }\n    if !hasUpper {\n        errors = append(errors, \"one uppercase\")\n    }\n    if !hasLower {\n        errors = append(errors, \"one lowercase\")\n    }\n    if !hasDigit {\n        errors = append(errors, \"one digit\")\n    }\n    return errors\n}\n\nfunc TestValidatePassword(t *testing.T) {\n    tests := []struct {\n        name string\n        pw   string\n        want int\n    }{\n        {\"valid\", \"Abc12345\", 0},\n        {\"too short\", \"Ab1\", 1},\n        {\"no upper\", \"abcdefg1\", 1},\n        {\"no lower\", \"ABCDEFG1\", 1},\n        {\"no digit\", \"Abcdefgh\", 1},\n        {\"all fail\", \"\", 4},\n    }\n    for _, tt := range tests {\n        t.Run(tt.name, func(t *testing.T) {\n            got := validatePassword(tt.pw)\n            if len(got) != tt.want {\n                t.Errorf(\"validatePassword(%q) returned %d errors, want %d: %v\",\n                    tt.pw, len(got), tt.want, got)\n            }\n        })\n    }\n}",
+            "difficulty": 3,
+            "annotations": [
+              { "type": "stdlib", "label": "unicode Package", "text": "The <code>unicode</code> package provides character classification functions: <code>IsUpper</code>, <code>IsLower</code>, <code>IsDigit</code>, <code>IsLetter</code>, and more." },
+              { "type": "pattern", "label": "Error Accumulation", "text": "Collecting all validation errors instead of returning on the first failure gives users a complete picture of what needs fixing." }
+            ]
+          },
+          {
+            "id": "v4",
+            "title": "Coverage for Clamp Function",
+            "description": "Write <code>func clamp(val, min, max int) (int, error)</code> that clamps a value to the range [min, max]. Return an error if min > max. Achieve 100% coverage.",
+            "functionSignature": "func clamp(val, min, max int) (int, error)",
+            "testCases": [
+              { "input": "clamp(5, 0, 10)", "output": "5, nil" },
+              { "input": "clamp(-1, 0, 10)", "output": "0, nil" },
+              { "input": "clamp(15, 0, 10)", "output": "10, nil" },
+              { "input": "clamp(5, 10, 0)", "output": "0, error" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "There are four paths: error (invalid range), below min, above max, and within range. Each needs a test case." },
+              { "title": "\ud83d\udca1 Hint", "content": "First validate that min <= max. Then check: if val < min, return min. If val > max, return max. Otherwise return val." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. Check min <= max (error if not)\n2. If val < min, return min\n3. If val > max, return max\n4. Otherwise return val\n5. Tests: in range, below, above, invalid range</pre>" }
+            ],
+            "solution": "func clamp(val, min, max int) (int, error) {\n    if min > max {\n        return 0, fmt.Errorf(\"min (%d) must not exceed max (%d)\", min, max)\n    }\n    if val < min {\n        return min, nil\n    }\n    if val > max {\n        return max, nil\n    }\n    return val, nil\n}\n\nfunc TestClamp(t *testing.T) {\n    tests := []struct {\n        name        string\n        val, min, max int\n        want        int\n        wantErr     bool\n    }{\n        {\"in range\", 5, 0, 10, 5, false},\n        {\"below min\", -1, 0, 10, 0, false},\n        {\"above max\", 15, 0, 10, 10, false},\n        {\"at min\", 0, 0, 10, 0, false},\n        {\"at max\", 10, 0, 10, 10, false},\n        {\"invalid range\", 5, 10, 0, 0, true},\n    }\n    for _, tt := range tests {\n        t.Run(tt.name, func(t *testing.T) {\n            got, err := clamp(tt.val, tt.min, tt.max)\n            if tt.wantErr {\n                if err == nil {\n                    t.Error(\"expected error\")\n                }\n                return\n            }\n            if err != nil {\n                t.Fatalf(\"unexpected error: %v\", err)\n            }\n            if got != tt.want {\n                t.Errorf(\"clamp(%d, %d, %d) = %d, want %d\",\n                    tt.val, tt.min, tt.max, got, tt.want)\n            }\n        })\n    }\n}",
+            "difficulty": 2,
+            "annotations": [
+              { "type": "idiom", "label": "Validate Then Process", "text": "Validate inputs at the top of the function and return errors early. This 'guard clause' pattern keeps the happy path unindented." },
+              { "type": "complexity", "label": "O(1)", "text": "Simple comparisons with constant time. The clamp operation is O(1) regardless of input values." }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "challenge_2",
+        "block": 2,
+        "difficulty": 3,
+        "concept": "Interfaces",
+        "variants": [
+          {
+            "id": "v1",
+            "title": "Mock a Fetcher Interface",
+            "description": "Define a <code>Fetcher</code> interface with <code>Fetch(url string) ([]byte, error)</code>. Write <code>func GetTitle(f Fetcher, url string) (string, error)</code> that fetches a URL and extracts a title. Test with a mock that returns canned data.",
+            "functionSignature": "func GetTitle(f Fetcher, url string) (string, error)",
+            "testCases": [
+              { "input": "mock returns []byte(\"<title>Go</title>\"); GetTitle(mock, \"http://x\")", "output": "\"Go\", nil" },
+              { "input": "mock returns error; GetTitle(mock, \"http://x\")", "output": "\"\", error" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "How do you define a mock struct that satisfies an interface? How do you control what the mock returns?" },
+              { "title": "\ud83d\udca1 Hint", "content": "Define a <code>mockFetcher</code> struct with <code>data []byte</code> and <code>err error</code> fields. Its <code>Fetch</code> method just returns those fields. Create different mock instances for success and failure tests." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. Define Fetcher interface\n2. Write GetTitle using only the interface\n3. Create mockFetcher with configurable data/err\n4. Test success: mock returns valid data\n5. Test failure: mock returns an error</pre>" }
+            ],
+            "solution": "type Fetcher interface {\n    Fetch(url string) ([]byte, error)\n}\n\nfunc GetTitle(f Fetcher, url string) (string, error) {\n    data, err := f.Fetch(url)\n    if err != nil {\n        return \"\", err\n    }\n    s := string(data)\n    start := strings.Index(s, \"<title>\")\n    end := strings.Index(s, \"</title>\")\n    if start == -1 || end == -1 {\n        return \"\", fmt.Errorf(\"no title found\")\n    }\n    return s[start+7 : end], nil\n}\n\ntype mockFetcher struct {\n    data []byte\n    err  error\n}\n\nfunc (m *mockFetcher) Fetch(url string) ([]byte, error) {\n    return m.data, m.err\n}\n\nfunc TestGetTitle(t *testing.T) {\n    t.Run(\"success\", func(t *testing.T) {\n        mock := &mockFetcher{data: []byte(\"<title>Go</title>\")}\n        got, err := GetTitle(mock, \"http://example.com\")\n        if err != nil {\n            t.Fatalf(\"unexpected error: %v\", err)\n        }\n        if got != \"Go\" {\n            t.Errorf(\"got %q, want %q\", got, \"Go\")\n        }\n    })\n    t.Run(\"fetch error\", func(t *testing.T) {\n        mock := &mockFetcher{err: fmt.Errorf(\"network error\")}\n        _, err := GetTitle(mock, \"http://example.com\")\n        if err == nil {\n            t.Error(\"expected error\")\n        }\n    })\n}",
+            "difficulty": 3,
+            "annotations": [
+              { "type": "idiom", "label": "Implicit Interfaces", "text": "Go interfaces are satisfied implicitly. A <code>mockFetcher</code> satisfies <code>Fetcher</code> just by having the right method, no 'implements' keyword needed." },
+              { "type": "pattern", "label": "Dependency Injection", "text": "Accepting an interface parameter instead of a concrete type lets you swap implementations for testing. This is Go's primary approach to testability." }
+            ]
+          },
+          {
+            "id": "v2",
+            "title": "Mock a Store Interface",
+            "description": "Define a <code>Store</code> interface with <code>Save(key, value string) error</code> and <code>Load(key string) (string, error)</code>. Write <code>func CopyValue(s Store, from, to string) error</code>. Test with a mock.",
+            "functionSignature": "func CopyValue(s Store, from, to string) error",
+            "testCases": [
+              { "input": "mock has key \"a\"=\"hello\"; CopyValue(mock, \"a\", \"b\")", "output": "nil (\"b\" now has \"hello\")" },
+              { "input": "mock has no key \"a\"; CopyValue(mock, \"a\", \"b\")", "output": "error" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "CopyValue loads a value from one key and saves it to another. What can go wrong at each step?" },
+              { "title": "\ud83d\udca1 Hint", "content": "Use a <code>map[string]string</code> inside your mock. <code>Load</code> returns an error if the key is missing. <code>Save</code> writes to the map. Test both the happy path and the 'key not found' path." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. Define Store interface with Save and Load\n2. CopyValue: Load from source, Save to destination\n3. Mock uses an internal map for storage\n4. Test success: source key exists\n5. Test failure: source key missing</pre>" }
+            ],
+            "solution": "type Store interface {\n    Save(key, value string) error\n    Load(key string) (string, error)\n}\n\nfunc CopyValue(s Store, from, to string) error {\n    val, err := s.Load(from)\n    if err != nil {\n        return fmt.Errorf(\"load %s: %w\", from, err)\n    }\n    if err := s.Save(to, val); err != nil {\n        return fmt.Errorf(\"save %s: %w\", to, err)\n    }\n    return nil\n}\n\ntype mockStore struct {\n    data map[string]string\n}\n\nfunc (m *mockStore) Save(key, value string) error {\n    m.data[key] = value\n    return nil\n}\n\nfunc (m *mockStore) Load(key string) (string, error) {\n    val, ok := m.data[key]\n    if !ok {\n        return \"\", fmt.Errorf(\"key %q not found\", key)\n    }\n    return val, nil\n}\n\nfunc TestCopyValue(t *testing.T) {\n    t.Run(\"success\", func(t *testing.T) {\n        s := &mockStore{data: map[string]string{\"a\": \"hello\"}}\n        err := CopyValue(s, \"a\", \"b\")\n        if err != nil {\n            t.Fatalf(\"unexpected error: %v\", err)\n        }\n        if s.data[\"b\"] != \"hello\" {\n            t.Errorf(\"expected b=hello, got b=%s\", s.data[\"b\"])\n        }\n    })\n    t.Run(\"source missing\", func(t *testing.T) {\n        s := &mockStore{data: map[string]string{}}\n        err := CopyValue(s, \"a\", \"b\")\n        if err == nil {\n            t.Error(\"expected error\")\n        }\n    })\n}",
+            "difficulty": 3,
+            "annotations": [
+              { "type": "idiom", "label": "Error Wrapping", "text": "Use <code>fmt.Errorf(\"context: %w\", err)</code> to wrap errors with context while preserving the original error for <code>errors.Is</code> and <code>errors.As</code>." },
+              { "type": "pattern", "label": "In-Memory Mock", "text": "Using a map inside a mock struct simulates real storage behavior. This lets tests verify state changes (e.g., checking that Save actually stored the value)." }
+            ]
+          },
+          {
+            "id": "v3",
+            "title": "Mock a Logger Interface",
+            "description": "Define a <code>Logger</code> interface with <code>Log(level, message string)</code>. Write <code>func ProcessOrder(log Logger, orderID string) error</code> that logs its progress. Test that the correct log messages are emitted using a mock that records calls.",
+            "functionSignature": "func ProcessOrder(log Logger, orderID string) error",
+            "testCases": [
+              { "input": "ProcessOrder(mockLog, \"order-1\")", "output": "nil; mock recorded [\"INFO: processing order-1\", \"INFO: order-1 complete\"]" },
+              { "input": "ProcessOrder(mockLog, \"\")", "output": "error; mock recorded [\"ERROR: empty order ID\"]" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "How do you verify that certain methods were called with certain arguments? What kind of mock records calls?" },
+              { "title": "\ud83d\udca1 Hint", "content": "Create a <code>mockLogger</code> with a <code>calls []string</code> field. Each call to <code>Log</code> appends a formatted string. After the test, inspect <code>mock.calls</code> to verify behavior." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. Define Logger interface with Log(level, message)\n2. ProcessOrder logs progress at key steps\n3. Mock records all calls in a slice\n4. Test: run function, then assert mock.calls\n   contains expected messages</pre>" }
+            ],
+            "solution": "type Logger interface {\n    Log(level, message string)\n}\n\nfunc ProcessOrder(log Logger, orderID string) error {\n    if orderID == \"\" {\n        log.Log(\"ERROR\", \"empty order ID\")\n        return fmt.Errorf(\"order ID required\")\n    }\n    log.Log(\"INFO\", \"processing \"+orderID)\n    log.Log(\"INFO\", orderID+\" complete\")\n    return nil\n}\n\ntype mockLogger struct {\n    calls []string\n}\n\nfunc (m *mockLogger) Log(level, message string) {\n    m.calls = append(m.calls, level+\": \"+message)\n}\n\nfunc TestProcessOrder(t *testing.T) {\n    t.Run(\"success\", func(t *testing.T) {\n        mock := &mockLogger{}\n        err := ProcessOrder(mock, \"order-1\")\n        if err != nil {\n            t.Fatalf(\"unexpected error: %v\", err)\n        }\n        if len(mock.calls) != 2 {\n            t.Fatalf(\"expected 2 log calls, got %d\", len(mock.calls))\n        }\n        if mock.calls[0] != \"INFO: processing order-1\" {\n            t.Errorf(\"unexpected first log: %s\", mock.calls[0])\n        }\n    })\n    t.Run(\"empty ID\", func(t *testing.T) {\n        mock := &mockLogger{}\n        err := ProcessOrder(mock, \"\")\n        if err == nil {\n            t.Error(\"expected error\")\n        }\n        if len(mock.calls) != 1 || mock.calls[0] != \"ERROR: empty order ID\" {\n            t.Errorf(\"unexpected logs: %v\", mock.calls)\n        }\n    })\n}",
+            "difficulty": 3,
+            "annotations": [
+              { "type": "pattern", "label": "Recording Mock", "text": "A recording mock captures method calls for later assertion. This is more flexible than a stub because you can verify behavior (what was called) not just state." },
+              { "type": "idiom", "label": "Small Interfaces", "text": "Go favors small interfaces (1-2 methods). The <code>Logger</code> interface with a single <code>Log</code> method is easy to mock and easy to implement." }
+            ]
+          },
+          {
+            "id": "v4",
+            "title": "Mock a Notifier Interface",
+            "description": "Define a <code>Notifier</code> interface with <code>Send(to, subject, body string) error</code>. Write <code>func NotifyUsers(n Notifier, users []string, subject, body string) (int, error)</code> that sends to all users and returns the count of successful sends. Test with mocks that simulate both success and partial failure.",
+            "functionSignature": "func NotifyUsers(n Notifier, users []string, subject, body string) (int, error)",
+            "testCases": [
+              { "input": "all succeed; NotifyUsers(mock, [\"a\",\"b\",\"c\"], \"hi\", \"body\")", "output": "3, nil" },
+              { "input": "mock fails for \"b\"; NotifyUsers(mock, [\"a\",\"b\",\"c\"], \"hi\", \"body\")", "output": "2, error" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "Should the function stop on the first error or continue and report all errors? How do you count successes?" },
+              { "title": "\ud83d\udca1 Hint", "content": "Loop through users, call <code>Send</code> for each. Count successes. Collect errors. A mock can fail for specific recipients by checking the <code>to</code> parameter." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. For each user, call n.Send()\n2. Count successes, collect errors\n3. Return count and joined errors\n4. Mock: use a failFor set to control which sends fail\n5. Test: all succeed, some fail</pre>" }
+            ],
+            "solution": "type Notifier interface {\n    Send(to, subject, body string) error\n}\n\nfunc NotifyUsers(n Notifier, users []string, subject, body string) (int, error) {\n    sent := 0\n    var errs []string\n    for _, user := range users {\n        if err := n.Send(user, subject, body); err != nil {\n            errs = append(errs, fmt.Sprintf(\"%s: %v\", user, err))\n        } else {\n            sent++\n        }\n    }\n    if len(errs) > 0 {\n        return sent, fmt.Errorf(\"failed to notify: %s\", strings.Join(errs, \"; \"))\n    }\n    return sent, nil\n}\n\ntype mockNotifier struct {\n    failFor map[string]bool\n}\n\nfunc (m *mockNotifier) Send(to, subject, body string) error {\n    if m.failFor[to] {\n        return fmt.Errorf(\"send failed\")\n    }\n    return nil\n}\n\nfunc TestNotifyUsers(t *testing.T) {\n    t.Run(\"all succeed\", func(t *testing.T) {\n        mock := &mockNotifier{failFor: map[string]bool{}}\n        count, err := NotifyUsers(mock, []string{\"a\", \"b\", \"c\"}, \"hi\", \"body\")\n        if err != nil {\n            t.Fatalf(\"unexpected error: %v\", err)\n        }\n        if count != 3 {\n            t.Errorf(\"sent %d, want 3\", count)\n        }\n    })\n    t.Run(\"partial failure\", func(t *testing.T) {\n        mock := &mockNotifier{failFor: map[string]bool{\"b\": true}}\n        count, err := NotifyUsers(mock, []string{\"a\", \"b\", \"c\"}, \"hi\", \"body\")\n        if err == nil {\n            t.Error(\"expected error\")\n        }\n        if count != 2 {\n            t.Errorf(\"sent %d, want 2\", count)\n        }\n    })\n}",
+            "difficulty": 3,
+            "annotations": [
+              { "type": "pattern", "label": "Configurable Mock", "text": "A mock with a <code>failFor</code> map lets you control exactly which calls fail, enabling precise testing of partial failure scenarios." },
+              { "type": "idiom", "label": "Continue on Error", "text": "Continuing despite individual failures and returning a summary (count + aggregated errors) is common in batch operations like notifications." },
+              { "type": "alternative", "label": "errgroup", "text": "For concurrent sends, consider <code>golang.org/x/sync/errgroup</code> which manages goroutines and collects the first error." }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

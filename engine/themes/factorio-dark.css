@@ -1,0 +1,943 @@
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Titillium+Web:wght@400;600;700&display=swap');
+
+/* ============================================
+   Factorio Theme Specific Styles
+   Industrial automation aesthetic
+   ============================================ */
+[data-theme="factorio-dark"] {
+    --factorio-yellow: #ffd54f;
+    --factorio-iron: #5a5a5d;
+    font-family: 'Titillium Web', sans-serif;
+}
+
+[data-theme="factorio-dark"] h1,
+[data-theme="factorio-dark"] h2,
+[data-theme="factorio-dark"] .module-num,
+[data-theme="factorio-dark"] .track-title,
+[data-theme="factorio-dark"] .session-title {
+    font-family: 'Titillium Web', sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+[data-theme="factorio-dark"] .code-block,
+[data-theme="factorio-dark"] code,
+[data-theme="factorio-dark"] .session-countdown,
+[data-theme="factorio-dark"] .stat-value {
+    font-family: 'Share Tech Mono', 'JetBrains Mono', monospace;
+}
+
+/* Industrial grid background with subtle noise texture */
+[data-theme="factorio-dark"] body {
+    background:
+        repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 32px,
+            rgba(58, 58, 61, 0.025) 32px,
+            rgba(58, 58, 61, 0.025) 33px
+        ),
+        repeating-linear-gradient(
+            90deg,
+            transparent,
+            transparent 32px,
+            rgba(58, 58, 61, 0.025) 32px,
+            rgba(58, 58, 61, 0.025) 33px
+        ),
+        radial-gradient(ellipse at 50% 0%, rgba(252, 163, 17, 0.03) 0%, transparent 60%),
+        var(--bg-dark);
+}
+
+/* Factorio-style beveled panels - like entity info windows */
+[data-theme="factorio-dark"] .module-card,
+[data-theme="factorio-dark"] .card,
+[data-theme="factorio-dark"] .stat-card,
+[data-theme="factorio-dark"] .exercise {
+    border: none;
+    border-radius: 0;
+    background: linear-gradient(180deg, #242427 0%, #1e1e20 100%);
+    box-shadow:
+        inset 1px 1px 0 #3a3a3d,
+        inset -1px -1px 0 #0f0f10,
+        0 4px 8px rgba(0, 0, 0, 0.4);
+    position: relative;
+}
+
+/* Corner rivets/bolts decoration */
+[data-theme="factorio-dark"] .module-card::before,
+[data-theme="factorio-dark"] .module-card::after {
+    content: '';
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    background: radial-gradient(circle at 30% 30%, #5a5a5d 0%, #2a2a2d 60%, #1a1a1d 100%);
+    border-radius: 50%;
+    box-shadow: inset 0 1px 1px rgba(255,255,255,0.15);
+}
+
+[data-theme="factorio-dark"] .module-card::before {
+    top: 8px;
+    left: 8px;
+}
+
+[data-theme="factorio-dark"] .module-card::after {
+    top: 8px;
+    right: 8px;
+}
+
+/* Orange glow line on hover */
+[data-theme="factorio-dark"] .module-card {
+    overflow: visible;
+}
+
+[data-theme="factorio-dark"] .module-card:hover {
+    box-shadow:
+        inset 1px 1px 0 #4a4a4d,
+        inset -1px -1px 0 #0f0f10,
+        0 0 0 1px var(--orange),
+        0 0 20px rgba(252, 163, 17, 0.15),
+        0 6px 12px rgba(0, 0, 0, 0.5);
+    transform: translateY(-2px);
+}
+
+/* Inserter-style tier badge for module numbers */
+[data-theme="factorio-dark"] .module-number {
+    background: linear-gradient(180deg, #3a3a3d 0%, #2a2a2d 100%);
+    border: 1px solid #4a4a4d;
+    padding: 0.2rem 0.5rem;
+    display: inline-block;
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.1),
+        0 2px 4px rgba(0,0,0,0.3);
+}
+
+[data-theme="factorio-dark"] .module-number::before {
+    content: none;
+}
+
+/* Conveyor belt-style progress bars with items */
+[data-theme="factorio-dark"] .session-progress {
+    background: linear-gradient(180deg, #1a1a1c 0%, #131314 100%);
+    border: none;
+    box-shadow:
+        inset 1px 1px 0 #0a0a0b,
+        inset -1px -1px 0 #2a2a2d;
+    border-radius: 0;
+    height: 12px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Belt texture background */
+[data-theme="factorio-dark"] .session-progress::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+        90deg,
+        transparent 0px,
+        transparent 6px,
+        rgba(255, 213, 79, 0.05) 6px,
+        rgba(255, 213, 79, 0.05) 12px
+    );
+    animation: factorio-belt-bg 0.3s linear infinite;
+}
+
+[data-theme="factorio-dark"] .session-progress-bar {
+    background: linear-gradient(180deg, #ffd54f 0%, #fca311 50%, #d48806 100%) !important;
+    position: relative;
+    overflow: hidden;
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.3),
+        inset 0 -1px 0 rgba(0,0,0,0.2);
+}
+
+/* Moving belt lines */
+[data-theme="factorio-dark"] .session-progress-bar::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -200%;
+    width: 400%;
+    height: 100%;
+    background: repeating-linear-gradient(
+        90deg,
+        transparent 0px,
+        transparent 10px,
+        rgba(0, 0, 0, 0.12) 10px,
+        rgba(0, 0, 0, 0.12) 12px
+    );
+    animation: factorio-belt 0.25s linear infinite;
+}
+
+/* Items on belt */
+[data-theme="factorio-dark"] .session-progress-bar::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: -100%;
+    width: 300%;
+    height: 8px;
+    background: repeating-linear-gradient(
+        90deg,
+        transparent 0px,
+        transparent 28px,
+        #63c74d 28px,
+        #63c74d 36px,
+        transparent 36px,
+        transparent 64px,
+        #ce6a32 64px,
+        #ce6a32 72px
+    );
+    animation: factorio-items 1.5s linear infinite;
+    opacity: 0.6;
+}
+
+@keyframes factorio-belt {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(12px); }
+}
+
+@keyframes factorio-belt-bg {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(12px); }
+}
+
+@keyframes factorio-items {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(72px); }
+}
+
+/* Industrial code blocks - blueprint style */
+[data-theme="factorio-dark"] .code-block {
+    border: none;
+    border-radius: 0;
+    background: linear-gradient(180deg, #161618 0%, #131314 100%);
+    box-shadow:
+        inset 1px 1px 0 #0a0a0b,
+        inset -1px -1px 0 #2a2a2d,
+        0 4px 8px rgba(0, 0, 0, 0.3);
+    position: relative;
+}
+
+/* Left accent bar */
+[data-theme="factorio-dark"] .code-block::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(180deg, var(--orange) 0%, #d48806 100%);
+}
+
+[data-theme="factorio-dark"] .code-header {
+    background: linear-gradient(180deg, #28282b 0%, #1e1e20 100%) !important;
+    border: none !important;
+    border-bottom: 1px solid #0a0a0b !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+    font-family: 'Titillium Web', sans-serif;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    color: var(--text-dim) !important;
+}
+
+/* Inline code - green circuit style */
+[data-theme="factorio-dark"] code:not(.code-block code) {
+    background: linear-gradient(180deg, rgba(99, 199, 77, 0.15) 0%, rgba(99, 199, 77, 0.08) 100%);
+    border: 1px solid rgba(99, 199, 77, 0.25);
+    box-shadow: inset 0 1px 0 rgba(99, 199, 77, 0.1);
+    color: #63c74d;
+    border-radius: 0;
+    padding: 0.15rem 0.4rem;
+}
+
+/* Tips/Warnings - Factorio alert panel style */
+[data-theme="factorio-dark"] .tip,
+[data-theme="factorio-dark"] .warning,
+[data-theme="factorio-dark"] .info {
+    border-radius: 0;
+    border: none;
+    background: linear-gradient(180deg, #1e1e20 0%, #1a1a1c 100%);
+    box-shadow:
+        inset 1px 1px 0 #2a2a2d,
+        inset -1px -1px 0 #0f0f10,
+        0 2px 6px rgba(0, 0, 0, 0.3);
+    position: relative;
+    padding-left: 3rem;
+}
+
+/* Alert icon area */
+[data-theme="factorio-dark"] .tip::after,
+[data-theme="factorio-dark"] .warning::after,
+[data-theme="factorio-dark"] .info::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+[data-theme="factorio-dark"] .tip {
+    border-left: 4px solid #63c74d;
+}
+
+[data-theme="factorio-dark"] .tip::after {
+    background: linear-gradient(180deg, rgba(99, 199, 77, 0.15) 0%, rgba(99, 199, 77, 0.08) 100%);
+    border-right: 1px solid rgba(99, 199, 77, 0.2);
+}
+
+[data-theme="factorio-dark"] .tip::before {
+    color: #63c74d !important;
+}
+
+[data-theme="factorio-dark"] .warning {
+    border-left: 4px solid var(--orange);
+    background: linear-gradient(180deg, #1e1e20 0%, rgba(252, 163, 17, 0.03) 100%);
+}
+
+[data-theme="factorio-dark"] .warning::after {
+    background: linear-gradient(180deg, rgba(252, 163, 17, 0.15) 0%, rgba(252, 163, 17, 0.08) 100%);
+    border-right: 1px solid rgba(252, 163, 17, 0.2);
+}
+
+[data-theme="factorio-dark"] .warning::before {
+    color: var(--orange) !important;
+}
+
+[data-theme="factorio-dark"] .info {
+    border-left: 4px solid var(--blue);
+}
+
+[data-theme="factorio-dark"] .info::after {
+    background: linear-gradient(180deg, rgba(58, 134, 201, 0.15) 0%, rgba(58, 134, 201, 0.08) 100%);
+    border-right: 1px solid rgba(58, 134, 201, 0.2);
+}
+
+[data-theme="factorio-dark"] .info::before {
+    color: var(--blue) !important;
+}
+
+/* Industrial nav buttons - machine button style */
+[data-theme="factorio-dark"] .nav-btn {
+    border: none;
+    border-radius: 0;
+    background: linear-gradient(180deg, #2d2d30 0%, #232326 100%);
+    box-shadow:
+        inset 1px 1px 0 #3a3a3d,
+        inset -1px -1px 0 #0f0f10,
+        0 2px 4px rgba(0, 0, 0, 0.3);
+    font-family: 'Titillium Web', sans-serif;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 0.85rem;
+    transition: all 0.1s ease;
+}
+
+[data-theme="factorio-dark"] .nav-btn:hover {
+    background: linear-gradient(180deg, #3a3a3d 0%, #2d2d30 100%);
+    box-shadow:
+        inset 1px 1px 0 #4a4a4d,
+        inset -1px -1px 0 #1a1a1c,
+        0 0 0 1px var(--orange),
+        0 4px 8px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="factorio-dark"] .nav-btn:active {
+    background: linear-gradient(180deg, #1e1e20 0%, #28282b 100%);
+    box-shadow:
+        inset 1px 1px 0 #0f0f10,
+        inset -1px -1px 0 #2a2a2d;
+}
+
+[data-theme="factorio-dark"] .nav-btn.primary {
+    background: linear-gradient(180deg, #ffd54f 0%, #fca311 50%, #d48806 100%);
+    color: #131314;
+    box-shadow:
+        inset 1px 1px 0 rgba(255,255,255,0.4),
+        inset -1px -1px 0 rgba(0,0,0,0.2),
+        0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="factorio-dark"] .nav-btn.primary:hover {
+    background: linear-gradient(180deg, #ffe082 0%, #ffd54f 50%, #fca311 100%);
+    box-shadow:
+        inset 1px 1px 0 rgba(255,255,255,0.5),
+        inset -1px -1px 0 rgba(0,0,0,0.2),
+        0 0 15px rgba(252, 163, 17, 0.4),
+        0 4px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* Industrial sidebar - left panel style */
+[data-theme="factorio-dark"] .sidebar {
+    background: linear-gradient(90deg, #161618 0%, #1a1a1c 100%);
+    border-right: none;
+    box-shadow:
+        inset -1px 0 0 #2a2a2d,
+        4px 0 12px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="factorio-dark"] .sidebar-header {
+    background: linear-gradient(180deg, #1e1e20 0%, #1a1a1c 100%);
+    border-bottom: 1px solid #0f0f10 !important;
+    box-shadow: inset 0 -1px 0 #2a2a2d;
+}
+
+[data-theme="factorio-dark"] .sidebar-link {
+    border-left: 3px solid transparent;
+    transition: all 0.1s ease;
+    margin: 0 4px;
+}
+
+[data-theme="factorio-dark"] .sidebar-link:hover {
+    background: linear-gradient(90deg, rgba(252, 163, 17, 0.1) 0%, transparent 100%);
+    border-left-color: var(--orange);
+}
+
+[data-theme="factorio-dark"] .sidebar-link.active {
+    background: linear-gradient(90deg, rgba(252, 163, 17, 0.15) 0%, transparent 100%);
+    border-left-color: var(--orange);
+    color: var(--orange);
+    box-shadow: inset 0 1px 0 rgba(252, 163, 17, 0.1), inset 0 -1px 0 rgba(252, 163, 17, 0.1);
+}
+
+[data-theme="factorio-dark"] .sidebar-module-num {
+    color: var(--orange);
+    opacity: 1;
+    font-weight: 600;
+}
+
+/* Session timer - entity info panel style */
+[data-theme="factorio-dark"] .session-timer,
+[data-theme="factorio-dark"] .floating-session-timer {
+    border: none;
+    border-radius: 0;
+    background: linear-gradient(180deg, #1e1e20 0%, #1a1a1c 100%);
+    box-shadow:
+        inset 1px 1px 0 #2a2a2d,
+        inset -1px -1px 0 #0f0f10,
+        0 6px 16px rgba(0, 0, 0, 0.5);
+}
+
+/* Timer header bar */
+[data-theme="factorio-dark"] .session-timer-header {
+    background: linear-gradient(180deg, #28282b 0%, #1e1e20 100%);
+    margin: -1rem -1.25rem 0.75rem -1.25rem;
+    padding: 0.6rem 1.25rem;
+    border-bottom: 1px solid #0f0f10;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+}
+
+[data-theme="factorio-dark"] .session-title {
+    color: var(--text-dim);
+    font-weight: 600;
+}
+
+[data-theme="factorio-dark"] .session-countdown {
+    color: var(--factorio-yellow);
+    text-shadow: 0 0 8px rgba(255, 213, 79, 0.4);
+    font-size: 1.2rem;
+}
+
+/* Stat values - digital readout style */
+[data-theme="factorio-dark"] .stat-value {
+    color: var(--factorio-yellow);
+    text-shadow:
+        0 0 10px rgba(255, 213, 79, 0.4),
+        0 0 20px rgba(255, 213, 79, 0.2);
+    letter-spacing: 0.05em;
+}
+
+[data-theme="factorio-dark"] .stat-card {
+    background: linear-gradient(180deg, #1e1e20 0%, #1a1a1c 100%);
+}
+
+/* Links - copper wire orange */
+[data-theme="factorio-dark"] a {
+    color: var(--orange);
+    transition: all 0.1s ease;
+}
+
+[data-theme="factorio-dark"] a:hover {
+    color: var(--factorio-yellow);
+    text-shadow: 0 0 8px rgba(252, 163, 17, 0.3);
+}
+
+[data-theme="factorio-dark"] .breadcrumb a {
+    color: var(--orange);
+}
+
+/* Exercise blocks - workbench style */
+[data-theme="factorio-dark"] .exercise {
+    border-left: 4px solid var(--orange);
+    padding-left: 2rem;
+}
+
+[data-theme="factorio-dark"] .exercise-header h3 {
+    color: var(--orange) !important;
+    font-family: 'Titillium Web', sans-serif;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Module headers - research panel style */
+[data-theme="factorio-dark"] .module-tag {
+    color: var(--orange);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 0.75rem;
+    background: linear-gradient(180deg, rgba(252, 163, 17, 0.15) 0%, rgba(252, 163, 17, 0.05) 100%);
+    padding: 0.3rem 0.8rem;
+    display: inline-block;
+    border-left: 3px solid var(--orange);
+}
+
+[data-theme="factorio-dark"] h1 {
+    color: var(--text-main);
+    position: relative;
+}
+
+[data-theme="factorio-dark"] h1::after {
+    content: '';
+    display: block;
+    width: 80px;
+    height: 3px;
+    background: linear-gradient(90deg, var(--orange) 0%, var(--factorio-yellow) 50%, transparent 100%);
+    margin-top: 0.75rem;
+}
+
+[data-theme="factorio-dark"] h2 {
+    border-bottom: 1px solid #2a2a2d;
+    padding-bottom: 0.6rem;
+    position: relative;
+}
+
+[data-theme="factorio-dark"] h2::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 40px;
+    height: 2px;
+    background: var(--orange);
+}
+
+/* Scrollbar - belt-like */
+[data-theme="factorio-dark"] ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+[data-theme="factorio-dark"] ::-webkit-scrollbar-track {
+    background: linear-gradient(90deg, #0f0f10 0%, #1a1a1c 50%, #0f0f10 100%);
+    border: 1px solid #2a2a2d;
+}
+
+[data-theme="factorio-dark"] ::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #3a3a3d 0%, #2d2d30 100%);
+    border: 1px solid #4a4a4d;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
+}
+
+[data-theme="factorio-dark"] ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, var(--orange) 0%, #d48806 100%);
+    border-color: var(--factorio-yellow);
+}
+
+[data-theme="factorio-dark"] ::-webkit-scrollbar-corner {
+    background: #131314;
+}
+
+/* Selection */
+[data-theme="factorio-dark"] ::selection {
+    background: var(--orange);
+    color: #131314;
+}
+
+/* Buttons - machine control style */
+[data-theme="factorio-dark"] button:not(.sidebar-toggle),
+[data-theme="factorio-dark"] .quick-btn,
+[data-theme="factorio-dark"] .session-control-btn,
+[data-theme="factorio-dark"] .data-btn {
+    font-family: 'Titillium Web', sans-serif;
+    font-weight: 600;
+    border: none;
+    border-radius: 0;
+    background: linear-gradient(180deg, #2d2d30 0%, #232326 100%);
+    box-shadow:
+        inset 1px 1px 0 #3a3a3d,
+        inset -1px -1px 0 #0f0f10;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    font-size: 0.75rem;
+    transition: all 0.1s ease;
+}
+
+[data-theme="factorio-dark"] button:not(.sidebar-toggle):hover,
+[data-theme="factorio-dark"] .quick-btn:hover,
+[data-theme="factorio-dark"] .session-control-btn:hover,
+[data-theme="factorio-dark"] .data-btn:hover {
+    background: linear-gradient(180deg, #3a3a3d 0%, #2d2d30 100%);
+    box-shadow:
+        inset 1px 1px 0 #4a4a4d,
+        inset -1px -1px 0 #1a1a1c,
+        0 0 0 1px var(--orange);
+    color: var(--orange);
+}
+
+[data-theme="factorio-dark"] .quick-btn.primary {
+    background: linear-gradient(180deg, #ffd54f 0%, #fca311 50%, #d48806 100%);
+    color: #131314;
+    box-shadow:
+        inset 1px 1px 0 rgba(255,255,255,0.4),
+        inset -1px -1px 0 rgba(0,0,0,0.2);
+}
+
+[data-theme="factorio-dark"] .quick-btn.primary:hover {
+    background: linear-gradient(180deg, #ffe082 0%, #ffd54f 50%, #fca311 100%);
+    box-shadow:
+        inset 1px 1px 0 rgba(255,255,255,0.5),
+        inset -1px -1px 0 rgba(0,0,0,0.2),
+        0 0 12px rgba(252, 163, 17, 0.4);
+    color: #131314;
+}
+
+/* Option buttons (flashcards, daily practice) - active state must override base button styles */
+[data-theme="factorio-dark"] .dp-option.active {
+    background: linear-gradient(180deg, #ffd54f 0%, #fca311 50%, #d48806 100%);
+    color: #131314;
+    box-shadow:
+        inset 1px 1px 0 rgba(255,255,255,0.4),
+        inset -1px -1px 0 rgba(0,0,0,0.2),
+        0 0 8px rgba(252, 163, 17, 0.3);
+}
+
+/* Track titles - production panel header */
+[data-theme="factorio-dark"] .track-header {
+    background: linear-gradient(180deg, #1e1e20 0%, #1a1a1c 100%);
+    margin: 0 -2rem 1.5rem -2rem;
+    padding: 1rem 2rem;
+    border-bottom: none;
+    box-shadow:
+        inset 0 1px 0 #2a2a2d,
+        inset 0 -1px 0 #0f0f10,
+        0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="factorio-dark"] .track-name {
+    color: var(--orange);
+    font-family: 'Titillium Web', sans-serif;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Topic tags - item badge style */
+[data-theme="factorio-dark"] .topic-tag {
+    background: linear-gradient(180deg, #2d2d30 0%, #232326 100%);
+    border: none;
+    border-radius: 0;
+    box-shadow:
+        inset 1px 1px 0 #3a3a3d,
+        inset -1px -1px 0 #0f0f10;
+    color: var(--text-dim);
+    font-weight: 500;
+}
+
+[data-theme="factorio-dark"] .project-tag {
+    background: linear-gradient(180deg, rgba(252, 163, 17, 0.2) 0%, rgba(252, 163, 17, 0.1) 100%);
+    color: var(--orange);
+    box-shadow:
+        inset 1px 1px 0 rgba(252, 163, 17, 0.3),
+        inset -1px -1px 0 rgba(0, 0, 0, 0.2);
+}
+
+/* Module checkbox - inserter checkbox style */
+[data-theme="factorio-dark"] .module-checkbox {
+    border: none;
+    border-radius: 0;
+    background: linear-gradient(180deg, #1a1a1c 0%, #131314 100%);
+    box-shadow:
+        inset 1px 1px 0 #0f0f10,
+        inset -1px -1px 0 #2a2a2d;
+}
+
+[data-theme="factorio-dark"] .module-checkbox:checked {
+    background: linear-gradient(180deg, #63c74d 0%, #3e8948 100%);
+    box-shadow:
+        inset 1px 1px 0 rgba(255,255,255,0.3),
+        inset -1px -1px 0 rgba(0,0,0,0.2),
+        0 0 8px rgba(99, 199, 77, 0.4);
+}
+
+/* Hero section adjustments */
+[data-theme="factorio-dark"] .hero-stats {
+    background: linear-gradient(180deg, #1e1e20 0%, #1a1a1c 100%);
+    border: none;
+    border-radius: 0;
+    box-shadow:
+        inset 1px 1px 0 #2a2a2d,
+        inset -1px -1px 0 #0f0f10,
+        0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="factorio-dark"] h1.hero-title {
+    background: linear-gradient(135deg, var(--factorio-yellow) 0%, var(--orange) 50%, #ce6a32 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+[data-theme="factorio-dark"] h1.hero-title::after {
+    display: none;
+}
+
+/* Start button - big factory button */
+[data-theme="factorio-dark"] .start-btn {
+    background: linear-gradient(180deg, #ffd54f 0%, #fca311 50%, #d48806 100%);
+    color: #131314;
+    border: none;
+    border-radius: 0;
+    box-shadow:
+        inset 2px 2px 0 rgba(255,255,255,0.4),
+        inset -2px -2px 0 rgba(0,0,0,0.2),
+        0 4px 8px rgba(0, 0, 0, 0.4);
+    font-family: 'Titillium Web', sans-serif;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+[data-theme="factorio-dark"] .start-btn:hover {
+    background: linear-gradient(180deg, #ffe082 0%, #ffd54f 50%, #fca311 100%);
+    box-shadow:
+        inset 2px 2px 0 rgba(255,255,255,0.5),
+        inset -2px -2px 0 rgba(0,0,0,0.2),
+        0 0 20px rgba(252, 163, 17, 0.5),
+        0 6px 12px rgba(0, 0, 0, 0.5);
+}
+
+/* Daily practice buttons — override the global button reset */
+[data-theme="factorio-dark"] button.dp-start-btn {
+    background: linear-gradient(180deg, #ffd54f 0%, #fca311 50%, #d48806 100%);
+    color: #131314;
+    box-shadow:
+        inset 1px 1px 0 rgba(255,255,255,0.4),
+        inset -1px -1px 0 rgba(0,0,0,0.2);
+}
+[data-theme="factorio-dark"] button.dp-start-btn:hover {
+    background: linear-gradient(180deg, #ffe082 0%, #ffd54f 50%, #fca311 100%);
+    filter: none;
+    box-shadow:
+        inset 1px 1px 0 rgba(255,255,255,0.5),
+        inset -1px -1px 0 rgba(0,0,0,0.2),
+        0 0 12px rgba(252, 163, 17, 0.4);
+}
+[data-theme="factorio-dark"] button.dp-next-btn {
+    background: linear-gradient(180deg, #ffd54f 0%, #fca311 50%, #d48806 100%);
+    color: #131314;
+    box-shadow:
+        inset 1px 1px 0 rgba(255,255,255,0.4),
+        inset -1px -1px 0 rgba(0,0,0,0.2);
+}
+[data-theme="factorio-dark"] button.dp-next-btn:hover {
+    background: linear-gradient(180deg, #ffe082 0%, #ffd54f 50%, #fca311 100%);
+    color: #131314;
+    box-shadow:
+        inset 1px 1px 0 rgba(255,255,255,0.5),
+        inset -1px -1px 0 rgba(0,0,0,0.2),
+        0 0 12px rgba(252, 163, 17, 0.4);
+}
+[data-theme="factorio-dark"] button.dp-skip-btn {
+    border: 1px solid #3a3a3d;
+    color: var(--text-dim);
+}
+[data-theme="factorio-dark"] button.dp-skip-btn:hover {
+    border-color: var(--orange);
+    color: var(--orange);
+    box-shadow: 0 0 8px rgba(252, 163, 17, 0.2);
+}
+
+/* Philosophy section */
+[data-theme="factorio-dark"] .philosophy {
+    background: linear-gradient(180deg, #1e1e20 0%, #1a1a1c 100%);
+    border: none;
+    border-radius: 0;
+    box-shadow:
+        inset 1px 1px 0 #2a2a2d,
+        inset -1px -1px 0 #0f0f10,
+        0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="factorio-dark"] .philosophy h2 {
+    color: var(--orange);
+    border-bottom: none;
+}
+
+[data-theme="factorio-dark"] .philosophy h2::after {
+    display: none;
+}
+
+[data-theme="factorio-dark"] .philosophy-item h3 {
+    color: var(--factorio-yellow);
+}
+
+/* Lesson cards */
+[data-theme="factorio-dark"] .lesson-card {
+    background: linear-gradient(180deg, #1e1e20 0%, #1a1a1c 100%);
+    border: none;
+    border-radius: 0;
+    box-shadow:
+        inset 1px 1px 0 #2a2a2d,
+        inset -1px -1px 0 #0f0f10,
+        0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="factorio-dark"] .lesson-card:hover {
+    box-shadow:
+        inset 1px 1px 0 #3a3a3d,
+        inset -1px -1px 0 #0f0f10,
+        0 0 0 1px var(--orange),
+        0 4px 12px rgba(252, 163, 17, 0.15);
+}
+
+[data-theme="factorio-dark"] .lesson-number {
+    color: var(--orange);
+}
+
+/* Visual/Quote boxes */
+[data-theme="factorio-dark"] .visual-box {
+    background: linear-gradient(180deg, #161618 0%, #131314 100%);
+    border: none;
+    border-radius: 0;
+    box-shadow:
+        inset 1px 1px 0 #0f0f10,
+        inset -1px -1px 0 #2a2a2d;
+}
+
+[data-theme="factorio-dark"] .quote-box {
+    background: linear-gradient(180deg, #1e1e20 0%, #1a1a1c 100%);
+    border: none;
+    border-left: 4px solid var(--factorio-iron);
+    border-radius: 0;
+    box-shadow:
+        inset -1px 1px 0 #2a2a2d,
+        inset 0 -1px 0 #0f0f10;
+}
+
+/* Comparison blocks */
+[data-theme="factorio-dark"] .comparison-block {
+    background: linear-gradient(180deg, #161618 0%, #131314 100%);
+    border: none;
+    border-radius: 0;
+    box-shadow:
+        inset 1px 1px 0 #0f0f10,
+        inset -1px -1px 0 #2a2a2d;
+    overflow: hidden;
+}
+
+[data-theme="factorio-dark"] .comparison-label {
+    background: linear-gradient(180deg, #232326 0%, #1e1e20 100%);
+    border-bottom: 1px solid #0f0f10;
+    font-family: 'Titillium Web', sans-serif;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 0.7rem;
+}
+
+[data-theme="factorio-dark"] .comparison-label.good {
+    color: #63c74d;
+    border-left: 3px solid #63c74d;
+}
+
+[data-theme="factorio-dark"] .comparison-label.bad {
+    color: var(--red);
+    border-left: 3px solid var(--red);
+}
+
+/* Details/Summary */
+[data-theme="factorio-dark"] details summary {
+    color: var(--orange);
+    font-family: 'Titillium Web', sans-serif;
+    font-weight: 600;
+}
+
+[data-theme="factorio-dark"] details summary:hover {
+    color: var(--factorio-yellow);
+}
+
+/* Dashboard panel overrides */
+[data-theme="factorio-dark"] button.session-start-btn {
+    background: linear-gradient(180deg, #ffd54f 0%, #fca311 50%, #d48806 100%);
+    color: #131314;
+    border: none;
+    box-shadow:
+        inset 1px 1px 0 rgba(255,255,255,0.4),
+        inset -1px -1px 0 rgba(0,0,0,0.2);
+}
+[data-theme="factorio-dark"] button.session-start-btn:hover {
+    background: linear-gradient(180deg, #ffe082 0%, #ffd54f 50%, #fca311 100%);
+    color: #131314;
+    box-shadow:
+        inset 1px 1px 0 rgba(255,255,255,0.5),
+        inset -1px -1px 0 rgba(0,0,0,0.2),
+        0 0 12px rgba(252, 163, 17, 0.4);
+}
+[data-theme="factorio-dark"] a.resume-btn {
+    background: linear-gradient(180deg, #66bb6a 0%, #43a047 50%, #2e7d32 100%);
+    color: #fff;
+    box-shadow:
+        inset 1px 1px 0 rgba(255,255,255,0.3),
+        inset -1px -1px 0 rgba(0,0,0,0.2);
+}
+[data-theme="factorio-dark"] a.resume-btn:hover {
+    background: linear-gradient(180deg, #81c784 0%, #66bb6a 50%, #43a047 100%);
+    color: #fff;
+    box-shadow:
+        inset 1px 1px 0 rgba(255,255,255,0.4),
+        inset -1px -1px 0 rgba(0,0,0,0.2),
+        0 0 12px rgba(67, 160, 71, 0.4);
+}
+
+/* Sidebar toggle - match industrial square aesthetic */
+[data-theme="factorio-dark"] .sidebar-toggle {
+    border-radius: 0;
+    background: linear-gradient(180deg, #2d2d30 0%, #232326 100%);
+    border: none;
+    box-shadow:
+        inset 1px 1px 0 #3a3a3d,
+        inset -1px -1px 0 #0f0f10;
+}
+[data-theme="factorio-dark"] .sidebar-toggle:hover {
+    box-shadow:
+        inset 1px 1px 0 #4a4a4d,
+        inset -1px -1px 0 #1a1a1c,
+        0 0 0 1px var(--orange);
+    color: var(--orange);
+}
+[data-theme="factorio-dark"] body.sidebar-open .sidebar-toggle {
+    background: transparent;
+    box-shadow: none;
+    border: none;
+    border-right: 1px solid #0f0f10;
+}
+[data-theme="factorio-dark"] body.sidebar-open .sidebar-toggle:hover {
+    background: linear-gradient(180deg, rgba(252, 163, 17, 0.1) 0%, transparent 100%);
+    box-shadow: none;
+}
+
+/* Disable pulse animation for cleaner industrial look */
+[data-theme="factorio-dark"] .session-timer:not([hidden]),
+[data-theme="factorio-dark"] .floating-session-timer {
+    animation: none;
+}

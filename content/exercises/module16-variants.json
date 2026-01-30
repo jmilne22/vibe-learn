@@ -1,0 +1,351 @@
+{
+  "conceptLinks": {
+    "Table-Driven Tests": "#lesson-table-tests",
+    "Test Helpers": "#lesson-test-helpers",
+    "Mocking with Interfaces": "#lesson-mocking",
+    "Edge Case Testing": "#lesson-edge-cases",
+    "Code Coverage": "#lesson-coverage"
+  },
+  "sharedContent": {},
+  "variants": {
+    "warmups": [
+      {
+        "id": "warmup_1",
+        "concept": "Table-Driven Tests",
+        "variants": [
+          {
+            "id": "v1",
+            "title": "Test a KV Parser",
+            "description": "Write a function <code>parseKV(s string) (string, string, error)</code> that parses <code>\"KEY=value\"</code> strings. Then write table-driven tests covering: valid input, missing <code>=</code>, empty key, empty value, and value containing <code>=</code>.",
+            "hints": [
+              "Use <code>strings.Index(s, \"=\")</code> to find the separator.",
+              "Table-driven tests use a slice of structs with input and expected fields.",
+              "Use <code>t.Run(name, func(t *testing.T) {...})</code> for subtests."
+            ],
+            "solution": "func parseKV(s string) (string, string, error) {\n    idx := strings.Index(s, \"=\")\n    if idx == -1 {\n        return \"\", \"\", fmt.Errorf(\"missing = in %q\", s)\n    }\n    return s[:idx], s[idx+1:], nil\n}\n\nfunc TestParseKV(t *testing.T) {\n    tests := []struct {\n        name    string\n        input   string\n        key     string\n        value   string\n        wantErr bool\n    }{\n        {\"valid\", \"HOST=localhost\", \"HOST\", \"localhost\", false},\n        {\"missing equals\", \"noequals\", \"\", \"\", true},\n        {\"empty key\", \"=value\", \"\", \"value\", false},\n        {\"empty value\", \"KEY=\", \"KEY\", \"\", false},\n        {\"value with equals\", \"DSN=user=admin\", \"DSN\", \"user=admin\", false},\n    }\n    for _, tt := range tests {\n        t.Run(tt.name, func(t *testing.T) {\n            k, v, err := parseKV(tt.input)\n            if (err != nil) != tt.wantErr {\n                t.Errorf(\"wantErr=%v, got err=%v\", tt.wantErr, err)\n            }\n            if k != tt.key || v != tt.value {\n                t.Errorf(\"got (%q, %q), want (%q, %q)\", k, v, tt.key, tt.value)\n            }\n        })\n    }\n}",
+            "annotations": [
+              { "type": "idiom", "label": "Table-Driven Tests", "text": "Table-driven tests are the idiomatic Go pattern: define cases as a slice of structs, loop with t.Run." },
+              { "type": "gotcha", "label": "strings.Index vs Split", "text": "strings.Index finds the first =, preserving = in values. strings.Split would break on all = signs." }
+            ]
+          },
+          {
+            "id": "v2",
+            "title": "Test a URL Parser",
+            "description": "Write a function <code>parseURL(s string) (scheme, host string, err error)</code> that extracts the scheme and host from a URL like <code>\"https://example.com\"</code>. Write table-driven tests for valid URLs, missing <code>://</code>, empty scheme, and empty host.",
+            "hints": [
+              "Use <code>strings.Index(s, \"://\")</code> to find the separator.",
+              "Define test cases with input, expected scheme, expected host, and wantErr."
+            ],
+            "solution": "func parseURL(s string) (string, string, error) {\n    idx := strings.Index(s, \"://\")\n    if idx == -1 {\n        return \"\", \"\", fmt.Errorf(\"missing :// in %q\", s)\n    }\n    scheme := s[:idx]\n    host := s[idx+3:]\n    if scheme == \"\" {\n        return \"\", \"\", fmt.Errorf(\"empty scheme\")\n    }\n    return scheme, host, nil\n}\n\nfunc TestParseURL(t *testing.T) {\n    tests := []struct {\n        name    string\n        input   string\n        scheme  string\n        host    string\n        wantErr bool\n    }{\n        {\"valid https\", \"https://example.com\", \"https\", \"example.com\", false},\n        {\"valid http\", \"http://localhost\", \"http\", \"localhost\", false},\n        {\"missing separator\", \"example.com\", \"\", \"\", true},\n        {\"empty scheme\", \"://host\", \"\", \"\", true},\n        {\"with path\", \"https://api.io/v1\", \"https\", \"api.io/v1\", false},\n    }\n    for _, tt := range tests {\n        t.Run(tt.name, func(t *testing.T) {\n            s, h, err := parseURL(tt.input)\n            if (err != nil) != tt.wantErr {\n                t.Errorf(\"wantErr=%v, got err=%v\", tt.wantErr, err)\n            }\n            if !tt.wantErr && (s != tt.scheme || h != tt.host) {\n                t.Errorf(\"got (%q, %q), want (%q, %q)\", s, h, tt.scheme, tt.host)\n            }\n        })\n    }\n}",
+            "annotations": [
+              { "type": "idiom", "label": "Subtests with t.Run", "text": "t.Run creates named subtests, making it easy to identify which case failed." },
+              { "type": "stdlib", "label": "net/url Package", "text": "In production, use net/url.Parse instead of hand-rolling URL parsing." }
+            ]
+          },
+          {
+            "id": "v3",
+            "title": "Test a CSV Line Parser",
+            "description": "Write a function <code>parseCSVLine(line string) []string</code> that splits a CSV line by commas and trims whitespace from each field. Write table-driven tests for normal input, extra spaces, empty fields, and single field.",
+            "hints": [
+              "Use <code>strings.Split(line, \",\")</code> then <code>strings.TrimSpace</code> on each part.",
+              "Test edge cases: empty string, trailing comma, spaces around commas."
+            ],
+            "solution": "func parseCSVLine(line string) []string {\n    if line == \"\" {\n        return nil\n    }\n    parts := strings.Split(line, \",\")\n    result := make([]string, len(parts))\n    for i, p := range parts {\n        result[i] = strings.TrimSpace(p)\n    }\n    return result\n}\n\nfunc TestParseCSVLine(t *testing.T) {\n    tests := []struct {\n        name  string\n        input string\n        want  []string\n    }{\n        {\"normal\", \"a,b,c\", []string{\"a\", \"b\", \"c\"}},\n        {\"with spaces\", \" a , b , c \", []string{\"a\", \"b\", \"c\"}},\n        {\"empty fields\", \"a,,c\", []string{\"a\", \"\", \"c\"}},\n        {\"single field\", \"hello\", []string{\"hello\"}},\n        {\"empty string\", \"\", nil},\n        {\"trailing comma\", \"a,b,\", []string{\"a\", \"b\", \"\"}},\n    }\n    for _, tt := range tests {\n        t.Run(tt.name, func(t *testing.T) {\n            got := parseCSVLine(tt.input)\n            if !reflect.DeepEqual(got, tt.want) {\n                t.Errorf(\"got %v, want %v\", got, tt.want)\n            }\n        })\n    }\n}",
+            "annotations": [
+              { "type": "gotcha", "label": "nil vs Empty Slice", "text": "reflect.DeepEqual distinguishes nil from []string{}. Be explicit about which your function returns." },
+              { "type": "stdlib", "label": "encoding/csv", "text": "For real CSV parsing, use encoding/csv which handles quoting, escaping, and multi-line fields." }
+            ]
+          },
+          {
+            "id": "v4",
+            "title": "Test a Duration Parser",
+            "description": "Write a function <code>parseDuration(s string) (int, error)</code> that parses strings like <code>\"30s\"</code>, <code>\"5m\"</code>, <code>\"2h\"</code> into total seconds. Write table-driven tests for each unit, invalid formats, and edge cases.",
+            "hints": [
+              "Extract the numeric part and the suffix. Use a switch on the suffix to multiply.",
+              "Test: valid durations, unknown units, empty string, non-numeric values."
+            ],
+            "solution": "func parseDuration(s string) (int, error) {\n    if len(s) < 2 {\n        return 0, fmt.Errorf(\"invalid duration: %q\", s)\n    }\n    unit := s[len(s)-1]\n    numStr := s[:len(s)-1]\n    n, err := strconv.Atoi(numStr)\n    if err != nil {\n        return 0, fmt.Errorf(\"invalid number in %q: %w\", s, err)\n    }\n    switch unit {\n    case 's':\n        return n, nil\n    case 'm':\n        return n * 60, nil\n    case 'h':\n        return n * 3600, nil\n    default:\n        return 0, fmt.Errorf(\"unknown unit %q in %q\", string(unit), s)\n    }\n}\n\nfunc TestParseDuration(t *testing.T) {\n    tests := []struct {\n        name    string\n        input   string\n        want    int\n        wantErr bool\n    }{\n        {\"seconds\", \"30s\", 30, false},\n        {\"minutes\", \"5m\", 300, false},\n        {\"hours\", \"2h\", 7200, false},\n        {\"unknown unit\", \"10d\", 0, true},\n        {\"empty\", \"\", 0, true},\n        {\"no number\", \"s\", 0, true},\n        {\"no unit\", \"123\", 0, true},\n    }\n    for _, tt := range tests {\n        t.Run(tt.name, func(t *testing.T) {\n            got, err := parseDuration(tt.input)\n            if (err != nil) != tt.wantErr {\n                t.Errorf(\"wantErr=%v, got err=%v\", tt.wantErr, err)\n            }\n            if got != tt.want {\n                t.Errorf(\"got %d, want %d\", got, tt.want)\n            }\n        })\n    }\n}",
+            "annotations": [
+              { "type": "idiom", "label": "Error Wrapping", "text": "Use %w in fmt.Errorf to wrap errors, allowing callers to use errors.Is/As." },
+              { "type": "stdlib", "label": "time.ParseDuration", "text": "Go's standard library has time.ParseDuration for real duration parsing with more units." }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "warmup_2",
+        "concept": "Mocking with Interfaces",
+        "variants": [
+          {
+            "id": "v1",
+            "title": "Test with Mock HTTP Client",
+            "description": "Create a <code>WeatherService</code> struct that depends on an <code>HTTPClient</code> interface. Write a mock implementation for testing and verify that the service handles success and error responses correctly.",
+            "hints": [
+              "Define <code>HTTPClient</code> interface with a <code>Get(url string) (*http.Response, error)</code> method.",
+              "Create a <code>mockClient</code> struct with fields for the canned response and error.",
+              "Use <code>io.NopCloser</code> to wrap a string reader as a response body."
+            ],
+            "solution": "type HTTPClient interface {\n    Get(url string) (*http.Response, error)\n}\n\ntype WeatherService struct {\n    client HTTPClient\n}\n\nfunc (ws *WeatherService) GetTemp(city string) (float64, error) {\n    resp, err := ws.client.Get(\"https://api.weather.com/\" + city)\n    if err != nil {\n        return 0, err\n    }\n    defer resp.Body.Close()\n    var data struct{ Temp float64 }\n    json.NewDecoder(resp.Body).Decode(&data)\n    return data.Temp, nil\n}\n\ntype mockClient struct {\n    resp *http.Response\n    err  error\n}\n\nfunc (m *mockClient) Get(url string) (*http.Response, error) {\n    return m.resp, m.err\n}\n\nfunc TestGetTemp_Success(t *testing.T) {\n    body := io.NopCloser(strings.NewReader(`{\"Temp\": 72.5}`))\n    mock := &mockClient{\n        resp: &http.Response{StatusCode: 200, Body: body},\n    }\n    svc := &WeatherService{client: mock}\n    temp, err := svc.GetTemp(\"london\")\n    if err != nil {\n        t.Fatalf(\"unexpected error: %v\", err)\n    }\n    if temp != 72.5 {\n        t.Errorf(\"got %.1f, want 72.5\", temp)\n    }\n}\n\nfunc TestGetTemp_Error(t *testing.T) {\n    mock := &mockClient{err: fmt.Errorf(\"network error\")}\n    svc := &WeatherService{client: mock}\n    _, err := svc.GetTemp(\"london\")\n    if err == nil {\n        t.Error(\"expected error, got nil\")\n    }\n}",
+            "annotations": [
+              { "type": "idiom", "label": "Interface for Mocking", "text": "Define small interfaces at the consumer site. This is Go's implicit interface satisfaction at work." },
+              { "type": "pattern", "label": "Dependency Injection", "text": "Pass dependencies as interfaces through struct fields to enable easy testing with mocks." }
+            ]
+          },
+          {
+            "id": "v2",
+            "title": "Test with Mock Database",
+            "description": "Create a <code>UserService</code> that depends on a <code>UserStore</code> interface with <code>FindByID(id int) (User, error)</code>. Mock the store for testing both found and not-found cases.",
+            "hints": [
+              "Define <code>UserStore</code> interface with a single method.",
+              "Create a mock that returns a predefined user or an error.",
+              "Test both the happy path and the not-found error path."
+            ],
+            "solution": "type User struct {\n    ID   int\n    Name string\n}\n\ntype UserStore interface {\n    FindByID(id int) (User, error)\n}\n\ntype UserService struct {\n    store UserStore\n}\n\nfunc (s *UserService) GetUser(id int) (User, error) {\n    return s.store.FindByID(id)\n}\n\ntype mockStore struct {\n    user User\n    err  error\n}\n\nfunc (m *mockStore) FindByID(id int) (User, error) {\n    return m.user, m.err\n}\n\nfunc TestGetUser_Found(t *testing.T) {\n    mock := &mockStore{user: User{ID: 1, Name: \"Alice\"}}\n    svc := &UserService{store: mock}\n    u, err := svc.GetUser(1)\n    if err != nil {\n        t.Fatalf(\"unexpected error: %v\", err)\n    }\n    if u.Name != \"Alice\" {\n        t.Errorf(\"got %q, want %q\", u.Name, \"Alice\")\n    }\n}\n\nfunc TestGetUser_NotFound(t *testing.T) {\n    mock := &mockStore{err: fmt.Errorf(\"not found\")}\n    svc := &UserService{store: mock}\n    _, err := svc.GetUser(999)\n    if err == nil {\n        t.Error(\"expected error, got nil\")\n    }\n}",
+            "annotations": [
+              { "type": "idiom", "label": "Small Interfaces", "text": "Go prefers small, focused interfaces. A single-method interface is easy to mock and test." },
+              { "type": "gotcha", "label": "Nil Error Check", "text": "Always check err first before using the result. A non-nil error means the result may be invalid." }
+            ]
+          },
+          {
+            "id": "v3",
+            "title": "Test with Mock Logger",
+            "description": "Create a <code>PaymentProcessor</code> that depends on a <code>Logger</code> interface with <code>Log(msg string)</code>. Mock the logger to verify that processing logs the correct messages.",
+            "hints": [
+              "The mock logger can store messages in a <code>[]string</code> slice field.",
+              "After calling the processor, inspect the mock's recorded messages.",
+              "This pattern is called a 'spy' -- a mock that records calls."
+            ],
+            "solution": "type Logger interface {\n    Log(msg string)\n}\n\ntype PaymentProcessor struct {\n    logger Logger\n}\n\nfunc (p *PaymentProcessor) Process(amount float64) error {\n    if amount <= 0 {\n        p.logger.Log(\"invalid amount\")\n        return fmt.Errorf(\"amount must be positive\")\n    }\n    p.logger.Log(fmt.Sprintf(\"processed %.2f\", amount))\n    return nil\n}\n\ntype spyLogger struct {\n    messages []string\n}\n\nfunc (s *spyLogger) Log(msg string) {\n    s.messages = append(s.messages, msg)\n}\n\nfunc TestProcess_ValidAmount(t *testing.T) {\n    spy := &spyLogger{}\n    proc := &PaymentProcessor{logger: spy}\n    err := proc.Process(50.00)\n    if err != nil {\n        t.Fatalf(\"unexpected error: %v\", err)\n    }\n    if len(spy.messages) != 1 || spy.messages[0] != \"processed 50.00\" {\n        t.Errorf(\"got messages %v\", spy.messages)\n    }\n}\n\nfunc TestProcess_InvalidAmount(t *testing.T) {\n    spy := &spyLogger{}\n    proc := &PaymentProcessor{logger: spy}\n    err := proc.Process(-10)\n    if err == nil {\n        t.Error(\"expected error for negative amount\")\n    }\n    if len(spy.messages) != 1 || spy.messages[0] != \"invalid amount\" {\n        t.Errorf(\"got messages %v\", spy.messages)\n    }\n}",
+            "annotations": [
+              { "type": "pattern", "label": "Spy Pattern", "text": "A spy is a mock that records interactions. Store calls in a slice to verify behavior after the fact." },
+              { "type": "idiom", "label": "Interface Segregation", "text": "The Logger interface has a single method. Go encourages narrow interfaces that are easy to implement." }
+            ]
+          },
+          {
+            "id": "v4",
+            "title": "Test with Mock Notifier",
+            "description": "Create an <code>AlertService</code> that depends on a <code>Notifier</code> interface with <code>Send(to, msg string) error</code>. Mock the notifier to test success, failure, and verify the correct arguments are passed.",
+            "hints": [
+              "Store both <code>to</code> and <code>msg</code> in the mock to verify call arguments.",
+              "Use a configurable error field so you can test both success and failure paths.",
+              "Check that the mock received the expected arguments after calling the service."
+            ],
+            "solution": "type Notifier interface {\n    Send(to, msg string) error\n}\n\ntype AlertService struct {\n    notifier Notifier\n}\n\nfunc (a *AlertService) Alert(user, message string) error {\n    return a.notifier.Send(user, \"ALERT: \"+message)\n}\n\ntype mockNotifier struct {\n    lastTo  string\n    lastMsg string\n    err     error\n}\n\nfunc (m *mockNotifier) Send(to, msg string) error {\n    m.lastTo = to\n    m.lastMsg = msg\n    return m.err\n}\n\nfunc TestAlert_Success(t *testing.T) {\n    mock := &mockNotifier{}\n    svc := &AlertService{notifier: mock}\n    err := svc.Alert(\"alice\", \"server down\")\n    if err != nil {\n        t.Fatalf(\"unexpected error: %v\", err)\n    }\n    if mock.lastTo != \"alice\" {\n        t.Errorf(\"sent to %q, want %q\", mock.lastTo, \"alice\")\n    }\n    if mock.lastMsg != \"ALERT: server down\" {\n        t.Errorf(\"sent msg %q, want %q\", mock.lastMsg, \"ALERT: server down\")\n    }\n}\n\nfunc TestAlert_Failure(t *testing.T) {\n    mock := &mockNotifier{err: fmt.Errorf(\"send failed\")}\n    svc := &AlertService{notifier: mock}\n    err := svc.Alert(\"bob\", \"disk full\")\n    if err == nil {\n        t.Error(\"expected error, got nil\")\n    }\n}",
+            "annotations": [
+              { "type": "pattern", "label": "Argument Capture", "text": "Store method arguments in mock fields to verify the correct values were passed." },
+              { "type": "gotcha", "label": "Mock Reuse", "text": "If a mock is reused across calls, previous values are overwritten. Use slices to capture multiple calls." }
+            ]
+          }
+        ]
+      }
+    ],
+    "challenges": [
+      {
+        "id": "challenge_1",
+        "block": 1,
+        "difficulty": 2,
+        "concept": "Edge Case Testing",
+        "variants": [
+          {
+            "id": "v1",
+            "title": "Test SafeDivide Edge Cases",
+            "description": "Write a function <code>safeDivide(a, b float64) (float64, error)</code> that divides a by b, returning an error for division by zero. Then write comprehensive tests covering: normal division, division by zero, zero dividend, negative numbers, and very large numbers.",
+            "functionSignature": "func safeDivide(a, b float64) (float64, error)",
+            "testCases": [
+              { "input": "10.0, 2.0", "output": "5.0, nil" },
+              { "input": "10.0, 0.0", "output": "0.0, error" },
+              { "input": "0.0, 5.0", "output": "0.0, nil" },
+              { "input": "-10.0, 2.0", "output": "-5.0, nil" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "What are all the ways division can go wrong or produce surprising results? Think about zero, negatives, and extreme values." },
+              { "title": "\ud83d\udca1 Hint", "content": "Check b == 0 first and return an error. Otherwise return a/b. Your tests should cover normal, zero divisor, zero dividend, negative values, and math.MaxFloat64." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. Define function with error return\n2. Guard clause for b == 0\n3. Table-driven tests with:\n   - Normal positive values\n   - Division by zero\n   - Zero / nonzero\n   - Negative values\n   - Very large values</pre>" }
+            ],
+            "solution": "func safeDivide(a, b float64) (float64, error) {\n    if b == 0 {\n        return 0, fmt.Errorf(\"division by zero\")\n    }\n    return a / b, nil\n}\n\nfunc TestSafeDivide(t *testing.T) {\n    tests := []struct {\n        name    string\n        a, b    float64\n        want    float64\n        wantErr bool\n    }{\n        {\"normal\", 10, 2, 5, false},\n        {\"divide by zero\", 10, 0, 0, true},\n        {\"zero dividend\", 0, 5, 0, false},\n        {\"negatives\", -10, 2, -5, false},\n        {\"both negative\", -10, -2, 5, false},\n        {\"large numbers\", 1e18, 1e9, 1e9, false},\n        {\"small result\", 1, 3, 0.3333333333333333, false},\n    }\n    for _, tt := range tests {\n        t.Run(tt.name, func(t *testing.T) {\n            got, err := safeDivide(tt.a, tt.b)\n            if (err != nil) != tt.wantErr {\n                t.Errorf(\"wantErr=%v, got err=%v\", tt.wantErr, err)\n            }\n            if !tt.wantErr && got != tt.want {\n                t.Errorf(\"got %v, want %v\", got, tt.want)\n            }\n        })\n    }\n}",
+            "difficulty": 2,
+            "annotations": [
+              { "type": "gotcha", "label": "Float Comparison", "text": "Comparing floats with == can fail due to precision. For approximate equality, use math.Abs(got-want) < epsilon." },
+              { "type": "idiom", "label": "Guard Clause", "text": "Check error conditions first and return early. This keeps the happy path unindented." }
+            ]
+          },
+          {
+            "id": "v2",
+            "title": "Test StringReverse Edge Cases",
+            "description": "Write a function <code>reverseString(s string) string</code> that reverses a string. Write tests for: empty string, single character, ASCII string, Unicode string with multi-byte characters, and string with spaces.",
+            "functionSignature": "func reverseString(s string) string",
+            "testCases": [
+              { "input": "\"hello\"", "output": "\"olleh\"" },
+              { "input": "\"\"", "output": "\"\"" },
+              { "input": "\"a\"", "output": "\"a\"" },
+              { "input": "\"\u4e16\u754c\"", "output": "\"\u754c\u4e16\"" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "Strings in Go are byte sequences. What happens if you reverse bytes of a multi-byte Unicode character?" },
+              { "title": "\ud83d\udca1 Hint", "content": "Convert to []rune first to handle Unicode correctly. Then reverse the rune slice using a two-pointer swap." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. Convert string to []rune\n2. Two-pointer swap: left=0, right=len-1\n3. While left < right: swap and move inward\n4. Convert back to string\n5. Test: empty, single char, ASCII, Unicode, spaces</pre>" }
+            ],
+            "solution": "func reverseString(s string) string {\n    runes := []rune(s)\n    for i, j := 0, len(runes)-1; i < j; i, j = i+1, j-1 {\n        runes[i], runes[j] = runes[j], runes[i]\n    }\n    return string(runes)\n}\n\nfunc TestReverseString(t *testing.T) {\n    tests := []struct {\n        name  string\n        input string\n        want  string\n    }{\n        {\"empty\", \"\", \"\"},\n        {\"single char\", \"a\", \"a\"},\n        {\"ascii\", \"hello\", \"olleh\"},\n        {\"unicode\", \"\u4e16\u754c\", \"\u754c\u4e16\"},\n        {\"with spaces\", \"go lang\", \"gnal og\"},\n        {\"palindrome\", \"racecar\", \"racecar\"},\n        {\"emoji\", \"\ud83d\ude00\ud83d\ude01\", \"\ud83d\ude01\ud83d\ude00\"},\n    }\n    for _, tt := range tests {\n        t.Run(tt.name, func(t *testing.T) {\n            got := reverseString(tt.input)\n            if got != tt.want {\n                t.Errorf(\"got %q, want %q\", got, tt.want)\n            }\n        })\n    }\n}",
+            "difficulty": 2,
+            "annotations": [
+              { "type": "gotcha", "label": "Bytes vs Runes", "text": "Reversing bytes breaks multi-byte UTF-8 characters. Always convert to []rune for character-level operations." },
+              { "type": "idiom", "label": "Multi-Variable Assignment", "text": "Go allows i, j = i+1, j-1 in for loop post statements for clean two-pointer iteration." }
+            ]
+          },
+          {
+            "id": "v3",
+            "title": "Test Contains Edge Cases",
+            "description": "Write a function <code>contains(haystack []string, needle string) bool</code>. Write tests for: found at start, found at end, not found, empty slice, empty needle, and nil slice.",
+            "functionSignature": "func contains(haystack []string, needle string) bool",
+            "testCases": [
+              { "input": "[]string{\"a\", \"b\", \"c\"}, \"b\"", "output": "true" },
+              { "input": "[]string{\"a\", \"b\", \"c\"}, \"d\"", "output": "false" },
+              { "input": "[]string{}, \"a\"", "output": "false" },
+              { "input": "nil, \"a\"", "output": "false" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "What should happen with a nil slice? An empty slice? An empty needle that might be in the slice?" },
+              { "title": "\ud83d\udca1 Hint", "content": "A simple range loop handles nil and empty slices identically -- they both iterate zero times." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. Range over haystack\n2. If item == needle, return true\n3. After loop, return false\n4. Test: found first, found last, not found,\n   empty slice, nil slice, empty needle</pre>" }
+            ],
+            "solution": "func contains(haystack []string, needle string) bool {\n    for _, s := range haystack {\n        if s == needle {\n            return true\n        }\n    }\n    return false\n}\n\nfunc TestContains(t *testing.T) {\n    tests := []struct {\n        name     string\n        haystack []string\n        needle   string\n        want     bool\n    }{\n        {\"found at start\", []string{\"a\", \"b\", \"c\"}, \"a\", true},\n        {\"found at end\", []string{\"a\", \"b\", \"c\"}, \"c\", true},\n        {\"found in middle\", []string{\"a\", \"b\", \"c\"}, \"b\", true},\n        {\"not found\", []string{\"a\", \"b\", \"c\"}, \"d\", false},\n        {\"empty slice\", []string{}, \"a\", false},\n        {\"nil slice\", nil, \"a\", false},\n        {\"empty needle exists\", []string{\"a\", \"\", \"b\"}, \"\", true},\n        {\"empty needle missing\", []string{\"a\", \"b\"}, \"\", false},\n    }\n    for _, tt := range tests {\n        t.Run(tt.name, func(t *testing.T) {\n            got := contains(tt.haystack, tt.needle)\n            if got != tt.want {\n                t.Errorf(\"got %v, want %v\", got, tt.want)\n            }\n        })\n    }\n}",
+            "difficulty": 2,
+            "annotations": [
+              { "type": "idiom", "label": "Nil Slice Safety", "text": "Range over a nil slice is safe in Go -- it simply iterates zero times." },
+              { "type": "stdlib", "label": "slices.Contains", "text": "Go 1.21+ provides slices.Contains for this exact pattern." }
+            ]
+          },
+          {
+            "id": "v4",
+            "title": "Test Max Edge Cases",
+            "description": "Write a function <code>max(nums []int) (int, error)</code> that returns the maximum value from a slice. Write tests for: normal slice, single element, all same values, negative numbers, empty slice, and nil slice.",
+            "functionSignature": "func max(nums []int) (int, error)",
+            "testCases": [
+              { "input": "[]int{3, 1, 4, 1, 5}", "output": "5, nil" },
+              { "input": "[]int{42}", "output": "42, nil" },
+              { "input": "[]int{}", "output": "0, error" },
+              { "input": "nil", "output": "0, error" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "What should you return for an empty or nil slice? What should the initial max be -- zero, or the first element?" },
+              { "title": "\ud83d\udca1 Hint", "content": "Return an error for empty/nil slices. Initialize max to nums[0], then compare each subsequent element. This avoids the trap of initializing to 0 (which fails for all-negative slices)." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. Check len(nums) == 0 -> return error\n2. Set result = nums[0]\n3. For each remaining element:\n   - If element > result, update result\n4. Return result\n5. Test: normal, single, same, negatives, empty, nil</pre>" }
+            ],
+            "solution": "func maxVal(nums []int) (int, error) {\n    if len(nums) == 0 {\n        return 0, fmt.Errorf(\"empty slice\")\n    }\n    m := nums[0]\n    for _, n := range nums[1:] {\n        if n > m {\n            m = n\n        }\n    }\n    return m, nil\n}\n\nfunc TestMax(t *testing.T) {\n    tests := []struct {\n        name    string\n        input   []int\n        want    int\n        wantErr bool\n    }{\n        {\"normal\", []int{3, 1, 4, 1, 5}, 5, false},\n        {\"single\", []int{42}, 42, false},\n        {\"all same\", []int{7, 7, 7}, 7, false},\n        {\"negatives\", []int{-3, -1, -4}, -1, false},\n        {\"mixed\", []int{-2, 0, 2}, 2, false},\n        {\"empty\", []int{}, 0, true},\n        {\"nil\", nil, 0, true},\n    }\n    for _, tt := range tests {\n        t.Run(tt.name, func(t *testing.T) {\n            got, err := maxVal(tt.input)\n            if (err != nil) != tt.wantErr {\n                t.Errorf(\"wantErr=%v, got err=%v\", tt.wantErr, err)\n            }\n            if !tt.wantErr && got != tt.want {\n                t.Errorf(\"got %d, want %d\", got, tt.want)\n            }\n        })\n    }\n}",
+            "difficulty": 2,
+            "annotations": [
+              { "type": "gotcha", "label": "Init to First Element", "text": "Never initialize max to 0 or math.MinInt. Use nums[0] to handle all-negative slices correctly." },
+              { "type": "idiom", "label": "Error for Empty Input", "text": "Return an error when the input is invalid rather than returning a misleading zero value." }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "challenge_2",
+        "block": 2,
+        "difficulty": 3,
+        "concept": "Code Coverage",
+        "variants": [
+          {
+            "id": "v1",
+            "title": "Achieve Coverage for FizzBuzz",
+            "description": "Write a function <code>fizzBuzz(n int) string</code> that returns <code>\"FizzBuzz\"</code> for multiples of 15, <code>\"Fizz\"</code> for multiples of 3, <code>\"Buzz\"</code> for multiples of 5, and the number as a string otherwise. Write enough tests to achieve 100% branch coverage.",
+            "functionSignature": "func fizzBuzz(n int) string",
+            "testCases": [
+              { "input": "15", "output": "\"FizzBuzz\"" },
+              { "input": "3", "output": "\"Fizz\"" },
+              { "input": "5", "output": "\"Buzz\"" },
+              { "input": "7", "output": "\"7\"" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "How many branches does this function have? You need at least one test per branch to get 100% coverage." },
+              { "title": "\ud83d\udca1 Hint", "content": "There are 4 branches: divisible by 15, divisible by 3 (not 15), divisible by 5 (not 15), and neither. One test per branch gives full coverage." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. Write the function with if/else if chain\n2. Count branches: 4\n3. Write one test case per branch\n4. Run: go test -cover\n5. Verify: coverage: 100%</pre>" }
+            ],
+            "solution": "func fizzBuzz(n int) string {\n    switch {\n    case n%15 == 0:\n        return \"FizzBuzz\"\n    case n%3 == 0:\n        return \"Fizz\"\n    case n%5 == 0:\n        return \"Buzz\"\n    default:\n        return strconv.Itoa(n)\n    }\n}\n\nfunc TestFizzBuzz(t *testing.T) {\n    tests := []struct {\n        input int\n        want  string\n    }{\n        {15, \"FizzBuzz\"},\n        {30, \"FizzBuzz\"},\n        {3, \"Fizz\"},\n        {9, \"Fizz\"},\n        {5, \"Buzz\"},\n        {10, \"Buzz\"},\n        {7, \"7\"},\n        {1, \"1\"},\n    }\n    for _, tt := range tests {\n        t.Run(strconv.Itoa(tt.input), func(t *testing.T) {\n            got := fizzBuzz(tt.input)\n            if got != tt.want {\n                t.Errorf(\"fizzBuzz(%d) = %q, want %q\", tt.input, got, tt.want)\n            }\n        })\n    }\n}\n\n// Run: go test -coverprofile=coverage.out\n// View: go tool cover -html=coverage.out",
+            "difficulty": 3,
+            "annotations": [
+              { "type": "idiom", "label": "Switch with No Condition", "text": "switch {} with case expressions is cleaner than if/else chains for multiple conditions." },
+              { "type": "gotcha", "label": "Check 15 First", "text": "Check divisible-by-15 before 3 or 5. Otherwise, 15 matches the first condition it hits." },
+              { "type": "pattern", "label": "Coverage Strategy", "text": "Map each branch to at least one test case. Use go test -cover to verify." }
+            ]
+          },
+          {
+            "id": "v2",
+            "title": "Achieve Coverage for GradeCalculator",
+            "description": "Write a function <code>grade(score int) (string, error)</code> that returns a letter grade (A/B/C/D/F) for scores 0-100, and an error for out-of-range scores. Write tests to achieve at least 80% coverage using <code>go test -cover</code>.",
+            "functionSignature": "func grade(score int) (string, error)",
+            "testCases": [
+              { "input": "95", "output": "\"A\", nil" },
+              { "input": "85", "output": "\"B\", nil" },
+              { "input": "75", "output": "\"C\", nil" },
+              { "input": "65", "output": "\"D\", nil" },
+              { "input": "50", "output": "\"F\", nil" },
+              { "input": "-1", "output": "\"\", error" },
+              { "input": "101", "output": "\"\", error" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "Count the branches: invalid low, invalid high, A, B, C, D, F. That's 7 branches to cover." },
+              { "title": "\ud83d\udca1 Hint", "content": "Write at least one test per branch. Use go test -coverprofile=coverage.out and go tool cover -html=coverage.out to find uncovered lines." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. Write function with range validation + grade logic\n2. List all branches (7 total)\n3. Write table-driven tests with one case per branch\n4. Run: go test -cover\n5. Check coverage report for gaps</pre>" }
+            ],
+            "solution": "func grade(score int) (string, error) {\n    if score < 0 || score > 100 {\n        return \"\", fmt.Errorf(\"score %d out of range 0-100\", score)\n    }\n    switch {\n    case score >= 90:\n        return \"A\", nil\n    case score >= 80:\n        return \"B\", nil\n    case score >= 70:\n        return \"C\", nil\n    case score >= 60:\n        return \"D\", nil\n    default:\n        return \"F\", nil\n    }\n}\n\nfunc TestGrade(t *testing.T) {\n    tests := []struct {\n        name    string\n        score   int\n        want    string\n        wantErr bool\n    }{\n        {\"A grade\", 95, \"A\", false},\n        {\"A boundary\", 90, \"A\", false},\n        {\"B grade\", 85, \"B\", false},\n        {\"C grade\", 75, \"C\", false},\n        {\"D grade\", 65, \"D\", false},\n        {\"F grade\", 50, \"F\", false},\n        {\"zero\", 0, \"F\", false},\n        {\"perfect\", 100, \"A\", false},\n        {\"too low\", -1, \"\", true},\n        {\"too high\", 101, \"\", true},\n    }\n    for _, tt := range tests {\n        t.Run(tt.name, func(t *testing.T) {\n            got, err := grade(tt.score)\n            if (err != nil) != tt.wantErr {\n                t.Errorf(\"wantErr=%v, got err=%v\", tt.wantErr, err)\n            }\n            if got != tt.want {\n                t.Errorf(\"got %q, want %q\", got, tt.want)\n            }\n        })\n    }\n}",
+            "difficulty": 3,
+            "annotations": [
+              { "type": "pattern", "label": "Boundary Testing", "text": "Test boundary values (90, 80, 70, 60) in addition to mid-range values for thorough coverage." },
+              { "type": "idiom", "label": "Coverage Profiling", "text": "Use go test -coverprofile=c.out && go tool cover -html=c.out to visualize coverage." }
+            ]
+          },
+          {
+            "id": "v3",
+            "title": "Achieve Coverage for PasswordValidator",
+            "description": "Write a function <code>validatePassword(pw string) []string</code> that returns a slice of validation error messages. Rules: min 8 chars, at least one uppercase, one lowercase, one digit. Write tests to cover all validation branches.",
+            "functionSignature": "func validatePassword(pw string) []string",
+            "testCases": [
+              { "input": "\"Abcdef1x\"", "output": "[]" },
+              { "input": "\"short\"", "output": "[\"must be at least 8 characters\", \"must contain uppercase\", \"must contain digit\"]" },
+              { "input": "\"abcdefgh\"", "output": "[\"must contain uppercase\", \"must contain digit\"]" },
+              { "input": "\"ABCDEFGH\"", "output": "[\"must contain lowercase\", \"must contain digit\"]" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "Each validation rule is an independent branch. You need tests where each rule fails individually and in combination." },
+              { "title": "\ud83d\udca1 Hint", "content": "Use unicode.IsUpper, unicode.IsLower, and unicode.IsDigit to check characters. Collect all errors rather than returning on the first one." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. Check length >= 8\n2. Range over runes checking:\n   - hasUpper (unicode.IsUpper)\n   - hasLower (unicode.IsLower)\n   - hasDigit (unicode.IsDigit)\n3. Collect all failures into []string\n4. Test: valid, too short, missing upper,\n   missing lower, missing digit, combinations</pre>" }
+            ],
+            "solution": "func validatePassword(pw string) []string {\n    var errors []string\n    if len(pw) < 8 {\n        errors = append(errors, \"must be at least 8 characters\")\n    }\n    var hasUpper, hasLower, hasDigit bool\n    for _, r := range pw {\n        switch {\n        case unicode.IsUpper(r):\n            hasUpper = true\n        case unicode.IsLower(r):\n            hasLower = true\n        case unicode.IsDigit(r):\n            hasDigit = true\n        }\n    }\n    if !hasUpper {\n        errors = append(errors, \"must contain uppercase\")\n    }\n    if !hasLower {\n        errors = append(errors, \"must contain lowercase\")\n    }\n    if !hasDigit {\n        errors = append(errors, \"must contain digit\")\n    }\n    return errors\n}\n\nfunc TestValidatePassword(t *testing.T) {\n    tests := []struct {\n        name     string\n        password string\n        wantErrs int\n    }{\n        {\"valid\", \"Abcdef1x\", 0},\n        {\"too short\", \"Ab1\", 1},\n        {\"no upper\", \"abcdefg1\", 1},\n        {\"no lower\", \"ABCDEFG1\", 1},\n        {\"no digit\", \"Abcdefgh\", 1},\n        {\"empty\", \"\", 4},\n        {\"all lower\", \"abcdefgh\", 2},\n        {\"all upper\", \"ABCDEFGH\", 2},\n        {\"all digits\", \"12345678\", 2},\n    }\n    for _, tt := range tests {\n        t.Run(tt.name, func(t *testing.T) {\n            errs := validatePassword(tt.password)\n            if len(errs) != tt.wantErrs {\n                t.Errorf(\"got %d errors %v, want %d\", len(errs), errs, tt.wantErrs)\n            }\n        })\n    }\n}",
+            "difficulty": 3,
+            "annotations": [
+              { "type": "idiom", "label": "Collect All Errors", "text": "Return all validation errors at once rather than stopping at the first. This gives users complete feedback." },
+              { "type": "stdlib", "label": "unicode Package", "text": "The unicode package provides IsUpper, IsLower, IsDigit for rune classification." }
+            ]
+          },
+          {
+            "id": "v4",
+            "title": "Achieve Coverage for RomanNumeral",
+            "description": "Write a function <code>toRoman(n int) (string, error)</code> that converts integers 1-3999 to Roman numeral strings. Write tests to achieve at least 80% coverage, including boundary values and error cases.",
+            "functionSignature": "func toRoman(n int) (string, error)",
+            "testCases": [
+              { "input": "1", "output": "\"I\", nil" },
+              { "input": "4", "output": "\"IV\", nil" },
+              { "input": "1994", "output": "\"MCMXCIV\", nil" },
+              { "input": "0", "output": "\"\", error" },
+              { "input": "4000", "output": "\"\", error" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "Roman numerals use a greedy algorithm: subtract the largest possible value at each step. What values should your lookup table contain?" },
+              { "title": "\ud83d\udca1 Hint", "content": "Use parallel slices of values [1000, 900, 500, 400, ...] and symbols [\"M\", \"CM\", \"D\", \"CD\", ...]. Loop from largest to smallest, appending symbols while the value fits." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. Validate n is 1-3999\n2. Define values and symbols arrays\n3. For each value/symbol pair:\n   - While n >= value: append symbol, subtract value\n4. Return accumulated string\n5. Test boundaries: 1, 3999, 0, 4000, and key values</pre>" }
+            ],
+            "solution": "func toRoman(n int) (string, error) {\n    if n < 1 || n > 3999 {\n        return \"\", fmt.Errorf(\"%d out of range 1-3999\", n)\n    }\n    values := []int{1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1}\n    symbols := []string{\"M\", \"CM\", \"D\", \"CD\", \"C\", \"XC\", \"L\", \"XL\", \"X\", \"IX\", \"V\", \"IV\", \"I\"}\n    var result strings.Builder\n    for i, val := range values {\n        for n >= val {\n            result.WriteString(symbols[i])\n            n -= val\n        }\n    }\n    return result.String(), nil\n}\n\nfunc TestToRoman(t *testing.T) {\n    tests := []struct {\n        name    string\n        input   int\n        want    string\n        wantErr bool\n    }{\n        {\"one\", 1, \"I\", false},\n        {\"four\", 4, \"IV\", false},\n        {\"nine\", 9, \"IX\", false},\n        {\"fourteen\", 14, \"XIV\", false},\n        {\"forty\", 40, \"XL\", false},\n        {\"ninety\", 90, \"XC\", false},\n        {\"four hundred\", 400, \"CD\", false},\n        {\"nine hundred\", 900, \"CM\", false},\n        {\"1994\", 1994, \"MCMXCIV\", false},\n        {\"3999\", 3999, \"MMMCMXCIX\", false},\n        {\"zero\", 0, \"\", true},\n        {\"negative\", -1, \"\", true},\n        {\"too large\", 4000, \"\", true},\n    }\n    for _, tt := range tests {\n        t.Run(tt.name, func(t *testing.T) {\n            got, err := toRoman(tt.input)\n            if (err != nil) != tt.wantErr {\n                t.Errorf(\"wantErr=%v, got err=%v\", tt.wantErr, err)\n            }\n            if got != tt.want {\n                t.Errorf(\"got %q, want %q\", got, tt.want)\n            }\n        })\n    }\n}",
+            "difficulty": 3,
+            "annotations": [
+              { "type": "idiom", "label": "strings.Builder", "text": "Use strings.Builder for efficient string concatenation in loops. It avoids allocating new strings each iteration." },
+              { "type": "pattern", "label": "Greedy Algorithm", "text": "The greedy approach works here because Roman numeral values are specifically designed to allow it." },
+              { "type": "complexity", "label": "O(1)", "text": "The maximum number of iterations is bounded (3999 / 1 = 3999 symbols max), making this effectively constant time." }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

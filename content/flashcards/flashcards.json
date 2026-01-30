@@ -1,0 +1,786 @@
+{
+  "1": [
+    {
+      "topic": "Short Declaration",
+      "q": "How do you declare and initialize a variable in Go using short declaration?",
+      "a": "Use `:=` for short variable declaration inside functions. Example: `name := \"hello\"` — the type is inferred. This is the most common form. Unlike Python, you cannot use `:=` at the package level."
+    },
+    {
+      "topic": "Zero Values",
+      "q": "What are the zero values for int, string, bool, and pointer types in Go?",
+      "a": "Go assigns zero values automatically: `int` → `0`, `string` → `\"\"` (empty string), `bool` → `false`, pointers/slices/maps/channels/interfaces → `nil`. There is no `None` equivalent — each type has its own zero value."
+    },
+    {
+      "topic": "Multiple Returns",
+      "q": "How does Go handle multiple return values, and how is this different from Python?",
+      "a": "Go functions can return multiple values natively: `func divide(a, b float64) (float64, error)`. You capture them with `result, err := divide(10, 3)`. Unlike Python tuples, these are first-class multiple returns, and the convention is to return an `error` as the last value."
+    },
+    {
+      "topic": "Type Conversions",
+      "q": "Does Go allow implicit type conversions between numeric types?",
+      "a": "No. Go requires explicit type conversion for all type changes. `var i int = 42; var f float64 = float64(i)`. Even `int` and `int64` require explicit conversion. This prevents subtle bugs that Python's duck typing can introduce."
+    },
+    {
+      "topic": "For Loops",
+      "q": "What is the only loop construct in Go?",
+      "a": "Go only has `for`. It covers all loop patterns: `for i := 0; i < 10; i++ {}` (C-style), `for condition {}` (while-style), `for {}` (infinite), and `for i, v := range collection {}` (foreach-style). There is no `while` or `do-while`."
+    },
+    {
+      "topic": "If-with-Init",
+      "q": "What is the if-with-init-statement in Go?",
+      "a": "Go allows a short statement before the condition: `if err := doSomething(); err != nil { ... }`. The variable `err` is scoped to the if/else block only. This is idiomatic for error checking and eliminates temporary variables leaking into outer scope."
+    },
+    {
+      "topic": "Switch Statement",
+      "q": "How does Go's switch differ from Python's match and C's switch?",
+      "a": "Go's `switch` does not fall through by default (no `break` needed). Cases can be expressions, not just constants. You can switch without a condition (`switch { case x > 0: ... }`) which acts like if/else if. Use `fallthrough` keyword to explicitly fall through."
+    },
+    {
+      "topic": "Packages & Imports",
+      "q": "How do packages and imports work in Go?",
+      "a": "Every Go file starts with `package name`. The `main` package with a `main()` function is the entry point. Imports use `import \"fmt\"` or grouped: `import (\"fmt\" \"os\")`. Unused imports cause a compile error. The package name is the last element of the import path."
+    },
+    {
+      "topic": "Exported Names",
+      "q": "How does Go determine whether a name is exported (public)?",
+      "a": "Names starting with an uppercase letter are exported: `fmt.Println` is public, `fmt.println` would be unexported. This applies to functions, types, variables, struct fields, and methods. There are no `public`/`private` keywords."
+    },
+    {
+      "topic": "Println vs print",
+      "q": "What is the difference between `fmt.Println` and the built-in `print` in Go?",
+      "a": "`fmt.Println` writes to stdout with a newline and supports formatting. The built-in `print`/`println` write to stderr and are meant for bootstrapping/debugging only — they are not guaranteed to stay in the language. Always use the `fmt` package."
+    },
+    {
+      "topic": "Blank Identifier",
+      "q": "What is the blank identifier `_` in Go and when do you use it?",
+      "a": "The blank identifier `_` discards a value. Common uses: ignoring a return value `_, err := someFunc()`, importing for side effects `import _ \"pkg\"`, or verifying interface compliance `var _ Interface = (*Type)(nil)`. Go requires all variables to be used, so `_` is essential."
+    },
+    {
+      "topic": "Errors as Values",
+      "q": "What does 'error as a value' mean in Go?",
+      "a": "In Go, errors are ordinary values implementing the `error` interface (which has a single `Error() string` method). There are no exceptions or try/catch. You return errors and check them: `result, err := doWork(); if err != nil { return err }`. This makes error flow explicit."
+    }
+  ],
+  "2": [
+    {
+      "topic": "Pointer Basics",
+      "q": "What is a pointer in Go?",
+      "a": "A pointer holds the memory address of a value. Declared with `*T` syntax: `var p *int`. Pointers let you share data without copying it. Unlike C, Go pointers are type-safe and garbage-collected. Unlike Python, Go makes indirection explicit."
+    },
+    {
+      "topic": "Address-of Operator",
+      "q": "What does the `&` operator do in Go?",
+      "a": "The `&` (address-of) operator returns a pointer to its operand. `x := 42; p := &x` gives `p` the type `*int`, pointing to `x`. This is how you create pointers to existing variables."
+    },
+    {
+      "topic": "Dereferencing",
+      "q": "What does the `*` operator do when used on a pointer?",
+      "a": "The `*` operator dereferences a pointer, giving you the value it points to. `fmt.Println(*p)` prints the value at the address `p` holds. You can also assign through it: `*p = 100` changes the original variable."
+    },
+    {
+      "topic": "Nil Pointer Panic",
+      "q": "What happens when you dereference a nil pointer in Go?",
+      "a": "Dereferencing a `nil` pointer causes a runtime panic: `panic: runtime error: invalid memory address or nil pointer dereference`. Always check for `nil` before dereferencing. This is similar to a NullPointerException in Java or a segfault in C."
+    },
+    {
+      "topic": "Receiver Types",
+      "q": "What is the difference between a pointer receiver and a value receiver on a method?",
+      "a": "A value receiver `func (s MyStruct) Method()` gets a copy — mutations don't affect the original. A pointer receiver `func (s *MyStruct) Method()` operates on the original — mutations persist. Use pointer receivers when you need to modify the struct or avoid copying large structs."
+    },
+    {
+      "topic": "new() Function",
+      "q": "What does the `new()` function do in Go?",
+      "a": "`new(T)` allocates memory for a zero-valued `T` and returns a `*T` pointer. Example: `p := new(int)` gives a `*int` pointing to `0`. It's less common than `&T{}` for structs but useful for primitive types."
+    },
+    {
+      "topic": "When to Use Pointers",
+      "q": "When should you use pointers in Go?",
+      "a": "Use pointers when: (1) you need to mutate the original value, (2) the struct is large and copying is expensive, (3) you need to represent \"absence\" with `nil`, or (4) you want to share data across function calls. Avoid for small immutable values."
+    },
+    {
+      "topic": "No Pointer Arithmetic",
+      "q": "Does Go support pointer arithmetic?",
+      "a": "No. Go does not allow pointer arithmetic (e.g., incrementing a pointer to walk through memory). This is a deliberate safety feature. If you need it, use the `unsafe` package, but this is strongly discouraged in normal code."
+    },
+    {
+      "topic": "Pass by Value",
+      "q": "Is Go pass-by-value or pass-by-reference?",
+      "a": "Go is always pass-by-value. When you pass a variable to a function, it receives a copy. To modify the original, pass a pointer. Slices, maps, and channels appear to be references because they contain internal pointers, but the header itself is still copied."
+    },
+    {
+      "topic": "Struct Field Access",
+      "q": "How do you access a struct field through a pointer in Go?",
+      "a": "Go automatically dereferences struct pointers for field access. `p.Name` is valid even if `p` is `*MyStruct` — you don't need `(*p).Name`. This syntactic sugar makes working with struct pointers feel natural."
+    }
+  ],
+  "3": [
+    {
+      "topic": "Defining Structs",
+      "q": "How do you define a struct in Go?",
+      "a": "Use the `type` keyword: `type User struct { Name string; Age int; Email string }`. Fields start with uppercase for exported, lowercase for unexported. Structs are value types, not reference types like Python classes."
+    },
+    {
+      "topic": "Struct Literals",
+      "q": "What are the ways to create a struct literal in Go?",
+      "a": "Named fields: `User{Name: \"Alice\", Age: 30}` (preferred, order doesn't matter, missing fields get zero values). Positional: `User{\"Alice\", 30, \"a@b.com\"}` (fragile, requires all fields in order). Pointer: `&User{Name: \"Alice\"}`."
+    },
+    {
+      "topic": "Method Syntax",
+      "q": "What is the syntax for defining a method on a struct in Go?",
+      "a": "Methods have a receiver between `func` and the name: `func (u User) Greet() string { return \"Hi, \" + u.Name }`. The receiver `(u User)` is like `self` in Python but explicitly typed. You can use any name, not just `self`."
+    },
+    {
+      "topic": "Value vs Pointer Receiver",
+      "q": "When should you use a value receiver vs a pointer receiver?",
+      "a": "Use pointer receiver `(u *User)` when: mutating the struct, the struct is large, or for consistency if any method needs a pointer. Use value receiver `(u User)` for read-only methods on small structs. If in doubt, use a pointer receiver."
+    },
+    {
+      "topic": "Struct Embedding",
+      "q": "How does struct embedding work in Go?",
+      "a": "Embed a struct by declaring it without a field name: `type Admin struct { User; Level int }`. The embedded struct's fields and methods are promoted — you can call `admin.Name` directly. This is Go's form of composition, not inheritance."
+    },
+    {
+      "topic": "Constructor Pattern",
+      "q": "What is the constructor pattern in Go?",
+      "a": "Go has no constructors. The convention is a `NewX` function: `func NewUser(name string, age int) *User { return &User{Name: name, Age: age} }`. Return a pointer for large structs. This is just a regular function, not a special language feature."
+    },
+    {
+      "topic": "Struct Tags",
+      "q": "What are struct tags in Go?",
+      "a": "Struct tags are string metadata attached to fields using backtick syntax: `Name string \\`json:\"name\"\\``. They are read at runtime via the `reflect` package. They don't affect compilation but are used by encoding, ORM, and validation libraries."
+    },
+    {
+      "topic": "JSON Tags",
+      "q": "How do JSON struct tags work in Go?",
+      "a": "The `encoding/json` package reads `json` tags: `Name string \\`json:\"name,omitempty\"\\``. The tag controls the JSON key name. `omitempty` skips zero-valued fields. `json:\"-\"` excludes the field entirely. Fields must be exported (uppercase) to be marshaled."
+    },
+    {
+      "topic": "Anonymous Structs",
+      "q": "What is an anonymous struct in Go?",
+      "a": "A struct without a type name, declared inline: `point := struct{ X, Y int }{10, 20}`. Useful for one-off data structures, test table entries, and JSON decoding when you don't need a named type."
+    },
+    {
+      "topic": "Struct Comparison",
+      "q": "Can you compare structs in Go with `==`?",
+      "a": "Yes, if all fields are comparable types. `User{\"a\", 30} == User{\"a\", 30}` is `true`. Structs with slice, map, or function fields are NOT comparable with `==` — use `reflect.DeepEqual` for those. Comparable structs can also be map keys."
+    }
+  ],
+  "4": [
+    {
+      "topic": "Implicit Implementation",
+      "q": "How does a type implement an interface in Go?",
+      "a": "Implicitly — there's no `implements` keyword. If a type has all the methods an interface requires, it satisfies it automatically. `type Stringer interface { String() string }` is satisfied by any type with a `String() string` method."
+    },
+    {
+      "topic": "Empty Interface & any",
+      "q": "What is the empty interface and what is `any`?",
+      "a": "The empty interface `interface{}` has no methods, so every type satisfies it. It's like Python's `object` or Java's `Object`. Since Go 1.18, `any` is a built-in alias for `interface{}`. Used when you need to accept any type."
+    },
+    {
+      "topic": "Type Assertion",
+      "q": "How do you perform a type assertion in Go?",
+      "a": "Use `value, ok := iface.(ConcreteType)`. If `iface` holds a `ConcreteType`, `value` gets the concrete value and `ok` is `true`. Without the `ok` check (`value := iface.(ConcreteType)`), a failed assertion panics."
+    },
+    {
+      "topic": "Type Switch",
+      "q": "What is a type switch in Go?",
+      "a": "A switch on the type of an interface value: `switch v := iface.(type) { case string: ... case int: ... default: ... }`. The variable `v` has the concrete type in each case branch. Only usable inside a switch statement."
+    },
+    {
+      "topic": "fmt.Stringer",
+      "q": "What is the `fmt.Stringer` interface?",
+      "a": "`type Stringer interface { String() string }`. Any type implementing `String() string` is automatically used by `fmt.Println`, `fmt.Sprintf(\"%v\")`, etc. This is Go's equivalent of Python's `__str__` method."
+    },
+    {
+      "topic": "io.Reader",
+      "q": "What is the `io.Reader` interface?",
+      "a": "`type Reader interface { Read(p []byte) (n int, err error) }`. It's the universal abstraction for reading data — files, network connections, buffers, and strings all implement it. It reads up to `len(p)` bytes into `p`."
+    },
+    {
+      "topic": "io.Writer",
+      "q": "What is the `io.Writer` interface?",
+      "a": "`type Writer interface { Write(p []byte) (n int, err error) }`. The universal write abstraction. `os.Stdout`, `http.ResponseWriter`, `bytes.Buffer`, and files all implement it. Many standard library functions accept an `io.Writer`."
+    },
+    {
+      "topic": "Error Interface",
+      "q": "What is the `error` interface in Go?",
+      "a": "`type error interface { Error() string }`. It's a built-in interface. Any type with an `Error() string` method is an error. This lets you create rich custom error types while still being compatible with all error-handling code."
+    },
+    {
+      "topic": "Interface Composition",
+      "q": "How does interface composition work in Go?",
+      "a": "Embed interfaces inside other interfaces: `type ReadWriter interface { Reader; Writer }`. The composed interface requires all methods from both embedded interfaces. The standard library uses this extensively: `io.ReadWriter`, `io.ReadCloser`, etc."
+    },
+    {
+      "topic": "Accept Interfaces, Return Structs",
+      "q": "What does 'accept interfaces, return structs' mean?",
+      "a": "A Go design principle: function parameters should be interfaces (for flexibility), but return types should be concrete structs (for clarity). This makes code easy to test (pass mock implementations) while keeping return types explicit and discoverable."
+    }
+  ],
+  "5": [
+    {
+      "topic": "Slice vs Array",
+      "q": "What is the difference between a slice and an array in Go?",
+      "a": "Arrays have fixed size at compile time: `[3]int{1,2,3}`. Slices are dynamic, backed by an array: `[]int{1,2,3}`. Slices have a length and capacity, and are what you use 99% of the time. Arrays are value types; slices are reference-like headers."
+    },
+    {
+      "topic": "make() for Slices",
+      "q": "How do you create a slice with `make()`?",
+      "a": "`make([]int, length, capacity)`. Example: `s := make([]int, 0, 10)` creates a slice with length 0 and capacity 10. Pre-allocating capacity avoids repeated reallocations when appending. Capacity is optional; if omitted, it equals length."
+    },
+    {
+      "topic": "append()",
+      "q": "How does `append()` work in Go?",
+      "a": "`s = append(s, elem1, elem2)` adds elements and returns the (possibly new) slice. If capacity is exceeded, Go allocates a new backing array (roughly doubling capacity) and copies elements. You MUST assign the return value: `s = append(s, x)`."
+    },
+    {
+      "topic": "Map Declaration",
+      "q": "How do you declare and use a map in Go?",
+      "a": "Declare: `var m map[string]int` (nil map) or initialize: `m := map[string]int{\"a\": 1}` or `m := make(map[string]int)`. Set: `m[\"key\"] = value`. Get: `v := m[\"key\"]`. Maps are reference types and are not safe for concurrent use."
+    },
+    {
+      "topic": "Nil Map Behavior",
+      "q": "What is the zero value of a map, and what happens if you read from or write to a nil map?",
+      "a": "The zero value is `nil`. Reading from a nil map returns the zero value for the value type (safe). Writing to a nil map causes a runtime panic. Always initialize with `make()` or a literal before writing."
+    },
+    {
+      "topic": "Map Delete",
+      "q": "How do you delete an entry from a map in Go?",
+      "a": "Use the built-in `delete` function: `delete(m, \"key\")`. It's a no-op if the key doesn't exist (no error or panic). Unlike Python, there's no return value and no equivalent of `KeyError`."
+    },
+    {
+      "topic": "Map Key Check",
+      "q": "How do you check if a key exists in a Go map?",
+      "a": "Use the two-value form: `value, ok := m[\"key\"]`. `ok` is `true` if the key exists, `false` otherwise. This is the 'comma ok' idiom. In Python you'd use `\"key\" in dict`; in Go it's always the two-value assignment."
+    },
+    {
+      "topic": "Struct Map Keys",
+      "q": "Can you use a struct as a map key in Go?",
+      "a": "Yes, if all the struct's fields are comparable types (no slices, maps, or functions). Example: `type Point struct { X, Y int }; m := map[Point]string{}`. This is useful for composite keys without string concatenation."
+    },
+    {
+      "topic": "Nil vs Empty Slice",
+      "q": "What is the difference between a nil slice and an empty slice?",
+      "a": "A nil slice (`var s []int`) has nil underlying array, length 0, capacity 0. An empty slice (`s := []int{}` or `make([]int, 0)`) has a non-nil array, length 0. Both have length 0, `append` works on both, and `json.Marshal` produces `null` for nil vs `[]` for empty."
+    },
+    {
+      "topic": "2D Slices",
+      "q": "How do you create a slice of slices (2D slice) in Go?",
+      "a": "Declare: `matrix := make([][]int, rows)`. Then initialize each row: `for i := range matrix { matrix[i] = make([]int, cols) }`. There's no built-in 2D slice literal shorthand. Each inner slice can have different lengths (jagged array)."
+    }
+  ],
+  "6": [
+    {
+      "topic": "os.Args",
+      "q": "How do you access command-line arguments in Go?",
+      "a": "`os.Args` is a `[]string` where `os.Args[0]` is the program name and `os.Args[1:]` are the arguments. This is like Python's `sys.argv`. For structured flag parsing, use the `flag` package instead."
+    },
+    {
+      "topic": "flag Package",
+      "q": "How does the `flag` package work in Go?",
+      "a": "Define flags: `name := flag.String(\"name\", \"default\", \"description\")`. Call `flag.Parse()` to parse `os.Args`. Access with `*name`. Supports `-flag value`, `-flag=value`, and `--flag`. It's Go's built-in argparse equivalent."
+    },
+    {
+      "topic": "Cobra Library",
+      "q": "What is Cobra in the Go ecosystem?",
+      "a": "Cobra is a popular third-party library for building CLI applications with subcommands (like `git commit`, `docker run`). It provides command hierarchy, flags, auto-generated help, and shell completion. Used by Kubernetes, Hugo, and GitHub CLI."
+    },
+    {
+      "topic": "Standard Streams",
+      "q": "What are `os.Stdin`, `os.Stdout`, and `os.Stderr` in Go?",
+      "a": "They are `*os.File` variables representing standard input, output, and error streams. `os.Stdout` and `os.Stderr` implement `io.Writer`; `os.Stdin` implements `io.Reader`. Use them with `fmt.Fprintf(os.Stderr, ...)` to write to specific streams."
+    },
+    {
+      "topic": "Stdin Line Reading",
+      "q": "How do you read from stdin line by line in Go?",
+      "a": "Use `bufio.Scanner`: `scanner := bufio.NewScanner(os.Stdin); for scanner.Scan() { line := scanner.Text() }`. Check `scanner.Err()` after the loop. This is like Python's `for line in sys.stdin`."
+    },
+    {
+      "topic": "os.Exit",
+      "q": "What does `os.Exit` do and how does it differ from returning from main?",
+      "a": "`os.Exit(code)` terminates the program immediately with the given status code. Deferred functions do NOT run. Returning from `main()` is equivalent to `os.Exit(0)` but deferred functions DO execute. Use `os.Exit(1)` for error exits in CLI tools."
+    },
+    {
+      "topic": "bufio.Scanner",
+      "q": "How do you read stdin line by line using `bufio.Scanner`?",
+      "a": "Create scanner: `scanner := bufio.NewScanner(os.Stdin)`. Loop: `for scanner.Scan() { text := scanner.Text() }`. After loop: `if err := scanner.Err(); err != nil { log.Fatal(err) }`. Default max line size is 64KB; use `scanner.Buffer()` for larger."
+    },
+    {
+      "topic": "String to Int",
+      "q": "How do you convert a string to an integer in Go?",
+      "a": "Use `strconv.Atoi(s)` which returns `(int, error)`: `n, err := strconv.Atoi(\"42\")`. For more control, use `strconv.ParseInt(s, base, bitSize)`. The reverse is `strconv.Itoa(n)`. Unlike Python, `int(\"42\")` does NOT work in Go — `int()` only converts between numeric types."
+    }
+  ],
+  "7": [
+    {
+      "topic": "Reading Files",
+      "q": "How do you read an entire file into memory in Go?",
+      "a": "Use `os.ReadFile(\"path.txt\")` which returns `([]byte, error)`. Example: `data, err := os.ReadFile(\"config.yaml\")`. This is the simplest way, equivalent to Python's `Path('file').read_text()`. For large files, use `os.Open` with `bufio.Scanner`."
+    },
+    {
+      "topic": "Writing Files",
+      "q": "How do you write data to a file in Go?",
+      "a": "Use `os.WriteFile(\"path.txt\", data, 0644)` for simple writes. The third argument is the file permission mode. Example: `os.WriteFile(\"out.txt\", []byte(\"hello\"), 0644)`. For appending or complex writes, use `os.OpenFile` with flags."
+    },
+    {
+      "topic": "Open vs Create",
+      "q": "What is the difference between `os.Open` and `os.Create`?",
+      "a": "`os.Open(name)` opens a file for reading only (O_RDONLY). `os.Create(name)` creates or truncates a file for writing (O_RDWR|O_CREATE|O_TRUNC, 0666). For other modes, use `os.OpenFile(name, flags, perm)`."
+    },
+    {
+      "topic": "defer Close",
+      "q": "Why is `defer file.Close()` idiomatic in Go?",
+      "a": "`defer` schedules `file.Close()` to run when the enclosing function returns, regardless of how it returns (normal, error, or panic). This ensures resources are cleaned up. It's Go's equivalent of Python's `with open(...) as f:` context manager."
+    },
+    {
+      "topic": "Walking Directories",
+      "q": "How do you walk a directory tree in Go?",
+      "a": "Use `filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error { ... })`. It recursively visits every file and directory. Return `filepath.SkipDir` to skip a directory. `WalkDir` is more efficient than the older `filepath.Walk`."
+    },
+    {
+      "topic": "Parsing YAML",
+      "q": "How do you parse YAML in Go?",
+      "a": "Use the `gopkg.in/yaml.v3` package: `var config Config; err := yaml.Unmarshal(data, &config)`. Struct tags control mapping: `Name string \\`yaml:\"name\"\\``. Pass a pointer to `Unmarshal`. This is similar to Python's `yaml.safe_load()`."
+    },
+    {
+      "topic": "Running Commands",
+      "q": "How do you run an external command in Go?",
+      "a": "Use `os/exec`: `cmd := exec.Command(\"ls\", \"-la\"); output, err := cmd.Output()`. Use `cmd.Run()` to run without capturing output, `cmd.CombinedOutput()` for stdout+stderr. Set `cmd.Dir`, `cmd.Env`, `cmd.Stdin` for configuration."
+    },
+    {
+      "topic": "File Exists Check",
+      "q": "How do you check if a file exists in Go?",
+      "a": "Use `os.Stat(path)` and check the error: `if _, err := os.Stat(path); os.IsNotExist(err) { /* doesn't exist */ }`. Go prefers attempting the operation and handling errors, rather than checking existence first (EAFP-like, but explicit)."
+    }
+  ],
+  "8": [
+    {
+      "topic": "Model Interface",
+      "q": "What three methods does the Bubble Tea `Model` interface require?",
+      "a": "`Init() tea.Cmd` — returns an initial command (or `nil`). `Update(tea.Msg) (tea.Model, tea.Cmd)` — handles messages, returns updated model and optional command. `View() string` — renders the UI as a string. This follows The Elm Architecture."
+    },
+    {
+      "topic": "tea.Cmd",
+      "q": "What is a `tea.Cmd` in Bubble Tea?",
+      "a": "A `tea.Cmd` is a function that returns a `tea.Msg`: `type Cmd func() Msg`. Commands perform side effects (I/O, timers, etc.) and return messages to the Update loop. Return `nil` for no command. Use `tea.Batch(cmds...)` to run multiple commands."
+    },
+    {
+      "topic": "tea.Msg",
+      "q": "What is a `tea.Msg` in Bubble Tea?",
+      "a": "A `tea.Msg` is any value (`interface{}`) sent to the `Update` function. Built-in messages include `tea.KeyMsg` (keyboard input), `tea.WindowSizeMsg` (terminal resize). You define custom messages for your app's events."
+    },
+    {
+      "topic": "Lip Gloss Styling",
+      "q": "What is Lip Gloss in the Bubble Tea ecosystem?",
+      "a": "Lip Gloss is a styling library for terminal UIs. It provides CSS-like styling: `style := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(\"#FF0000\")).Padding(1, 2)`. Use `style.Render(\"text\")` to apply styles. It handles colors, borders, padding, and alignment."
+    },
+    {
+      "topic": "Program Flow",
+      "q": "Describe the Bubble Tea program flow.",
+      "a": "1. Create model implementing `Init`, `Update`, `View`. 2. Start with `p := tea.NewProgram(model)`. 3. `Init()` runs, may return initial command. 4. `View()` renders the UI. 5. On events, `Update()` receives a `Msg`, returns new model + command. 6. `View()` re-renders. Loop continues until `tea.Quit`."
+    },
+    {
+      "topic": "Alt Screen Mode",
+      "q": "What is 'alt screen' mode in Bubble Tea?",
+      "a": "Alt screen mode (`tea.NewProgram(model, tea.WithAltScreen())`) uses an alternate terminal buffer, like Vim or htop. When the program exits, the original terminal content is restored. Use it for full-screen TUI apps; skip it for inline tools."
+    }
+  ],
+  "9": [
+    {
+      "topic": "Creating Errors",
+      "q": "How do you create a simple error in Go?",
+      "a": "Use `errors.New(\"something went wrong\")` for static error messages, or `fmt.Errorf(\"failed to load %s: %w\", name, err)` to format and optionally wrap another error. Both return a value implementing the `error` interface."
+    },
+    {
+      "topic": "Error Wrapping %w",
+      "q": "What does `%w` do in `fmt.Errorf`?",
+      "a": "The `%w` verb wraps an error, creating an error chain: `fmt.Errorf(\"open config: %w\", err)`. The wrapped error can be retrieved with `errors.Unwrap()` and matched with `errors.Is()` or `errors.As()`. Use `%v` if you don't want wrapping."
+    },
+    {
+      "topic": "errors.Is",
+      "q": "What does `errors.Is` do?",
+      "a": "`errors.Is(err, target)` checks if `err` or any error in its chain matches `target`. It unwraps recursively. Example: `if errors.Is(err, os.ErrNotExist) { ... }`. This replaces `err == os.ErrNotExist` which doesn't check wrapped errors."
+    },
+    {
+      "topic": "errors.As",
+      "q": "What does `errors.As` do?",
+      "a": "`errors.As(err, &target)` checks if `err` or any error in its chain can be assigned to `target` (by type). Example: `var pathErr *os.PathError; if errors.As(err, &pathErr) { fmt.Println(pathErr.Path) }`. Use it to extract specific error types."
+    },
+    {
+      "topic": "Custom Error Types",
+      "q": "How do you create a custom error type in Go?",
+      "a": "Define a struct implementing the `Error() string` method: `type NotFoundError struct { Name string }; func (e *NotFoundError) Error() string { return e.Name + \" not found\" }`. Custom errors can carry extra context and be matched with `errors.As()`."
+    },
+    {
+      "topic": "testing.T",
+      "q": "What is `testing.T` in Go?",
+      "a": "`*testing.T` is passed to test functions as a parameter: `func TestFoo(t *testing.T)`. It provides methods for reporting failures (`t.Error`, `t.Fatal`, `t.Log`), running subtests (`t.Run`), and managing test state. It's the core of Go's testing framework."
+    },
+    {
+      "topic": "Subtests t.Run",
+      "q": "How do you use `t.Run` for subtests?",
+      "a": "`t.Run(\"subtest name\", func(t *testing.T) { ... })` creates a named subtest. Subtests can be run individually: `go test -run TestFoo/subtest_name`. They enable table-driven tests and provide clear failure messages showing which case failed."
+    },
+    {
+      "topic": "Table-Driven Tests",
+      "q": "What is the table-driven test pattern in Go?",
+      "a": "Define test cases as a slice of structs: `tests := []struct{ name string; input int; want int }{{ ... }}`. Loop with `for _, tt := range tests { t.Run(tt.name, func(t *testing.T) { got := fn(tt.input); if got != tt.want { t.Errorf(...) } }) }`. This is the most common Go test pattern."
+    },
+    {
+      "topic": "Fatal vs Error",
+      "q": "What is the difference between `t.Fatal` and `t.Error`?",
+      "a": "`t.Error(args...)` reports failure but continues the test. `t.Fatal(args...)` reports failure and stops the test immediately (calls `runtime.Goexit()`). Use `Fatal` when subsequent assertions would be meaningless after a failure. Both have `f` variants for formatting."
+    },
+    {
+      "topic": "Test File Naming",
+      "q": "What naming convention do Go test files follow?",
+      "a": "Test files must end in `_test.go` (e.g., `user_test.go`). They are excluded from normal builds. Test functions must start with `Test` and take `*testing.T`: `func TestAdd(t *testing.T)`. Benchmark functions start with `Benchmark` and take `*testing.B`."
+    }
+  ],
+  "10": [
+    {
+      "topic": "Functional Options",
+      "q": "What is the functional options pattern in Go?",
+      "a": "A pattern for configurable constructors: define `type Option func(*Config)`, create option functions like `func WithTimeout(d time.Duration) Option { return func(c *Config) { c.Timeout = d } }`, and apply: `NewServer(WithTimeout(5*time.Second))`. It's clean, extensible, and self-documenting."
+    },
+    {
+      "topic": "Factory Pattern",
+      "q": "How do you implement the factory pattern in Go?",
+      "a": "Use a function that returns an interface: `func NewStorage(kind string) Storage { switch kind { case \"disk\": return &DiskStorage{}; case \"memory\": return &MemStorage{} } }`. The caller gets a `Storage` interface, decoupled from concrete types."
+    },
+    {
+      "topic": "Strategy Pattern",
+      "q": "How do you implement the strategy pattern in Go?",
+      "a": "Define a strategy interface: `type Sorter interface { Sort([]int) []int }`. Implement variants: `type QuickSort struct{}` and `type MergeSort struct{}`. Pass the strategy to the consumer: `func Process(data []int, s Sorter) { s.Sort(data) }`. Functions as fields also work for simple cases."
+    },
+    {
+      "topic": "Builder Pattern",
+      "q": "How does the builder pattern work in Go?",
+      "a": "Chain method calls that return the builder: `type QueryBuilder struct { ... }; func (q *QueryBuilder) Select(cols ...string) *QueryBuilder { ...; return q }; func (q *QueryBuilder) Build() string { ... }`. Usage: `qb.Select(\"name\").Where(\"age > 30\").Build()`."
+    },
+    {
+      "topic": "No Classes in Go",
+      "q": "Why doesn't Go have classes?",
+      "a": "Go uses structs + methods + interfaces instead of classes. There's no inheritance — only composition via embedding. This avoids deep inheritance hierarchies and fragile base class problems. Go's philosophy: simple composition of small interfaces is more maintainable than complex class trees."
+    },
+    {
+      "topic": "Composition over Inheritance",
+      "q": "What does 'composition over inheritance' look like in Go?",
+      "a": "Instead of inheriting, embed types: `type Logger struct { Writer io.Writer }; type Server struct { Logger; config Config }`. Server gets Logger's methods via promotion. You can also compose via fields: `type Server struct { logger Logger }` for explicit delegation."
+    },
+    {
+      "topic": "Interface vs Struct",
+      "q": "When should you use an interface vs a concrete struct in Go?",
+      "a": "Use interfaces for: function parameters (flexibility/testability), behavior contracts, and decoupling. Use concrete structs for: return types, internal implementation, and when there's only one implementation. Don't create interfaces preemptively — let the need emerge."
+    },
+    {
+      "topic": "Method Sets",
+      "q": "What are method sets in Go and why do they matter?",
+      "a": "A type's method set determines which interfaces it satisfies. A value of type `T` has methods with value receivers only. A value of type `*T` has methods with both value and pointer receivers. So `*T` can satisfy more interfaces than `T`. This is why pointer receivers are more common."
+    }
+  ],
+  "11": [
+    {
+      "topic": "HTTP HandleFunc",
+      "q": "How do you register an HTTP handler function in Go?",
+      "a": "`http.HandleFunc(\"/path\", func(w http.ResponseWriter, r *http.Request) { fmt.Fprintf(w, \"hello\") })`. The handler receives a `ResponseWriter` to write the response and a `*Request` with request details. This registers on the default `ServeMux`."
+    },
+    {
+      "topic": "ListenAndServe",
+      "q": "How do you start an HTTP server in Go?",
+      "a": "`http.ListenAndServe(\":8080\", nil)` starts a server on port 8080 using the default mux. Pass a custom handler/mux as the second argument. It blocks forever. Always check the returned error: `log.Fatal(http.ListenAndServe(\":8080\", nil))`."
+    },
+    {
+      "topic": "http.Handler",
+      "q": "What is the `http.Handler` interface?",
+      "a": "`type Handler interface { ServeHTTP(ResponseWriter, *Request) }`. Any type implementing `ServeHTTP` can serve HTTP requests. `http.HandlerFunc` is an adapter that lets you use ordinary functions as handlers: `http.HandlerFunc(myFunc)`."
+    },
+    {
+      "topic": "JSON Marshal",
+      "q": "How do you marshal a Go struct to JSON?",
+      "a": "`data, err := json.Marshal(myStruct)` returns `[]byte` of JSON. Fields must be exported (uppercase). Use struct tags for key names: `json:\"name\"`. For writing to an `io.Writer` directly, use `json.NewEncoder(w).Encode(myStruct)`."
+    },
+    {
+      "topic": "JSON Unmarshal",
+      "q": "How do you unmarshal JSON into a Go struct?",
+      "a": "`err := json.Unmarshal(data, &myStruct)` parses `[]byte` into the struct. Pass a pointer. Unknown JSON fields are ignored by default. For reading from an `io.Reader`, use `json.NewDecoder(r).Decode(&myStruct)`."
+    },
+    {
+      "topic": "Decoder vs Unmarshal",
+      "q": "When should you use `json.NewDecoder` vs `json.Unmarshal`?",
+      "a": "`json.NewDecoder(reader)` reads from an `io.Reader` (request body, file) — ideal for streams. `json.Unmarshal(data)` works on `[]byte` already in memory. Use `NewDecoder` for HTTP request bodies: `json.NewDecoder(r.Body).Decode(&input)`."
+    },
+    {
+      "topic": "HTTP Client Timeout",
+      "q": "How do you create an HTTP client with a timeout in Go?",
+      "a": "Use `&http.Client{Timeout: 10 * time.Second}` instead of `http.DefaultClient` which has no timeout. Example: `client := &http.Client{Timeout: 10 * time.Second}; resp, err := client.Get(url)`. Always set a timeout in production code."
+    },
+    {
+      "topic": "Status Constants",
+      "q": "How do you use HTTP status code constants in Go?",
+      "a": "The `net/http` package defines constants: `http.StatusOK` (200), `http.StatusCreated` (201), `http.StatusBadRequest` (400), `http.StatusNotFound` (404), `http.StatusInternalServerError` (500). Use `w.WriteHeader(http.StatusNotFound)` to set the status."
+    },
+    {
+      "topic": "Middleware Pattern",
+      "q": "What is the middleware pattern in Go HTTP servers?",
+      "a": "Middleware wraps an `http.Handler` adding behavior: `func Logger(next http.Handler) http.Handler { return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { log.Println(r.URL); next.ServeHTTP(w, r) }) }`. Chain: `Logger(AuthMiddleware(myHandler))`."
+    },
+    {
+      "topic": "http.NewRequest",
+      "q": "How do you create an HTTP request with `http.NewRequest`?",
+      "a": "`req, err := http.NewRequest(\"POST\", url, bytes.NewReader(body))`. Set headers: `req.Header.Set(\"Content-Type\", \"application/json\")`. Send: `resp, err := client.Do(req)`. Use `http.NewRequestWithContext(ctx, ...)` for context support."
+    }
+  ],
+  "12": [
+    {
+      "topic": "Goroutines",
+      "q": "How do you start a goroutine in Go?",
+      "a": "Use the `go` keyword before a function call: `go myFunction()` or `go func() { ... }()`. The function runs concurrently. Goroutines are lightweight (few KB stack), managed by the Go runtime, not OS threads. There's no return value — use channels to communicate."
+    },
+    {
+      "topic": "Channels",
+      "q": "How do you create and use a channel in Go?",
+      "a": "Create: `ch := make(chan int)`. Send: `ch <- 42`. Receive: `value := <-ch`. Channels are typed and block by default: a send blocks until a receiver is ready, and vice versa. This is Go's primary mechanism for goroutine communication."
+    },
+    {
+      "topic": "Buffered Channels",
+      "q": "What is the difference between buffered and unbuffered channels?",
+      "a": "Unbuffered `make(chan int)`: send blocks until receive (synchronous). Buffered `make(chan int, 5)`: send blocks only when buffer is full; receive blocks when empty. Buffered channels decouple sender and receiver timing."
+    },
+    {
+      "topic": "Select Statement",
+      "q": "What does the `select` statement do?",
+      "a": "`select` waits on multiple channel operations: `select { case v := <-ch1: ... case ch2 <- x: ... case <-time.After(5*time.Second): ... default: ... }`. It picks whichever case is ready (randomly if multiple). `default` makes it non-blocking."
+    },
+    {
+      "topic": "sync.WaitGroup",
+      "q": "How does `sync.WaitGroup` work?",
+      "a": "Coordinates goroutine completion. `var wg sync.WaitGroup`. Before launching: `wg.Add(1)`. Inside goroutine: `defer wg.Done()`. Wait for all: `wg.Wait()`. The counter must reach zero. Example: launch N goroutines, then `wg.Wait()` to block until all finish."
+    },
+    {
+      "topic": "sync.Mutex",
+      "q": "What is `sync.Mutex` used for?",
+      "a": "`sync.Mutex` provides mutual exclusion for shared data. `var mu sync.Mutex`. Lock: `mu.Lock()`. Unlock: `defer mu.Unlock()`. Only one goroutine can hold the lock at a time. Use `sync.RWMutex` for read-heavy workloads (multiple readers, single writer)."
+    },
+    {
+      "topic": "Goroutine Leaks",
+      "q": "What is a goroutine leak and how do you prevent it?",
+      "a": "A goroutine leak occurs when a goroutine blocks forever (waiting on a channel nobody sends to). It never gets garbage collected, consuming memory. Prevent with: context cancellation, buffered channels, `select` with done channels, or ensuring all channel operations can complete."
+    },
+    {
+      "topic": "context.Context",
+      "q": "What is `context.Context` and why is it important?",
+      "a": "`context.Context` carries deadlines, cancellation signals, and request-scoped values across API boundaries and goroutines. Functions that do I/O or may run long should take `ctx context.Context` as the first parameter. It's how you propagate cancellation in Go."
+    },
+    {
+      "topic": "context.WithCancel",
+      "q": "How does `context.WithCancel` work?",
+      "a": "`ctx, cancel := context.WithCancel(parentCtx)`. Call `cancel()` to signal cancellation. Goroutines check `ctx.Done()` channel or `ctx.Err()`. Always `defer cancel()` to release resources. Child contexts are cancelled when the parent is cancelled."
+    },
+    {
+      "topic": "context.WithTimeout",
+      "q": "How does `context.WithTimeout` work?",
+      "a": "`ctx, cancel := context.WithTimeout(parentCtx, 5*time.Second)`. The context is automatically cancelled after the duration. Always `defer cancel()` even with timeout. Check `ctx.Err()` — returns `context.DeadlineExceeded` if timed out."
+    },
+    {
+      "topic": "Deadlock Detection",
+      "q": "What does 'fatal error: all goroutines are asleep - deadlock!' mean?",
+      "a": "The Go runtime detected that every goroutine is blocked and no progress is possible. Common cause: sending to an unbuffered channel with no receiver, or waiting on a WaitGroup that never reaches zero. The runtime only detects this when ALL goroutines are stuck."
+    },
+    {
+      "topic": "Share by Communicating",
+      "q": "What is the Go concurrency proverb about sharing memory?",
+      "a": "\"Don't communicate by sharing memory; share memory by communicating.\" Instead of protecting shared variables with mutexes, pass data between goroutines using channels. Channels make ownership transfer explicit and prevent data races by design."
+    }
+  ],
+  "13": [
+    {
+      "topic": "go.mod",
+      "q": "What is `go.mod` and what does it contain?",
+      "a": "`go.mod` defines a Go module: its module path, Go version, and dependencies. Created with `go mod init module/path`. Example contents: `module github.com/user/project`, `go 1.21`, `require github.com/pkg/errors v0.9.1`. It's like Python's `requirements.txt` + `setup.py`."
+    },
+    {
+      "topic": "Module Path",
+      "q": "What is a Go module path and how should you name it?",
+      "a": "The module path is the import prefix for all packages in the module. Convention: use the repository URL like `github.com/user/project`. For private/local projects, any unique path works. All imports within the module are relative to this path."
+    },
+    {
+      "topic": "internal/ Directory",
+      "q": "What does the `internal/` directory do in Go?",
+      "a": "Code in `internal/` can only be imported by code in the parent directory tree. `myproject/internal/auth` can be used by `myproject/cmd/server` but NOT by other modules. The Go toolchain enforces this. It's Go's way of creating truly private packages."
+    },
+    {
+      "topic": "cmd/ Convention",
+      "q": "What is the `cmd/` directory convention in Go?",
+      "a": "`cmd/` contains entry points (main packages) for executables. Structure: `cmd/myapp/main.go`, `cmd/mytool/main.go`. Each subdirectory is a separate binary. Business logic lives elsewhere (in root or `internal/`). This is the standard Go project layout."
+    },
+    {
+      "topic": "Package Naming",
+      "q": "What are the Go package naming conventions?",
+      "a": "Package names should be short, lowercase, single-word: `http`, `json`, `auth`. No underscores, hyphens, or mixedCase. The package name is what callers use: `auth.NewUser()`. Avoid stutter: `auth.Auth{}` is bad; `auth.User{}` is good."
+    },
+    {
+      "topic": "Exported vs Unexported",
+      "q": "What is the difference between exported and unexported identifiers at the package level?",
+      "a": "Uppercase first letter = exported (public): accessible from other packages. Lowercase = unexported (private): only accessible within the same package. This applies to functions, types, variables, constants, struct fields, and methods. There are no access modifier keywords."
+    }
+  ],
+  "14": [
+    {
+      "topic": "Command Output",
+      "q": "How do you run an external command and capture its output in Go?",
+      "a": "Use `exec.Command(\"name\", \"arg1\", \"arg2\")`. Capture output: `out, err := cmd.Output()`. For stdout+stderr: `cmd.CombinedOutput()`. Run without capturing: `cmd.Run()`. Set `cmd.Dir` for working directory, `cmd.Env` for environment."
+    },
+    {
+      "topic": "LookPath",
+      "q": "How do you check if a program is installed/available on PATH?",
+      "a": "Use `exec.LookPath(\"git\")` which returns the path and an error. If the program isn't found, it returns an error. Example: `path, err := exec.LookPath(\"docker\"); if err != nil { log.Fatal(\"docker not found\") }`."
+    },
+    {
+      "topic": "Environment Variables",
+      "q": "How do you read environment variables in Go?",
+      "a": "`os.Getenv(\"HOME\")` returns the value or empty string if unset. Use `os.LookupEnv(\"KEY\")` to distinguish between unset and empty: `value, ok := os.LookupEnv(\"KEY\")`. Set with `os.Setenv(\"KEY\", \"value\")`."
+    },
+    {
+      "topic": "Home Directory",
+      "q": "How do you get the user's home directory in Go?",
+      "a": "`dir, err := os.UserHomeDir()` returns the home directory path. It works cross-platform (Linux, macOS, Windows). For the config directory, use `os.UserConfigDir()`. For cache, use `os.UserCacheDir()`."
+    },
+    {
+      "topic": "Detecting OS",
+      "q": "How do you detect the operating system at runtime in Go?",
+      "a": "`runtime.GOOS` returns `\"linux\"`, `\"darwin\"` (macOS), `\"windows\"`, etc. `runtime.GOARCH` returns the architecture (`\"amd64\"`, `\"arm64\"`). Use build tags for compile-time OS-specific code: `//go:build linux`."
+    },
+    {
+      "topic": "Working Directory",
+      "q": "How do you get the current working directory in Go?",
+      "a": "`dir, err := os.Getwd()` returns the absolute path of the current working directory. Change it with `os.Chdir(path)`. This is equivalent to Python's `os.getcwd()` and `os.chdir()`."
+    },
+    {
+      "topic": "OS Signals",
+      "q": "How do you handle OS signals in Go?",
+      "a": "Use `signal.Notify(ch, os.Interrupt, syscall.SIGTERM)` where `ch` is a `chan os.Signal`. Then `<-ch` blocks until the signal arrives. This enables graceful shutdown: stop accepting work, finish in-progress tasks, then exit."
+    },
+    {
+      "topic": "filepath.Join",
+      "q": "What does `filepath.Join` do and why should you use it?",
+      "a": "`filepath.Join(\"dir\", \"sub\", \"file.txt\")` joins path elements using the OS-specific separator. On Linux: `dir/sub/file.txt`. On Windows: `dir\\sub\\file.txt`. It also cleans the path. Never concatenate paths with `+` or `/` manually."
+    }
+  ],
+  "15": [
+    {
+      "topic": "Set Implementation",
+      "q": "How do you implement a set in Go?",
+      "a": "Use `map[T]struct{}`. Example: `set := map[string]struct{}{}`. Add: `set[\"item\"] = struct{}{}`. Check: `_, ok := set[\"item\"]`. Delete: `delete(set, \"item\")`. Go has no built-in set type, so this map pattern is the standard idiom."
+    },
+    {
+      "topic": "struct{} for Sets",
+      "q": "Why use `struct{}` as the map value type for sets instead of `bool`?",
+      "a": "`struct{}` has zero size — it occupies no memory. `bool` uses at least 1 byte per entry. For large sets, this saves significant memory. `struct{}{}` is the only possible value, making the intent clearer: you care about key existence, not the value."
+    },
+    {
+      "topic": "Set Union",
+      "q": "How do you compute the union of two sets in Go?",
+      "a": "Create a new set, add all elements from both: `union := make(map[string]struct{}); for k := range setA { union[k] = struct{}{} }; for k := range setB { union[k] = struct{}{} }`. There's no built-in operator — you write the loop."
+    },
+    {
+      "topic": "Intersection & Difference",
+      "q": "How do you compute intersection and difference of two sets in Go?",
+      "a": "Intersection: iterate one set, check membership in the other: `for k := range setA { if _, ok := setB[k]; ok { result[k] = struct{}{} } }`. Difference (A - B): iterate A, add if NOT in B: `if _, ok := setB[k]; !ok { result[k] = struct{}{} }`."
+    },
+    {
+      "topic": "Set Membership",
+      "q": "How do you check set membership in Go?",
+      "a": "Use the comma-ok idiom: `_, exists := mySet[key]`. `exists` is `true` if `key` is in the set. Since the value type is `struct{}`, you only care about the boolean. This is O(1) average time, like Python's `key in my_set`."
+    },
+    {
+      "topic": "Map Iteration Order",
+      "q": "Is map iteration order guaranteed in Go?",
+      "a": "No. Map iteration order in Go is deliberately randomized. Each `for k, v := range myMap` may visit keys in a different order. This is intentional to prevent code from depending on order. If you need sorted keys, extract them to a slice and sort."
+    }
+  ],
+  "16": [
+    {
+      "topic": "Running Tests",
+      "q": "How do you run tests in Go?",
+      "a": "`go test` runs tests in the current package. `go test ./...` runs tests in all packages. `go test -v` for verbose output. `go test -run TestName` to run specific tests. `go test -count=1` to disable test caching."
+    },
+    {
+      "topic": "Test Naming",
+      "q": "What naming convention must test files and functions follow?",
+      "a": "Files: must end in `_test.go` (e.g., `user_test.go`). Functions: must start with `Test` followed by an uppercase letter and take `*testing.T`: `func TestUserCreate(t *testing.T)`. The file and function names are enforced by the Go toolchain."
+    },
+    {
+      "topic": "t.Helper()",
+      "q": "What is `t.Helper()` and when should you use it?",
+      "a": "Calling `t.Helper()` at the start of a helper function marks it as a test helper. When it reports a failure, the error points to the calling test line, not the helper function line. Use it in custom assertion functions to improve error messages."
+    },
+    {
+      "topic": "t.Cleanup()",
+      "q": "What does `t.Cleanup()` do?",
+      "a": "`t.Cleanup(func() { ... })` registers a function to run after the test (and subtests) complete. It's like `defer` but scoped to the test lifecycle. Use it for teardown: closing servers, removing temp files, resetting global state. Multiple cleanups run LIFO."
+    },
+    {
+      "topic": "Testify Library",
+      "q": "What is testify in the Go ecosystem?",
+      "a": "Testify (`github.com/stretchr/testify`) is a popular testing toolkit. `assert` provides assertions: `assert.Equal(t, expected, actual)`. `require` is like assert but fails immediately. `mock` provides mock objects. It reduces boilerplate compared to manual `if got != want` checks."
+    },
+    {
+      "topic": "Benchmark Functions",
+      "q": "How do you name benchmark functions in Go?",
+      "a": "Benchmark functions start with `Benchmark`: `func BenchmarkSort(b *testing.B) { for i := 0; i < b.N; i++ { sort(data) } }`. Run with `go test -bench=.` or `go test -bench=BenchmarkSort`. The framework adjusts `b.N` automatically for accurate timing."
+    },
+    {
+      "topic": "Test Coverage",
+      "q": "How do you check test coverage in Go?",
+      "a": "`go test -cover` shows coverage percentage. `go test -coverprofile=cover.out` writes a profile. `go tool cover -html=cover.out` opens an HTML visualization. `go tool cover -func=cover.out` shows per-function coverage."
+    },
+    {
+      "topic": "Skipping Tests",
+      "q": "How do you skip a test conditionally in Go?",
+      "a": "Call `t.Skip(\"reason\")` to skip the current test. Common pattern: `if testing.Short() { t.Skip(\"skipping in short mode\") }`. Run short tests with `go test -short`. Also useful: `if runtime.GOOS == \"windows\" { t.Skip(...) }`."
+    }
+  ],
+  "17": [
+    {
+      "topic": "httptest.NewServer",
+      "q": "What is `httptest.NewServer` and how do you use it?",
+      "a": "`ts := httptest.NewServer(handler)` starts a real HTTP server on a random port. Use `ts.URL` for the base URL. Always `defer ts.Close()`. It lets you test HTTP clients against a real server without external dependencies."
+    },
+    {
+      "topic": "httptest.NewRecorder",
+      "q": "What is `httptest.NewRecorder` and when do you use it?",
+      "a": "`w := httptest.NewRecorder()` creates a `ResponseRecorder` that implements `http.ResponseWriter`. Pass it to handlers directly: `handler.ServeHTTP(w, req)`. Then inspect `w.Code`, `w.Body.String()`, `w.Header()`. No real server needed — tests are faster."
+    },
+    {
+      "topic": "t.TempDir()",
+      "q": "What does `t.TempDir()` do?",
+      "a": "`dir := t.TempDir()` creates a temporary directory that is automatically cleaned up after the test. Use it for file-based tests: write files, run your code, verify results. No manual cleanup needed. Each call creates a unique directory."
+    },
+    {
+      "topic": "Build Tags",
+      "q": "How do build tags work for test separation?",
+      "a": "Add `//go:build integration` at the top of a file (before package). These tests are excluded by default. Run them with `go test -tags=integration`. This separates slow integration tests from fast unit tests. The build tag line must be followed by a blank line."
+    },
+    {
+      "topic": "TestMain",
+      "q": "What is `TestMain` and when would you use it?",
+      "a": "`func TestMain(m *testing.M)` is a special function that controls test execution for a package. Use it for global setup/teardown: start a database, seed data, then `os.Exit(m.Run())`. Only one `TestMain` per package. Call `m.Run()` to execute all tests."
+    },
+    {
+      "topic": "Test Fixtures",
+      "q": "What are test fixtures in Go?",
+      "a": "Test fixtures are static test data files stored in a `testdata/` directory. Go tooling ignores `testdata/` in builds. Access with relative paths from the test: `data, err := os.ReadFile(\"testdata/input.json\")`. The `testdata` directory name is a convention recognized by the Go tool."
+    },
+    {
+      "topic": "t.Parallel()",
+      "q": "How does `t.Parallel()` work?",
+      "a": "Calling `t.Parallel()` at the start of a test or subtest marks it for parallel execution. Parallel tests run concurrently with other parallel tests. They wait for non-parallel tests to finish first. Use when tests are independent and don't share mutable state."
+    },
+    {
+      "topic": "testing.Short()",
+      "q": "What does `testing.Short()` return and how is it used?",
+      "a": "`testing.Short()` returns `true` when `go test -short` is used. Convention: skip slow tests when short mode is active: `if testing.Short() { t.Skip(\"skipping slow test\") }`. This lets developers run fast tests locally and full suites in CI."
+    }
+  ]
+}

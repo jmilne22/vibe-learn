@@ -1,0 +1,17 @@
+[data-theme="gruvbox-light"] {
+    --bg-dark: #fbf1c7;
+    --bg-card: #f2e5bc;
+    --bg-code: #ebdbb2;
+    --bg-lighter: #d5c4a1;
+    --green-bright: #79740e;
+    --green-dim: #98971a;
+    --green-glow: rgba(121, 116, 14, 0.12);
+    --orange: #af3a03;
+    --purple: #8f3f71;
+    --blue: #076678;
+    --cyan: #427b58;
+    --red: #cc241d;
+    --text-main: #3c3836;
+    --text-dim: #665c54;
+    --border: #d5c4a1;
+}

@@ -1,0 +1,17 @@
+[data-theme="solarized-dark"] {
+    --bg-dark: #002b36;
+    --bg-card: #073642;
+    --bg-code: #00212b;
+    --bg-lighter: #0b3a47;
+    --green-bright: #859900;
+    --green-dim: #2aa198;
+    --green-glow: rgba(133, 153, 0, 0.18);
+    --orange: #b58900;
+    --purple: #6c71c4;
+    --blue: #268bd2;
+    --cyan: #2aa198;
+    --red: #dc322f;
+    --text-main: #eee8d5;
+    --text-dim: #93a1a1;
+    --border: #0b3a47;
+}

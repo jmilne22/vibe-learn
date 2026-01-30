@@ -1,0 +1,345 @@
+{
+  "conceptLinks": {
+    "httptest Package": "#lesson-httptest",
+    "Test Fixtures": "#lesson-fixtures",
+    "Build Tags": "#lesson-build-tags",
+    "End-to-End Testing": "#lesson-e2e",
+    "t.TempDir": "#lesson-tempdir"
+  },
+  "sharedContent": {},
+  "variants": {
+    "warmups": [
+      {
+        "id": "warmup_1",
+        "concept": "httptest Package",
+        "variants": [
+          {
+            "id": "v1",
+            "title": "Test an API Client",
+            "description": "Create an <code>APIClient</code> struct with a <code>Get(path string)</code> method. Use <code>httptest.NewServer</code> to mock different HTTP responses. Test success (200), not found (404), and server error (500) cases.",
+            "hints": [
+              "Use <code>httptest.NewServer(http.HandlerFunc(...))</code> to create a test server.",
+              "Switch on <code>r.URL.Path</code> inside the handler to return different responses.",
+              "Pass <code>server.URL</code> as the base URL for your API client."
+            ],
+            "solution": "type APIClient struct {\n    baseURL string\n    client  *http.Client\n}\n\nfunc NewAPIClient(baseURL string) *APIClient {\n    return &APIClient{baseURL: baseURL, client: &http.Client{}}\n}\n\ntype APIResponse struct {\n    Status string `json:\"status\"`\n}\n\nfunc (c *APIClient) Get(path string) (*APIResponse, error) {\n    resp, err := c.client.Get(c.baseURL + path)\n    if err != nil {\n        return nil, err\n    }\n    defer resp.Body.Close()\n    if resp.StatusCode != 200 {\n        return nil, fmt.Errorf(\"status %d\", resp.StatusCode)\n    }\n    var result APIResponse\n    json.NewDecoder(resp.Body).Decode(&result)\n    return &result, nil\n}\n\nfunc TestAPIClient(t *testing.T) {\n    server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n        switch r.URL.Path {\n        case \"/ok\":\n            json.NewEncoder(w).Encode(APIResponse{Status: \"ok\"})\n        case \"/notfound\":\n            http.Error(w, \"not found\", 404)\n        case \"/error\":\n            http.Error(w, \"server error\", 500)\n        }\n    }))\n    defer server.Close()\n\n    client := NewAPIClient(server.URL)\n\n    t.Run(\"success\", func(t *testing.T) {\n        resp, err := client.Get(\"/ok\")\n        if err != nil {\n            t.Fatalf(\"unexpected error: %v\", err)\n        }\n        if resp.Status != \"ok\" {\n            t.Errorf(\"got status %q, want %q\", resp.Status, \"ok\")\n        }\n    })\n\n    t.Run(\"404\", func(t *testing.T) {\n        _, err := client.Get(\"/notfound\")\n        if err == nil {\n            t.Error(\"expected error for 404\")\n        }\n    })\n\n    t.Run(\"500\", func(t *testing.T) {\n        _, err := client.Get(\"/error\")\n        if err == nil {\n            t.Error(\"expected error for 500\")\n        }\n    })\n}",
+            "annotations": [
+              { "type": "idiom", "label": "httptest.NewServer", "text": "httptest.NewServer creates a real HTTP server on localhost with an auto-assigned port. Always defer server.Close()." },
+              { "type": "gotcha", "label": "Defer Close", "text": "Always defer server.Close() to clean up the test server. Leaking servers cause port exhaustion in large test suites." }
+            ]
+          },
+          {
+            "id": "v2",
+            "title": "Test a User Fetcher",
+            "description": "Create a <code>UserFetcher</code> that retrieves user JSON from an API. Use <code>httptest.NewServer</code> to mock the API. Test: valid user response, user not found, and malformed JSON response.",
+            "hints": [
+              "Define a <code>User</code> struct with <code>ID</code> and <code>Name</code> fields.",
+              "Mock server returns JSON for known users and 404 for unknown.",
+              "Test malformed JSON by returning invalid JSON from a specific path."
+            ],
+            "solution": "type User struct {\n    ID   int    `json:\"id\"`\n    Name string `json:\"name\"`\n}\n\ntype UserFetcher struct {\n    baseURL string\n}\n\nfunc (f *UserFetcher) Fetch(id int) (*User, error) {\n    resp, err := http.Get(fmt.Sprintf(\"%s/users/%d\", f.baseURL, id))\n    if err != nil {\n        return nil, err\n    }\n    defer resp.Body.Close()\n    if resp.StatusCode == 404 {\n        return nil, fmt.Errorf(\"user %d not found\", id)\n    }\n    var u User\n    if err := json.NewDecoder(resp.Body).Decode(&u); err != nil {\n        return nil, fmt.Errorf(\"decode error: %w\", err)\n    }\n    return &u, nil\n}\n\nfunc TestUserFetcher(t *testing.T) {\n    server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n        switch r.URL.Path {\n        case \"/users/1\":\n            json.NewEncoder(w).Encode(User{ID: 1, Name: \"Alice\"})\n        case \"/users/999\":\n            http.Error(w, \"not found\", 404)\n        case \"/users/0\":\n            w.Write([]byte(\"not json\"))\n        }\n    }))\n    defer server.Close()\n\n    fetcher := &UserFetcher{baseURL: server.URL}\n\n    t.Run(\"found\", func(t *testing.T) {\n        u, err := fetcher.Fetch(1)\n        if err != nil {\n            t.Fatalf(\"unexpected error: %v\", err)\n        }\n        if u.Name != \"Alice\" {\n            t.Errorf(\"got name %q, want %q\", u.Name, \"Alice\")\n        }\n    })\n\n    t.Run(\"not found\", func(t *testing.T) {\n        _, err := fetcher.Fetch(999)\n        if err == nil {\n            t.Error(\"expected error for missing user\")\n        }\n    })\n\n    t.Run(\"bad json\", func(t *testing.T) {\n        _, err := fetcher.Fetch(0)\n        if err == nil {\n            t.Error(\"expected error for malformed JSON\")\n        }\n    })\n}",
+            "annotations": [
+              { "type": "pattern", "label": "Path-Based Routing", "text": "Switch on r.URL.Path in the test handler to simulate different API endpoints and responses." },
+              { "type": "gotcha", "label": "JSON Decode Errors", "text": "Always check json.Decode errors. A 200 response with invalid JSON should be treated as an error." }
+            ]
+          },
+          {
+            "id": "v3",
+            "title": "Test a Health Checker",
+            "description": "Create a <code>HealthChecker</code> that calls a <code>/health</code> endpoint and returns whether the service is healthy. Use <code>httptest.NewServer</code> to test: healthy response, unhealthy response, and connection timeout.",
+            "hints": [
+              "A healthy response returns 200 with <code>{\"status\":\"ok\"}</code>.",
+              "For timeout testing, use a handler that sleeps combined with a short client timeout.",
+              "Use <code>http.Client{Timeout: time.Millisecond * 100}</code> for a short timeout."
+            ],
+            "solution": "type HealthChecker struct {\n    url    string\n    client *http.Client\n}\n\nfunc NewHealthChecker(url string, timeout time.Duration) *HealthChecker {\n    return &HealthChecker{\n        url:    url,\n        client: &http.Client{Timeout: timeout},\n    }\n}\n\nfunc (h *HealthChecker) IsHealthy() (bool, error) {\n    resp, err := h.client.Get(h.url + \"/health\")\n    if err != nil {\n        return false, err\n    }\n    defer resp.Body.Close()\n    return resp.StatusCode == 200, nil\n}\n\nfunc TestHealthChecker(t *testing.T) {\n    t.Run(\"healthy\", func(t *testing.T) {\n        server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n            w.WriteHeader(200)\n            w.Write([]byte(`{\"status\":\"ok\"}`))\n        }))\n        defer server.Close()\n        hc := NewHealthChecker(server.URL, 5*time.Second)\n        ok, err := hc.IsHealthy()\n        if err != nil || !ok {\n            t.Errorf(\"expected healthy, got ok=%v err=%v\", ok, err)\n        }\n    })\n\n    t.Run(\"unhealthy\", func(t *testing.T) {\n        server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n            w.WriteHeader(503)\n        }))\n        defer server.Close()\n        hc := NewHealthChecker(server.URL, 5*time.Second)\n        ok, err := hc.IsHealthy()\n        if err != nil {\n            t.Fatalf(\"unexpected error: %v\", err)\n        }\n        if ok {\n            t.Error(\"expected unhealthy\")\n        }\n    })\n\n    t.Run(\"timeout\", func(t *testing.T) {\n        server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n            time.Sleep(500 * time.Millisecond)\n        }))\n        defer server.Close()\n        hc := NewHealthChecker(server.URL, 50*time.Millisecond)\n        _, err := hc.IsHealthy()\n        if err == nil {\n            t.Error(\"expected timeout error\")\n        }\n    })\n}",
+            "annotations": [
+              { "type": "idiom", "label": "Client Timeout", "text": "Always set http.Client.Timeout in production code to avoid hanging on unresponsive servers." },
+              { "type": "alternative", "label": "httptest.NewTLSServer", "text": "Use httptest.NewTLSServer for testing HTTPS clients. The server provides its own TLS certificate." }
+            ]
+          },
+          {
+            "id": "v4",
+            "title": "Test a Webhook Sender",
+            "description": "Create a <code>WebhookSender</code> that POSTs JSON payloads to a URL. Use <code>httptest.NewServer</code> to capture and verify the request body, headers, and method.",
+            "hints": [
+              "In the test server handler, read <code>r.Body</code> and verify the content.",
+              "Check <code>r.Method</code> is POST and <code>r.Header.Get(\"Content-Type\")</code> is <code>application/json</code>.",
+              "Use a channel or direct field to capture the request for assertions."
+            ],
+            "solution": "type WebhookSender struct {\n    url string\n}\n\ntype Payload struct {\n    Event string `json:\"event\"`\n    Data  string `json:\"data\"`\n}\n\nfunc (ws *WebhookSender) Send(p Payload) error {\n    body, err := json.Marshal(p)\n    if err != nil {\n        return err\n    }\n    resp, err := http.Post(ws.url, \"application/json\", bytes.NewReader(body))\n    if err != nil {\n        return err\n    }\n    defer resp.Body.Close()\n    if resp.StatusCode != 200 {\n        return fmt.Errorf(\"webhook returned %d\", resp.StatusCode)\n    }\n    return nil\n}\n\nfunc TestWebhookSender(t *testing.T) {\n    var gotMethod, gotContentType, gotBody string\n\n    server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n        gotMethod = r.Method\n        gotContentType = r.Header.Get(\"Content-Type\")\n        b, _ := io.ReadAll(r.Body)\n        gotBody = string(b)\n        w.WriteHeader(200)\n    }))\n    defer server.Close()\n\n    sender := &WebhookSender{url: server.URL}\n    err := sender.Send(Payload{Event: \"deploy\", Data: \"v1.2.3\"})\n    if err != nil {\n        t.Fatalf(\"unexpected error: %v\", err)\n    }\n\n    if gotMethod != \"POST\" {\n        t.Errorf(\"method = %q, want POST\", gotMethod)\n    }\n    if gotContentType != \"application/json\" {\n        t.Errorf(\"content-type = %q, want application/json\", gotContentType)\n    }\n\n    var p Payload\n    json.Unmarshal([]byte(gotBody), &p)\n    if p.Event != \"deploy\" || p.Data != \"v1.2.3\" {\n        t.Errorf(\"body = %+v, want {deploy v1.2.3}\", p)\n    }\n}",
+            "annotations": [
+              { "type": "pattern", "label": "Request Capture", "text": "Capture request details in closure variables during the handler, then assert on them after the call." },
+              { "type": "idiom", "label": "io.ReadAll", "text": "Use io.ReadAll (Go 1.16+) to read an entire request body. Previously this was ioutil.ReadAll." }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "warmup_2",
+        "concept": "Test Fixtures",
+        "variants": [
+          {
+            "id": "v1",
+            "title": "File Processing Test",
+            "description": "Write a CSV parser function <code>ParseCSV(path string) ([][]string, error)</code>. Use <code>t.TempDir()</code> to create test files. Test with valid CSV, empty file, malformed data, and missing file.",
+            "hints": [
+              "<code>t.TempDir()</code> returns a temporary directory that is auto-cleaned after the test.",
+              "Use <code>os.WriteFile</code> to create test files in the temp directory.",
+              "Test the missing file case by using a path that does not exist."
+            ],
+            "solution": "func ParseCSV(path string) ([][]string, error) {\n    f, err := os.Open(path)\n    if err != nil {\n        return nil, err\n    }\n    defer f.Close()\n    reader := csv.NewReader(f)\n    return reader.ReadAll()\n}\n\nfunc TestParseCSV(t *testing.T) {\n    t.Run(\"valid\", func(t *testing.T) {\n        dir := t.TempDir()\n        path := filepath.Join(dir, \"test.csv\")\n        os.WriteFile(path, []byte(\"name,age\\nAlice,30\\nBob,25\\n\"), 0644)\n\n        rows, err := ParseCSV(path)\n        if err != nil {\n            t.Fatalf(\"unexpected error: %v\", err)\n        }\n        if len(rows) != 3 {\n            t.Errorf(\"got %d rows, want 3\", len(rows))\n        }\n    })\n\n    t.Run(\"empty file\", func(t *testing.T) {\n        dir := t.TempDir()\n        path := filepath.Join(dir, \"empty.csv\")\n        os.WriteFile(path, []byte(\"\"), 0644)\n\n        rows, err := ParseCSV(path)\n        if err != nil {\n            t.Fatalf(\"unexpected error: %v\", err)\n        }\n        if len(rows) != 0 {\n            t.Errorf(\"got %d rows, want 0\", len(rows))\n        }\n    })\n\n    t.Run(\"missing file\", func(t *testing.T) {\n        _, err := ParseCSV(\"/nonexistent/file.csv\")\n        if err == nil {\n            t.Error(\"expected error for missing file\")\n        }\n    })\n}",
+            "annotations": [
+              { "type": "idiom", "label": "t.TempDir()", "text": "t.TempDir() creates a unique temp directory per test that is automatically removed when the test finishes." },
+              { "type": "stdlib", "label": "encoding/csv", "text": "The encoding/csv package handles CSV parsing including quoted fields and multi-line values." }
+            ]
+          },
+          {
+            "id": "v2",
+            "title": "JSON Config File Test",
+            "description": "Write a function <code>LoadConfig(path string) (Config, error)</code> that reads a JSON config file into a struct. Use <code>t.TempDir()</code> for test files. Test valid config, invalid JSON, missing file, and empty file.",
+            "hints": [
+              "Define a <code>Config</code> struct with fields like <code>Port int</code> and <code>Host string</code>.",
+              "Use <code>os.WriteFile</code> to write test JSON into a temp directory.",
+              "Test invalid JSON by writing <code>{broken</code> to a file."
+            ],
+            "solution": "type Config struct {\n    Host string `json:\"host\"`\n    Port int    `json:\"port\"`\n}\n\nfunc LoadConfig(path string) (Config, error) {\n    data, err := os.ReadFile(path)\n    if err != nil {\n        return Config{}, err\n    }\n    var cfg Config\n    if err := json.Unmarshal(data, &cfg); err != nil {\n        return Config{}, fmt.Errorf(\"invalid config: %w\", err)\n    }\n    return cfg, nil\n}\n\nfunc TestLoadConfig(t *testing.T) {\n    t.Run(\"valid\", func(t *testing.T) {\n        dir := t.TempDir()\n        path := filepath.Join(dir, \"config.json\")\n        os.WriteFile(path, []byte(`{\"host\":\"localhost\",\"port\":8080}`), 0644)\n\n        cfg, err := LoadConfig(path)\n        if err != nil {\n            t.Fatalf(\"unexpected error: %v\", err)\n        }\n        if cfg.Host != \"localhost\" || cfg.Port != 8080 {\n            t.Errorf(\"got %+v\", cfg)\n        }\n    })\n\n    t.Run(\"invalid json\", func(t *testing.T) {\n        dir := t.TempDir()\n        path := filepath.Join(dir, \"bad.json\")\n        os.WriteFile(path, []byte(`{broken`), 0644)\n\n        _, err := LoadConfig(path)\n        if err == nil {\n            t.Error(\"expected error for invalid JSON\")\n        }\n    })\n\n    t.Run(\"missing file\", func(t *testing.T) {\n        _, err := LoadConfig(\"/nonexistent/config.json\")\n        if err == nil {\n            t.Error(\"expected error for missing file\")\n        }\n    })\n\n    t.Run(\"empty file\", func(t *testing.T) {\n        dir := t.TempDir()\n        path := filepath.Join(dir, \"empty.json\")\n        os.WriteFile(path, []byte(\"\"), 0644)\n\n        _, err := LoadConfig(path)\n        if err == nil {\n            t.Error(\"expected error for empty file\")\n        }\n    })\n}",
+            "annotations": [
+              { "type": "idiom", "label": "os.ReadFile", "text": "os.ReadFile (Go 1.16+) reads an entire file into a byte slice. Replaces ioutil.ReadFile." },
+              { "type": "gotcha", "label": "Zero Value Config", "text": "If JSON fields are missing, Go silently uses zero values. Validate required fields after unmarshaling." }
+            ]
+          },
+          {
+            "id": "v3",
+            "title": "Line Counter Test",
+            "description": "Write a function <code>CountLines(path string) (int, error)</code> that counts lines in a text file. Use <code>t.TempDir()</code> to test with: multi-line file, single-line file, empty file, and missing file.",
+            "hints": [
+              "Use <code>bufio.Scanner</code> to read line by line.",
+              "Count each call to <code>scanner.Scan()</code> that returns true.",
+              "An empty file has 0 lines. A file with just <code>\"hello\"</code> (no newline) has 1 line."
+            ],
+            "solution": "func CountLines(path string) (int, error) {\n    f, err := os.Open(path)\n    if err != nil {\n        return 0, err\n    }\n    defer f.Close()\n    scanner := bufio.NewScanner(f)\n    count := 0\n    for scanner.Scan() {\n        count++\n    }\n    return count, scanner.Err()\n}\n\nfunc TestCountLines(t *testing.T) {\n    t.Run(\"multi-line\", func(t *testing.T) {\n        dir := t.TempDir()\n        path := filepath.Join(dir, \"test.txt\")\n        os.WriteFile(path, []byte(\"line1\\nline2\\nline3\\n\"), 0644)\n\n        n, err := CountLines(path)\n        if err != nil {\n            t.Fatalf(\"unexpected error: %v\", err)\n        }\n        if n != 3 {\n            t.Errorf(\"got %d lines, want 3\", n)\n        }\n    })\n\n    t.Run(\"single line no newline\", func(t *testing.T) {\n        dir := t.TempDir()\n        path := filepath.Join(dir, \"one.txt\")\n        os.WriteFile(path, []byte(\"hello\"), 0644)\n\n        n, err := CountLines(path)\n        if err != nil {\n            t.Fatalf(\"unexpected error: %v\", err)\n        }\n        if n != 1 {\n            t.Errorf(\"got %d lines, want 1\", n)\n        }\n    })\n\n    t.Run(\"empty file\", func(t *testing.T) {\n        dir := t.TempDir()\n        path := filepath.Join(dir, \"empty.txt\")\n        os.WriteFile(path, []byte(\"\"), 0644)\n\n        n, err := CountLines(path)\n        if err != nil {\n            t.Fatalf(\"unexpected error: %v\", err)\n        }\n        if n != 0 {\n            t.Errorf(\"got %d lines, want 0\", n)\n        }\n    })\n\n    t.Run(\"missing file\", func(t *testing.T) {\n        _, err := CountLines(\"/nonexistent/file.txt\")\n        if err == nil {\n            t.Error(\"expected error for missing file\")\n        }\n    })\n}",
+            "annotations": [
+              { "type": "idiom", "label": "bufio.Scanner", "text": "bufio.Scanner is the standard way to read files line by line. Check scanner.Err() after the loop for I/O errors." },
+              { "type": "gotcha", "label": "Trailing Newline", "text": "A file ending with \\n has the same line count as without. bufio.Scanner handles this, but be aware when writing tests." }
+            ]
+          },
+          {
+            "id": "v4",
+            "title": "Word Frequency File Test",
+            "description": "Write a function <code>WordFreq(path string) (map[string]int, error)</code> that reads a text file and returns word frequencies. Use <code>t.TempDir()</code> to test with various content including repeated words, single words, and empty files.",
+            "hints": [
+              "Use <code>bufio.Scanner</code> to read lines, then <code>strings.Fields</code> to split into words.",
+              "Convert words to lowercase with <code>strings.ToLower</code> for case-insensitive counting.",
+              "Return an empty map (not nil) for empty files."
+            ],
+            "solution": "func WordFreq(path string) (map[string]int, error) {\n    f, err := os.Open(path)\n    if err != nil {\n        return nil, err\n    }\n    defer f.Close()\n\n    freq := make(map[string]int)\n    scanner := bufio.NewScanner(f)\n    for scanner.Scan() {\n        words := strings.Fields(scanner.Text())\n        for _, w := range words {\n            freq[strings.ToLower(w)]++\n        }\n    }\n    return freq, scanner.Err()\n}\n\nfunc TestWordFreq(t *testing.T) {\n    t.Run(\"normal text\", func(t *testing.T) {\n        dir := t.TempDir()\n        path := filepath.Join(dir, \"text.txt\")\n        os.WriteFile(path, []byte(\"go go go\\nhello world\\ngo world\"), 0644)\n\n        freq, err := WordFreq(path)\n        if err != nil {\n            t.Fatalf(\"unexpected error: %v\", err)\n        }\n        if freq[\"go\"] != 4 {\n            t.Errorf(\"go count = %d, want 4\", freq[\"go\"])\n        }\n        if freq[\"world\"] != 2 {\n            t.Errorf(\"world count = %d, want 2\", freq[\"world\"])\n        }\n    })\n\n    t.Run(\"case insensitive\", func(t *testing.T) {\n        dir := t.TempDir()\n        path := filepath.Join(dir, \"case.txt\")\n        os.WriteFile(path, []byte(\"Go GO go\"), 0644)\n\n        freq, err := WordFreq(path)\n        if err != nil {\n            t.Fatalf(\"unexpected error: %v\", err)\n        }\n        if freq[\"go\"] != 3 {\n            t.Errorf(\"go count = %d, want 3\", freq[\"go\"])\n        }\n    })\n\n    t.Run(\"empty file\", func(t *testing.T) {\n        dir := t.TempDir()\n        path := filepath.Join(dir, \"empty.txt\")\n        os.WriteFile(path, []byte(\"\"), 0644)\n\n        freq, err := WordFreq(path)\n        if err != nil {\n            t.Fatalf(\"unexpected error: %v\", err)\n        }\n        if len(freq) != 0 {\n            t.Errorf(\"expected empty map, got %v\", freq)\n        }\n    })\n\n    t.Run(\"missing file\", func(t *testing.T) {\n        _, err := WordFreq(\"/nonexistent/file.txt\")\n        if err == nil {\n            t.Error(\"expected error\")\n        }\n    })\n}",
+            "annotations": [
+              { "type": "idiom", "label": "strings.Fields", "text": "strings.Fields splits on any whitespace and ignores leading/trailing spaces. Preferred over strings.Split for word splitting." },
+              { "type": "pattern", "label": "Frequency Map", "text": "The map[string]int frequency counter is a fundamental Go pattern. Zero-value of int is 0, so freq[word]++ works without initialization." }
+            ]
+          }
+        ]
+      }
+    ],
+    "challenges": [
+      {
+        "id": "challenge_1",
+        "block": 1,
+        "difficulty": 3,
+        "concept": "Build Tags",
+        "variants": [
+          {
+            "id": "v1",
+            "title": "Build Tagged Tests",
+            "description": "Write a package with both unit tests (fast, no dependencies) and integration tests (slower, test real I/O). Separate them using the <code>//go:build integration</code> build tag. The unit tests should test a <code>Slugify(s string) string</code> function, and the integration test should write/read a file to verify the slug works as a filename.",
+            "functionSignature": "func Slugify(s string) string",
+            "testCases": [
+              { "input": "\"Hello World\"", "output": "\"hello-world\"" },
+              { "input": "\"Go is GREAT!\"", "output": "\"go-is-great\"" },
+              { "input": "\"  spaces  \"", "output": "\"spaces\"" },
+              { "input": "\"\"", "output": "\"\"" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "Why separate unit and integration tests? Unit tests run fast with no external dependencies. Integration tests verify real I/O but are slower." },
+              { "title": "\ud83d\udca1 Hint", "content": "Put //go:build integration at the top of the integration test file. Unit tests run by default. Integration tests only run with: go test -tags=integration" },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>File: slug.go\n  func Slugify(s string) string\n\nFile: slug_test.go (no build tag - always runs)\n  func TestSlugify(t *testing.T) { ... }\n\nFile: slug_integration_test.go\n  //go:build integration\n  func TestSlugify_AsFilename(t *testing.T) {\n    // Write file using slug as name, verify it works\n  }</pre>" }
+            ],
+            "solution": "// slug.go\nfunc Slugify(s string) string {\n    s = strings.ToLower(strings.TrimSpace(s))\n    var result strings.Builder\n    prevDash := false\n    for _, r := range s {\n        if unicode.IsLetter(r) || unicode.IsDigit(r) {\n            result.WriteRune(r)\n            prevDash = false\n        } else if !prevDash && result.Len() > 0 {\n            result.WriteRune('-')\n            prevDash = true\n        }\n    }\n    out := result.String()\n    return strings.TrimRight(out, \"-\")\n}\n\n// slug_test.go (unit tests, always run)\nfunc TestSlugify(t *testing.T) {\n    tests := []struct {\n        input string\n        want  string\n    }{\n        {\"Hello World\", \"hello-world\"},\n        {\"Go is GREAT!\", \"go-is-great\"},\n        {\"  spaces  \", \"spaces\"},\n        {\"\", \"\"},\n        {\"multiple   spaces\", \"multiple-spaces\"},\n        {\"special!@#chars\", \"special-chars\"},\n    }\n    for _, tt := range tests {\n        t.Run(tt.input, func(t *testing.T) {\n            got := Slugify(tt.input)\n            if got != tt.want {\n                t.Errorf(\"Slugify(%q) = %q, want %q\", tt.input, got, tt.want)\n            }\n        })\n    }\n}\n\n// slug_integration_test.go\n//go:build integration\n\nfunc TestSlugify_AsFilename(t *testing.T) {\n    dir := t.TempDir()\n    slug := Slugify(\"My Blog Post Title!\")\n    path := filepath.Join(dir, slug+\".txt\")\n    content := []byte(\"test content\")\n\n    if err := os.WriteFile(path, content, 0644); err != nil {\n        t.Fatalf(\"failed to write file: %v\", err)\n    }\n\n    got, err := os.ReadFile(path)\n    if err != nil {\n        t.Fatalf(\"failed to read file: %v\", err)\n    }\n    if string(got) != string(content) {\n        t.Errorf(\"content mismatch\")\n    }\n}",
+            "difficulty": 3,
+            "annotations": [
+              { "type": "idiom", "label": "Build Tags", "text": "//go:build integration separates slow tests. Run with go test -tags=integration. Default go test skips them." },
+              { "type": "pattern", "label": "Test Separation", "text": "Keep unit tests fast and dependency-free. Use build tags for tests that need filesystem, network, or database access." },
+              { "type": "gotcha", "label": "Build Tag Syntax", "text": "The //go:build line must be followed by a blank line before the package declaration. The old // +build syntax is deprecated." }
+            ]
+          },
+          {
+            "id": "v2",
+            "title": "Tagged Database Tests",
+            "description": "Write an in-memory <code>Store</code> with <code>Set</code>, <code>Get</code>, and <code>Delete</code> methods. Create unit tests that always run and integration tests (tagged) that test persistence to a temp file using <code>Save</code>/<code>Load</code> methods.",
+            "functionSignature": "func NewStore() *Store",
+            "testCases": [
+              { "input": "Set(\"key\", \"value\"); Get(\"key\")", "output": "\"value\", true" },
+              { "input": "Get(\"missing\")", "output": "\"\", false" },
+              { "input": "Set(\"key\", \"val\"); Delete(\"key\"); Get(\"key\")", "output": "\"\", false" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "Unit tests verify Set/Get/Delete in memory. Integration tests verify that Save writes to disk and Load reads it back correctly." },
+              { "title": "\ud83d\udca1 Hint", "content": "The Store wraps a map[string]string. Save serializes to JSON. Load reads JSON back. Use //go:build integration for the file-based tests." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>store.go:\n  type Store struct { data map[string]string }\n  Set, Get, Delete, Save, Load methods\n\nstore_test.go: (unit, no tag)\n  TestSet, TestGet, TestDelete\n\nstore_integration_test.go:\n  //go:build integration\n  TestSaveAndLoad</pre>" }
+            ],
+            "solution": "type Store struct {\n    data map[string]string\n}\n\nfunc NewStore() *Store {\n    return &Store{data: make(map[string]string)}\n}\n\nfunc (s *Store) Set(key, value string) { s.data[key] = value }\n\nfunc (s *Store) Get(key string) (string, bool) {\n    v, ok := s.data[key]\n    return v, ok\n}\n\nfunc (s *Store) Delete(key string) { delete(s.data, key) }\n\nfunc (s *Store) Save(path string) error {\n    data, err := json.Marshal(s.data)\n    if err != nil {\n        return err\n    }\n    return os.WriteFile(path, data, 0644)\n}\n\nfunc (s *Store) Load(path string) error {\n    data, err := os.ReadFile(path)\n    if err != nil {\n        return err\n    }\n    return json.Unmarshal(data, &s.data)\n}\n\n// store_test.go (unit tests)\nfunc TestStore_SetGet(t *testing.T) {\n    s := NewStore()\n    s.Set(\"key\", \"value\")\n    v, ok := s.Get(\"key\")\n    if !ok || v != \"value\" {\n        t.Errorf(\"got (%q, %v), want (\\\"value\\\", true)\", v, ok)\n    }\n}\n\nfunc TestStore_GetMissing(t *testing.T) {\n    s := NewStore()\n    _, ok := s.Get(\"nope\")\n    if ok {\n        t.Error(\"expected not found\")\n    }\n}\n\nfunc TestStore_Delete(t *testing.T) {\n    s := NewStore()\n    s.Set(\"key\", \"val\")\n    s.Delete(\"key\")\n    _, ok := s.Get(\"key\")\n    if ok {\n        t.Error(\"expected deleted\")\n    }\n}\n\n// store_integration_test.go\n//go:build integration\n\nfunc TestStore_SaveLoad(t *testing.T) {\n    dir := t.TempDir()\n    path := filepath.Join(dir, \"store.json\")\n\n    s1 := NewStore()\n    s1.Set(\"name\", \"Alice\")\n    s1.Set(\"lang\", \"Go\")\n    if err := s1.Save(path); err != nil {\n        t.Fatalf(\"save failed: %v\", err)\n    }\n\n    s2 := NewStore()\n    if err := s2.Load(path); err != nil {\n        t.Fatalf(\"load failed: %v\", err)\n    }\n    v, ok := s2.Get(\"name\")\n    if !ok || v != \"Alice\" {\n        t.Errorf(\"got (%q, %v), want (\\\"Alice\\\", true)\", v, ok)\n    }\n}",
+            "difficulty": 3,
+            "annotations": [
+              { "type": "pattern", "label": "In-Memory + Persistence", "text": "Separate in-memory logic (unit-testable) from I/O (integration-testable). This is a clean architecture pattern." },
+              { "type": "idiom", "label": "delete() Built-in", "text": "delete(m, key) removes a key from a map. It's a no-op if the key doesn't exist." }
+            ]
+          },
+          {
+            "id": "v3",
+            "title": "Tagged Network Tests",
+            "description": "Write a <code>Pinger</code> that checks if a host is reachable via HTTP GET. Create unit tests using httptest (always run) and integration tests (tagged) that ping a real public URL.",
+            "functionSignature": "func (p *Pinger) Ping(url string) (bool, time.Duration, error)",
+            "testCases": [
+              { "input": "\"http://testserver/ok\"", "output": "true, <duration>, nil" },
+              { "input": "\"http://testserver/down\"", "output": "false, <duration>, nil" },
+              { "input": "\"http://invalid:99999\"", "output": "false, 0, error" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "Unit tests use httptest for deterministic results. Integration tests with //go:build integration hit a real endpoint to verify real-world behavior." },
+              { "title": "\ud83d\udca1 Hint", "content": "Use time.Now() before and after the request to measure duration. Return true if status is 200, false for other statuses, error for connection failures." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>pinger.go:\n  Ping returns (reachable bool, latency, error)\n\npinger_test.go: (unit, httptest)\n  Test with mock server returning 200 and 503\n\npinger_integration_test.go:\n  //go:build integration\n  Test real public URL</pre>" }
+            ],
+            "solution": "type Pinger struct {\n    client *http.Client\n}\n\nfunc NewPinger(timeout time.Duration) *Pinger {\n    return &Pinger{client: &http.Client{Timeout: timeout}}\n}\n\nfunc (p *Pinger) Ping(url string) (bool, time.Duration, error) {\n    start := time.Now()\n    resp, err := p.client.Get(url)\n    elapsed := time.Since(start)\n    if err != nil {\n        return false, elapsed, err\n    }\n    defer resp.Body.Close()\n    return resp.StatusCode == 200, elapsed, nil\n}\n\n// pinger_test.go (unit tests)\nfunc TestPinger_Success(t *testing.T) {\n    server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n        w.WriteHeader(200)\n    }))\n    defer server.Close()\n\n    p := NewPinger(5 * time.Second)\n    ok, dur, err := p.Ping(server.URL)\n    if err != nil || !ok {\n        t.Errorf(\"expected success, got ok=%v err=%v\", ok, err)\n    }\n    if dur <= 0 {\n        t.Error(\"expected positive duration\")\n    }\n}\n\nfunc TestPinger_ServerDown(t *testing.T) {\n    server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n        w.WriteHeader(503)\n    }))\n    defer server.Close()\n\n    p := NewPinger(5 * time.Second)\n    ok, _, err := p.Ping(server.URL)\n    if err != nil {\n        t.Fatalf(\"unexpected error: %v\", err)\n    }\n    if ok {\n        t.Error(\"expected not reachable for 503\")\n    }\n}\n\n// pinger_integration_test.go\n//go:build integration\n\nfunc TestPinger_RealURL(t *testing.T) {\n    p := NewPinger(10 * time.Second)\n    ok, dur, err := p.Ping(\"https://httpbin.org/status/200\")\n    if err != nil {\n        t.Fatalf(\"ping failed: %v\", err)\n    }\n    if !ok {\n        t.Error(\"expected reachable\")\n    }\n    t.Logf(\"latency: %v\", dur)\n}",
+            "difficulty": 3,
+            "annotations": [
+              { "type": "idiom", "label": "time.Since", "text": "time.Since(start) is shorthand for time.Now().Sub(start). Use it to measure elapsed time." },
+              { "type": "alternative", "label": "t.Skip", "text": "Instead of build tags, you can use testing.Short() with t.Skip: if testing.Short() { t.Skip(\"skipping integration test\") }" }
+            ]
+          },
+          {
+            "id": "v4",
+            "title": "Tagged Slow Tests",
+            "description": "Write a <code>RateLimiter</code> that allows N operations per second. Create unit tests using time mocking and integration tests (tagged) that verify real timing behavior with <code>time.Sleep</code>.",
+            "functionSignature": "func NewRateLimiter(opsPerSecond int) *RateLimiter",
+            "testCases": [
+              { "input": "NewRateLimiter(2); Allow(); Allow()", "output": "true, true" },
+              { "input": "NewRateLimiter(1); Allow(); Allow()", "output": "true, false" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "Unit tests can inject a fake clock to avoid sleeping. Integration tests use real time to verify actual rate limiting." },
+              { "title": "\ud83d\udca1 Hint", "content": "Use a token bucket: track tokens and last refill time. Allow() checks/consumes a token. Inject a now() function for testable time." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>ratelimiter.go:\n  Track tokens and last refill time\n  Allow() refills based on elapsed time, then checks\n\nratelimiter_test.go: (unit)\n  Inject fake time.Now for deterministic tests\n\nratelimiter_integration_test.go:\n  //go:build integration\n  Use real time.Sleep to verify actual rate limiting</pre>" }
+            ],
+            "solution": "type RateLimiter struct {\n    rate     float64\n    tokens   float64\n    maxTokens float64\n    lastTime time.Time\n    now      func() time.Time\n}\n\nfunc NewRateLimiter(opsPerSecond int) *RateLimiter {\n    return &RateLimiter{\n        rate:      float64(opsPerSecond),\n        tokens:    float64(opsPerSecond),\n        maxTokens: float64(opsPerSecond),\n        lastTime:  time.Now(),\n        now:       time.Now,\n    }\n}\n\nfunc (r *RateLimiter) Allow() bool {\n    now := r.now()\n    elapsed := now.Sub(r.lastTime).Seconds()\n    r.tokens += elapsed * r.rate\n    if r.tokens > r.maxTokens {\n        r.tokens = r.maxTokens\n    }\n    r.lastTime = now\n    if r.tokens >= 1 {\n        r.tokens--\n        return true\n    }\n    return false\n}\n\n// ratelimiter_test.go (unit tests)\nfunc TestRateLimiter_AllowsUpToRate(t *testing.T) {\n    rl := NewRateLimiter(2)\n    if !rl.Allow() {\n        t.Error(\"first call should be allowed\")\n    }\n    if !rl.Allow() {\n        t.Error(\"second call should be allowed\")\n    }\n    if rl.Allow() {\n        t.Error(\"third call should be denied\")\n    }\n}\n\nfunc TestRateLimiter_RefillsOverTime(t *testing.T) {\n    fakeTime := time.Now()\n    rl := NewRateLimiter(1)\n    rl.now = func() time.Time { return fakeTime }\n\n    rl.Allow() // consume the token\n    if rl.Allow() {\n        t.Error(\"should be denied\")\n    }\n\n    fakeTime = fakeTime.Add(1 * time.Second)\n    if !rl.Allow() {\n        t.Error(\"should be allowed after 1 second\")\n    }\n}\n\n// ratelimiter_integration_test.go\n//go:build integration\n\nfunc TestRateLimiter_RealTime(t *testing.T) {\n    rl := NewRateLimiter(2)\n    rl.Allow()\n    rl.Allow()\n    if rl.Allow() {\n        t.Error(\"should be denied\")\n    }\n    time.Sleep(600 * time.Millisecond)\n    if !rl.Allow() {\n        t.Error(\"should be allowed after waiting\")\n    }\n}",
+            "difficulty": 3,
+            "annotations": [
+              { "type": "pattern", "label": "Fake Clock", "text": "Inject a now func() time.Time to make time-dependent code deterministically testable without real sleeps." },
+              { "type": "idiom", "label": "Token Bucket", "text": "The token bucket algorithm is the standard approach for rate limiting. Tokens refill over time and are consumed by operations." },
+              { "type": "gotcha", "label": "Test Flakiness", "text": "Integration tests with real time can be flaky. Add generous margins and use build tags so they don't slow CI." }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "challenge_2",
+        "block": 2,
+        "difficulty": 3,
+        "concept": "End-to-End Testing",
+        "variants": [
+          {
+            "id": "v1",
+            "title": "End-to-End HTTP Test",
+            "description": "Build an HTTP service with three endpoints: <code>/health</code> (returns status), <code>/echo</code> (returns request body), and <code>/count</code> (returns request count). Write end-to-end tests that start the full server and make real HTTP requests.",
+            "functionSignature": "func NewServer() http.Handler",
+            "testCases": [
+              { "input": "GET /health", "output": "200, {\"status\":\"ok\"}" },
+              { "input": "POST /echo with body \"hello\"", "output": "200, \"hello\"" },
+              { "input": "GET /count (after 3 requests)", "output": "200, {\"count\":3}" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "An end-to-end test starts a real server and makes real HTTP calls. How do you set up shared state like a request counter?" },
+              { "title": "\ud83d\udca1 Hint", "content": "Use httptest.NewServer with your full handler. The counter can live in a struct or closure. Make sequential requests and verify each response." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. Create server struct with counter\n2. Register handlers for /health, /echo, /count\n3. In test: start with httptest.NewServer\n4. Make real HTTP requests\n5. Verify response status and body\n6. Test interaction: /count changes after requests</pre>" }
+            ],
+            "solution": "type Server struct {\n    count int\n    mu    sync.Mutex\n}\n\nfunc NewServer() http.Handler {\n    s := &Server{}\n    mux := http.NewServeMux()\n    mux.HandleFunc(\"/health\", s.healthHandler)\n    mux.HandleFunc(\"/echo\", s.echoHandler)\n    mux.HandleFunc(\"/count\", s.countHandler)\n    return mux\n}\n\nfunc (s *Server) healthHandler(w http.ResponseWriter, r *http.Request) {\n    s.mu.Lock()\n    s.count++\n    s.mu.Unlock()\n    json.NewEncoder(w).Encode(map[string]string{\"status\": \"ok\"})\n}\n\nfunc (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {\n    s.mu.Lock()\n    s.count++\n    s.mu.Unlock()\n    body, _ := io.ReadAll(r.Body)\n    w.Write(body)\n}\n\nfunc (s *Server) countHandler(w http.ResponseWriter, r *http.Request) {\n    s.mu.Lock()\n    s.count++\n    c := s.count\n    s.mu.Unlock()\n    json.NewEncoder(w).Encode(map[string]int{\"count\": c})\n}\n\nfunc TestEndToEnd(t *testing.T) {\n    ts := httptest.NewServer(NewServer())\n    defer ts.Close()\n\n    t.Run(\"health\", func(t *testing.T) {\n        resp, err := http.Get(ts.URL + \"/health\")\n        if err != nil {\n            t.Fatalf(\"request failed: %v\", err)\n        }\n        defer resp.Body.Close()\n        if resp.StatusCode != 200 {\n            t.Errorf(\"status = %d, want 200\", resp.StatusCode)\n        }\n        var body map[string]string\n        json.NewDecoder(resp.Body).Decode(&body)\n        if body[\"status\"] != \"ok\" {\n            t.Errorf(\"status = %q, want %q\", body[\"status\"], \"ok\")\n        }\n    })\n\n    t.Run(\"echo\", func(t *testing.T) {\n        resp, err := http.Post(ts.URL+\"/echo\", \"text/plain\", strings.NewReader(\"hello\"))\n        if err != nil {\n            t.Fatalf(\"request failed: %v\", err)\n        }\n        defer resp.Body.Close()\n        body, _ := io.ReadAll(resp.Body)\n        if string(body) != \"hello\" {\n            t.Errorf(\"body = %q, want %q\", string(body), \"hello\")\n        }\n    })\n\n    t.Run(\"count\", func(t *testing.T) {\n        resp, err := http.Get(ts.URL + \"/count\")\n        if err != nil {\n            t.Fatalf(\"request failed: %v\", err)\n        }\n        defer resp.Body.Close()\n        var body map[string]int\n        json.NewDecoder(resp.Body).Decode(&body)\n        if body[\"count\"] < 1 {\n            t.Errorf(\"count = %d, expected > 0\", body[\"count\"])\n        }\n    })\n}",
+            "difficulty": 3,
+            "annotations": [
+              { "type": "idiom", "label": "sync.Mutex", "text": "Use sync.Mutex to protect shared state in HTTP handlers. Multiple requests can arrive concurrently." },
+              { "type": "pattern", "label": "E2E Test Structure", "text": "Start a real server, make real requests, verify real responses. This tests the full stack including routing and serialization." }
+            ]
+          },
+          {
+            "id": "v2",
+            "title": "End-to-End TODO API Test",
+            "description": "Build a TODO API with endpoints: <code>POST /todos</code> (create), <code>GET /todos</code> (list all), and <code>DELETE /todos/{id}</code> (delete). Write end-to-end tests that create items, list them, and delete them.",
+            "functionSignature": "func NewTodoAPI() http.Handler",
+            "testCases": [
+              { "input": "POST /todos {\"title\":\"Buy milk\"}", "output": "201, {\"id\":1,\"title\":\"Buy milk\"}" },
+              { "input": "GET /todos", "output": "200, [{\"id\":1,\"title\":\"Buy milk\"}]" },
+              { "input": "DELETE /todos/1; GET /todos", "output": "200; 200, []" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "This test exercises a full CRUD workflow. The order of operations matters: create first, then list to verify, then delete and list again." },
+              { "title": "\ud83d\udca1 Hint", "content": "Store todos in a slice or map in the server struct. Use an auto-incrementing ID. Parse the ID from the URL path for DELETE." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. Build API with in-memory storage\n2. POST /todos: add item, return with ID\n3. GET /todos: return all items\n4. DELETE /todos/ID: remove item\n5. Test workflow: create -> list -> delete -> list</pre>" }
+            ],
+            "solution": "type Todo struct {\n    ID    int    `json:\"id\"`\n    Title string `json:\"title\"`\n}\n\ntype TodoAPI struct {\n    mu     sync.Mutex\n    todos  []Todo\n    nextID int\n}\n\nfunc NewTodoAPI() http.Handler {\n    api := &TodoAPI{nextID: 1}\n    mux := http.NewServeMux()\n    mux.HandleFunc(\"/todos\", api.handleTodos)\n    return mux\n}\n\nfunc (a *TodoAPI) handleTodos(w http.ResponseWriter, r *http.Request) {\n    switch r.Method {\n    case \"GET\":\n        a.mu.Lock()\n        defer a.mu.Unlock()\n        json.NewEncoder(w).Encode(a.todos)\n    case \"POST\":\n        var t Todo\n        json.NewDecoder(r.Body).Decode(&t)\n        a.mu.Lock()\n        t.ID = a.nextID\n        a.nextID++\n        a.todos = append(a.todos, t)\n        a.mu.Unlock()\n        w.WriteHeader(201)\n        json.NewEncoder(w).Encode(t)\n    case \"DELETE\":\n        parts := strings.Split(r.URL.Path, \"/\")\n        id, _ := strconv.Atoi(parts[len(parts)-1])\n        a.mu.Lock()\n        for i, t := range a.todos {\n            if t.ID == id {\n                a.todos = append(a.todos[:i], a.todos[i+1:]...)\n                break\n            }\n        }\n        a.mu.Unlock()\n        w.WriteHeader(200)\n    }\n}\n\nfunc TestTodoAPI_E2E(t *testing.T) {\n    ts := httptest.NewServer(NewTodoAPI())\n    defer ts.Close()\n\n    // Create a todo\n    resp, err := http.Post(ts.URL+\"/todos\", \"application/json\",\n        strings.NewReader(`{\"title\":\"Buy milk\"}`))\n    if err != nil {\n        t.Fatalf(\"create failed: %v\", err)\n    }\n    if resp.StatusCode != 201 {\n        t.Errorf(\"create status = %d, want 201\", resp.StatusCode)\n    }\n    var created Todo\n    json.NewDecoder(resp.Body).Decode(&created)\n    resp.Body.Close()\n    if created.Title != \"Buy milk\" || created.ID != 1 {\n        t.Errorf(\"created = %+v\", created)\n    }\n\n    // List todos\n    resp, _ = http.Get(ts.URL + \"/todos\")\n    var todos []Todo\n    json.NewDecoder(resp.Body).Decode(&todos)\n    resp.Body.Close()\n    if len(todos) != 1 {\n        t.Errorf(\"got %d todos, want 1\", len(todos))\n    }\n\n    // Delete todo\n    req, _ := http.NewRequest(\"DELETE\", ts.URL+\"/todos/1\", nil)\n    http.DefaultClient.Do(req)\n\n    // Verify deleted\n    resp, _ = http.Get(ts.URL + \"/todos\")\n    json.NewDecoder(resp.Body).Decode(&todos)\n    resp.Body.Close()\n    if len(todos) != 0 {\n        t.Errorf(\"got %d todos after delete, want 0\", len(todos))\n    }\n}",
+            "difficulty": 3,
+            "annotations": [
+              { "type": "pattern", "label": "CRUD E2E Test", "text": "Test the full create-read-delete lifecycle in sequence. Each step verifies the previous operation succeeded." },
+              { "type": "idiom", "label": "http.NewRequest", "text": "Use http.NewRequest for methods other than GET/POST (like DELETE, PUT, PATCH)." }
+            ]
+          },
+          {
+            "id": "v3",
+            "title": "End-to-End KV Store API Test",
+            "description": "Build an HTTP key-value store with endpoints: <code>PUT /kv/{key}</code> (set value from body), <code>GET /kv/{key}</code> (get value), and <code>DELETE /kv/{key}</code> (delete). Write end-to-end tests for the full lifecycle.",
+            "functionSignature": "func NewKVServer() http.Handler",
+            "testCases": [
+              { "input": "PUT /kv/name body=\"Alice\"", "output": "200" },
+              { "input": "GET /kv/name", "output": "200, \"Alice\"" },
+              { "input": "GET /kv/missing", "output": "404" },
+              { "input": "DELETE /kv/name; GET /kv/name", "output": "200; 404" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "Extract the key from the URL path. Use a map for storage. Return 404 when a key doesn't exist." },
+              { "title": "\ud83d\udca1 Hint", "content": "Parse the key with strings.TrimPrefix(r.URL.Path, \"/kv/\"). Switch on r.Method for GET/PUT/DELETE. Use sync.RWMutex for concurrent access." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. Build KV server with map[string]string storage\n2. PUT: read body, store value\n3. GET: lookup key, return value or 404\n4. DELETE: remove key\n5. Test: put -> get -> delete -> get(404)</pre>" }
+            ],
+            "solution": "type KVServer struct {\n    mu   sync.RWMutex\n    data map[string]string\n}\n\nfunc NewKVServer() http.Handler {\n    kv := &KVServer{data: make(map[string]string)}\n    mux := http.NewServeMux()\n    mux.HandleFunc(\"/kv/\", kv.handleKV)\n    return mux\n}\n\nfunc (kv *KVServer) handleKV(w http.ResponseWriter, r *http.Request) {\n    key := strings.TrimPrefix(r.URL.Path, \"/kv/\")\n    switch r.Method {\n    case \"GET\":\n        kv.mu.RLock()\n        val, ok := kv.data[key]\n        kv.mu.RUnlock()\n        if !ok {\n            http.Error(w, \"not found\", 404)\n            return\n        }\n        w.Write([]byte(val))\n    case \"PUT\":\n        body, _ := io.ReadAll(r.Body)\n        kv.mu.Lock()\n        kv.data[key] = string(body)\n        kv.mu.Unlock()\n        w.WriteHeader(200)\n    case \"DELETE\":\n        kv.mu.Lock()\n        delete(kv.data, key)\n        kv.mu.Unlock()\n        w.WriteHeader(200)\n    }\n}\n\nfunc TestKVServer_E2E(t *testing.T) {\n    ts := httptest.NewServer(NewKVServer())\n    defer ts.Close()\n\n    // PUT a value\n    req, _ := http.NewRequest(\"PUT\", ts.URL+\"/kv/name\", strings.NewReader(\"Alice\"))\n    resp, err := http.DefaultClient.Do(req)\n    if err != nil {\n        t.Fatalf(\"PUT failed: %v\", err)\n    }\n    resp.Body.Close()\n    if resp.StatusCode != 200 {\n        t.Errorf(\"PUT status = %d, want 200\", resp.StatusCode)\n    }\n\n    // GET the value\n    resp, _ = http.Get(ts.URL + \"/kv/name\")\n    body, _ := io.ReadAll(resp.Body)\n    resp.Body.Close()\n    if string(body) != \"Alice\" {\n        t.Errorf(\"GET body = %q, want %q\", string(body), \"Alice\")\n    }\n\n    // GET missing key\n    resp, _ = http.Get(ts.URL + \"/kv/missing\")\n    resp.Body.Close()\n    if resp.StatusCode != 404 {\n        t.Errorf(\"GET missing status = %d, want 404\", resp.StatusCode)\n    }\n\n    // DELETE and verify\n    req, _ = http.NewRequest(\"DELETE\", ts.URL+\"/kv/name\", nil)\n    http.DefaultClient.Do(req)\n\n    resp, _ = http.Get(ts.URL + \"/kv/name\")\n    resp.Body.Close()\n    if resp.StatusCode != 404 {\n        t.Errorf(\"GET after DELETE status = %d, want 404\", resp.StatusCode)\n    }\n}",
+            "difficulty": 3,
+            "annotations": [
+              { "type": "idiom", "label": "sync.RWMutex", "text": "Use RWMutex when reads are more frequent than writes. RLock allows concurrent reads; Lock is exclusive." },
+              { "type": "gotcha", "label": "Close Response Body", "text": "Always close resp.Body even if you don't read it. Unclosed bodies leak connections." }
+            ]
+          },
+          {
+            "id": "v4",
+            "title": "End-to-End Middleware Test",
+            "description": "Build an HTTP server with middleware for logging and authentication. The <code>/public</code> endpoint is open, <code>/private</code> requires an <code>Authorization</code> header. Write end-to-end tests verifying both authenticated and unauthenticated access.",
+            "functionSignature": "func NewAppServer(validToken string) http.Handler",
+            "testCases": [
+              { "input": "GET /public", "output": "200, \"welcome\"" },
+              { "input": "GET /private (no auth)", "output": "401" },
+              { "input": "GET /private (valid token)", "output": "200, \"secret data\"" },
+              { "input": "GET /private (invalid token)", "output": "401" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "Middleware wraps handlers. The auth middleware checks the Authorization header before calling the next handler." },
+              { "title": "\ud83d\udca1 Hint", "content": "Write an authMiddleware(next http.Handler, token string) http.Handler function. It checks r.Header.Get(\"Authorization\") against the expected token." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. Write authMiddleware that checks Authorization header\n2. /public: no middleware, returns \"welcome\"\n3. /private: wrapped with authMiddleware\n4. Test: public access, private without token,\n   private with valid token, private with bad token</pre>" }
+            ],
+            "solution": "func authMiddleware(next http.Handler, validToken string) http.Handler {\n    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n        token := r.Header.Get(\"Authorization\")\n        if token != \"Bearer \"+validToken {\n            http.Error(w, \"unauthorized\", 401)\n            return\n        }\n        next.ServeHTTP(w, r)\n    })\n}\n\nfunc NewAppServer(validToken string) http.Handler {\n    mux := http.NewServeMux()\n    mux.HandleFunc(\"/public\", func(w http.ResponseWriter, r *http.Request) {\n        w.Write([]byte(\"welcome\"))\n    })\n    privateHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n        w.Write([]byte(\"secret data\"))\n    })\n    mux.Handle(\"/private\", authMiddleware(privateHandler, validToken))\n    return mux\n}\n\nfunc TestAppServer_E2E(t *testing.T) {\n    ts := httptest.NewServer(NewAppServer(\"my-secret-token\"))\n    defer ts.Close()\n\n    t.Run(\"public endpoint\", func(t *testing.T) {\n        resp, err := http.Get(ts.URL + \"/public\")\n        if err != nil {\n            t.Fatalf(\"request failed: %v\", err)\n        }\n        defer resp.Body.Close()\n        if resp.StatusCode != 200 {\n            t.Errorf(\"status = %d, want 200\", resp.StatusCode)\n        }\n        body, _ := io.ReadAll(resp.Body)\n        if string(body) != \"welcome\" {\n            t.Errorf(\"body = %q, want %q\", string(body), \"welcome\")\n        }\n    })\n\n    t.Run(\"private without auth\", func(t *testing.T) {\n        resp, _ := http.Get(ts.URL + \"/private\")\n        defer resp.Body.Close()\n        if resp.StatusCode != 401 {\n            t.Errorf(\"status = %d, want 401\", resp.StatusCode)\n        }\n    })\n\n    t.Run(\"private with valid token\", func(t *testing.T) {\n        req, _ := http.NewRequest(\"GET\", ts.URL+\"/private\", nil)\n        req.Header.Set(\"Authorization\", \"Bearer my-secret-token\")\n        resp, err := http.DefaultClient.Do(req)\n        if err != nil {\n            t.Fatalf(\"request failed: %v\", err)\n        }\n        defer resp.Body.Close()\n        if resp.StatusCode != 200 {\n            t.Errorf(\"status = %d, want 200\", resp.StatusCode)\n        }\n        body, _ := io.ReadAll(resp.Body)\n        if string(body) != \"secret data\" {\n            t.Errorf(\"body = %q, want %q\", string(body), \"secret data\")\n        }\n    })\n\n    t.Run(\"private with invalid token\", func(t *testing.T) {\n        req, _ := http.NewRequest(\"GET\", ts.URL+\"/private\", nil)\n        req.Header.Set(\"Authorization\", \"Bearer wrong-token\")\n        resp, _ := http.DefaultClient.Do(req)\n        defer resp.Body.Close()\n        if resp.StatusCode != 401 {\n            t.Errorf(\"status = %d, want 401\", resp.StatusCode)\n        }\n    })\n}",
+            "difficulty": 3,
+            "annotations": [
+              { "type": "pattern", "label": "Middleware Pattern", "text": "Middleware wraps an http.Handler, executing logic before/after the inner handler. This is the standard Go HTTP middleware pattern." },
+              { "type": "idiom", "label": "Handler vs HandlerFunc", "text": "http.HandlerFunc adapts a function to the http.Handler interface. Use mux.Handle for middleware-wrapped handlers." },
+              { "type": "gotcha", "label": "Token Prefix", "text": "The Authorization header typically uses 'Bearer ' prefix. Don't forget the space when comparing." }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

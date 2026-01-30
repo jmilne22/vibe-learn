@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="{{COURSE_DESCRIPTION}}">
+    <title>{{COURSE_NAME}} - Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="style.css">
+{{THEME_LINKS}}
+</head>
+<body>
+    <div class="container">
+        <div class="module-header dashboard-header">
+            <div class="module-tag">// DASHBOARD</div>
+            <h1>{{COURSE_NAME}}</h1>
+            <p class="module-desc">Track your progress through {{MODULE_COUNT}} modules</p>
+        </div>
+
+        <div class="dashboard-panel">
+            <div class="panel-actions">
+                <a href="#" id="resume-btn" class="resume-btn">▶ Resume last module</a>
+                <div class="session-controls">
+                    <select id="session-duration" class="session-duration">
+                        <option value="25-5-15">25/5/15</option>
+                        <option value="50-10-15">50/10/15</option>
+                        <option value="90-20-30">90/20/30</option>
+                    </select>
+                    <button class="session-start-btn" type="button" id="start-session-btn">Start</button>
+                </div>
+            </div>
+            <nav class="panel-nav">
+                <a href="module0.html" class="nav-pill">Quick Ref</a>
+                <a href="daily-practice.html" class="nav-pill">Daily Practice</a>
+                <a href="flashcards.html" class="nav-pill">Flashcards</a>
+                <a href="analytics.html" class="nav-pill">Weak Concepts</a>
+            </nav>
+        </div>
+
+        <div class="session-timer" id="session-timer" hidden>
+            <div class="session-timer-header">
+                <span class="session-title">Session in progress</span>
+                <span class="session-countdown" id="session-countdown">25:00</span>
+            </div>
+            <div class="session-progress">
+                <div class="session-progress-bar" id="session-progress"></div>
+            </div>
+            <div class="session-meta" id="session-label">Focus block • 25 min</div>
+            <div class="session-message" id="session-message"></div>
+            <div class="session-controls">
+                <button class="session-control-btn" type="button" data-session-action="toggle">Pause</button>
+                <button class="session-control-btn" type="button" data-session-action="reset">Reset timer</button>
+                <button class="session-control-btn" type="button" id="sound-toggle">🔔 Sound</button>
+            </div>
+        </div>
+
+        <div id="focus-toggle-slot" class="focus-toggle-slot"></div>
+
+        <div class="stats-panel">
+            <div class="stats-row">
+                <div class="stat-item"><span class="stat-value" id="completed-count">0</span><span class="stat-label">Modules</span></div>
+                <div class="stat-item"><span class="stat-value" id="exercises-count">0</span><span class="stat-label">Exercises</span></div>
+                <div class="stat-item"><span class="stat-value" id="progress-percent">0%</span><span class="stat-label">Progress</span></div>
+                <div class="stat-item"><span class="stat-value" id="due-count">0</span><span class="stat-label">Due for Review</span></div>
+            </div>
+            <div class="stats-row">
+                <div class="stat-item"><span class="stat-value" id="streak-current">0</span><span class="stat-label">Day Streak</span></div>
+                <div class="stat-item"><span class="stat-value" id="streak-longest">0</span><span class="stat-label">Best Streak</span></div>
+                <div class="stat-item"><span class="stat-value" id="streak-today">0</span><span class="stat-label">Today</span></div>
+            </div>
+            <div id="activity-heatmap"></div>
+        </div>
+
+        <div class="module-list">
+{{MODULE_LIST}}
+        </div>
+
+        <details class="data-management">
+            <summary>Data Management</summary>
+            <div class="data-actions">
+                <button class="export-notes" id="export-notes-btn">Export Notes</button>
+                <button class="data-btn" id="export-all-btn">Export All Data</button>
+                <label class="data-btn">
+                    Import Data <input type="file" accept=".json" hidden id="import-data-input">
+                </label>
+                <button class="clear-progress" id="clear-progress-btn">Clear All Progress</button>
+                <button class="clear-progress clear-progress--danger" id="nuke-btn">Nuke Everything</button>
+            </div>
+        </details>
+    </div>
+
+    <script src="course-data.js"></script>
+    <script src="course-config.js"></script>
+    <script src="theme.js"></script>
+    <script src="srs.js"></script>
+    <script src="streaks.js"></script>
+    <script src="data-backup.js"></script>
+    <script src="progress.js"></script>
+    <script src="dashboard.js"></script>
+</body>
+</html>

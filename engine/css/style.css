@@ -1,0 +1,1718 @@
+/* ============================================
+   Course Engine - Shared Styles
+   ============================================ */
+
+/* ============================================
+   1. CSS Variables
+   ============================================ */
+:root {
+    /* Dark mode (default) */
+    --bg-dark: #0a0a0f;
+    --bg-card: #12121a;
+    --bg-code: #1a1a24;
+    --bg-lighter: #1f1f2a;
+    --green-bright: #00ff9d;
+    --green-dim: #00cc7d;
+    --green-glow: rgba(0, 255, 157, 0.15);
+    --orange: #ff9d00;
+    --purple: #9d00ff;
+    --blue: #00b4ff;
+    --cyan: #00d4ff;
+    --red: #ff4757;
+    --text-main: #e0e0e0;
+    --text: var(--text-main);
+    --text-dim: #888;
+    --border: #2a2a3a;
+}
+
+/* Theme CSS files are loaded from themes/ directory */
+
+/* ============================================
+   2. Reset and Base Styles
+   ============================================ */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Space Grotesk', sans-serif;
+    background: var(--bg-dark);
+    color: var(--text-main);
+    line-height: 1.7;
+    min-height: 100vh;
+}
+
+/* ============================================
+   3. Container/Layout
+   ============================================ */
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem;
+    transition: margin-left 0.3s ease;
+}
+
+/* ============================================
+   5. Navigation (Top Nav Links)
+   ============================================ */
+nav.top-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 2rem;
+}
+
+nav.top-nav a {
+    color: var(--text-dim);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color 0.2s;
+}
+
+nav.top-nav a:hover {
+    color: var(--green-bright);
+}
+
+/* ============================================
+   6. Module Header Styles
+   ============================================ */
+.module-header {
+    margin-bottom: 3rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.module-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--green-bright);
+    margin-bottom: 0.5rem;
+}
+
+.module-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--green-bright);
+    margin-bottom: 0.5rem;
+}
+
+.module-header h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.module-header .description {
+    color: var(--text-dim);
+    font-size: 1.1rem;
+    max-width: 700px;
+}
+
+.module-desc {
+    color: var(--text-dim);
+    font-size: 1.1rem;
+    max-width: 700px;
+}
+
+/* ============================================
+   8. Code Blocks with Syntax Highlighting
+   ============================================ */
+.code-block {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    line-height: 1.6;
+}
+
+.code-block code {
+    color: var(--text-main);
+}
+
+.code-block .keyword {
+    color: var(--purple);
+}
+
+.code-block .string {
+    color: var(--green-bright);
+}
+
+.code-block .comment {
+    color: var(--text-dim);
+    font-style: italic;
+}
+
+.code-block .func {
+    color: var(--blue);
+}
+
+.code-block .type {
+    color: var(--cyan);
+}
+
+.code-block .number {
+    color: var(--orange);
+}
+
+pre {
+    margin: 0;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+/* ============================================
+   10. Tips and Warnings
+   ============================================ */
+.tip, .warning, .info {
+    padding: 1.25rem;
+    border-radius: 8px;
+    margin: 1.5rem 0;
+    border-left: 4px solid;
+}
+
+.tip {
+    background: rgba(0, 255, 157, 0.1);
+    border-left-color: var(--green-bright);
+}
+
+.tip::before {
+    content: '💡 Tip';
+    display: block;
+    font-weight: 600;
+    color: var(--green-bright);
+    margin-bottom: 0.5rem;
+}
+
+.warning {
+    background: rgba(255, 71, 87, 0.1);
+    border-left-color: var(--red);
+}
+
+.warning::before {
+    content: '⚠️ Warning';
+    display: block;
+    font-weight: 600;
+    color: var(--red);
+    margin-bottom: 0.5rem;
+}
+
+.info {
+    background: rgba(0, 180, 255, 0.1);
+    border-left-color: var(--blue);
+}
+
+.info::before {
+    content: 'ℹ️ Note';
+    display: block;
+    font-weight: 600;
+    color: var(--blue);
+    margin-bottom: 0.5rem;
+}
+
+/* ============================================
+   11. Exercises and Hints/Solutions
+   ============================================ */
+.js-required {
+    color: var(--text-dim);
+    font-style: italic;
+    padding: 1rem;
+    text-align: center;
+}
+
+.exercise {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2rem;
+    margin: 2rem 0;
+}
+
+.exercise-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.exercise-header h3 {
+    font-size: 1.2rem;
+    color: var(--orange);
+}
+
+.exercise-icon {
+    font-size: 1.5rem;
+}
+
+.exercise p {
+    margin-bottom: 1rem;
+}
+
+.hint, .solution {
+    margin-top: 1rem;
+}
+
+.hint-toggle, .solution-toggle {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    color: var(--text-main);
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+    width: 100%;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.hint-toggle:hover, .solution-toggle:hover {
+    border-color: var(--green-dim);
+}
+
+.hint-content, .solution-content {
+    display: none;
+    padding: 1rem;
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+}
+
+.hint-content.show, .solution-content.show {
+    display: block;
+}
+
+/* Details/Summary collapsible elements */
+details {
+    margin: 0.75rem 0;
+}
+
+details summary {
+    cursor: pointer;
+    color: var(--cyan);
+    font-weight: 500;
+    padding: 0.5rem 0;
+    user-select: none;
+    list-style: none;
+}
+
+details summary::-webkit-details-marker {
+    display: none;
+}
+
+details summary::before {
+    content: "▶ ";
+    font-size: 0.8em;
+    margin-right: 0.25rem;
+}
+
+details[open] summary::before {
+    content: "▼ ";
+}
+
+details summary:hover {
+    color: var(--green-bright);
+}
+
+details[open] summary {
+    margin-bottom: 0.5rem;
+}
+
+details .hint-content {
+    display: block;
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--orange);
+    border-radius: 4px;
+    padding: 1rem;
+    margin-top: 0.5rem;
+}
+
+/* ============================================
+   12. Navigation Buttons
+   ============================================ */
+.nav-buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 4rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+}
+
+.nav-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-main);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: all 0.3s;
+}
+
+.nav-btn:hover {
+    border-color: var(--green-bright);
+    box-shadow: 0 4px 20px var(--green-glow);
+}
+
+.nav-btn.primary {
+    background: var(--green-bright);
+    color: var(--bg-dark);
+    border-color: var(--green-bright);
+}
+
+.nav-btn.primary:hover {
+    background: #fff;
+}
+
+/* ============================================
+   13. Lists and Inline Code
+   ============================================ */
+ul, ol {
+    margin: 1rem 0 1rem 2rem;
+}
+
+li {
+    margin-bottom: 0.5rem;
+}
+
+code:not(.code-block code) {
+    background: var(--bg-code);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85em;
+    color: var(--green-bright);
+}
+
+h2, h3, h4 {
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+}
+
+h2 {
+    font-size: 1.5rem;
+    color: var(--text-main);
+}
+
+h3 {
+    font-size: 1.25rem;
+}
+
+p {
+    margin-bottom: 1rem;
+}
+
+a {
+    color: var(--green-bright);
+    text-decoration: none;
+    transition: opacity 0.2s;
+}
+
+a:hover {
+    opacity: 0.8;
+}
+
+/* ============================================
+   14. Theme Toggle Button
+   ============================================ */
+.theme-toggle {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    width: 44px;
+    height: 44px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 101;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    color: var(--text-main);
+    transition: all 0.3s;
+}
+
+.theme-picker {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 101;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.35rem;
+}
+
+.theme-picker-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.theme-select {
+    background: var(--bg-card);
+    color: var(--text-main);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 0.5rem 1rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+    cursor: pointer;
+    min-width: 180px;
+}
+
+.theme-select:focus {
+    outline: 2px solid var(--green-bright);
+    outline-offset: 2px;
+}
+
+.theme-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.focus-toggle {
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text-dim);
+    border-radius: 999px;
+    padding: 0.35rem 0.9rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-width: 180px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.show-timer-toggle {
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text-dim);
+    border-radius: 999px;
+    padding: 0.35rem 0.9rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-width: 180px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.show-timer-toggle:hover {
+    border-color: var(--orange);
+    color: var(--orange);
+}
+
+.focus-toggle-slot {
+    margin: 0.75rem 0 2rem;
+    display: flex;
+    justify-content: flex-start;
+}
+
+.focus-toggle:hover {
+    border-color: var(--green-bright);
+    color: var(--green-bright);
+}
+
+.focus-toggle.active {
+    background: var(--green-bright);
+    color: var(--bg-dark);
+    border-color: var(--green-bright);
+}
+
+/* ============================================
+   20. Focus Mode
+   ============================================ */
+body.focus-mode .sidebar,
+body.focus-mode .sidebar-toggle,
+body.focus-mode .sidebar-backdrop {
+    display: none !important;
+}
+
+body.focus-mode nav,
+body.focus-mode .breadcrumb {
+    display: none !important;
+}
+
+body.focus-mode .container > * {
+    opacity: 0.45;
+    transition: opacity 0.2s ease;
+}
+
+body.focus-mode .lesson {
+    opacity: 1;
+}
+
+body.focus-mode .session-timer,
+body.focus-mode .floating-session-timer,
+body.focus-mode .focus-toggle {
+    opacity: 1;
+}
+
+body.focus-mode .theme-picker-label,
+body.focus-mode .theme-select {
+    display: none !important;
+}
+
+body.focus-mode .code-compare {
+    display: block;
+}
+
+.theme-toggle:hover {
+    border-color: var(--green-bright);
+}
+
+.theme-toggle .icon-sun {
+    display: none;
+}
+
+.theme-toggle .icon-moon {
+    display: block;
+}
+
+[data-theme="light"] .theme-toggle .icon-sun {
+    display: block;
+}
+
+[data-theme="light"] .theme-toggle .icon-moon {
+    display: none;
+}
+
+/* ============================================
+   14b. Session Timer
+   ============================================ */
+.session-timer,
+.floating-session-timer {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+}
+
+.floating-session-timer {
+    position: fixed;
+    right: 1rem;
+    bottom: 1rem;
+    width: min(320px, calc(100% - 2rem));
+    z-index: 102;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.session-timer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+}
+
+.session-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.session-countdown {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.1rem;
+    color: var(--orange);
+}
+
+.session-progress {
+    background: var(--bg-code);
+    border-radius: 999px;
+    height: 8px;
+    overflow: hidden;
+}
+
+.session-progress-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--green-bright), var(--green-dim));
+    transition: width 0.3s ease;
+}
+
+.session-meta {
+    margin-top: 0.6rem;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+}
+
+.session-message {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    font-style: italic;
+    margin-top: 0.3rem;
+    min-height: 1.2em;
+    opacity: 0.7;
+}
+
+.session-message:empty {
+    display: none;
+}
+
+.session-controls {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+
+.session-duration-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+}
+
+.session-duration-select {
+    background: var(--bg-card);
+    color: var(--text-main);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 0.35rem 0.75rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    cursor: pointer;
+}
+
+.session-control-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-family: 'JetBrains Mono', monospace;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.session-control-btn:hover {
+    border-color: var(--orange);
+    color: var(--orange);
+}
+
+.session-control-btn.danger:hover {
+    border-color: var(--red);
+    color: var(--red);
+}
+
+.session-drag-handle {
+    cursor: move;
+    user-select: none;
+}
+
+/* Timer visual enhancements */
+@keyframes timer-complete-flash {
+    0% {
+        box-shadow: 0 0 0 0 var(--green-bright);
+        border-color: var(--green-bright);
+    }
+    50% {
+        box-shadow: 0 0 30px 10px var(--green-glow);
+        border-color: var(--green-bright);
+        transform: scale(1.02);
+    }
+    100% {
+        box-shadow: 0 0 0 0 var(--green-glow);
+        border-color: var(--border);
+        transform: scale(1);
+    }
+}
+
+@keyframes timer-pulse {
+    0%, 100% {
+        box-shadow: 0 0 0 rgba(230, 0, 18, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(230, 0, 18, 0.5);
+    }
+}
+
+.timer-complete {
+    animation: timer-complete-flash 1s ease-out;
+}
+
+.session-timer:not([hidden]),
+.floating-session-timer {
+    animation: timer-pulse 3s ease-in-out infinite;
+}
+
+/* ============================================
+   15. Sidebar Styles
+   ============================================ */
+.sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 280px;
+    height: 100vh;
+    background: var(--bg-card);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 0 0 1rem;
+    z-index: 100;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+}
+
+.sidebar.open {
+    transform: translateX(0);
+}
+
+.sidebar-toggle {
+    position: fixed;
+    left: 1rem;
+    top: 0.5rem;
+    width: 40px;
+    height: 40px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    z-index: 101;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    color: var(--text-main);
+    transition: all 0.3s ease;
+}
+
+.sidebar-toggle:hover {
+    border-color: var(--green-bright);
+}
+
+/* When sidebar is open, toggle merges into the header bar */
+body.sidebar-open .sidebar-toggle {
+    left: 0;
+    top: 0;
+    width: 3rem;
+    height: 48px;
+    background: transparent;
+    border: none;
+    border-right: 1px solid var(--border);
+    border-radius: 0;
+}
+
+body.sidebar-open .sidebar-toggle:hover {
+    background: var(--bg-code);
+}
+
+.sidebar-header {
+    padding: 0 1rem 0 3.5rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 0.5rem;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+}
+
+.sidebar-header a {
+    color: var(--green-bright);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.sidebar-header a:hover {
+    color: var(--text-main);
+}
+
+.sidebar-content {
+    /* Container for module list */
+}
+
+.sidebar-sections {
+    /* Nested sections under active module */
+    margin-left: 1.5rem;
+    padding-left: 0.75rem;
+    border-left: 1px solid var(--border);
+    margin-bottom: 0.5rem;
+}
+
+.sidebar-section-link {
+    display: block;
+    padding: 0.4rem 0.75rem;
+    color: var(--text-dim);
+    text-decoration: none;
+    font-size: 0.75rem;
+    transition: all 0.2s;
+}
+
+.sidebar-section-link:hover {
+    color: var(--cyan);
+}
+
+.sidebar-section-link.active {
+    color: var(--cyan);
+    font-weight: 500;
+}
+
+
+
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    color: var(--text-dim);
+    text-decoration: none;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+    border-left: 3px solid transparent;
+}
+
+.sidebar-link:hover {
+    color: var(--green-bright);
+    background: var(--bg-code);
+}
+
+.sidebar-link.active {
+    color: var(--green-bright);
+    background: var(--bg-code);
+    border-left-color: var(--green-bright);
+}
+
+.sidebar-module-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    opacity: 0.7;
+    margin-right: 0.5rem;
+}
+
+.sidebar-link.sidebar-project-link {
+    color: var(--orange);
+}
+
+.sidebar-link.sidebar-project-link:hover {
+    color: var(--orange);
+}
+
+.sidebar-link.sidebar-project-link.active {
+    color: var(--orange);
+    border-left-color: var(--orange);
+}
+
+/* Add top padding when sidebar toggle is present */
+body.has-sidebar .container {
+    padding-top: 4rem;
+}
+
+/* When sidebar is open on medium screens, shift content right */
+@media (min-width: 901px) and (max-width: 1400px) {
+    body.sidebar-open .container {
+        margin-left: 300px;
+        margin-right: 20px;
+    }
+}
+
+/* On ultrawide screens, content stays centered - sidebar floats over empty space */
+
+/* Mobile: full overlay */
+@media (max-width: 900px) {
+    .sidebar {
+        width: 100%;
+        max-width: 320px;
+    }
+
+    body.sidebar-open .container {
+        margin-left: 0;
+    }
+
+    .sidebar-backdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 99;
+    }
+
+    body.sidebar-open .sidebar-backdrop {
+        display: block;
+    }
+}
+
+/* ============================================
+   17. Footer
+   ============================================ */
+footer {
+    border-top: 1px solid var(--border);
+    padding: 2rem 0;
+    margin-top: 4rem;
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 0.9rem;
+}
+
+/* ============================================
+   18. Visual Box, Quote Box, Concept Links
+   ============================================ */
+.visual-box {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 2rem;
+    margin: 1.5rem 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+}
+
+.concept-link {
+    font-size: 0.75rem;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.concept-link:hover {
+    text-decoration: underline;
+    opacity: 1 !important;
+}
+
+/* ============================================
+   19. Responsive Adjustments
+   ============================================ */
+/* ============================================
+   Exercise Progress Tracking
+   ============================================ */
+.exercise-completed {
+    border-left: 4px solid var(--green-bright);
+    position: relative;
+}
+
+.exercise-completed::after {
+    content: '\2713';
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 24px;
+    height: 24px;
+    background: var(--green-bright);
+    color: var(--bg-dark);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.self-rating {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--bg-lighter);
+}
+
+.self-rating-label {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    white-space: nowrap;
+}
+
+.rating-btn {
+    background: transparent;
+    border: 1px solid var(--bg-lighter);
+    color: var(--text-dim);
+    padding: 0.3rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-family: 'JetBrains Mono', monospace;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.rating-btn:hover {
+    border-color: var(--text);
+    color: var(--text);
+}
+
+.rating-btn.active.got-it {
+    background: var(--green-bright);
+    border-color: var(--green-bright);
+    color: var(--bg-dark);
+    font-weight: 600;
+}
+
+.rating-btn.active.struggled {
+    background: var(--orange);
+    border-color: var(--orange);
+    color: var(--bg-dark);
+    font-weight: 600;
+}
+
+.rating-btn.active.peeked {
+    background: var(--purple);
+    border-color: var(--purple);
+    color: white;
+    font-weight: 600;
+}
+
+/* Dashboard exercise progress */
+.exercise-progress-inline {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.exercise-progress-bar {
+    width: 60px;
+    height: 4px;
+    background: var(--bg-lighter);
+    border-radius: 2px;
+    overflow: hidden;
+    display: inline-block;
+}
+
+.exercise-progress-fill {
+    height: 100%;
+    background: var(--green-bright);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+/* ============================================
+   Solution Annotations
+   ============================================ */
+.solution-annotations {
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.annotation {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    background: var(--bg-code);
+    border-left: 3px solid var(--text-dim);
+    font-size: 0.85rem;
+}
+
+.annotation-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.15rem 0.4rem;
+    border-radius: 3px;
+    background: var(--bg-lighter);
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-top: 0.1rem;
+}
+
+.annotation-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.annotation-body strong {
+    font-size: 0.8rem;
+}
+
+.annotation-body span {
+    color: var(--text-dim);
+    font-size: 0.8rem;
+}
+
+.ann-idiom {
+    border-left-color: var(--cyan);
+}
+.ann-idiom .annotation-badge {
+    color: var(--cyan);
+}
+
+.ann-complexity {
+    border-left-color: var(--orange);
+}
+.ann-complexity .annotation-badge {
+    color: var(--orange);
+}
+
+.ann-gotcha {
+    border-left-color: var(--red);
+}
+.ann-gotcha .annotation-badge {
+    color: var(--red);
+}
+
+.ann-alternative {
+    border-left-color: var(--purple);
+}
+.ann-alternative .annotation-badge {
+    color: var(--purple);
+}
+
+.ann-stdlib {
+    border-left-color: var(--green-bright);
+}
+.ann-stdlib .annotation-badge {
+    color: var(--green-bright);
+}
+
+.ann-pattern {
+    border-left-color: var(--blue);
+}
+.ann-pattern .annotation-badge {
+    color: var(--blue);
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 1rem;
+    }
+
+    .module-header h1 {
+        font-size: 2rem;
+    }
+
+    .nav-buttons {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .nav-btn {
+        justify-content: center;
+    }
+
+    .theme-picker {
+        top: 0.5rem;
+        right: 0.5rem;
+        min-width: 0;
+    }
+
+    .theme-select,
+    .focus-toggle,
+    .show-timer-toggle {
+        min-width: 140px;
+        font-size: 0.7rem;
+        padding: 0.3rem 0.7rem;
+    }
+
+    .theme-picker-label {
+        font-size: 0.65rem;
+    }
+}
+
+/* ============================================================
+   Streak Section & Activity Heatmap
+   ============================================================ */
+.activity-heatmap {
+    overflow-x: auto;
+    padding: 0.5rem 0;
+}
+
+/* ============================================================
+   Flashcard Styles
+   ============================================================ */
+.flashcard {
+    perspective: 1000px;
+    cursor: pointer;
+    min-height: 250px;
+}
+
+.flashcard-inner {
+    position: relative;
+    width: 100%;
+    min-height: 250px;
+    transition: transform 0.5s ease;
+    transform-style: preserve-3d;
+}
+
+.flashcard.flipped .flashcard-inner {
+    transform: rotateY(180deg);
+}
+
+.flashcard-front,
+.flashcard-back {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    min-height: 250px;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+}
+
+.flashcard-front {
+    border-left: 4px solid var(--cyan);
+}
+
+.flashcard-back {
+    transform: rotateY(180deg);
+    border-left: 4px solid var(--green-bright);
+}
+
+.flashcard-front code,
+.flashcard-back code {
+    background: var(--bg-code, var(--bg-lighter));
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9em;
+    color: var(--green-bright);
+}
+
+.fc-keyboard-hint {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    margin-top: 1rem;
+}
+
+.fc-keyboard-hint kbd {
+    background: var(--bg-lighter);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.1em 0.4em;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85em;
+}
+
+/* ============================================================
+   Shared Button Styles (Quick Buttons, Option Buttons)
+   ============================================================ */
+.quick-btn {
+    padding: 1rem 1.5rem;
+    background: var(--bg-card);
+    border: 2px solid var(--bg-lighter);
+    border-radius: 8px;
+    text-align: center;
+    text-decoration: none;
+    color: var(--text);
+    transition: all 0.2s;
+    font-family: 'JetBrains Mono', monospace;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    cursor: pointer;
+}
+
+.quick-btn:hover {
+    border-color: var(--orange);
+    transform: translateY(-2px);
+}
+
+.quick-btn.primary {
+    background: var(--green-bright);
+    border-color: var(--green-bright);
+    color: var(--bg-dark);
+    font-weight: 700;
+}
+
+.quick-btn.primary:hover {
+    background: #fff;
+}
+
+
+/* ============================================================
+   Shared Option Button Styles (Daily Practice, Flashcards)
+   ============================================================ */
+.dp-option {
+    background: transparent;
+    border: 2px solid var(--bg-lighter);
+    color: var(--text);
+    padding: 0.4rem 1rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-family: 'JetBrains Mono', monospace;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.dp-option:hover {
+    border-color: var(--orange);
+}
+
+.dp-option.active {
+    background: var(--orange);
+    border-color: var(--orange);
+    color: white;
+    font-weight: 600;
+}
+
+/* ============================================================
+   Analytics / Weak Concept Styles
+   ============================================================ */
+.strength-bar {
+    height: 8px;
+    border-radius: 4px;
+    background: var(--bg-lighter);
+    overflow: hidden;
+}
+
+.strength-fill {
+    height: 100%;
+    border-radius: 4px;
+}
+
+.analytics-drill-btn {
+    display: inline-block;
+    font-size: 0.75rem;
+    padding: 0.2rem 0.6rem;
+    border: 1px solid var(--orange);
+    border-radius: 4px;
+    color: var(--orange);
+    text-decoration: none;
+    font-family: 'JetBrains Mono', monospace;
+    transition: background 0.2s, color 0.2s;
+    white-space: nowrap;
+}
+
+.analytics-drill-btn:hover {
+    background: var(--orange);
+    color: var(--bg-dark);
+}
+
+/* ============================================================
+   Dashboard Page Styles
+   ============================================================ */
+.dashboard-header {
+    margin: 2rem 0 2.5rem;
+}
+
+/* Dashboard Panel */
+.dashboard-panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+}
+.panel-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+.resume-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1.25rem;
+    background: var(--green-bright);
+    color: var(--bg-dark);
+    border-radius: 999px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+.resume-btn:hover {
+    background: #fff;
+    opacity: 1;
+}
+.panel-actions .session-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0;
+}
+.dashboard-panel .session-duration {
+    width: auto;
+    padding: 0.45rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+}
+.dashboard-panel .session-start-btn {
+    padding: 0.45rem 1rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+}
+.panel-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding-top: 0.75rem;
+    margin-top: 0.75rem;
+    border-top: 1px solid var(--border);
+}
+.nav-pill {
+    padding: 0.3rem 0.85rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    text-decoration: none;
+    font-family: 'JetBrains Mono', monospace;
+    transition: all 0.2s;
+}
+.nav-pill:hover {
+    border-color: var(--orange);
+    color: var(--orange);
+    opacity: 1;
+}
+
+/* Stats Panel */
+.stats-panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 2rem;
+}
+.stats-row {
+    display: flex;
+    justify-content: space-around;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border);
+}
+.stats-row:last-of-type {
+    border-bottom: none;
+}
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.15rem;
+}
+.stats-panel .stat-value {
+    font-size: 1.5rem;
+}
+.stats-panel .stat-label {
+    margin-top: 0.25rem;
+}
+.stats-panel #activity-heatmap {
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border);
+    margin-top: 0.25rem;
+    display: flex;
+    justify-content: center;
+}
+
+/* Data management buttons */
+.data-btn {
+    padding: 0.5rem 1rem;
+    background: transparent;
+    border: 1px solid var(--bg-lighter);
+    color: var(--text-dim);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-family: 'JetBrains Mono', monospace;
+    transition: all 0.2s;
+}
+.data-btn:hover {
+    border-color: var(--orange);
+    color: var(--orange);
+}
+
+@media (max-width: 720px) {
+    .panel-actions {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+    }
+    .resume-btn {
+        justify-content: center;
+    }
+    .panel-actions .session-controls {
+        justify-content: center;
+    }
+}
+@media (max-width: 480px) {
+    .stats-row {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    .stat-item {
+        min-width: 80px;
+    }
+}
+.session-start-btn {
+    padding: 0.65rem 1.25rem;
+    background: var(--green-bright);
+    border: 2px solid var(--green-bright);
+    border-radius: 8px;
+    color: var(--bg-dark);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+.session-start-btn:hover {
+    background: #fff;
+}
+.session-duration {
+    width: 100%;
+    padding: 0.65rem 0.9rem;
+    border-radius: 8px;
+    border: 2px solid var(--bg-lighter);
+    background: var(--bg-card);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+}
+
+.session-timer {
+    margin-bottom: 2rem;
+}
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--orange);
+    font-family: 'JetBrains Mono', monospace;
+}
+.stat-label {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    margin-top: 0.5rem;
+}
+.module-list {
+    margin-top: 2rem;
+}
+.track-section {
+    margin: 2rem 0;
+}
+.track-title {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+.module-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--bg-card);
+    border: 1px solid var(--bg-lighter);
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+    transition: all 0.2s;
+}
+.module-item:hover {
+    border-color: var(--orange);
+}
+.module-checkbox {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: var(--green-bright);
+}
+.module-link {
+    flex: 1;
+    text-decoration: none;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+.module-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    min-width: 80px;
+}
+.module-name {
+    font-weight: 500;
+}
+.module-item.completed {
+    opacity: 0.6;
+}
+.module-item.completed .module-name {
+    text-decoration: line-through;
+}
+.last-studied {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+}
+.clear-progress {
+    padding: 0.5rem 1rem;
+    background: transparent;
+    border: 1px solid var(--bg-lighter);
+    color: var(--text-dim);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-family: 'JetBrains Mono', monospace;
+    transition: all 0.2s;
+}
+.clear-progress:hover {
+    border-color: var(--orange);
+    color: var(--orange);
+}
+.export-notes {
+    padding: 0.5rem 1rem;
+    background: transparent;
+    border: 1px solid var(--purple);
+    color: var(--purple);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-family: 'JetBrains Mono', monospace;
+    transition: all 0.2s;
+}
+.export-notes:hover {
+    background: var(--purple);
+    color: var(--bg-dark);
+}
+.data-management {
+    margin-top: 2rem;
+}
+.data-actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+.clear-progress--danger {
+    border-color: var(--red);
+    color: var(--red);
+}

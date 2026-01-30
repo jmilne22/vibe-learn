@@ -1,0 +1,335 @@
+{
+  "conceptLinks": {
+    "os.Args": "#lesson-os-args",
+    "flag Package": "#lesson-flags",
+    "bufio.Scanner": "#lesson-scanner",
+    "os.Stdin": "#lesson-stdin",
+    "fmt.Fprintf": "#lesson-fprintf",
+    "os.Exit": "#lesson-exit",
+    "strconv": "#lesson-strconv",
+    "strings Package": "#lesson-strings",
+    "os.Environ": "#lesson-environ"
+  },
+  "sharedContent": {},
+  "variants": {
+    "warmups": [
+      {
+        "id": "warmup_1",
+        "concept": "flag Package",
+        "variants": [
+          {
+            "id": "v1",
+            "title": "Echo Clone",
+            "description": "Build an <code>echo</code> command that prints all arguments joined by spaces. Add a <code>-n</code> flag to suppress the trailing newline.",
+            "hints": [
+              "Use <code>flag.Bool(\"n\", false, \"no trailing newline\")</code> to define the flag.",
+              "After <code>flag.Parse()</code>, remaining arguments are in <code>flag.Args()</code>.",
+              "Use <code>strings.Join()</code> to combine arguments with spaces."
+            ],
+            "solution": "func main() {\n    noNewline := flag.Bool(\"n\", false, \"no trailing newline\")\n    flag.Parse()\n\n    output := strings.Join(flag.Args(), \" \")\n    if *noNewline {\n        fmt.Print(output)\n    } else {\n        fmt.Println(output)\n    }\n}",
+            "annotations": [
+              { "type": "idiom", "label": "Flag Pointers", "text": "The <code>flag</code> package returns pointers. You must dereference with <code>*noNewline</code> to get the actual boolean value." },
+              { "type": "stdlib", "label": "strings.Join", "text": "<code>strings.Join(slice, sep)</code> is the idiomatic way to concatenate a slice of strings with a separator." }
+            ]
+          },
+          {
+            "id": "v2",
+            "title": "Greeting CLI",
+            "description": "Build a <code>greet</code> command that takes a <code>-name</code> flag (default \"World\") and prints <code>Hello, &lt;name&gt;!</code>. Add a <code>-loud</code> flag that uppercases the output.",
+            "hints": [
+              "Use <code>flag.String(\"name\", \"World\", \"...\")</code> for the name flag.",
+              "Use <code>strings.ToUpper()</code> for the loud option."
+            ],
+            "solution": "func main() {\n    name := flag.String(\"name\", \"World\", \"name to greet\")\n    loud := flag.Bool(\"loud\", false, \"uppercase output\")\n    flag.Parse()\n\n    msg := fmt.Sprintf(\"Hello, %s!\", *name)\n    if *loud {\n        msg = strings.ToUpper(msg)\n    }\n    fmt.Println(msg)\n}",
+            "annotations": [
+              { "type": "idiom", "label": "Flag Defaults", "text": "The second argument to <code>flag.String()</code> is the default value, used when the flag is not provided on the command line." },
+              { "type": "stdlib", "label": "fmt.Sprintf", "text": "<code>fmt.Sprintf</code> formats a string without printing it, useful when you need to transform the output before displaying." }
+            ]
+          },
+          {
+            "id": "v3",
+            "title": "Repeat CLI",
+            "description": "Build a <code>repeat</code> command that takes a <code>-count</code> flag (default 1) and a <code>-sep</code> flag (default newline). It repeats the given text argument the specified number of times.",
+            "hints": [
+              "Use <code>flag.Int(\"count\", 1, \"...\")</code> for the count flag.",
+              "Use <code>flag.String(\"sep\", \"\\n\", \"...\")</code> for the separator.",
+              "Use <code>strings.Repeat()</code> or a loop to produce the output."
+            ],
+            "solution": "func main() {\n    count := flag.Int(\"count\", 1, \"number of repetitions\")\n    sep := flag.String(\"sep\", \"\\n\", \"separator between repetitions\")\n    flag.Parse()\n\n    text := strings.Join(flag.Args(), \" \")\n    parts := make([]string, *count)\n    for i := range parts {\n        parts[i] = text\n    }\n    fmt.Println(strings.Join(parts, *sep))\n}",
+            "annotations": [
+              { "type": "idiom", "label": "Flag Types", "text": "The <code>flag</code> package supports <code>String</code>, <code>Int</code>, <code>Bool</code>, <code>Float64</code>, and <code>Duration</code> out of the box." },
+              { "type": "alternative", "label": "strings.Repeat", "text": "For simple repetition without a custom separator, <code>strings.Repeat(s, n)</code> repeats a string n times." }
+            ]
+          },
+          {
+            "id": "v4",
+            "title": "Reverse Args",
+            "description": "Build a command that prints its arguments in reverse order, one per line. Add a <code>-inline</code> flag to print them on a single line separated by spaces.",
+            "hints": [
+              "Get arguments from <code>flag.Args()</code> after <code>flag.Parse()</code>.",
+              "Reverse by iterating from <code>len(args)-1</code> down to <code>0</code>."
+            ],
+            "solution": "func main() {\n    inline := flag.Bool(\"inline\", false, \"print on one line\")\n    flag.Parse()\n\n    args := flag.Args()\n    reversed := make([]string, len(args))\n    for i, arg := range args {\n        reversed[len(args)-1-i] = arg\n    }\n\n    if *inline {\n        fmt.Println(strings.Join(reversed, \" \"))\n    } else {\n        for _, arg := range reversed {\n            fmt.Println(arg)\n        }\n    }\n}",
+            "annotations": [
+              { "type": "idiom", "label": "Reverse Pattern", "text": "Go has no built-in reverse function for slices (prior to Go 1.21's <code>slices.Reverse</code>). The index-swap pattern <code>reversed[len-1-i] = args[i]</code> is common." },
+              { "type": "gotcha", "label": "flag.Parse Order", "text": "You must call <code>flag.Parse()</code> before accessing <code>flag.Args()</code>. Arguments before parsing are raw <code>os.Args</code>." }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "warmup_2",
+        "concept": "bufio.Scanner",
+        "variants": [
+          {
+            "id": "v1",
+            "title": "Line Counter",
+            "description": "Build a <code>lc</code> tool that reads from stdin and counts lines. Add <code>-w</code> for word count and <code>-c</code> for character count.",
+            "hints": [
+              "Use <code>bufio.NewScanner(os.Stdin)</code> to read line by line.",
+              "For words, use <code>strings.Fields(line)</code> which splits on whitespace.",
+              "For characters, use <code>len([]rune(line))</code> to count Unicode characters."
+            ],
+            "solution": "func main() {\n    words := flag.Bool(\"w\", false, \"count words\")\n    chars := flag.Bool(\"c\", false, \"count chars\")\n    flag.Parse()\n\n    var lines, wordCount, charCount int\n    scanner := bufio.NewScanner(os.Stdin)\n    for scanner.Scan() {\n        line := scanner.Text()\n        lines++\n        wordCount += len(strings.Fields(line))\n        charCount += len([]rune(line))\n    }\n\n    switch {\n    case *words:\n        fmt.Println(wordCount)\n    case *chars:\n        fmt.Println(charCount)\n    default:\n        fmt.Println(lines)\n    }\n}",
+            "annotations": [
+              { "type": "idiom", "label": "Scanner Loop", "text": "The <code>for scanner.Scan()</code> pattern is idiomatic Go for reading input line by line until EOF." },
+              { "type": "stdlib", "label": "strings.Fields", "text": "<code>strings.Fields()</code> splits on any whitespace and ignores leading/trailing whitespace, unlike <code>strings.Split()</code>." }
+            ]
+          },
+          {
+            "id": "v2",
+            "title": "Longest Line",
+            "description": "Build a tool that reads from stdin and prints the longest line. Add a <code>-len</code> flag to print only the length instead of the full line.",
+            "hints": [
+              "Track the longest line seen so far while scanning.",
+              "Compare lengths using <code>len([]rune(line))</code> for Unicode correctness."
+            ],
+            "solution": "func main() {\n    showLen := flag.Bool(\"len\", false, \"print length only\")\n    flag.Parse()\n\n    var longest string\n    scanner := bufio.NewScanner(os.Stdin)\n    for scanner.Scan() {\n        line := scanner.Text()\n        if len([]rune(line)) > len([]rune(longest)) {\n            longest = line\n        }\n    }\n\n    if *showLen {\n        fmt.Println(len([]rune(longest)))\n    } else {\n        fmt.Println(longest)\n    }\n}",
+            "annotations": [
+              { "type": "gotcha", "label": "len(string) vs len([]rune)", "text": "<code>len(s)</code> returns byte count, not character count. Use <code>len([]rune(s))</code> for the actual character count with Unicode." },
+              { "type": "pattern", "label": "Best So Far", "text": "Tracking the 'best so far' while scanning is a single-pass O(n) pattern that avoids loading all input into memory." }
+            ]
+          },
+          {
+            "id": "v3",
+            "title": "Line Numberer",
+            "description": "Build a tool that reads from stdin and prints each line with its line number prefixed. Add a <code>-start</code> flag (default 1) to control the starting number.",
+            "hints": [
+              "Use <code>flag.Int(\"start\", 1, \"...\")</code> for the starting line number.",
+              "Use <code>fmt.Printf(\"%d\\t%s\\n\", num, line)</code> for formatted output."
+            ],
+            "solution": "func main() {\n    start := flag.Int(\"start\", 1, \"starting line number\")\n    flag.Parse()\n\n    num := *start\n    scanner := bufio.NewScanner(os.Stdin)\n    for scanner.Scan() {\n        fmt.Printf(\"%d\\t%s\\n\", num, scanner.Text())\n        num++\n    }\n}",
+            "annotations": [
+              { "type": "stdlib", "label": "fmt.Printf", "text": "<code>fmt.Printf</code> supports format verbs like <code>%d</code> (integer) and <code>%s</code> (string), similar to C's printf." },
+              { "type": "idiom", "label": "Tab Separation", "text": "Using <code>\\t</code> (tab) between the number and content is the Unix convention, matching tools like <code>cat -n</code> and <code>nl</code>." }
+            ]
+          },
+          {
+            "id": "v4",
+            "title": "Unique Lines",
+            "description": "Build a tool that reads from stdin and prints only unique lines (removing consecutive duplicates, like <code>uniq</code>). Add a <code>-count</code> flag to prefix each line with the number of consecutive occurrences.",
+            "hints": [
+              "Track the previous line. Only output when the current line differs from the previous.",
+              "For the count flag, count consecutive duplicates before printing."
+            ],
+            "solution": "func main() {\n    showCount := flag.Bool(\"count\", false, \"prefix with occurrence count\")\n    flag.Parse()\n\n    scanner := bufio.NewScanner(os.Stdin)\n    var prev string\n    count := 0\n    first := true\n\n    for scanner.Scan() {\n        line := scanner.Text()\n        if first {\n            prev = line\n            count = 1\n            first = false\n            continue\n        }\n        if line == prev {\n            count++\n        } else {\n            if *showCount {\n                fmt.Printf(\"%d\\t%s\\n\", count, prev)\n            } else {\n                fmt.Println(prev)\n            }\n            prev = line\n            count = 1\n        }\n    }\n    if !first {\n        if *showCount {\n            fmt.Printf(\"%d\\t%s\\n\", count, prev)\n        } else {\n            fmt.Println(prev)\n        }\n    }\n}",
+            "annotations": [
+              { "type": "pattern", "label": "Previous Element Tracking", "text": "Comparing each element to the previous one is a classic streaming pattern. It requires handling the first and last elements as special cases." },
+              { "type": "gotcha", "label": "Last Line Flush", "text": "When scanning line by line, do not forget to output the last group after the loop ends. This is a common off-by-one error." }
+            ]
+          }
+        ]
+      }
+    ],
+    "challenges": [
+      {
+        "id": "challenge_1",
+        "block": 1,
+        "difficulty": 2,
+        "concept": "os.Environ",
+        "variants": [
+          {
+            "id": "v1",
+            "title": "Env Printer",
+            "description": "Print environment variables. With no arguments, print all. With arguments, print only variables whose key matches one of the arguments. Add an <code>-export</code> flag that formats output as <code>export KEY=\"value\"</code>.",
+            "functionSignature": "func main()",
+            "testCases": [
+              { "input": "./envprint HOME", "output": "HOME=/home/user" },
+              { "input": "./envprint -export HOME", "output": "export HOME=\"/home/user\"" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "How does <code>os.Environ()</code> return environment variables? What format are they in, and how do you extract the key and value?" },
+              { "title": "\ud83d\udca1 Hint", "content": "<code>os.Environ()</code> returns <code>[]string</code> in <code>KEY=value</code> format. Use <code>strings.SplitN(env, \"=\", 2)</code> to separate key and value (SplitN limits splits in case value contains '=')." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. Parse -export flag\n2. Get filter args from flag.Args()\n3. For each env var:\n   - Split into key and value\n   - If filters exist, skip non-matching keys\n   - Print in plain or export format</pre>" }
+            ],
+            "solution": "func main() {\n    export := flag.Bool(\"export\", false, \"export format\")\n    flag.Parse()\n    filters := flag.Args()\n\n    for _, env := range os.Environ() {\n        parts := strings.SplitN(env, \"=\", 2)\n        key, val := parts[0], parts[1]\n\n        if len(filters) > 0 {\n            found := false\n            for _, f := range filters {\n                if f == key {\n                    found = true\n                    break\n                }\n            }\n            if !found {\n                continue\n            }\n        }\n\n        if *export {\n            fmt.Printf(\"export %s=%q\\n\", key, val)\n        } else {\n            fmt.Println(env)\n        }\n    }\n}",
+            "difficulty": 2,
+            "annotations": [
+              { "type": "stdlib", "label": "os.Environ", "text": "<code>os.Environ()</code> returns a copy of all environment variables as a string slice in <code>KEY=value</code> format." },
+              { "type": "idiom", "label": "%q Verb", "text": "The <code>%q</code> format verb wraps a string in double quotes and escapes special characters, perfect for shell-safe output." }
+            ]
+          },
+          {
+            "id": "v2",
+            "title": "Env Grep",
+            "description": "Build an <code>envgrep</code> tool that searches environment variable values (not just keys) using substring matching. Add a <code>-i</code> flag for case-insensitive search and a <code>-keys</code> flag to only print matching keys (not values).",
+            "functionSignature": "func main()",
+            "testCases": [
+              { "input": "./envgrep /usr", "output": "PATH=/usr/local/bin:/usr/bin\n..." },
+              { "input": "./envgrep -i -keys home", "output": "HOME" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "How do you search within both the key and value? How do you implement case-insensitive matching?" },
+              { "title": "\ud83d\udca1 Hint", "content": "Use <code>strings.Contains()</code> for substring matching. For case-insensitive search, convert both the search term and the env var to lowercase with <code>strings.ToLower()</code>." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. Parse flags (-i, -keys) and get search pattern\n2. For each env var:\n   - Apply case folding if -i is set\n   - Check if pattern is a substring of the full env var\n   - Print key only or full var based on -keys flag</pre>" }
+            ],
+            "solution": "func main() {\n    insensitive := flag.Bool(\"i\", false, \"case insensitive\")\n    keysOnly := flag.Bool(\"keys\", false, \"print keys only\")\n    flag.Parse()\n\n    if len(flag.Args()) == 0 {\n        fmt.Fprintln(os.Stderr, \"usage: envgrep [-i] [-keys] pattern\")\n        os.Exit(1)\n    }\n    pattern := flag.Args()[0]\n\n    for _, env := range os.Environ() {\n        search := env\n        pat := pattern\n        if *insensitive {\n            search = strings.ToLower(search)\n            pat = strings.ToLower(pat)\n        }\n        if strings.Contains(search, pat) {\n            if *keysOnly {\n                parts := strings.SplitN(env, \"=\", 2)\n                fmt.Println(parts[0])\n            } else {\n                fmt.Println(env)\n            }\n        }\n    }\n}",
+            "difficulty": 2,
+            "annotations": [
+              { "type": "stdlib", "label": "strings.Contains", "text": "<code>strings.Contains(s, substr)</code> checks if <code>substr</code> is within <code>s</code>. It is the idiomatic Go approach for substring search." },
+              { "type": "idiom", "label": "Stderr for Errors", "text": "Use <code>fmt.Fprintln(os.Stderr, ...)</code> for error messages so they do not mix with normal output that might be piped." }
+            ]
+          },
+          {
+            "id": "v3",
+            "title": "Env Diff",
+            "description": "Build an <code>envdiff</code> tool that compares specified environment variables against expected values from arguments in <code>KEY=expected</code> format. Print <code>OK</code> or <code>MISMATCH</code> for each.",
+            "functionSignature": "func main()",
+            "testCases": [
+              { "input": "./envdiff HOME=/home/user", "output": "HOME: OK" },
+              { "input": "./envdiff LANG=fake", "output": "LANG: MISMATCH (got \"en_US.UTF-8\", want \"fake\")" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "How do you get the value of a specific environment variable? How do you parse the expected value from the command-line argument?" },
+              { "title": "\ud83d\udca1 Hint", "content": "Use <code>os.Getenv(key)</code> to get a single env var. Split each argument with <code>strings.SplitN(arg, \"=\", 2)</code> to extract the key and expected value." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. For each argument:\n   - Split into key and expected value\n   - Get actual value with os.Getenv(key)\n   - Compare and print OK or MISMATCH</pre>" }
+            ],
+            "solution": "func main() {\n    for _, arg := range os.Args[1:] {\n        parts := strings.SplitN(arg, \"=\", 2)\n        if len(parts) != 2 {\n            fmt.Fprintf(os.Stderr, \"invalid format: %s (use KEY=value)\\n\", arg)\n            continue\n        }\n        key, expected := parts[0], parts[1]\n        actual := os.Getenv(key)\n        if actual == expected {\n            fmt.Printf(\"%s: OK\\n\", key)\n        } else {\n            fmt.Printf(\"%s: MISMATCH (got %q, want %q)\\n\", key, actual, expected)\n        }\n    }\n}",
+            "difficulty": 2,
+            "annotations": [
+              { "type": "stdlib", "label": "os.Getenv", "text": "<code>os.Getenv(key)</code> returns the value of an env var, or empty string if unset. Use <code>os.LookupEnv()</code> to distinguish unset from empty." },
+              { "type": "gotcha", "label": "Empty vs Unset", "text": "<code>os.Getenv()</code> returns <code>\"\"</code> for both unset and empty variables. Use <code>os.LookupEnv()</code> if you need to tell them apart." }
+            ]
+          },
+          {
+            "id": "v4",
+            "title": "Env JSON",
+            "description": "Build an <code>envjson</code> tool that outputs environment variables as JSON. With no arguments, output all as a JSON object. With arguments, output only matching keys. Add a <code>-pretty</code> flag for indented output.",
+            "functionSignature": "func main()",
+            "testCases": [
+              { "input": "./envjson HOME USER", "output": "{\"HOME\":\"/home/user\",\"USER\":\"user\"}" },
+              { "input": "./envjson -pretty HOME", "output": "{\n  \"HOME\": \"/home/user\"\n}" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "How do you build a JSON object from a map in Go? What standard library package handles JSON encoding?" },
+              { "title": "\ud83d\udca1 Hint", "content": "Build a <code>map[string]string</code> of the desired env vars. Use <code>json.Marshal()</code> or <code>json.MarshalIndent()</code> for pretty printing." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. Collect env vars into a map\n2. Filter by arguments if any\n3. Marshal to JSON (indent if -pretty)\n4. Print the result</pre>" }
+            ],
+            "solution": "func main() {\n    pretty := flag.Bool(\"pretty\", false, \"indented output\")\n    flag.Parse()\n    filters := flag.Args()\n\n    envMap := make(map[string]string)\n    for _, env := range os.Environ() {\n        parts := strings.SplitN(env, \"=\", 2)\n        key, val := parts[0], parts[1]\n        if len(filters) > 0 {\n            found := false\n            for _, f := range filters {\n                if f == key {\n                    found = true\n                    break\n                }\n            }\n            if !found {\n                continue\n            }\n        }\n        envMap[key] = val\n    }\n\n    var data []byte\n    var err error\n    if *pretty {\n        data, err = json.MarshalIndent(envMap, \"\", \"  \")\n    } else {\n        data, err = json.Marshal(envMap)\n    }\n    if err != nil {\n        fmt.Fprintln(os.Stderr, err)\n        os.Exit(1)\n    }\n    fmt.Println(string(data))\n}",
+            "difficulty": 3,
+            "annotations": [
+              { "type": "stdlib", "label": "encoding/json", "text": "<code>json.Marshal()</code> serializes Go values to JSON. <code>json.MarshalIndent()</code> adds formatting for human readability." },
+              { "type": "idiom", "label": "Error to Stderr", "text": "CLI tools should write error messages to stderr and structured output to stdout so piping works correctly." }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "challenge_2",
+        "block": 1,
+        "difficulty": 2,
+        "concept": "strconv",
+        "variants": [
+          {
+            "id": "v1",
+            "title": "Simple Calculator",
+            "description": "Build a <code>calc</code> command that takes <code>num op num</code> as arguments, supporting <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>. Exit with code 1 on division by zero or invalid input.",
+            "functionSignature": "func main()",
+            "testCases": [
+              { "input": "./calc 10 + 5", "output": "15" },
+              { "input": "./calc 10 / 0", "output": "division by zero (exit 1)" },
+              { "input": "./calc 7 * 3", "output": "21" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "How do you convert string arguments to numbers? How do you handle the different operators?" },
+              { "title": "\ud83d\udca1 Hint", "content": "Use <code>strconv.ParseFloat(s, 64)</code> to convert strings to numbers. A <code>switch</code> on the operator string handles the four cases. Check for division by zero before dividing." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. Validate: exactly 3 arguments needed\n2. Parse first and third args as float64\n3. Switch on operator (second arg)\n4. Handle division by zero specially\n5. Print result or error + os.Exit(1)</pre>" }
+            ],
+            "solution": "func main() {\n    if len(os.Args) != 4 {\n        fmt.Fprintln(os.Stderr, \"usage: calc num op num\")\n        os.Exit(1)\n    }\n    a, err := strconv.ParseFloat(os.Args[1], 64)\n    if err != nil {\n        fmt.Fprintln(os.Stderr, \"invalid number:\", os.Args[1])\n        os.Exit(1)\n    }\n    op := os.Args[2]\n    b, err := strconv.ParseFloat(os.Args[3], 64)\n    if err != nil {\n        fmt.Fprintln(os.Stderr, \"invalid number:\", os.Args[3])\n        os.Exit(1)\n    }\n\n    var result float64\n    switch op {\n    case \"+\":\n        result = a + b\n    case \"-\":\n        result = a - b\n    case \"*\":\n        result = a * b\n    case \"/\":\n        if b == 0 {\n            fmt.Fprintln(os.Stderr, \"division by zero\")\n            os.Exit(1)\n        }\n        result = a / b\n    default:\n        fmt.Fprintln(os.Stderr, \"unknown operator:\", op)\n        os.Exit(1)\n    }\n    fmt.Println(result)\n}",
+            "difficulty": 2,
+            "annotations": [
+              { "type": "stdlib", "label": "strconv.ParseFloat", "text": "<code>strconv.ParseFloat(s, 64)</code> parses a string into a float64. The second argument is the bit size (32 or 64)." },
+              { "type": "idiom", "label": "os.Exit Codes", "text": "Convention: exit code 0 means success, 1 means general error, 2 means usage error. Go's <code>os.Exit()</code> sets the process exit code." }
+            ]
+          },
+          {
+            "id": "v2",
+            "title": "Temperature Converter",
+            "description": "Build a <code>tempconv</code> command: <code>tempconv 100 C</code> converts 100 Celsius to Fahrenheit, <code>tempconv 212 F</code> converts to Celsius. Exit with code 1 for invalid unit.",
+            "functionSignature": "func main()",
+            "testCases": [
+              { "input": "./tempconv 100 C", "output": "212.00 F" },
+              { "input": "./tempconv 32 F", "output": "0.00 C" },
+              { "input": "./tempconv 50 X", "output": "unknown unit: X (exit 1)" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "What are the formulas for C-to-F and F-to-C conversion? How do you validate the unit argument?" },
+              { "title": "\ud83d\udca1 Hint", "content": "C to F: <code>value*9/5 + 32</code>. F to C: <code>(value - 32) * 5/9</code>. Use <code>strings.ToUpper()</code> to normalize the unit." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. Parse value and unit from args\n2. Switch on unit:\n   - \"C\": apply C->F formula\n   - \"F\": apply F->C formula\n   - else: error + exit(1)\n3. Print formatted result</pre>" }
+            ],
+            "solution": "func main() {\n    if len(os.Args) != 3 {\n        fmt.Fprintln(os.Stderr, \"usage: tempconv value unit\")\n        os.Exit(1)\n    }\n    val, err := strconv.ParseFloat(os.Args[1], 64)\n    if err != nil {\n        fmt.Fprintln(os.Stderr, \"invalid number:\", os.Args[1])\n        os.Exit(1)\n    }\n    unit := strings.ToUpper(os.Args[2])\n\n    switch unit {\n    case \"C\":\n        fmt.Printf(\"%.2f F\\n\", val*9.0/5.0+32)\n    case \"F\":\n        fmt.Printf(\"%.2f C\\n\", (val-32)*5.0/9.0)\n    default:\n        fmt.Fprintln(os.Stderr, \"unknown unit:\", os.Args[2])\n        os.Exit(1)\n    }\n}",
+            "difficulty": 2,
+            "annotations": [
+              { "type": "idiom", "label": "Input Normalization", "text": "Converting user input to a canonical form (e.g., uppercase) before comparison is a common CLI pattern that improves usability." },
+              { "type": "stdlib", "label": "fmt.Printf %.2f", "text": "The <code>%.2f</code> format verb prints a float with exactly 2 decimal places." }
+            ]
+          },
+          {
+            "id": "v3",
+            "title": "Base Converter",
+            "description": "Build a <code>baseconv</code> command: <code>baseconv 255 hex</code> outputs <code>ff</code>, <code>baseconv 255 bin</code> outputs <code>11111111</code>, <code>baseconv 255 oct</code> outputs <code>377</code>. Exit with code 1 for invalid input.",
+            "functionSignature": "func main()",
+            "testCases": [
+              { "input": "./baseconv 255 hex", "output": "ff" },
+              { "input": "./baseconv 10 bin", "output": "1010" },
+              { "input": "./baseconv 255 oct", "output": "377" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "How do you convert an integer to different bases in Go? Is there a formatting verb or function for this?" },
+              { "title": "\ud83d\udca1 Hint", "content": "Use <code>strconv.FormatInt(n, base)</code> where base is 2, 8, or 16. Alternatively, use <code>fmt.Sprintf</code> with <code>%x</code>, <code>%o</code>, or <code>%b</code>." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. Parse integer from first argument\n2. Switch on base name:\n   - \"hex\" -> base 16\n   - \"bin\" -> base 2\n   - \"oct\" -> base 8\n3. Format and print</pre>" }
+            ],
+            "solution": "func main() {\n    if len(os.Args) != 3 {\n        fmt.Fprintln(os.Stderr, \"usage: baseconv number base\")\n        os.Exit(1)\n    }\n    n, err := strconv.ParseInt(os.Args[1], 10, 64)\n    if err != nil {\n        fmt.Fprintln(os.Stderr, \"invalid number:\", os.Args[1])\n        os.Exit(1)\n    }\n\n    switch strings.ToLower(os.Args[2]) {\n    case \"hex\":\n        fmt.Println(strconv.FormatInt(n, 16))\n    case \"bin\":\n        fmt.Println(strconv.FormatInt(n, 2))\n    case \"oct\":\n        fmt.Println(strconv.FormatInt(n, 8))\n    default:\n        fmt.Fprintln(os.Stderr, \"unknown base:\", os.Args[2])\n        os.Exit(1)\n    }\n}",
+            "difficulty": 2,
+            "annotations": [
+              { "type": "stdlib", "label": "strconv.FormatInt", "text": "<code>strconv.FormatInt(n, base)</code> converts an int64 to its string representation in the given base (2-36)." },
+              { "type": "alternative", "label": "fmt Verbs", "text": "You can also use <code>fmt.Sprintf(\"%x\", n)</code> for hex, <code>\"%b\"</code> for binary, and <code>\"%o\"</code> for octal." }
+            ]
+          },
+          {
+            "id": "v4",
+            "title": "Unit Calculator",
+            "description": "Build a <code>unitcalc</code> tool that converts between units: <code>unitcalc 1000 m km</code> converts 1000 meters to kilometers. Support m/km, g/kg, and s/min.",
+            "functionSignature": "func main()",
+            "testCases": [
+              { "input": "./unitcalc 1000 m km", "output": "1.000" },
+              { "input": "./unitcalc 2.5 kg g", "output": "2500.000" },
+              { "input": "./unitcalc 120 s min", "output": "2.000" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "How do you structure conversion between related units? What data structure maps a unit to its base value?" },
+              { "title": "\ud83d\udca1 Hint", "content": "Define conversion factors to a base unit. For distance: m=1, km=1000. Convert to base unit first, then to target: <code>value * fromFactor / toFactor</code>." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. Define unit groups with factors:\n   distance: m=1, km=1000\n   mass: g=1, kg=1000\n   time: s=1, min=60\n2. Find which group both units belong to\n3. Convert: value * fromFactor / toFactor</pre>" }
+            ],
+            "solution": "func main() {\n    if len(os.Args) != 4 {\n        fmt.Fprintln(os.Stderr, \"usage: unitcalc value from_unit to_unit\")\n        os.Exit(1)\n    }\n    val, err := strconv.ParseFloat(os.Args[1], 64)\n    if err != nil {\n        fmt.Fprintln(os.Stderr, \"invalid number:\", os.Args[1])\n        os.Exit(1)\n    }\n    from := os.Args[2]\n    to := os.Args[3]\n\n    units := map[string]float64{\n        \"m\": 1, \"km\": 1000,\n        \"g\": 1, \"kg\": 1000,\n        \"s\": 1, \"min\": 60,\n    }\n\n    fromFactor, okF := units[from]\n    toFactor, okT := units[to]\n    if !okF || !okT {\n        fmt.Fprintln(os.Stderr, \"unknown unit\")\n        os.Exit(1)\n    }\n\n    result := val * fromFactor / toFactor\n    fmt.Printf(\"%.3f\\n\", result)\n}",
+            "difficulty": 3,
+            "annotations": [
+              { "type": "pattern", "label": "Factor-Based Conversion", "text": "Converting to a base unit then to the target is a scalable pattern. Adding new units only requires adding entries to the factor map." },
+              { "type": "gotcha", "label": "Cross-Group Conversion", "text": "This simplified version does not prevent converting meters to kilograms. A production version would group units and validate compatibility." }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

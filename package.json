@@ -1,0 +1,12 @@
+{
+  "name": "course-engine",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Reusable course engine — fork, replace content, build, deploy.",
+  "scripts": {
+    "build": "node build.js"
+  },
+  "dependencies": {
+    "marked": "^15.0.0"
+  }
+}

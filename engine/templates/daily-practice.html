@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Practice | {{COURSE_NAME}}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="style.css">
+{{THEME_LINKS}}
+    <style>
+        .dp-header {
+            margin: 2rem 0 1.5rem;
+        }
+        .dp-stats {
+            display: flex;
+            gap: 1.5rem;
+            margin: 1.5rem 0;
+            flex-wrap: wrap;
+        }
+        .dp-stat {
+            background: var(--bg-card);
+            border: 1px solid var(--bg-lighter);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            text-align: center;
+            min-width: 120px;
+        }
+        .dp-stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--orange);
+        }
+        .dp-stat-label {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin-top: 0.25rem;
+        }
+        .dp-config {
+            background: var(--bg-card);
+            border: 1px solid var(--bg-lighter);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+        .dp-config-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+        .dp-config-label {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            min-width: 100px;
+        }
+        .dp-config-options {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .dp-start-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.75rem 2rem;
+            background: var(--orange);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            font-family: 'Space Grotesk', sans-serif;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .dp-start-btn:hover {
+            background: var(--orange);
+            filter: brightness(1.2);
+        }
+        .dp-start-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .dp-session-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 1.5rem 0 1rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .dp-session-progress {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+        }
+        .dp-session-progress strong {
+            color: var(--orange);
+        }
+        .dp-session-module {
+            font-size: 0.8rem;
+            color: var(--cyan);
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .dp-nav-btns {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+        }
+        .dp-next-btn {
+            padding: 0.6rem 1.5rem;
+            background: var(--orange);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .dp-next-btn:hover {
+            background: #fff;
+            color: var(--bg-dark);
+        }
+        .dp-skip-btn {
+            padding: 0.6rem 1.5rem;
+            background: transparent;
+            color: var(--text-dim);
+            border: 1px solid var(--bg-lighter);
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-family: 'JetBrains Mono', monospace;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .dp-skip-btn:hover {
+            border-color: var(--text);
+            color: var(--text);
+        }
+        .dp-option:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        .dp-complete {
+            background: var(--bg-card);
+            border: 2px solid var(--green-bright);
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            margin: 2rem 0;
+        }
+        .dp-complete h2 {
+            color: var(--green-bright);
+            margin-bottom: 1rem;
+        }
+        .dp-complete-stats {
+            display: flex;
+            gap: 2rem;
+            justify-content: center;
+            margin: 1.5rem 0;
+            flex-wrap: wrap;
+        }
+        .dp-empty {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-dim);
+        }
+        .dp-empty h3 {
+            color: var(--text);
+            margin-bottom: 0.5rem;
+        }
+        .dp-progress-bar {
+            width: 100%;
+            height: 6px;
+            background: var(--bg-lighter);
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+        .dp-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--green-bright), var(--orange));
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body data-module="practice">
+    <div class="container">
+        <nav>
+            <a href="index.html">&larr; Dashboard</a>
+        </nav>
+
+        <div class="module-header dp-header">
+            <div class="module-tag">// DAILY PRACTICE</div>
+            <h1>Practice Session</h1>
+            <p class="module-desc">Review exercises across all modules, weighted by what you need most.</p>
+        </div>
+
+        <!-- Stats -->
+        <div class="dp-stats" id="dp-stats">
+            <div class="dp-stat">
+                <div class="dp-stat-value" id="dp-due">0</div>
+                <div class="dp-stat-label">Due for Review</div>
+            </div>
+            <div class="dp-stat">
+                <div class="dp-stat-value" id="dp-weak">0</div>
+                <div class="dp-stat-label">Weak Exercises</div>
+            </div>
+            <div class="dp-stat">
+                <div class="dp-stat-value" id="dp-total">0</div>
+                <div class="dp-stat-label">Total Tracked</div>
+            </div>
+        </div>
+
+        <!-- Configuration -->
+        <div class="dp-config" id="dp-config">
+            <div class="dp-config-row">
+                <span class="dp-config-label">Exercises:</span>
+                <div class="dp-config-options" id="dp-count-options">
+                    <button class="dp-option" data-count="5">5</button>
+                    <button class="dp-option active" data-count="10">10</button>
+                    <button class="dp-option" data-count="15">15</button>
+                    <button class="dp-option" data-count="20">20</button>
+                </div>
+            </div>
+            <div class="dp-config-row">
+                <span class="dp-config-label">Mode:</span>
+                <div class="dp-config-options" id="dp-mode-options">
+                    <button class="dp-option active" data-mode="review">Due for Review</button>
+                    <button class="dp-option" data-mode="weakest">Weakest</button>
+                    <button class="dp-option" data-mode="mixed">Mixed</button>
+                    <button class="dp-option" data-mode="discover">Discover</button>
+                </div>
+            </div>
+            <div class="dp-config-row">
+                <span class="dp-config-label">Type:</span>
+                <div class="dp-config-options" id="dp-type-options">
+                    <button class="dp-option active" data-type="all">All</button>
+                    <button class="dp-option" data-type="warmup">Warmups</button>
+                    <button class="dp-option" data-type="challenge">Challenges</button>
+                </div>
+            </div>
+            <div class="dp-config-row">
+                <span class="dp-config-label">Modules:</span>
+                <div class="dp-config-options" id="dp-module-options">
+{{MODULE_FILTER_BUTTONS}}
+                </div>
+            </div>
+            <div style="margin-top: 1rem;">
+                <button class="dp-start-btn" id="dp-start" onclick="startSession()" style="width: 100%; padding: 1rem; font-size: 1.1rem;">Start Session</button>
+                <p id="dp-start-hint" style="color: var(--orange); font-size: 0.85rem; margin-top: 0.5rem; display: none;"></p>
+            </div>
+        </div>
+
+        <!-- Session area (hidden until started) -->
+        <div id="dp-session" hidden>
+            <div class="dp-session-header">
+                <span class="dp-session-progress" id="dp-session-label">Exercise <strong>1</strong> of <strong>10</strong></span>
+                <span class="dp-session-module" id="dp-session-module"></span>
+            </div>
+            <div class="dp-progress-bar">
+                <div class="dp-progress-fill" id="dp-session-bar" style="width: 0%"></div>
+            </div>
+            <div id="dp-exercise-container"></div>
+            <div class="dp-nav-btns" id="dp-nav-standard">
+                <button class="dp-next-btn" id="dp-next" onclick="nextExercise()">Next &rarr;</button>
+                <button class="dp-skip-btn" onclick="skipExercise()">Skip</button>
+            </div>
+        </div>
+
+        <!-- Session complete (hidden until done) -->
+        <div id="dp-complete" class="dp-complete" hidden>
+            <h2>Session Complete</h2>
+            <div class="dp-complete-stats" id="dp-results"></div>
+            <div style="margin-top: 1.5rem;">
+                <button class="dp-start-btn" onclick="location.reload()">New Session</button>
+                <a href="index.html" style="margin-left: 1rem; color: var(--text-dim);">Back to Dashboard</a>
+            </div>
+        </div>
+
+        <!-- Empty state -->
+        <div id="dp-empty" class="dp-empty" hidden>
+            <h3>No exercises to review yet</h3>
+            <p>Complete some exercises in the course modules first. Rate them when you're done, and they'll appear here for review.</p>
+            <a href="module1.html" style="color: var(--green-bright); display: inline-block; margin-top: 1rem;">Start with Module 1 &rarr;</a>
+        </div>
+    </div>
+
+    <script src="course-data.js"></script>
+    <script src="course-config.js"></script>
+    <script src="theme.js"></script>
+    <script src="sidebar.js"></script>
+    <script src="srs.js"></script>
+    <script src="progress.js"></script>
+    <script src="exercise-renderer.js"></script>
+    <script src="daily-practice.js"></script>
+</body>
+</html>

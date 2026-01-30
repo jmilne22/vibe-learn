@@ -1,0 +1,18 @@
+[data-theme="light"] {
+    --bg-dark: #f5f5f7;
+    --bg-card: #ffffff;
+    --bg-code: #f0f0f5;
+    --bg-lighter: #e7e7ee;
+    --green-bright: #00a868;
+    --green-dim: #00875a;
+    --green-glow: rgba(0, 168, 104, 0.15);
+    --orange: #d47800;
+    --purple: #8300d4;
+    --blue: #0090cc;
+    --cyan: #00a8cc;
+    --red: #d43f50;
+    --text-main: #0f0f0f;
+    --text: var(--text-main);
+    --text-dim: #555555;
+    --border: #d0d0d8;
+}

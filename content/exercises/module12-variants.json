@@ -1,0 +1,427 @@
+{
+  "conceptLinks": {
+    "Parallel Sum": "#lesson-goroutines",
+    "Timeout Pattern": "#lesson-select",
+    "Fan-Out Fan-In": "#lesson-fan-out-fan-in",
+    "Rate Limiter": "#lesson-ticker",
+    "Graceful Shutdown": "#lesson-signals"
+  },
+  "sharedContent": {},
+  "variants": {
+    "warmups": [
+      {
+        "id": "warmup_1",
+        "concept": "Parallel Sum",
+        "variants": [
+          {
+            "id": "v1",
+            "title": "Parallel Sum",
+            "description": "Write <code>func parallelSum(nums []int, workers int) int</code> that splits a slice into <code>workers</code> chunks, sums each chunk in a separate goroutine, and combines the partial sums via a channel. Return the total sum.",
+            "hints": [
+              "Create a buffered channel <code>make(chan int, workers)</code> for partial sums.",
+              "Calculate <code>chunkSize := len(nums) / workers</code> and handle the last chunk getting any remainder.",
+              "Launch <code>workers</code> goroutines, then receive <code>workers</code> results."
+            ],
+            "solution": "func parallelSum(nums []int, workers int) int {\n    ch := make(chan int, workers)\n    chunkSize := len(nums) / workers\n\n    for i := 0; i < workers; i++ {\n        start := i * chunkSize\n        end := start + chunkSize\n        if i == workers-1 {\n            end = len(nums)\n        }\n        go func(chunk []int) {\n            sum := 0\n            for _, n := range chunk {\n                sum += n\n            }\n            ch <- sum\n        }(nums[start:end])\n    }\n\n    total := 0\n    for i := 0; i < workers; i++ {\n        total += <-ch\n    }\n    return total\n}",
+            "annotations": [
+              { "type": "idiom", "label": "Buffered Channel", "text": "Using a buffered channel sized to the number of workers prevents goroutines from blocking on send. Each goroutine sends once and exits." },
+              { "type": "gotcha", "label": "Slice Sharing", "text": "Pass the sub-slice as a function argument to the goroutine closure. Capturing loop variables directly causes a data race." }
+            ]
+          },
+          {
+            "id": "v2",
+            "title": "Parallel Max",
+            "description": "Write <code>func parallelMax(nums []int, workers int) int</code> that splits a slice into <code>workers</code> chunks, finds the maximum in each chunk using a goroutine, and returns the overall maximum.",
+            "hints": [
+              "Each goroutine finds the max of its chunk and sends it on a channel.",
+              "The main goroutine receives all partial max values and finds the global max.",
+              "Initialize your result with the first received value, then compare."
+            ],
+            "solution": "func parallelMax(nums []int, workers int) int {\n    ch := make(chan int, workers)\n    chunkSize := len(nums) / workers\n\n    for i := 0; i < workers; i++ {\n        start := i * chunkSize\n        end := start + chunkSize\n        if i == workers-1 {\n            end = len(nums)\n        }\n        go func(chunk []int) {\n            mx := chunk[0]\n            for _, n := range chunk[1:] {\n                if n > mx {\n                    mx = n\n                }\n            }\n            ch <- mx\n        }(nums[start:end])\n    }\n\n    result := <-ch\n    for i := 1; i < workers; i++ {\n        if v := <-ch; v > result {\n            result = v\n        }\n    }\n    return result\n}",
+            "annotations": [
+              { "type": "complexity", "label": "O(n)", "text": "Each element is visited exactly once across all goroutines, plus O(workers) to combine results. Total is O(n)." },
+              { "type": "gotcha", "label": "Empty Chunk", "text": "If len(nums) < workers, some chunks will be empty. Guard against indexing chunk[0] on an empty slice to avoid a panic." }
+            ]
+          },
+          {
+            "id": "v3",
+            "title": "Parallel Word Count",
+            "description": "Write <code>func parallelWordCount(texts []string, workers int) int</code> that splits a slice of text strings into <code>workers</code> chunks, counts words in each chunk in a goroutine (using <code>strings.Fields</code>), and returns the total word count.",
+            "hints": [
+              "Use <code>strings.Fields(text)</code> to split text into words.",
+              "Each goroutine sums <code>len(strings.Fields(text))</code> for its chunk of texts.",
+              "Combine partial counts the same way as parallel sum."
+            ],
+            "solution": "func parallelWordCount(texts []string, workers int) int {\n    ch := make(chan int, workers)\n    chunkSize := len(texts) / workers\n\n    for i := 0; i < workers; i++ {\n        start := i * chunkSize\n        end := start + chunkSize\n        if i == workers-1 {\n            end = len(texts)\n        }\n        go func(chunk []string) {\n            count := 0\n            for _, text := range chunk {\n                count += len(strings.Fields(text))\n            }\n            ch <- count\n        }(texts[start:end])\n    }\n\n    total := 0\n    for i := 0; i < workers; i++ {\n        total += <-ch\n    }\n    return total\n}",
+            "annotations": [
+              { "type": "stdlib", "label": "strings.Fields", "text": "strings.Fields splits a string around whitespace and is more robust than strings.Split(s, \" \") because it handles multiple spaces and leading/trailing whitespace." },
+              { "type": "idiom", "label": "Map-Reduce", "text": "This is a basic map-reduce: map each text to a word count in parallel, then reduce by summing. Go's goroutines and channels make this pattern natural." }
+            ]
+          },
+          {
+            "id": "v4",
+            "title": "Parallel Filter",
+            "description": "Write <code>func parallelFilter(nums []int, workers int) []int</code> that splits a slice into <code>workers</code> chunks, filters for even numbers in each chunk using a goroutine, and merges the results into a single slice.",
+            "hints": [
+              "Each goroutine sends a <code>[]int</code> of even numbers (not individual ints).",
+              "Use a buffered channel of type <code>chan []int</code>.",
+              "Append each partial result to the final slice."
+            ],
+            "solution": "func parallelFilter(nums []int, workers int) []int {\n    ch := make(chan []int, workers)\n    chunkSize := len(nums) / workers\n\n    for i := 0; i < workers; i++ {\n        start := i * chunkSize\n        end := start + chunkSize\n        if i == workers-1 {\n            end = len(nums)\n        }\n        go func(chunk []int) {\n            var evens []int\n            for _, n := range chunk {\n                if n%2 == 0 {\n                    evens = append(evens, n)\n                }\n            }\n            ch <- evens\n        }(nums[start:end])\n    }\n\n    var result []int\n    for i := 0; i < workers; i++ {\n        result = append(result, <-ch...)\n    }\n    return result\n}",
+            "annotations": [
+              { "type": "gotcha", "label": "Order Not Guaranteed", "text": "Goroutines may complete in any order. The result slice may not match the original order. If order matters, use indexed results or sort afterward." },
+              { "type": "idiom", "label": "Slice of Slices", "text": "Sending []int per goroutine is more efficient than sending individual ints. It reduces channel operations and contention." }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "warmup_2",
+        "concept": "Timeout Pattern",
+        "variants": [
+          {
+            "id": "v1",
+            "title": "Timeout Pattern",
+            "description": "Write <code>func doWithTimeout(timeout time.Duration) (string, error)</code> that launches a slow operation in a goroutine. Use <code>select</code> with <code>time.After</code> to return the result if it completes in time, or an error if it times out.",
+            "hints": [
+              "Create a buffered channel <code>ch := make(chan string, 1)</code> so the goroutine does not leak.",
+              "Use <code>select</code> with two cases: <code>case result := &lt;-ch</code> and <code>case &lt;-time.After(timeout)</code>.",
+              "Return <code>fmt.Errorf(\"operation timed out\")</code> in the timeout case."
+            ],
+            "solution": "func doWithTimeout(timeout time.Duration) (string, error) {\n    ch := make(chan string, 1)\n    go func() {\n        result := slowOperation()\n        ch <- result\n    }()\n\n    select {\n    case result := <-ch:\n        return result, nil\n    case <-time.After(timeout):\n        return \"\", fmt.Errorf(\"operation timed out\")\n    }\n}",
+            "annotations": [
+              { "type": "idiom", "label": "Select + time.After", "text": "The select statement with time.After is the standard Go timeout pattern. It cleanly handles the race between completion and deadline." },
+              { "type": "gotcha", "label": "Goroutine Leak", "text": "Use a buffered channel (size 1) so the goroutine can send even after timeout. Otherwise it blocks forever, leaking the goroutine." }
+            ]
+          },
+          {
+            "id": "v2",
+            "title": "Context Timeout",
+            "description": "Write <code>func fetchWithContext(ctx context.Context) (string, error)</code> that launches a slow operation in a goroutine. Use <code>select</code> to return the result or return an error if the context is cancelled or times out.",
+            "hints": [
+              "Use <code>ctx.Done()</code> in the select to detect cancellation.",
+              "Use <code>ctx.Err()</code> to get the reason (deadline exceeded or cancelled).",
+              "The caller creates the context: <code>ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)</code>."
+            ],
+            "solution": "func fetchWithContext(ctx context.Context) (string, error) {\n    ch := make(chan string, 1)\n    go func() {\n        result := slowOperation()\n        ch <- result\n    }()\n\n    select {\n    case result := <-ch:\n        return result, nil\n    case <-ctx.Done():\n        return \"\", ctx.Err()\n    }\n}",
+            "annotations": [
+              { "type": "idiom", "label": "Context for Cancellation", "text": "Using context.Context is the preferred Go pattern for timeouts and cancellation. It propagates through call chains and supports both deadlines and manual cancellation." },
+              { "type": "stdlib", "label": "context Package", "text": "context.WithTimeout and context.WithCancel create derived contexts. Always call the cancel function (usually via defer) to release resources." }
+            ]
+          },
+          {
+            "id": "v3",
+            "title": "First Response Wins",
+            "description": "Write <code>func fetchFirst(urls []string, timeout time.Duration) (string, error)</code> that launches a goroutine for each URL (simulated by sleeping a random duration and returning the URL). Return whichever result arrives first, or an error if all timeout.",
+            "hints": [
+              "Create a single channel and have all goroutines send to it.",
+              "The first <code>select</code> case that fires is the fastest response.",
+              "Use <code>time.After(timeout)</code> as the fallback."
+            ],
+            "solution": "func fetchFirst(urls []string, timeout time.Duration) (string, error) {\n    ch := make(chan string, len(urls))\n    for _, url := range urls {\n        go func(u string) {\n            // simulate variable latency\n            time.Sleep(time.Duration(rand.Intn(100)) * time.Millisecond)\n            ch <- u\n        }(url)\n    }\n\n    select {\n    case result := <-ch:\n        return result, nil\n    case <-time.After(timeout):\n        return \"\", fmt.Errorf(\"all requests timed out\")\n    }\n}",
+            "annotations": [
+              { "type": "pattern", "label": "First Response Wins", "text": "Sending redundant requests to multiple backends and taking the first response is a latency optimization pattern. Go's select makes this trivial." },
+              { "type": "gotcha", "label": "Goroutine Cleanup", "text": "The losing goroutines still complete and send to the buffered channel. The buffer prevents them from leaking, but they still consume resources until they finish." }
+            ]
+          },
+          {
+            "id": "v4",
+            "title": "Retry with Timeout",
+            "description": "Write <code>func retryWithTimeout(maxRetries int, timeout time.Duration, fn func() (string, error)) (string, error)</code> that retries <code>fn</code> up to <code>maxRetries</code> times. Each attempt has the given timeout. Return the first successful result or the last error.",
+            "hints": [
+              "Loop up to <code>maxRetries</code>.",
+              "For each attempt, run <code>fn</code> in a goroutine with a <code>select</code> timeout.",
+              "If it succeeds, return immediately. If all retries fail, return the last error."
+            ],
+            "solution": "func retryWithTimeout(maxRetries int, timeout time.Duration, fn func() (string, error)) (string, error) {\n    var lastErr error\n    for i := 0; i < maxRetries; i++ {\n        type result struct {\n            val string\n            err error\n        }\n        ch := make(chan result, 1)\n        go func() {\n            v, err := fn()\n            ch <- result{v, err}\n        }()\n\n        select {\n        case r := <-ch:\n            if r.err == nil {\n                return r.val, nil\n            }\n            lastErr = r.err\n        case <-time.After(timeout):\n            lastErr = fmt.Errorf(\"attempt %d timed out\", i+1)\n        }\n    }\n    return \"\", fmt.Errorf(\"all %d retries failed: %w\", maxRetries, lastErr)\n}",
+            "annotations": [
+              { "type": "pattern", "label": "Retry Pattern", "text": "Combining retry loops with per-attempt timeouts is a resilience pattern. Each attempt gets a fresh timeout rather than sharing a global deadline." },
+              { "type": "idiom", "label": "Anonymous Struct", "text": "Using a local anonymous struct <code>type result struct{...}</code> inside the function is idiomatic Go for grouping return values through a channel." }
+            ]
+          }
+        ]
+      }
+    ],
+    "challenges": [
+      {
+        "id": "challenge_1",
+        "block": 1,
+        "difficulty": 3,
+        "concept": "Fan-Out Fan-In",
+        "variants": [
+          {
+            "id": "v1",
+            "title": "Merge Channels",
+            "description": "Write <code>func merge(channels ...&lt;-chan int) &lt;-chan int</code> that takes multiple input channels and merges all their values into a single output channel. The output channel should close when all inputs are exhausted. Use a <code>sync.WaitGroup</code> to track completion.",
+            "functionSignature": "func merge(channels ...<-chan int) <-chan int",
+            "testCases": [
+              { "input": "ch1 sends 1,2; ch2 sends 3,4; ch3 sends 5,6", "output": "merged channel produces all 6 values (order may vary)" },
+              { "input": "ch1 sends 10; ch2 sends 20", "output": "merged channel produces 10 and 20" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "How do you know when all input channels are done? How do you safely close the output channel exactly once?" },
+              { "title": "\ud83d\udca1 Hint", "content": "Use sync.WaitGroup: Add(1) for each input channel, Done() when a reader goroutine finishes. A separate goroutine waits on wg.Wait() then closes the output." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. Create output channel\n2. For each input: wg.Add(1), launch goroutine that ranges over input and sends to output, defer wg.Done()\n3. Launch goroutine: wg.Wait(), close(output)\n4. Return output</pre>" }
+            ],
+            "solution": "func merge(channels ...<-chan int) <-chan int {\n    out := make(chan int)\n    var wg sync.WaitGroup\n\n    for _, ch := range channels {\n        wg.Add(1)\n        go func(c <-chan int) {\n            defer wg.Done()\n            for n := range c {\n                out <- n\n            }\n        }(ch)\n    }\n\n    go func() {\n        wg.Wait()\n        close(out)\n    }()\n\n    return out\n}",
+            "difficulty": 3,
+            "annotations": [
+              { "type": "pattern", "label": "Fan-In", "text": "Fan-in merges multiple channels into one. This is a core Go concurrency pattern used in pipelines, event systems, and multiplexing." },
+              { "type": "idiom", "label": "WaitGroup + Close", "text": "The WaitGroup/close pattern ensures the output channel closes exactly once after all inputs are drained. Never close a channel from the receiver side." },
+              { "type": "gotcha", "label": "Channel Direction", "text": "Use <-chan int (receive-only) in the function signature to prevent the merge function from accidentally sending to input channels." }
+            ]
+          },
+          {
+            "id": "v2",
+            "title": "Pipeline Stages",
+            "description": "Build a three-stage pipeline: <code>func generate(nums ...int) &lt;-chan int</code> sends numbers, <code>func square(in &lt;-chan int) &lt;-chan int</code> squares each, <code>func filter(in &lt;-chan int, min int) &lt;-chan int</code> keeps only values >= min. Each stage runs in its own goroutine and closes its output when done.",
+            "functionSignature": "func generate(nums ...int) <-chan int",
+            "testCases": [
+              { "input": "generate(1,2,3,4,5) -> square -> filter(_, 10)", "output": "channel produces: 16, 25" },
+              { "input": "generate(2,3) -> square -> filter(_, 5)", "output": "channel produces: 9" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "How does each stage know when to stop? What happens when you range over a closed channel?" },
+              { "title": "\ud83d\udca1 Hint", "content": "Each stage reads from its input channel using range (which stops when the channel closes), processes the value, and sends to its output channel. Close the output when the range loop ends." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. generate: send each num, close output\n2. square: range over input, send n*n, close output\n3. filter: range over input, send if >= min, close output\n4. Wire: filter(square(generate(nums...)), min)</pre>" }
+            ],
+            "solution": "func generate(nums ...int) <-chan int {\n    out := make(chan int)\n    go func() {\n        for _, n := range nums {\n            out <- n\n        }\n        close(out)\n    }()\n    return out\n}\n\nfunc square(in <-chan int) <-chan int {\n    out := make(chan int)\n    go func() {\n        for n := range in {\n            out <- n * n\n        }\n        close(out)\n    }()\n    return out\n}\n\nfunc filter(in <-chan int, min int) <-chan int {\n    out := make(chan int)\n    go func() {\n        for n := range in {\n            if n >= min {\n                out <- n\n            }\n        }\n        close(out)\n    }()\n    return out\n}",
+            "difficulty": 3,
+            "annotations": [
+              { "type": "pattern", "label": "Pipeline Pattern", "text": "Go pipelines connect stages via channels. Each stage is a goroutine that reads, processes, and writes. Closing channels propagates completion through the pipeline." },
+              { "type": "idiom", "label": "Range Over Channel", "text": "Using for n := range ch reads until the channel is closed. This is the idiomatic way to consume a channel and avoids infinite loops." }
+            ]
+          },
+          {
+            "id": "v3",
+            "title": "Worker Pool",
+            "description": "Write <code>func workerPool(jobs []int, numWorkers int) []int</code> that processes jobs through a pool of workers. Each worker reads from a shared jobs channel, doubles the value, and sends the result to a results channel. Return all results.",
+            "functionSignature": "func workerPool(jobs []int, numWorkers int) []int",
+            "testCases": [
+              { "input": "[]int{1, 2, 3, 4, 5}, 3", "output": "[]int{2, 4, 6, 8, 10} (order may vary)" },
+              { "input": "[]int{10, 20}, 2", "output": "[]int{20, 40} (order may vary)" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "How do multiple workers share work? Who closes the jobs channel, and who closes the results channel?" },
+              { "title": "\ud83d\udca1 Hint", "content": "Send all jobs to a jobs channel, then close it. Workers range over the jobs channel. Use a WaitGroup to know when all workers are done, then close the results channel." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. Create jobs and results channels\n2. Launch numWorkers goroutines that range over jobs\n3. Send all jobs, close jobs channel\n4. WaitGroup: wg.Wait() then close results\n5. Collect results with range</pre>" }
+            ],
+            "solution": "func workerPool(jobs []int, numWorkers int) []int {\n    jobsCh := make(chan int, len(jobs))\n    resultsCh := make(chan int, len(jobs))\n\n    var wg sync.WaitGroup\n    for i := 0; i < numWorkers; i++ {\n        wg.Add(1)\n        go func() {\n            defer wg.Done()\n            for job := range jobsCh {\n                resultsCh <- job * 2\n            }\n        }()\n    }\n\n    for _, job := range jobs {\n        jobsCh <- job\n    }\n    close(jobsCh)\n\n    go func() {\n        wg.Wait()\n        close(resultsCh)\n    }()\n\n    var results []int\n    for r := range resultsCh {\n        results = append(results, r)\n    }\n    return results\n}",
+            "difficulty": 3,
+            "annotations": [
+              { "type": "pattern", "label": "Worker Pool", "text": "The worker pool pattern bounds concurrency. N workers share a jobs channel, limiting how many tasks run simultaneously. This prevents resource exhaustion." },
+              { "type": "gotcha", "label": "Channel Close Order", "text": "Close the jobs channel after sending all jobs (so workers stop). Close the results channel after all workers finish (so the collector stops). Wrong order causes deadlock or panic." }
+            ]
+          },
+          {
+            "id": "v4",
+            "title": "Fan-Out Map",
+            "description": "Write <code>func fanOutMap(inputs []string, workers int, fn func(string) string) []string</code> that distributes strings to <code>workers</code> goroutines, applies <code>fn</code> to each, and collects results preserving original order.",
+            "functionSignature": "func fanOutMap(inputs []string, workers int, fn func(string) string) []string",
+            "testCases": [
+              { "input": "[]string{\"hello\", \"world\"}, 2, strings.ToUpper", "output": "[\"HELLO\", \"WORLD\"]" },
+              { "input": "[]string{\"a\", \"b\", \"c\"}, 2, func(s string) string { return s + \"!\" }", "output": "[\"a!\", \"b!\", \"c!\"]" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "How do you preserve order when goroutines complete at different times? What extra information do you need to send with each result?" },
+              { "title": "\ud83d\udca1 Hint", "content": "Send indexed jobs (index + input) to workers. Workers return indexed results (index + output). Pre-allocate the result slice and place each result at its original index." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. Create indexed job struct {index int, value string}\n2. Workers read jobs, apply fn, send indexed results\n3. Pre-allocate results := make([]string, len(inputs))\n4. Place each result at results[index]</pre>" }
+            ],
+            "solution": "func fanOutMap(inputs []string, workers int, fn func(string) string) []string {\n    type job struct {\n        index int\n        value string\n    }\n    type result struct {\n        index int\n        value string\n    }\n\n    jobsCh := make(chan job, len(inputs))\n    resultsCh := make(chan result, len(inputs))\n\n    var wg sync.WaitGroup\n    for i := 0; i < workers; i++ {\n        wg.Add(1)\n        go func() {\n            defer wg.Done()\n            for j := range jobsCh {\n                resultsCh <- result{index: j.index, value: fn(j.value)}\n            }\n        }()\n    }\n\n    for i, input := range inputs {\n        jobsCh <- job{index: i, value: input}\n    }\n    close(jobsCh)\n\n    go func() {\n        wg.Wait()\n        close(resultsCh)\n    }()\n\n    results := make([]string, len(inputs))\n    for r := range resultsCh {\n        results[r.index] = r.value\n    }\n    return results\n}",
+            "difficulty": 3,
+            "annotations": [
+              { "type": "pattern", "label": "Ordered Fan-Out", "text": "By pairing each job with its index, you can reconstruct the original order despite concurrent processing. This is essential when output order must match input order." },
+              { "type": "complexity", "label": "O(n)", "text": "Each input is processed exactly once. The worker pool bounds parallelism to 'workers' goroutines while still processing all n items." }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "challenge_2",
+        "block": 2,
+        "difficulty": 3,
+        "concept": "Rate Limiter",
+        "variants": [
+          {
+            "id": "v1",
+            "title": "Ticker Rate Limiter",
+            "description": "Build a <code>RateLimiter</code> struct that uses <code>time.Ticker</code> to allow at most N operations per second. Implement <code>NewRateLimiter(perSecond int) *RateLimiter</code>, <code>Wait()</code> (blocks until allowed), and <code>Stop()</code>.",
+            "functionSignature": "func NewRateLimiter(perSecond int) *RateLimiter",
+            "testCases": [
+              { "input": "NewRateLimiter(5) // 5 ops/sec", "output": "Wait() blocks ~200ms between calls" },
+              { "input": "NewRateLimiter(10) // 10 ops/sec", "output": "Wait() blocks ~100ms between calls" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "If you want N operations per second, what is the interval between each allowed operation?" },
+              { "title": "\ud83d\udca1 Hint", "content": "Interval is time.Second / time.Duration(perSecond). Create a time.Ticker with that interval. Wait() reads from ticker.C." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. RateLimiter has a *time.Ticker field\n2. NewRateLimiter calculates interval, creates ticker\n3. Wait() blocks on <-ticker.C\n4. Stop() calls ticker.Stop()</pre>" }
+            ],
+            "solution": "type RateLimiter struct {\n    ticker *time.Ticker\n}\n\nfunc NewRateLimiter(perSecond int) *RateLimiter {\n    return &RateLimiter{\n        ticker: time.NewTicker(time.Second / time.Duration(perSecond)),\n    }\n}\n\nfunc (r *RateLimiter) Wait() {\n    <-r.ticker.C\n}\n\nfunc (r *RateLimiter) Stop() {\n    r.ticker.Stop()\n}",
+            "difficulty": 3,
+            "annotations": [
+              { "type": "stdlib", "label": "time.Ticker", "text": "time.NewTicker sends values on its channel at regular intervals. Always call Stop() when done to release the ticker's resources." },
+              { "type": "idiom", "label": "Blocking Channel Read", "text": "<-ticker.C blocks the caller until the next tick. This naturally throttles the calling code without busy-waiting." }
+            ]
+          },
+          {
+            "id": "v2",
+            "title": "Token Bucket Limiter",
+            "description": "Build a <code>TokenBucket</code> rate limiter. It starts with <code>capacity</code> tokens and refills at <code>rate</code> tokens per second. <code>Allow()</code> returns true if a token is available (consuming it), false otherwise. Use a goroutine for refilling.",
+            "functionSignature": "func NewTokenBucket(capacity int, rate int) *TokenBucket",
+            "testCases": [
+              { "input": "NewTokenBucket(3, 1) // 3 burst, 1/sec refill", "output": "First 3 Allow() return true, 4th returns false" },
+              { "input": "NewTokenBucket(1, 10) // 1 burst, 10/sec refill", "output": "Allow() returns true, then false, then true after 100ms" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "How do you safely modify the token count from both the refill goroutine and the Allow method?" },
+              { "title": "\ud83d\udca1 Hint", "content": "Use a mutex to protect the tokens field. A background goroutine adds tokens at the refill rate using a ticker. Allow() locks, checks tokens > 0, decrements, and returns." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. TokenBucket: tokens, capacity int, mu sync.Mutex, stop chan\n2. Background goroutine: ticker at rate, add token if below capacity\n3. Allow(): lock, if tokens > 0 decrement and return true\n4. Stop(): close stop channel, stop ticker</pre>" }
+            ],
+            "solution": "type TokenBucket struct {\n    tokens   int\n    capacity int\n    mu       sync.Mutex\n    stop     chan struct{}\n    ticker   *time.Ticker\n}\n\nfunc NewTokenBucket(capacity int, rate int) *TokenBucket {\n    tb := &TokenBucket{\n        tokens:   capacity,\n        capacity: capacity,\n        stop:     make(chan struct{}),\n        ticker:   time.NewTicker(time.Second / time.Duration(rate)),\n    }\n    go func() {\n        for {\n            select {\n            case <-tb.ticker.C:\n                tb.mu.Lock()\n                if tb.tokens < tb.capacity {\n                    tb.tokens++\n                }\n                tb.mu.Unlock()\n            case <-tb.stop:\n                tb.ticker.Stop()\n                return\n            }\n        }\n    }()\n    return tb\n}\n\nfunc (tb *TokenBucket) Allow() bool {\n    tb.mu.Lock()\n    defer tb.mu.Unlock()\n    if tb.tokens > 0 {\n        tb.tokens--\n        return true\n    }\n    return false\n}\n\nfunc (tb *TokenBucket) Stop() {\n    close(tb.stop)\n}",
+            "difficulty": 3,
+            "annotations": [
+              { "type": "pattern", "label": "Token Bucket", "text": "The token bucket algorithm allows bursts up to capacity while maintaining an average rate. It is widely used in API rate limiting and network traffic shaping." },
+              { "type": "gotcha", "label": "Mutex + Channel", "text": "The mutex protects the tokens field from concurrent access. The stop channel signals the background goroutine to exit. Mixing both is fine when they protect different things." }
+            ]
+          },
+          {
+            "id": "v3",
+            "title": "Sliding Window Limiter",
+            "description": "Build a <code>SlidingWindow</code> rate limiter that allows at most <code>maxRequests</code> in the last <code>window</code> duration. <code>Allow()</code> returns true if under the limit. Track request timestamps and evict expired ones.",
+            "functionSignature": "func NewSlidingWindow(maxRequests int, window time.Duration) *SlidingWindow",
+            "testCases": [
+              { "input": "NewSlidingWindow(3, time.Second)", "output": "3 rapid Allow() return true, 4th returns false, true again after 1s" },
+              { "input": "NewSlidingWindow(1, 500*time.Millisecond)", "output": "Allow() true, then false, then true after 500ms" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "How do you track when each request happened? How do you efficiently remove old entries?" },
+              { "title": "\ud83d\udca1 Hint", "content": "Store timestamps in a slice. On each Allow(), remove timestamps older than now-window. If len(timestamps) < maxRequests, add now and return true." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. SlidingWindow: timestamps []time.Time, max, window, mu\n2. Allow(): lock, evict old timestamps\n3. If len < max: append now, return true\n4. Else return false</pre>" }
+            ],
+            "solution": "type SlidingWindow struct {\n    timestamps  []time.Time\n    maxRequests int\n    window      time.Duration\n    mu          sync.Mutex\n}\n\nfunc NewSlidingWindow(maxRequests int, window time.Duration) *SlidingWindow {\n    return &SlidingWindow{\n        maxRequests: maxRequests,\n        window:      window,\n    }\n}\n\nfunc (sw *SlidingWindow) Allow() bool {\n    sw.mu.Lock()\n    defer sw.mu.Unlock()\n\n    now := time.Now()\n    cutoff := now.Add(-sw.window)\n\n    // Evict expired timestamps\n    valid := sw.timestamps[:0]\n    for _, ts := range sw.timestamps {\n        if ts.After(cutoff) {\n            valid = append(valid, ts)\n        }\n    }\n    sw.timestamps = valid\n\n    if len(sw.timestamps) < sw.maxRequests {\n        sw.timestamps = append(sw.timestamps, now)\n        return true\n    }\n    return false\n}",
+            "difficulty": 3,
+            "annotations": [
+              { "type": "pattern", "label": "Sliding Window", "text": "The sliding window tracks individual request times, giving more accurate rate limiting than fixed windows. It prevents burst-at-boundary attacks." },
+              { "type": "complexity", "label": "O(n)", "text": "Each Allow() scans all stored timestamps to evict expired ones. For high-throughput systems, consider a ring buffer or sorted structure for O(1) eviction." }
+            ]
+          },
+          {
+            "id": "v4",
+            "title": "Per-Key Rate Limiter",
+            "description": "Build a <code>PerKeyLimiter</code> that rate-limits per key (e.g., per user or per IP). <code>Allow(key string)</code> returns true if the key has not exceeded <code>maxPerSecond</code> requests. Use a map of last-allowed timestamps.",
+            "functionSignature": "func NewPerKeyLimiter(maxPerSecond int) *PerKeyLimiter",
+            "testCases": [
+              { "input": "limiter.Allow(\"user1\") // first call", "output": "true" },
+              { "input": "limiter.Allow(\"user1\") // immediate second call, maxPerSecond=1", "output": "false" },
+              { "input": "limiter.Allow(\"user2\") // different key", "output": "true" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "How do you track rate limits independently for each key? What data structure maps keys to their state?" },
+              { "title": "\ud83d\udca1 Hint", "content": "Use a map[string]time.Time to store the last-allowed time per key. If now - lastAllowed >= interval, allow and update. Use a mutex for thread safety." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. PerKeyLimiter: limits map[string]time.Time, interval, mu\n2. interval = time.Second / maxPerSecond\n3. Allow(key): lock, check last time for key\n4. If enough time passed or new key: update and return true</pre>" }
+            ],
+            "solution": "type PerKeyLimiter struct {\n    limits   map[string]time.Time\n    interval time.Duration\n    mu       sync.Mutex\n}\n\nfunc NewPerKeyLimiter(maxPerSecond int) *PerKeyLimiter {\n    return &PerKeyLimiter{\n        limits:   make(map[string]time.Time),\n        interval: time.Second / time.Duration(maxPerSecond),\n    }\n}\n\nfunc (l *PerKeyLimiter) Allow(key string) bool {\n    l.mu.Lock()\n    defer l.mu.Unlock()\n\n    now := time.Now()\n    last, exists := l.limits[key]\n    if !exists || now.Sub(last) >= l.interval {\n        l.limits[key] = now\n        return true\n    }\n    return false\n}",
+            "difficulty": 3,
+            "annotations": [
+              { "type": "pattern", "label": "Per-Key Limiting", "text": "Per-key rate limiting is essential for multi-tenant systems. Each user or IP gets its own rate limit, preventing one user from starving others." },
+              { "type": "gotcha", "label": "Memory Growth", "text": "The limits map grows unboundedly. In production, add a background cleanup goroutine that evicts entries older than the window to prevent memory leaks." }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "challenge_3",
+        "block": 3,
+        "difficulty": 4,
+        "concept": "Graceful Shutdown",
+        "variants": [
+          {
+            "id": "v1",
+            "title": "Signal-Based Shutdown",
+            "description": "Write a program that starts a worker goroutine printing \"working...\" every 100ms. On receiving <code>os.Interrupt</code> (Ctrl+C), signal the worker to stop via a channel, wait for it to finish, then print \"Done\" and exit.",
+            "functionSignature": "func main()",
+            "testCases": [
+              { "input": "Run program, press Ctrl+C after ~500ms", "output": "Several 'working...' lines, then 'Worker stopping...', 'Done'" },
+              { "input": "Run program, press Ctrl+C immediately", "output": "'Worker stopping...', 'Done'" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "How does the main goroutine tell the worker to stop? How does it know the worker has actually finished?" },
+              { "title": "\ud83d\udca1 Hint", "content": "Use two channels: 'stop' (main tells worker to stop) and 'done' (worker confirms it stopped). The worker uses select to check for stop signals between work iterations." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. Create stop and done channels\n2. Worker: select on stop or default (do work)\n3. signal.Notify(sigCh, os.Interrupt)\n4. <-sigCh, close(stop), <-done, print Done</pre>" }
+            ],
+            "solution": "func main() {\n    stop := make(chan struct{})\n    done := make(chan struct{})\n\n    go func() {\n        defer close(done)\n        for {\n            select {\n            case <-stop:\n                fmt.Println(\"Worker stopping...\")\n                return\n            default:\n                fmt.Println(\"working...\")\n                time.Sleep(100 * time.Millisecond)\n            }\n        }\n    }()\n\n    sigCh := make(chan os.Signal, 1)\n    signal.Notify(sigCh, os.Interrupt)\n    <-sigCh\n\n    fmt.Println(\"Shutting down...\")\n    close(stop)\n    <-done\n    fmt.Println(\"Done\")\n}",
+            "difficulty": 4,
+            "annotations": [
+              { "type": "idiom", "label": "Close to Broadcast", "text": "Closing a channel wakes all goroutines blocked on it. This is the Go way to broadcast a cancellation signal to multiple workers." },
+              { "type": "stdlib", "label": "os/signal", "text": "signal.Notify registers for OS signals. Use a buffered channel (size 1) to avoid missing the signal if the receiver is not ready." }
+            ]
+          },
+          {
+            "id": "v2",
+            "title": "Context-Based Shutdown",
+            "description": "Rewrite graceful shutdown using <code>context.Context</code>. Create a cancellable context, pass it to the worker. On Ctrl+C, cancel the context. The worker checks <code>ctx.Done()</code> in its select loop.",
+            "functionSignature": "func worker(ctx context.Context, done chan struct{})",
+            "testCases": [
+              { "input": "Run program, press Ctrl+C after ~300ms", "output": "Several 'working...' lines, then 'context canceled', 'Done'" },
+              { "input": "Run program, press Ctrl+C immediately", "output": "'context canceled', 'Done'" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "How does context.WithCancel propagate cancellation? What channel does the worker monitor?" },
+              { "title": "\ud83d\udca1 Hint", "content": "Create ctx, cancel := context.WithCancel(context.Background()). Pass ctx to the worker. Worker selects on ctx.Done(). Main calls cancel() on signal." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. ctx, cancel := context.WithCancel(context.Background())\n2. Worker: select on ctx.Done() or default\n3. On signal: cancel()\n4. <-done to wait for worker</pre>" }
+            ],
+            "solution": "func worker(ctx context.Context, done chan struct{}) {\n    defer close(done)\n    for {\n        select {\n        case <-ctx.Done():\n            fmt.Println(ctx.Err())\n            return\n        default:\n            fmt.Println(\"working...\")\n            time.Sleep(100 * time.Millisecond)\n        }\n    }\n}\n\nfunc main() {\n    ctx, cancel := context.WithCancel(context.Background())\n    done := make(chan struct{})\n\n    go worker(ctx, done)\n\n    sigCh := make(chan os.Signal, 1)\n    signal.Notify(sigCh, os.Interrupt)\n    <-sigCh\n\n    fmt.Println(\"Shutting down...\")\n    cancel()\n    <-done\n    fmt.Println(\"Done\")\n}",
+            "difficulty": 4,
+            "annotations": [
+              { "type": "idiom", "label": "Context Cancellation", "text": "Using context for cancellation is idiomatic Go. It integrates with the standard library (net/http, database/sql) and propagates through call chains." },
+              { "type": "alternative", "label": "signal.NotifyContext", "text": "Go 1.16+ provides signal.NotifyContext which combines signal handling and context cancellation in one call, simplifying the pattern." }
+            ]
+          },
+          {
+            "id": "v3",
+            "title": "Multi-Worker Shutdown",
+            "description": "Start 3 worker goroutines, each with an ID. On Ctrl+C, signal all workers to stop, wait for all to finish using a <code>sync.WaitGroup</code>, then exit. Each worker should print its ID when stopping.",
+            "functionSignature": "func main()",
+            "testCases": [
+              { "input": "Run program, press Ctrl+C", "output": "All 3 workers print stopping messages, then 'All workers done'" },
+              { "input": "Workers have IDs 1, 2, 3", "output": "Each worker prints 'Worker N stopping...'" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "How do you signal all workers at once? How do you wait for all of them to finish?" },
+              { "title": "\ud83d\udca1 Hint", "content": "Close a shared 'stop' channel to broadcast to all workers. Use sync.WaitGroup with Add(3), and each worker calls Done() when finished." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. stop channel, WaitGroup\n2. Launch 3 workers: wg.Add(1) each, defer wg.Done()\n3. Workers select on stop\n4. On signal: close(stop), wg.Wait()\n5. Print 'All workers done'</pre>" }
+            ],
+            "solution": "func main() {\n    stop := make(chan struct{})\n    var wg sync.WaitGroup\n\n    for i := 1; i <= 3; i++ {\n        wg.Add(1)\n        go func(id int) {\n            defer wg.Done()\n            for {\n                select {\n                case <-stop:\n                    fmt.Printf(\"Worker %d stopping...\\n\", id)\n                    return\n                default:\n                    fmt.Printf(\"Worker %d working...\\n\", id)\n                    time.Sleep(100 * time.Millisecond)\n                }\n            }\n        }(i)\n    }\n\n    sigCh := make(chan os.Signal, 1)\n    signal.Notify(sigCh, os.Interrupt)\n    <-sigCh\n\n    fmt.Println(\"Shutting down...\")\n    close(stop)\n    wg.Wait()\n    fmt.Println(\"All workers done\")\n}",
+            "difficulty": 4,
+            "annotations": [
+              { "type": "idiom", "label": "WaitGroup for Completion", "text": "sync.WaitGroup tracks N goroutines. Each calls Done() when finished. Wait() blocks until all are done. This is simpler than counting 'done' channels." },
+              { "type": "gotcha", "label": "Loop Variable Capture", "text": "Pass the loop variable 'i' as a function argument: go func(id int){...}(i). Capturing 'i' directly in the closure would give all goroutines the same value." }
+            ]
+          },
+          {
+            "id": "v4",
+            "title": "Shutdown with Drain",
+            "description": "Start a worker that processes jobs from a channel. On Ctrl+C, stop sending new jobs but let the worker finish all queued jobs before exiting. Print the count of processed jobs at the end.",
+            "functionSignature": "func main()",
+            "testCases": [
+              { "input": "Queue 10 jobs, Ctrl+C after 3 processed", "output": "All 10 jobs processed, then 'Processed 10 jobs'" },
+              { "input": "Queue 5 jobs, Ctrl+C before any processed", "output": "All 5 jobs processed, then 'Processed 5 jobs'" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "How does the worker know there are no more jobs coming? What is the difference between stopping immediately and draining?" },
+              { "title": "\ud83d\udca1 Hint", "content": "Close the jobs channel to signal no more jobs. The worker ranges over the channel and processes all remaining items. This naturally drains the queue." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>1. Buffered jobs channel, done channel\n2. Producer goroutine sends jobs (checks for stop)\n3. Worker ranges over jobs channel\n4. On signal: close(stop), producer closes jobs\n5. <-done waits for worker to drain all jobs</pre>" }
+            ],
+            "solution": "func main() {\n    jobs := make(chan int, 20)\n    done := make(chan int)\n    stop := make(chan struct{})\n\n    // Producer\n    go func() {\n        i := 0\n        for {\n            select {\n            case <-stop:\n                close(jobs)\n                return\n            default:\n                i++\n                jobs <- i\n                time.Sleep(50 * time.Millisecond)\n            }\n        }\n    }()\n\n    // Worker\n    go func() {\n        count := 0\n        for job := range jobs {\n            fmt.Printf(\"Processing job %d\\n\", job)\n            time.Sleep(100 * time.Millisecond)\n            count++\n        }\n        done <- count\n    }()\n\n    sigCh := make(chan os.Signal, 1)\n    signal.Notify(sigCh, os.Interrupt)\n    <-sigCh\n\n    fmt.Println(\"Shutting down, draining queue...\")\n    close(stop)\n    count := <-done\n    fmt.Printf(\"Processed %d jobs\\n\", count)\n}",
+            "difficulty": 4,
+            "annotations": [
+              { "type": "pattern", "label": "Graceful Drain", "text": "Draining a queue before shutdown ensures no work is lost. This is critical for message queues, task processors, and database write buffers." },
+              { "type": "idiom", "label": "Range Over Channel", "text": "Using range on the jobs channel processes all buffered items until the channel is closed. This is the cleanest way to drain a work queue in Go." },
+              { "type": "gotcha", "label": "Buffered Channel Drain", "text": "A buffered channel can hold items even after close(). The worker's range loop will process all buffered items before ending. This is by design." }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

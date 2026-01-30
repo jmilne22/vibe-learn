@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weak Concept Report — {{COURSE_NAME}}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="style.css">
+{{THEME_LINKS}}
+    <style>
+        .progress-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+        .stat-card {
+            background: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 1px solid var(--bg-lighter);
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--orange);
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            margin-top: 0.25rem;
+        }
+        .lesson {
+            background: var(--bg-card);
+            border: 1px solid var(--bg-lighter);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .lesson h2 {
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+        }
+        @media (max-width: 720px) {
+            .progress-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        @media (max-width: 480px) {
+            .progress-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body data-page="analytics">
+    <div class="container">
+        <nav>
+            <a href="index.html" class="nav-btn prev-btn">&larr; Dashboard</a>
+        </nav>
+
+        <div class="module-header">
+            <div class="module-tag" style="background: var(--orange); color: var(--bg-dark); padding: 0.2rem 0.8rem; border-radius: 4px;">ANALYTICS</div>
+            <h1>Weak Concept Report</h1>
+            <p class="module-desc">See which modules and exercises need the most work, based on your SRS data.</p>
+        </div>
+
+        <!-- Empty state -->
+        <div id="analytics-empty" class="lesson" style="text-align: center; padding: 3rem;">
+            <h2>No Data Yet</h2>
+            <p>Complete some exercises and rate yourself to see analytics here.</p>
+            <a href="module1.html" class="quick-btn primary" style="display: inline-block; margin-top: 1rem;">Start with Module 1</a>
+        </div>
+
+        <!-- Report sections (hidden until data exists) -->
+        <div id="analytics-report" style="display: none;">
+
+            <!-- Summary stats -->
+            <div class="progress-stats" id="analytics-stats"></div>
+
+            <!-- Module Rankings -->
+            <div class="lesson">
+                <h2>Module Strength</h2>
+                <p style="color: var(--text-dim); margin-bottom: 1rem;">Needs 5+ reviews per module to rate strength. Weakest first.</p>
+                <div id="module-rankings"></div>
+            </div>
+
+            <!-- Weakest Exercises -->
+            <div class="lesson">
+                <h2>Weakest Exercises</h2>
+                <p style="color: var(--text-dim); margin-bottom: 1rem;">Top 10 exercises with the lowest ease factors.</p>
+                <div id="weakest-exercises"></div>
+            </div>
+
+            <!-- Rating Breakdown -->
+            <div class="lesson">
+                <h2>Rating Breakdown</h2>
+                <p style="color: var(--text-dim); margin-bottom: 1rem;">How you've rated yourself across all exercises.</p>
+                <div id="rating-breakdown"></div>
+            </div>
+        </div>
+
+        <div class="nav-buttons" style="margin-top: 2rem;">
+            <a href="index.html" class="nav-btn prev-btn">&larr; Dashboard</a>
+            <a href="daily-practice.html" class="nav-btn next-btn">Daily Practice &rarr;</a>
+        </div>
+    </div>
+
+    <script src="course-data.js"></script>
+    <script src="course-config.js"></script>
+    <script src="srs.js"></script>
+    <script src="progress.js"></script>
+    <script src="analytics.js"></script>
+    <script src="theme.js"></script>
+    <script src="sidebar.js"></script>
+</body>
+</html>

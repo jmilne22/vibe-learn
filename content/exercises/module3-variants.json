@@ -1,0 +1,340 @@
+{
+  "conceptLinks": {
+    "Struct Basics": "#lesson-struct-basics",
+    "Methods": "#lesson-methods",
+    "Value vs Pointer Receivers": "#lesson-receivers",
+    "Encapsulation": "#lesson-encapsulation",
+    "Struct Embedding": "#lesson-embedding",
+    "JSON Tags": "#lesson-json",
+    "Nested Structs": "#lesson-nested-structs"
+  },
+  "sharedContent": {},
+  "variants": {
+    "warmups": [
+      {
+        "id": "warmup_1",
+        "concept": "Struct Basics",
+        "variants": [
+          {
+            "id": "v1",
+            "title": "Rectangle Area and Perimeter",
+            "description": "Create a <code>Rectangle</code> struct with <code>Width</code> and <code>Height float64</code>. Add methods <code>Area() float64</code> and <code>Perimeter() float64</code>.",
+            "hints": [
+              "Area = width * height",
+              "Perimeter = 2 * (width + height)",
+              "Value receivers are fine since these methods don't modify the struct"
+            ],
+            "solution": "type Rectangle struct {\n    Width  float64\n    Height float64\n}\n\nfunc (r Rectangle) Area() float64 {\n    return r.Width * r.Height\n}\n\nfunc (r Rectangle) Perimeter() float64 {\n    return 2 * (r.Width + r.Height)\n}",
+            "annotations": [
+              { "type": "idiom", "label": "Value Receivers", "text": "Methods that only read struct fields should use value receivers. This makes the intent clear: the method does not modify the struct." },
+              { "type": "gotcha", "label": "Exported Fields", "text": "Uppercase field names (<code>Width</code>, <code>Height</code>) are exported and accessible from other packages. Use lowercase for encapsulation." }
+            ]
+          },
+          {
+            "id": "v2",
+            "title": "Circle Area and Circumference",
+            "description": "Create a <code>Circle</code> struct with <code>Radius float64</code>. Add methods <code>Area() float64</code> and <code>Circumference() float64</code>. Use <code>math.Pi</code>.",
+            "hints": [
+              "Area = math.Pi * r * r",
+              "Circumference = 2 * math.Pi * r",
+              "Import <code>math</code> for <code>math.Pi</code>"
+            ],
+            "solution": "type Circle struct {\n    Radius float64\n}\n\nfunc (c Circle) Area() float64 {\n    return math.Pi * c.Radius * c.Radius\n}\n\nfunc (c Circle) Circumference() float64 {\n    return 2 * math.Pi * c.Radius\n}",
+            "annotations": [
+              { "type": "stdlib", "label": "math.Pi", "text": "Go provides <code>math.Pi</code> as a high-precision constant. Never hard-code 3.14 -- use the standard library." },
+              { "type": "idiom", "label": "Method Naming", "text": "Go convention is short, descriptive method names. <code>Area()</code> not <code>GetArea()</code> or <code>CalculateArea()</code>." }
+            ]
+          },
+          {
+            "id": "v3",
+            "title": "Triangle Calculations",
+            "description": "Create a <code>Triangle</code> struct with <code>Base</code> and <code>Height float64</code>. Add an <code>Area() float64</code> method.",
+            "hints": [
+              "Triangle area = 0.5 * base * height",
+              "Use a value receiver"
+            ],
+            "solution": "type Triangle struct {\n    Base   float64\n    Height float64\n}\n\nfunc (t Triangle) Area() float64 {\n    return 0.5 * t.Base * t.Height\n}",
+            "annotations": [
+              { "type": "idiom", "label": "Consistent API", "text": "Giving different shapes the same <code>Area()</code> method signature prepares them for satisfying a common interface later." }
+            ]
+          },
+          {
+            "id": "v4",
+            "title": "2D Point with Distance",
+            "description": "Create a <code>Point</code> struct with <code>X, Y float64</code>. Add a method <code>DistanceTo(other Point) float64</code> using the distance formula.",
+            "hints": [
+              "Distance = sqrt((x2-x1)^2 + (y2-y1)^2)",
+              "Use <code>math.Sqrt</code> and <code>math.Pow</code> (or just multiply)"
+            ],
+            "solution": "type Point struct {\n    X, Y float64\n}\n\nfunc (p Point) DistanceTo(other Point) float64 {\n    dx := p.X - other.X\n    dy := p.Y - other.Y\n    return math.Sqrt(dx*dx + dy*dy)\n}",
+            "annotations": [
+              { "type": "alternative", "label": "math.Hypot", "text": "The standard library provides <code>math.Hypot(dx, dy)</code> which computes the hypotenuse with better numerical stability than manual sqrt." },
+              { "type": "idiom", "label": "Struct as Parameter", "text": "Passing a <code>Point</code> as a parameter (not a pointer) is fine for small structs. Go copies them efficiently." }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "warmup_2",
+        "concept": "Encapsulation",
+        "variants": [
+          {
+            "id": "v1",
+            "title": "Bank Account",
+            "description": "Create a <code>BankAccount</code> with an unexported <code>balance float64</code> field. Add methods <code>Deposit(amount float64)</code>, <code>Withdraw(amount float64) error</code>, and <code>Balance() float64</code>.",
+            "hints": [
+              "Lowercase <code>balance</code> makes it unexported (private)",
+              "Use pointer receivers for Deposit and Withdraw since they modify state",
+              "Return <code>fmt.Errorf(...)</code> for insufficient funds"
+            ],
+            "solution": "type BankAccount struct {\n    balance float64\n}\n\nfunc (a *BankAccount) Deposit(amount float64) {\n    a.balance += amount\n}\n\nfunc (a *BankAccount) Withdraw(amount float64) error {\n    if amount > a.balance {\n        return fmt.Errorf(\"insufficient funds: have %.2f, want %.2f\", a.balance, amount)\n    }\n    a.balance -= amount\n    return nil\n}\n\nfunc (a *BankAccount) Balance() float64 {\n    return a.balance\n}",
+            "annotations": [
+              { "type": "idiom", "label": "Unexported Fields", "text": "Lowercase field names in Go are unexported (package-private). This enforces encapsulation -- external code must use methods to interact with the data." },
+              { "type": "gotcha", "label": "Error on Insufficient Funds", "text": "Always validate inputs that could leave the struct in an invalid state. Negative balances should be prevented, not fixed later." }
+            ]
+          },
+          {
+            "id": "v2",
+            "title": "Temperature Tracker",
+            "description": "Create a <code>TempTracker</code> with unexported fields for tracking min, max, sum, and count. Add <code>Record(temp float64)</code>, <code>Min() float64</code>, <code>Max() float64</code>, and <code>Average() float64</code>.",
+            "hints": [
+              "On first record, initialize min and max to that value",
+              "Use a <code>count</code> field to know if any temperatures were recorded",
+              "Average = sum / count"
+            ],
+            "solution": "type TempTracker struct {\n    min, max, sum float64\n    count         int\n}\n\nfunc (t *TempTracker) Record(temp float64) {\n    if t.count == 0 {\n        t.min = temp\n        t.max = temp\n    } else {\n        if temp < t.min {\n            t.min = temp\n        }\n        if temp > t.max {\n            t.max = temp\n        }\n    }\n    t.sum += temp\n    t.count++\n}\n\nfunc (t TempTracker) Min() float64 { return t.min }\nfunc (t TempTracker) Max() float64 { return t.max }\nfunc (t TempTracker) Average() float64 {\n    if t.count == 0 {\n        return 0\n    }\n    return t.sum / float64(t.count)\n}",
+            "annotations": [
+              { "type": "gotcha", "label": "Division by Zero", "text": "Always check <code>count == 0</code> before computing the average. Dividing by zero in Go produces <code>+Inf</code> for floats, which may confuse callers." },
+              { "type": "pattern", "label": "Running Statistics", "text": "Tracking min, max, sum, and count in a struct lets you compute statistics in a single pass without storing all values." }
+            ]
+          },
+          {
+            "id": "v3",
+            "title": "Score Keeper",
+            "description": "Create a <code>ScoreKeeper</code> with an unexported <code>scores []int</code>. Add <code>Add(score int)</code>, <code>Total() int</code>, and <code>Count() int</code>.",
+            "hints": [
+              "Use <code>append</code> to add scores",
+              "Loop through scores to calculate total",
+              "Count is just <code>len(s.scores)</code>"
+            ],
+            "solution": "type ScoreKeeper struct {\n    scores []int\n}\n\nfunc (s *ScoreKeeper) Add(score int) {\n    s.scores = append(s.scores, score)\n}\n\nfunc (s ScoreKeeper) Total() int {\n    total := 0\n    for _, sc := range s.scores {\n        total += sc\n    }\n    return total\n}\n\nfunc (s ScoreKeeper) Count() int {\n    return len(s.scores)\n}",
+            "annotations": [
+              { "type": "idiom", "label": "Slice in Struct", "text": "Storing a slice as a struct field is idiomatic Go. The struct methods control how the slice is accessed and modified." },
+              { "type": "gotcha", "label": "Append Needs Pointer Receiver", "text": "<code>append</code> may create a new underlying array, so <code>Add</code> must use a pointer receiver or the new slice header is lost." }
+            ]
+          },
+          {
+            "id": "v4",
+            "title": "Inventory Item",
+            "description": "Create an <code>Inventory</code> struct with unexported fields <code>name string</code>, <code>quantity int</code>, <code>price float64</code>. Add <code>NewInventory(name string, qty int, price float64) *Inventory</code> constructor, <code>Restock(n int)</code>, <code>Sell(n int) error</code>, and <code>Value() float64</code>.",
+            "hints": [
+              "The constructor function returns a pointer to a new struct",
+              "Sell returns an error if quantity is insufficient",
+              "Value = quantity * price"
+            ],
+            "solution": "type Inventory struct {\n    name     string\n    quantity int\n    price    float64\n}\n\nfunc NewInventory(name string, qty int, price float64) *Inventory {\n    return &Inventory{name: name, quantity: qty, price: price}\n}\n\nfunc (inv *Inventory) Restock(n int) {\n    inv.quantity += n\n}\n\nfunc (inv *Inventory) Sell(n int) error {\n    if n > inv.quantity {\n        return fmt.Errorf(\"not enough stock: have %d, want %d\", inv.quantity, n)\n    }\n    inv.quantity -= n\n    return nil\n}\n\nfunc (inv Inventory) Value() float64 {\n    return float64(inv.quantity) * inv.price\n}",
+            "annotations": [
+              { "type": "idiom", "label": "Constructor Functions", "text": "Go has no constructors. By convention, <code>NewTypeName</code> functions create and return initialized struct pointers." },
+              { "type": "pattern", "label": "Returning Pointers from Constructors", "text": "Returning <code>*Inventory</code> from <code>NewInventory</code> is idiomatic. Go's escape analysis allocates it on the heap automatically." }
+            ]
+          }
+        ]
+      }
+    ],
+    "challenges": [
+      {
+        "id": "challenge_1",
+        "block": 1,
+        "difficulty": 2,
+        "concept": "Struct Embedding",
+        "variants": [
+          {
+            "id": "v1",
+            "title": "Animal Embedding",
+            "description": "Create <code>Animal</code> with <code>Name string</code> and <code>Speak() string</code>. Create <code>Dog</code> and <code>Cat</code> that embed <code>Animal</code> and override <code>Speak()</code>.",
+            "functionSignature": "func (d Dog) Speak() string\nfunc (c Cat) Speak() string",
+            "testCases": [
+              { "input": "d := Dog{Animal{Name: \"Buddy\"}}; d.Speak()", "output": "\"Woof!\"" },
+              { "input": "c := Cat{Animal{Name: \"Whiskers\"}}; c.Speak()", "output": "\"Meow!\"" },
+              { "input": "d := Dog{Animal{Name: \"Rex\"}}; d.Name", "output": "\"Rex\"" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "Embedding lets a struct 'inherit' fields and methods. How do you override a method from the embedded type?" },
+              { "title": "\ud83d\udca1 Hint", "content": "Embed by putting <code>Animal</code> as a field without a name. Override by defining <code>Speak()</code> on the embedding struct." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>type Dog struct { Animal }\nfunc (d Dog) Speak() string { return \"Woof!\" }\n\n// Dog.Name works because Animal is embedded</pre>" }
+            ],
+            "solution": "type Animal struct {\n    Name string\n}\n\nfunc (a Animal) Speak() string {\n    return \"...\"\n}\n\ntype Dog struct {\n    Animal\n}\n\nfunc (d Dog) Speak() string {\n    return \"Woof!\"\n}\n\ntype Cat struct {\n    Animal\n}\n\nfunc (c Cat) Speak() string {\n    return \"Meow!\"\n}",
+            "difficulty": 2,
+            "annotations": [
+              { "type": "idiom", "label": "Struct Embedding", "text": "Embedding promotes the embedded type's fields and methods. <code>Dog</code> gets <code>Name</code> from <code>Animal</code> without explicit delegation." },
+              { "type": "gotcha", "label": "Not Inheritance", "text": "Go embedding is not OOP inheritance. The embedded type doesn't know about the outer type. There is no virtual dispatch." }
+            ]
+          },
+          {
+            "id": "v2",
+            "title": "Vehicle Embedding",
+            "description": "Create a <code>Vehicle</code> struct with <code>Make string</code>, <code>Year int</code>. Create <code>Car</code> (with <code>Doors int</code>) and <code>Truck</code> (with <code>PayloadTons float64</code>) that embed <code>Vehicle</code>. Add <code>Description() string</code> to each.",
+            "functionSignature": "func (c Car) Description() string\nfunc (t Truck) Description() string",
+            "testCases": [
+              { "input": "c := Car{Vehicle{\"Toyota\", 2023}, 4}; c.Description()", "output": "\"2023 Toyota (4 doors)\"" },
+              { "input": "t := Truck{Vehicle{\"Ford\", 2022}, 2.5}; t.Description()", "output": "\"2022 Ford (2.5 ton payload)\"" },
+              { "input": "c := Car{Vehicle{\"Honda\", 2024}, 2}; c.Make", "output": "\"Honda\"" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "Each embedded struct gets access to the Vehicle fields. Each type adds its own specific field." },
+              { "title": "\ud83d\udca1 Hint", "content": "Use <code>fmt.Sprintf</code> to format the description string using both Vehicle and type-specific fields." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>type Car struct {\n    Vehicle\n    Doors int\n}\nfunc (c Car) Description() string {\n    return fmt.Sprintf(\"%d %s (%d doors)\", c.Year, c.Make, c.Doors)\n}</pre>" }
+            ],
+            "solution": "type Vehicle struct {\n    Make string\n    Year int\n}\n\ntype Car struct {\n    Vehicle\n    Doors int\n}\n\nfunc (c Car) Description() string {\n    return fmt.Sprintf(\"%d %s (%d doors)\", c.Year, c.Make, c.Doors)\n}\n\ntype Truck struct {\n    Vehicle\n    PayloadTons float64\n}\n\nfunc (t Truck) Description() string {\n    return fmt.Sprintf(\"%d %s (%.1f ton payload)\", t.Year, t.Make, t.PayloadTons)\n}",
+            "difficulty": 2,
+            "annotations": [
+              { "type": "idiom", "label": "Promoted Fields", "text": "Embedded fields are promoted: <code>c.Make</code> is shorthand for <code>c.Vehicle.Make</code>. Both forms work." },
+              { "type": "alternative", "label": "Named Field", "text": "Instead of embedding, you could use a named field: <code>vehicle Vehicle</code>. But then you'd write <code>c.vehicle.Make</code> instead of <code>c.Make</code>." }
+            ]
+          },
+          {
+            "id": "v3",
+            "title": "Employee Hierarchy",
+            "description": "Create a <code>Person</code> struct with <code>Name string</code> and <code>Email string</code>. Create <code>Employee</code> embedding <code>Person</code> with additional <code>Role string</code>. Create <code>Manager</code> embedding <code>Employee</code> with <code>Reports []string</code>. Add a <code>Summary() string</code> to each.",
+            "functionSignature": "func (e Employee) Summary() string\nfunc (m Manager) Summary() string",
+            "testCases": [
+              { "input": "e := Employee{Person{\"Alice\", \"alice@co.com\"}, \"Dev\"}; e.Summary()", "output": "\"Alice (Dev)\"" },
+              { "input": "m := Manager{Employee{Person{\"Bob\", \"bob@co.com\"}, \"Lead\"}, []string{\"Alice\"}}; m.Summary()", "output": "\"Bob (Lead) - 1 reports\"" },
+              { "input": "m.Name", "output": "\"Bob\"" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "Embedding can be multi-level: Manager embeds Employee which embeds Person." },
+              { "title": "\ud83d\udca1 Hint", "content": "Manager accesses <code>m.Name</code> through two levels of embedding. Its Summary should include report count." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>type Manager struct {\n    Employee\n    Reports []string\n}\nfunc (m Manager) Summary() string {\n    return fmt.Sprintf(\"%s (%s) - %d reports\", m.Name, m.Role, len(m.Reports))\n}</pre>" }
+            ],
+            "solution": "type Person struct {\n    Name  string\n    Email string\n}\n\ntype Employee struct {\n    Person\n    Role string\n}\n\nfunc (e Employee) Summary() string {\n    return fmt.Sprintf(\"%s (%s)\", e.Name, e.Role)\n}\n\ntype Manager struct {\n    Employee\n    Reports []string\n}\n\nfunc (m Manager) Summary() string {\n    return fmt.Sprintf(\"%s (%s) - %d reports\", m.Name, m.Role, len(m.Reports))\n}",
+            "difficulty": 2,
+            "annotations": [
+              { "type": "pattern", "label": "Multi-level Embedding", "text": "Go supports multi-level embedding. Fields are promoted through all levels: <code>m.Name</code> reaches through <code>Employee</code> into <code>Person</code>." },
+              { "type": "gotcha", "label": "Ambiguous Selectors", "text": "If two embedded types have a field with the same name, you must qualify it explicitly (e.g., <code>m.Employee.Name</code>)." }
+            ]
+          },
+          {
+            "id": "v4",
+            "title": "Logging with Embedding",
+            "description": "Create a <code>Logger</code> struct with a <code>Prefix string</code> and method <code>Log(msg string) string</code>. Create <code>AppServer</code> embedding <code>Logger</code> with <code>Port int</code>. Show that <code>AppServer</code> can call <code>Log</code> directly.",
+            "functionSignature": "func (l Logger) Log(msg string) string",
+            "testCases": [
+              { "input": "s := AppServer{Logger{\"[SERVER]\"}, 8080}; s.Log(\"started\")", "output": "\"[SERVER] started\"" },
+              { "input": "s := AppServer{Logger{\"[APP]\"}, 3000}; s.Log(\"ready\")", "output": "\"[APP] ready\"" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "Embedding Logger gives AppServer all of Logger's methods for free." },
+              { "title": "\ud83d\udca1 Hint", "content": "The Log method concatenates the prefix with the message." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>type Logger struct { Prefix string }\nfunc (l Logger) Log(msg string) string {\n    return l.Prefix + \" \" + msg\n}\ntype AppServer struct {\n    Logger\n    Port int\n}</pre>" }
+            ],
+            "solution": "type Logger struct {\n    Prefix string\n}\n\nfunc (l Logger) Log(msg string) string {\n    return l.Prefix + \" \" + msg\n}\n\ntype AppServer struct {\n    Logger\n    Port int\n}",
+            "difficulty": 1,
+            "annotations": [
+              { "type": "pattern", "label": "Composition via Embedding", "text": "Embedding provides composition. AppServer 'has a' Logger and gains its methods. This is Go's alternative to inheritance." },
+              { "type": "idiom", "label": "Reusable Behavior", "text": "Small, focused structs like Logger can be embedded into many types, providing shared behavior without code duplication." }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "challenge_2",
+        "block": 1,
+        "difficulty": 2,
+        "concept": "JSON Tags",
+        "variants": [
+          {
+            "id": "v1",
+            "title": "JSON Config Parser",
+            "description": "Define a struct that matches this JSON and parse it:<br><code>{\"server\": {\"host\": \"localhost\", \"port\": 8080}, \"debug\": true, \"allowed_origins\": [\"http://localhost\"]}</code>",
+            "functionSignature": "type Config struct { ... }",
+            "testCases": [
+              { "input": "json.Unmarshal([]byte(jsonStr), &cfg); cfg.Server.Host", "output": "\"localhost\"" },
+              { "input": "cfg.Server.Port", "output": "8080" },
+              { "input": "cfg.Debug", "output": "true" },
+              { "input": "len(cfg.AllowedOrigins)", "output": "1" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "JSON keys often use snake_case but Go fields use PascalCase. How do you map between them?" },
+              { "title": "\ud83d\udca1 Hint", "content": "Use struct tags: <code>json:\"field_name\"</code>. Nested JSON objects become nested structs." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>type Config struct {\n    Server struct {\n        Host string `json:\"host\"`\n        Port int    `json:\"port\"`\n    } `json:\"server\"`\n    Debug          bool     `json:\"debug\"`\n    AllowedOrigins []string `json:\"allowed_origins\"`\n}</pre>" }
+            ],
+            "solution": "type Config struct {\n    Server struct {\n        Host string `json:\"host\"`\n        Port int    `json:\"port\"`\n    } `json:\"server\"`\n    Debug          bool     `json:\"debug\"`\n    AllowedOrigins []string `json:\"allowed_origins\"`\n}\n\nvar cfg Config\njson.Unmarshal([]byte(jsonStr), &cfg)",
+            "difficulty": 2,
+            "annotations": [
+              { "type": "idiom", "label": "Struct Tags", "text": "Struct tags like <code>`json:\"field_name\"`</code> control how <code>encoding/json</code> maps JSON keys to struct fields." },
+              { "type": "gotcha", "label": "Exported Fields Required", "text": "Only exported (uppercase) fields are marshaled/unmarshaled by <code>encoding/json</code>. Lowercase fields are silently ignored." }
+            ]
+          },
+          {
+            "id": "v2",
+            "title": "User Profile JSON",
+            "description": "Define a <code>UserProfile</code> struct to match this JSON:<br><code>{\"username\": \"gopher\", \"email\": \"go@go.dev\", \"age\": 15, \"is_active\": true, \"tags\": [\"developer\", \"gopher\"]}</code><br>Add an <code>omitempty</code> tag on the <code>tags</code> field.",
+            "functionSignature": "type UserProfile struct { ... }",
+            "testCases": [
+              { "input": "json.Unmarshal([]byte(jsonStr), &u); u.Username", "output": "\"gopher\"" },
+              { "input": "u.IsActive", "output": "true" },
+              { "input": "len(u.Tags)", "output": "2" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "The <code>omitempty</code> option skips a field in JSON output when it has its zero value." },
+              { "title": "\ud83d\udca1 Hint", "content": "Use <code>`json:\"tags,omitempty\"`</code> to omit the tags array when empty." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>type UserProfile struct {\n    Username string   `json:\"username\"`\n    Email    string   `json:\"email\"`\n    Age      int      `json:\"age\"`\n    IsActive bool     `json:\"is_active\"`\n    Tags     []string `json:\"tags,omitempty\"`\n}</pre>" }
+            ],
+            "solution": "type UserProfile struct {\n    Username string   `json:\"username\"`\n    Email    string   `json:\"email\"`\n    Age      int      `json:\"age\"`\n    IsActive bool     `json:\"is_active\"`\n    Tags     []string `json:\"tags,omitempty\"`\n}",
+            "difficulty": 2,
+            "annotations": [
+              { "type": "idiom", "label": "omitempty", "text": "The <code>omitempty</code> option skips fields with zero values during marshaling. Useful for optional fields." },
+              { "type": "gotcha", "label": "Bool with omitempty", "text": "Be careful with <code>omitempty</code> on booleans: <code>false</code> is the zero value and will be omitted. Use <code>*bool</code> if false is meaningful." }
+            ]
+          },
+          {
+            "id": "v3",
+            "title": "API Response Struct",
+            "description": "Define structs to unmarshal this API response JSON:<br><code>{\"status\": \"ok\", \"data\": {\"items\": [{\"id\": 1, \"name\": \"Widget\"}, {\"id\": 2, \"name\": \"Gadget\"}], \"total\": 2}}</code>",
+            "functionSignature": "type APIResponse struct { ... }\ntype Item struct { ... }",
+            "testCases": [
+              { "input": "json.Unmarshal([]byte(jsonStr), &resp); resp.Status", "output": "\"ok\"" },
+              { "input": "resp.Data.Total", "output": "2" },
+              { "input": "resp.Data.Items[0].Name", "output": "\"Widget\"" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "Nested JSON requires nested structs. Arrays of objects become slices of structs." },
+              { "title": "\ud83d\udca1 Hint", "content": "Define an <code>Item</code> struct separately, then use <code>[]Item</code> in the data struct." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>type Item struct {\n    ID   int    `json:\"id\"`\n    Name string `json:\"name\"`\n}\ntype APIResponse struct {\n    Status string `json:\"status\"`\n    Data struct {\n        Items []Item `json:\"items\"`\n        Total int    `json:\"total\"`\n    } `json:\"data\"`\n}</pre>" }
+            ],
+            "solution": "type Item struct {\n    ID   int    `json:\"id\"`\n    Name string `json:\"name\"`\n}\n\ntype APIResponse struct {\n    Status string `json:\"status\"`\n    Data   struct {\n        Items []Item `json:\"items\"`\n        Total int    `json:\"total\"`\n    } `json:\"data\"`\n}",
+            "difficulty": 2,
+            "annotations": [
+              { "type": "pattern", "label": "Nested Anonymous Structs", "text": "For one-off nested objects, inline anonymous structs avoid polluting the package namespace. Extract to named types if reused." },
+              { "type": "stdlib", "label": "encoding/json", "text": "Go's <code>encoding/json</code> package handles marshaling and unmarshaling. Use <code>json.Unmarshal</code> for parsing and <code>json.Marshal</code> for serialization." }
+            ]
+          },
+          {
+            "id": "v4",
+            "title": "Database Config with Defaults",
+            "description": "Define a <code>DBConfig</code> struct for this JSON:<br><code>{\"host\": \"db.example.com\", \"port\": 5432, \"name\": \"mydb\", \"ssl_mode\": \"require\", \"max_connections\": 25}</code><br>Write a <code>func DefaultDBConfig() DBConfig</code> that returns sensible defaults, then show how to override with JSON.",
+            "functionSignature": "type DBConfig struct { ... }\nfunc DefaultDBConfig() DBConfig",
+            "testCases": [
+              { "input": "cfg := DefaultDBConfig(); cfg.Port", "output": "5432" },
+              { "input": "cfg := DefaultDBConfig(); cfg.SSLMode", "output": "\"disable\"" },
+              { "input": "json.Unmarshal([]byte(jsonStr), &cfg); cfg.Host", "output": "\"db.example.com\"" }
+            ],
+            "hints": [
+              { "title": "\ud83e\udd14 Think about it", "content": "The trick is to create a default config first, then unmarshal JSON on top of it. Only provided fields get overwritten." },
+              { "title": "\ud83d\udca1 Hint", "content": "Start with <code>cfg := DefaultDBConfig()</code>, then <code>json.Unmarshal(data, &cfg)</code>. Missing JSON fields keep their defaults." },
+              { "title": "\ud83d\udd27 Pattern", "content": "<pre>func DefaultDBConfig() DBConfig {\n    return DBConfig{\n        Host: \"localhost\", Port: 5432,\n        SSLMode: \"disable\", MaxConn: 10,\n    }\n}\ncfg := DefaultDBConfig()\njson.Unmarshal(data, &cfg)</pre>" }
+            ],
+            "solution": "type DBConfig struct {\n    Host    string `json:\"host\"`\n    Port    int    `json:\"port\"`\n    Name    string `json:\"name\"`\n    SSLMode string `json:\"ssl_mode\"`\n    MaxConn int    `json:\"max_connections\"`\n}\n\nfunc DefaultDBConfig() DBConfig {\n    return DBConfig{\n        Host:    \"localhost\",\n        Port:    5432,\n        Name:    \"app\",\n        SSLMode: \"disable\",\n        MaxConn: 10,\n    }\n}",
+            "difficulty": 3,
+            "annotations": [
+              { "type": "pattern", "label": "Defaults + Override", "text": "Creating a default struct then unmarshaling JSON on top is a powerful pattern. JSON only overwrites fields it contains." },
+              { "type": "idiom", "label": "Constructor Returns Value", "text": "When the struct is small and has no pointer receivers, returning a value (not pointer) from the constructor is fine." },
+              { "type": "gotcha", "label": "Zero Value Ambiguity", "text": "If JSON contains <code>\"port\": 0</code>, you can't distinguish between 'explicitly set to 0' and 'not provided'. Use <code>*int</code> to handle this." }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
