@@ -4,9 +4,13 @@
   "private": true,
   "description": "Reusable course engine — fork, replace content, build, deploy.",
   "scripts": {
-    "build": "node build.js"
+    "build": "node build.js",
+    "build:go": "node build.js go",
+    "build:rust": "node build.js rust"
   },
   "dependencies": {
-    "marked": "^15.0.0"
+    "highlight.js": "^11.11.1",
+    "marked": "^15.0.0",
+    "marked-highlight": "^2.2.3"
   }
 }

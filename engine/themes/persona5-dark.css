@@ -80,7 +80,7 @@
 [data-theme="persona5-dark"] .sidebar-header a { color: var(--red); }
 
 /* --- Inline code --- */
-[data-theme="persona5-dark"] code:not(.code-block code) {
+[data-theme="persona5-dark"] code:not(.code-block code):not(pre code) {
     background: rgba(217, 35, 35, 0.1);
     color: #ff5555;
     border: 1px solid rgba(217, 35, 35, 0.2);
@@ -197,11 +197,20 @@
 }
 
 /* --- Code blocks: clean border, red left accent --- */
-[data-theme="persona5-dark"] .code-block {
+[data-theme="persona5-dark"] .code-block,
+[data-theme="persona5-dark"] .code-labeled,
+[data-theme="persona5-dark"] .lesson pre {
     border: 2px solid #222 !important;
     border-left: 4px solid var(--red) !important;
     border-radius: 0 !important;
     box-shadow: none;
+}
+[data-theme="persona5-dark"] .code-compare {
+    border: 2px solid #222 !important;
+    border-radius: 0 !important;
+}
+[data-theme="persona5-dark"] .code-compare .code-labeled {
+    border: none !important;
 }
 [data-theme="persona5-dark"] pre { border: none; }
 [data-theme="persona5-dark"] .code-header {

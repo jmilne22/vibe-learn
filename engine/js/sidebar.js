@@ -93,10 +93,11 @@
             const isActive = currentPage === page.file;
             const linkClass = page.isProject ? 'sidebar-link sidebar-project-link' : 'sidebar-link';
 
+            const displayTitle = page.isProject ? `🔨 ${page.title}` : page.title;
             html += `
                 <a href="${page.file}" class="${linkClass}${isActive ? ' active' : ''}">
                     <span class="sidebar-module-num">${page.num}</span>
-                    ${page.title}
+                    ${displayTitle}
                 </a>
             `;
 

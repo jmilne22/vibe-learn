@@ -59,12 +59,12 @@
             btn.className = 'dp-option' + (config.moduleFilter === m ? ' active' : '');
             btn.textContent = 'M' + m;
             btn.title = MODULE_NAMES[m] || ('Module ' + m);
-            btn.onclick = (function(moduleNum) {
+            btn.onclick = (function(moduleNum, button) {
                 return function() {
-                    setActiveInContainer(container, btn);
+                    setActiveInContainer(container, button);
                     config.moduleFilter = moduleNum;
                 };
-            })(m);
+            })(m, btn);
             container.appendChild(btn);
         }
     }

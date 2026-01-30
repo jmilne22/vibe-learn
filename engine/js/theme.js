@@ -76,12 +76,18 @@
     const validThemes = new Set(themeGroups.flatMap(g => g.options.map(o => o.value)));
 
     function _sk(suffix) {
-        return window.CourseConfigHelper ? window.CourseConfigHelper.storageKey(suffix) : 'go-course-' + suffix;
+        return window.CourseConfigHelper ? window.CourseConfigHelper.storageKey(suffix) : 'vibe-learn-' + suffix;
+    }
+
+    // Theme uses a platform-wide key so it's consistent across courses
+    function _themeKey() {
+        return 'vibe-learn-theme';
     }
 
     // Check for saved theme preference or default to dark
     function getPreferredTheme() {
-        const saved = safeGet(_sk('theme'));
+        // Try platform-wide key first, then fall back to per-course key
+        const saved = safeGet(_themeKey()) || safeGet(_sk('theme'));
         if (saved && validThemes.has(saved)) {
             return saved;
         }
@@ -96,7 +102,7 @@
         } else {
             document.documentElement.setAttribute('data-theme', theme);
         }
-        safeSet(_sk('theme'), theme);
+        safeSet(_themeKey(), theme);
     }
 
     // Initialize theme immediately to prevent flash
@@ -248,6 +254,9 @@
 })();
 
 (function() {
+    // Don't run timer on pages without a course context (e.g., landing page)
+    if (!window.CourseConfig) return;
+
     function _sk2(suffix) {
         return window.CourseConfigHelper ? window.CourseConfigHelper.storageKey(suffix) : 'go-course-' + suffix;
     }

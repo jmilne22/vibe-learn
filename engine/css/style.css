@@ -168,6 +168,166 @@ pre {
     word-wrap: break-word;
 }
 
+/* Markdown-generated code blocks (pre > code) */
+.lesson pre {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    line-height: 1.6;
+}
+
+.lesson pre code {
+    background: none;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    font-size: inherit;
+    color: var(--text-main);
+}
+
+/* Code comparison layout (side-by-side labeled blocks) */
+.code-compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    margin: 1.5rem 0;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.code-compare .code-labeled + .code-labeled {
+    border-left: 1px solid var(--border);
+}
+
+.code-compare .code-labeled {
+    border: none;
+    border-radius: 0;
+    margin: 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.code-compare .code-labeled pre {
+    flex: 1;
+}
+
+.code-compare pre {
+    margin: 0;
+    border: none;
+    border-radius: 0;
+}
+
+/* Standalone labeled code block (single, not in compare) */
+.code-labeled {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin: 1.5rem 0;
+}
+
+.code-labeled pre {
+    margin: 0;
+    border: none;
+    border-radius: 0;
+}
+
+/* Language label header */
+.code-header {
+    background: var(--bg-lighter);
+    padding: 0.4rem 1rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    border-bottom: 1px solid var(--border);
+}
+
+/* Syntax highlighting (highlight.js classes using theme variables) */
+.hljs { color: var(--text-main); }
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-built_in,
+.hljs-name { color: var(--purple, #9d00ff); }
+.hljs-string,
+.hljs-attr,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition { color: var(--green-bright, #00ff9d); }
+.hljs-title,
+.hljs-title.function_,
+.hljs-section { color: var(--blue, #00b4ff); }
+.hljs-comment,
+.hljs-quote,
+.hljs-deletion { color: var(--text-dim, #888); font-style: italic; }
+.hljs-type,
+.hljs-template-tag,
+.hljs-class .hljs-title { color: var(--cyan, #00d4ff); }
+.hljs-number,
+.hljs-literal,
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag .hljs-attr { color: var(--orange, #ff9d00); }
+.hljs-meta,
+.hljs-doctag { color: var(--text-dim); }
+.hljs-params { color: var(--text-main); }
+.hljs-punctuation { color: var(--text-dim); }
+
+@media (max-width: 768px) {
+    .code-compare {
+        grid-template-columns: 1fr;
+    }
+    .code-compare .code-labeled + .code-labeled {
+        border-left: none;
+        border-top: 1px solid var(--border);
+    }
+}
+
+/* Exercise jump-to box */
+.exercise-jump-box {
+    background: var(--bg-card);
+    border-radius: 8px;
+    padding: 1rem 1.5rem;
+    margin: 1rem 0 2rem 0;
+}
+
+.exercise-jump-label {
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    color: var(--text);
+}
+
+.exercise-jump-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    font-size: 0.9rem;
+}
+
+.exercise-jump-links a {
+    text-decoration: none;
+    transition: opacity 0.2s;
+}
+
+.exercise-jump-links a:first-child {
+    color: var(--green-bright);
+}
+
+.exercise-jump-links a:last-child {
+    color: var(--orange);
+}
+
+.exercise-jump-links a:hover {
+    opacity: 0.8;
+}
+
 /* ============================================
    10. Tips and Warnings
    ============================================ */
@@ -389,7 +549,7 @@ li {
     margin-bottom: 0.5rem;
 }
 
-code:not(.code-block code) {
+code:not(.code-block code):not(pre code) {
     background: var(--bg-code);
     padding: 0.2rem 0.5rem;
     border-radius: 4px;

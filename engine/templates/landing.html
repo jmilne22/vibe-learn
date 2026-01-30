@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="vibe-learn — pick a course and start learning">
+    <title>vibe-learn</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="style.css">
+{{THEME_LINKS}}
+    <style>
+        .landing-header {
+            text-align: center;
+            padding: 3rem 0 2rem;
+        }
+        .landing-header .tag {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--green-bright);
+            font-size: 0.85rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+        .landing-header h1 {
+            font-size: 2.5rem;
+            margin: 0.5rem 0;
+        }
+        .landing-header p {
+            color: var(--text-dim);
+            font-size: 1.1rem;
+        }
+        .course-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+        .course-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            text-decoration: none;
+            color: inherit;
+            transition: border-color 0.2s, transform 0.2s;
+            display: flex;
+            flex-direction: column;
+        }
+        .course-card:hover {
+            border-color: var(--green-bright);
+            transform: translateY(-2px);
+        }
+        .course-card .course-name {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        .course-card .course-desc {
+            color: var(--text-dim);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            flex: 1;
+        }
+        .course-card .course-status {
+            margin-top: 0.75rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--orange);
+        }
+        .course-card .course-meta {
+            margin-top: 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--green-dim);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="landing-header">
+            <div class="tag">// vibe-learn</div>
+            <h1>Pick a Course</h1>
+            <p>Choose a course to start learning</p>
+        </div>
+        <div class="course-grid">
+{{COURSE_CARDS}}
+        </div>
+    </div>
+    <script src="theme.js"></script>
+</body>
+</html>
