@@ -683,13 +683,10 @@ function buildLandingPage(courseInfos) {
         });
     }
 
-    // Copy favicon from first course that has one
-    for (const info of courseInfos) {
-        const favicon = path.join(COURSES_DIR, info.slug, 'content', 'assets', 'favicon.svg');
-        if (fs.existsSync(favicon)) {
-            fs.copyFileSync(favicon, path.join(ROOT_DIST, 'favicon.svg'));
-            break;
-        }
+    // Copy landing page favicon (generic platform icon)
+    const engineFavicon = path.join(ENGINE_DIR, 'assets', 'favicon.svg');
+    if (fs.existsSync(engineFavicon)) {
+        fs.copyFileSync(engineFavicon, path.join(ROOT_DIST, 'favicon.svg'));
     }
 
     let page = landingTemplate
