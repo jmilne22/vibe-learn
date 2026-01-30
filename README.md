@@ -11,6 +11,8 @@ A self-hosted, static course platform. Write your lessons in markdown, define ex
 | Course | Modules | Status |
 |--------|---------|--------|
 | **Go** | 18 modules + 4 projects | Complete |
+| **C** | 18 modules + 4 projects | Scaffold (content coming soon) |
+| **Kubernetes & Helm** | 22 modules + 8 projects | Scaffold (content coming soon) |
 | **Rust** | 18 modules + 2 projects | Scaffold (content coming soon) |
 
 ## What you get
@@ -107,6 +109,20 @@ vibe-learn/
 │   │       ├── exercises/   # Exercise variants (YAML)
 │   │       ├── flashcards/  # Flashcard decks (YAML)
 │   │       └── assets/      # Static assets (favicon, images)
+│   ├── c/
+│   │   ├── course.json
+│   │   └── content/
+│   │       ├── lessons/
+│   │       ├── exercises/
+│   │       ├── flashcards/
+│   │       └── assets/
+│   ├── k8s/
+│   │   ├── course.json
+│   │   └── content/
+│   │       ├── lessons/
+│   │       ├── exercises/
+│   │       ├── flashcards/
+│   │       └── assets/
 │   └── rust/
 │       ├── course.json
 │       └── content/
@@ -123,7 +139,9 @@ vibe-learn/
 │
 └── dist/                    # Build output (gitignored)
     ├── index.html           # Landing page (course picker)
+    ├── c/                   # Full C course site
     ├── go/                  # Full Go course site
+    ├── k8s/                 # Full Kubernetes & Helm course site
     └── rust/                # Full Rust course site
 ```
 

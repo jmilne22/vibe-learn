@@ -1,0 +1,360 @@
+"1":
+  - topic: Containers
+    q: What is the difference between a container and a VM?
+    a: >-
+      A VM virtualizes hardware and runs a full OS. A container shares the host kernel and isolates processes using
+      Linux namespaces (PID, network, mount) and cgroups (resource limits). Containers are lighter, start faster, and
+      share the host OS — but provide weaker isolation than VMs.
+  - topic: Containers
+    q: What happens when you run <code>docker run nginx</code>?
+    a: >-
+      Docker pulls the nginx image (if not cached), creates a container from it (isolated filesystem, network, PID
+      namespace), allocates a writable layer on top of the image layers, and starts the process defined in the image's
+      entrypoint/CMD. The container gets its own IP on the docker0 bridge network.
+  - topic: Containers
+    q: What is a container image layer?
+    a: >-
+      Each Dockerfile instruction (FROM, RUN, COPY) creates a read-only layer. Layers are stacked and shared between
+      images — if two images share the same base, the base layer is stored once. When a container runs, a thin
+      writable layer is added on top. This is the union filesystem model.
+"2":
+  - topic: Architecture
+    q: What are the four main control plane components?
+    a: >-
+      API server (handles all REST requests), etcd (key-value store for cluster state), scheduler (assigns Pods to
+      nodes), and controller manager (runs reconciliation loops for Deployments, ReplicaSets, etc.).
+  - topic: Architecture
+    q: What does the kubelet do?
+    a: >-
+      The kubelet is an agent on each worker node. It watches the API server for Pods assigned to its node, runs them
+      via the container runtime, and reports status back. It also handles liveness/readiness probes.
+  - topic: Architecture
+    q: What is the reconciliation loop?
+    a: >-
+      The core pattern of Kubernetes: controllers continuously compare desired state (what you declared in YAML) with
+      actual state (what's running), and take action to close the gap. This is why K8s is "declarative."
+  - topic: Architecture
+    q: What happens to your running Pods if etcd goes down?
+    a: >-
+      Existing Pods keep running — kubelet manages them independently. But you can't create, update, or delete any
+      resources because the API server can't persist state. The scheduler can't assign new Pods to nodes. The cluster
+      is effectively frozen until etcd recovers. This is why etcd backup is critical.
+  - topic: Architecture
+    q: What is a controller in Kubernetes?
+    a: >-
+      A control loop that watches a resource type and takes action to move actual state toward desired state. Examples:
+      the Deployment controller creates/updates ReplicaSets, the ReplicaSet controller creates/deletes Pods, the
+      Endpoint controller updates Service endpoints. You can write custom controllers (operators) for your own resources.
+"3":
+  - topic: kubectl
+    q: What does <code>kubectl explain pod.spec.containers</code> do?
+    a: >-
+      Shows the built-in documentation for that field path — its type, description, and sub-fields. Works for any
+      resource. Add <code>--recursive</code> to see the full tree.
+  - topic: kubectl
+    q: What's the difference between <code>kubectl apply</code> and <code>kubectl create</code>?
+    a: >-
+      <code>create</code> is imperative — it fails if the resource already exists. <code>apply</code> is declarative —
+      it creates if missing, updates if it exists, using a three-way merge with the last-applied annotation.
+  - topic: kubectl
+    q: What does <code>--dry-run=server</code> do vs <code>--dry-run=client</code>?
+    a: >-
+      <code>--dry-run=client</code> only validates locally (no API call). <code>--dry-run=server</code> sends the
+      request to the API server for full validation (admission controllers, schema checks) but doesn't persist it.
+"4":
+  - topic: Pods
+    q: What's the difference between an init container and a sidecar container?
+    a: >-
+      Init containers run sequentially to completion before the main container starts (e.g., DB migrations, config
+      fetching). Sidecar containers run alongside the main container for the Pod's entire lifetime (e.g., log
+      shippers, proxies).
+  - topic: Pods
+    q: What are the three QoS classes and how are they determined?
+    a: >-
+      <strong>Guaranteed</strong>: requests == limits for all containers. <strong>Burstable</strong>: at least one
+      container has requests or limits set, but they differ. <strong>BestEffort</strong>: no requests or limits set at
+      all. Under memory pressure, K8s evicts BestEffort first, then Burstable, then Guaranteed.
+  - topic: Pods
+    q: What is a multi-container Pod pattern called "ambassador"?
+    a: >-
+      An ambassador container proxies network connections from the main container to the outside world. The main
+      container connects to localhost, and the ambassador handles the complexity (connection pooling, auth, retries).
+      Example: a proxy sidecar for a database connection.
+"5":
+  - topic: Workloads
+    q: What's the difference between a Deployment and a StatefulSet?
+    a: >-
+      Deployments manage stateless Pods — they're interchangeable, get random names, and share storage. StatefulSets
+      give each Pod a stable hostname (web-0, web-1), stable persistent storage (one PVC per replica), and ordered
+      startup/shutdown. Use StatefulSets for databases, Kafka, etc.
+  - topic: Workloads
+    q: What's the difference between a Job and a CronJob?
+    a: >-
+      A Job runs Pods to completion (exit 0) a specified number of times. A CronJob creates Jobs on a cron schedule.
+      Jobs are for one-off tasks (migrations, batch processing). CronJobs are for recurring tasks (nightly backups,
+      report generation).
+  - topic: Workloads
+    q: When would you use a DaemonSet?
+    a: >-
+      When you need exactly one Pod per node — common for node-level agents like log collectors (Fluentd), monitoring
+      agents (node-exporter), network plugins (CNI), and storage daemons (CSI node drivers).
+  - topic: Workloads
+    q: What do maxSurge and maxUnavailable control in a rolling update?
+    a: >-
+      <code>maxSurge</code>: how many extra Pods above the desired count can exist during the update (speeds it up).
+      <code>maxUnavailable</code>: how many Pods can be unavailable during the update. Setting maxUnavailable=0 ensures
+      zero downtime but requires maxSurge >= 1.
+"6":
+  - topic: Services
+    q: What are the four Service types?
+    a: >-
+      <strong>ClusterIP</strong>: internal-only virtual IP (default). <strong>NodePort</strong>: exposes on a static
+      port (30000-32767) on every node. <strong>LoadBalancer</strong>: provisions a cloud load balancer pointing to
+      NodePorts. <strong>ExternalName</strong>: returns a CNAME record — no proxying, just DNS aliasing.
+  - topic: Services
+    q: What's the difference between port, targetPort, and nodePort?
+    a: >-
+      <code>port</code>: the port the Service listens on (ClusterIP:port). <code>targetPort</code>: the port on the
+      Pod the traffic is forwarded to. <code>nodePort</code>: the port on every node (NodePort/LoadBalancer types
+      only). Example: port 80 → targetPort 8080 → nodePort 30080.
+  - topic: Services
+    q: How does kube-proxy route traffic to Pods?
+    a: >-
+      kube-proxy watches Services and Endpoints, then configures iptables rules (default mode) or IPVS virtual servers
+      to redirect traffic from the Service's ClusterIP to a backend Pod IP. It runs on every node.
+"7":
+  - topic: Ingress
+    q: What's the difference between a Service and an Ingress?
+    a: >-
+      A Service provides L4 (TCP/UDP) load balancing to Pods. An Ingress provides L7 (HTTP/HTTPS) routing — host-based
+      and path-based rules, TLS termination, and virtual hosting. An Ingress needs an Ingress Controller (nginx,
+      Traefik) to actually function; the Ingress resource is just config.
+  - topic: Ingress
+    q: Why is Gateway API replacing Ingress?
+    a: >-
+      Ingress is limited: one resource type, no standard for TCP/UDP routing, vendor-specific annotations for features
+      like rate limiting. Gateway API separates concerns (Gateway, HTTPRoute, GRPCRoute, TCPRoute), supports richer
+      routing, and is role-oriented (infra team manages Gateway, app team manages Routes).
+  - topic: Ingress
+    q: What does an Ingress Controller actually do?
+    a: >-
+      It watches Ingress resources and configures a reverse proxy (nginx, Traefik, HAProxy, Envoy) accordingly. The
+      Ingress resource is just a declaration of desired routing rules — the controller makes it real. Without a
+      controller installed, Ingress resources do nothing.
+"8":
+  - topic: DNS
+    q: What is the full DNS name for a Service called "api" in namespace "prod"?
+    a: >-
+      <code>api.prod.svc.cluster.local</code>. The format is
+      <code>&lt;service&gt;.&lt;namespace&gt;.svc.cluster.local</code>. Within the same namespace, you can use just
+      <code>api</code>. Across namespaces, use <code>api.prod</code>.
+  - topic: DNS
+    q: What is a headless Service and when do you use one?
+    a: >-
+      A Service with <code>clusterIP: None</code>. Instead of a single virtual IP, DNS returns the individual Pod IPs
+      directly. Used with StatefulSets so clients can connect to specific Pods (e.g., a specific Kafka broker or
+      database replica). DNS returns A records like <code>web-0.myservice.ns.svc.cluster.local</code>.
+  - topic: DNS
+    q: What DNS server does Kubernetes use and how is it configured?
+    a: >-
+      CoreDNS runs as a Deployment in kube-system. Kubelets configure each Pod's /etc/resolv.conf to point to the
+      CoreDNS Service IP. CoreDNS watches the API server for Services and Endpoints and serves DNS records for them.
+"9":
+  - topic: Configuration
+    q: Are Kubernetes Secrets encrypted?
+    a: >-
+      By default, no. Secrets are base64-encoded (not encrypted) and stored in etcd in plain text. For actual security,
+      enable encryption at rest (EncryptionConfiguration) or use an external secret manager (Vault, AWS Secrets
+      Manager) via the External Secrets Operator or Sealed Secrets.
+  - topic: Configuration
+    q: What's the difference between using a ConfigMap as env vars vs a volume mount?
+    a: >-
+      Env vars are set once at container start — they don't update if the ConfigMap changes. Volume mounts reflect
+      ConfigMap updates automatically (with a brief delay). Use volume mounts when you need live config reload; use env
+      vars for values that are read once at startup.
+"10":
+  - topic: Storage
+    q: What's the relationship between PV, PVC, and StorageClass?
+    a: >-
+      A <strong>PersistentVolume (PV)</strong> is a piece of storage in the cluster. A <strong>PersistentVolumeClaim
+      (PVC)</strong> is a request for storage by a Pod. A <strong>StorageClass</strong> enables dynamic provisioning —
+      when a PVC is created, the StorageClass automatically creates a matching PV. Without a StorageClass, an admin
+      must pre-create PVs manually.
+  - topic: Storage
+    q: What are the access modes and what do they mean?
+    a: >-
+      <strong>ReadWriteOnce (RWO)</strong>: one node can mount read-write. <strong>ReadOnlyMany (ROX)</strong>: many
+      nodes can mount read-only. <strong>ReadWriteMany (RWX)</strong>: many nodes can mount read-write. Most cloud
+      block storage only supports RWO. For RWX you need a network filesystem (NFS, EFS, CephFS).
+"11":
+  - topic: Security
+    q: What's the difference between a Role and a ClusterRole?
+    a: >-
+      A <strong>Role</strong> grants permissions within a single namespace. A <strong>ClusterRole</strong> grants
+      permissions cluster-wide or for non-namespaced resources (nodes, PVs, namespaces). ClusterRoles can also be
+      bound to a specific namespace via a RoleBinding.
+  - topic: Security
+    q: What do NetworkPolicies do?
+    a: >-
+      They control Pod-to-Pod traffic at L3/L4. By default, all Pods can communicate with all other Pods. A
+      NetworkPolicy selects Pods (via labels) and specifies allowed ingress and/or egress rules. A common pattern is
+      deny-all-by-default, then whitelist specific traffic. Requires a CNI that supports NetworkPolicies (Calico,
+      Cilium — not Flannel).
+  - topic: Security
+    q: How would you give a Pod access to the Kubernetes API?
+    a: >-
+      Create a ServiceAccount, bind it to a Role/ClusterRole with the necessary permissions, and set
+      <code>serviceAccountName</code> in the Pod spec. The token is auto-mounted at
+      /var/run/secrets/kubernetes.io/serviceaccount/token. Avoid using the default ServiceAccount — it often has more
+      permissions than needed.
+"12":
+  - topic: Namespaces
+    q: What are taints and tolerations?
+    a: >-
+      Taints are applied to nodes to repel Pods unless the Pod has a matching toleration. Used for dedicated nodes
+      (GPU nodes, specific teams), marking nodes as unschedulable during maintenance, or keeping workloads off control
+      plane nodes. A taint has a key, value, and effect (NoSchedule, PreferNoSchedule, NoExecute).
+  - topic: Namespaces
+    q: What's the difference between labels and annotations?
+    a: >-
+      Labels are for identification and selection — used by Services, Deployments, and kubectl to find resources. They
+      must be short and follow naming rules. Annotations are for arbitrary metadata — build info, git SHAs, monitoring
+      config, Ingress settings. Annotations can be long and aren't used for selection.
+"13":
+  - topic: Probes
+    q: What's the difference between liveness, readiness, and startup probes?
+    a: >-
+      <strong>Liveness</strong>: is the container alive? If it fails, kubelet restarts the container.
+      <strong>Readiness</strong>: is the container ready to serve traffic? If it fails, the Pod is removed from Service
+      endpoints. <strong>Startup</strong>: has the container finished starting? Used for slow-starting containers —
+      liveness/readiness don't run until the startup probe succeeds.
+  - topic: Observability
+    q: How does Prometheus scraping work in Kubernetes?
+    a: >-
+      Prometheus discovers targets via ServiceMonitors or Pod annotations (<code>prometheus.io/scrape: "true"</code>).
+      It periodically HTTP GETs the /metrics endpoint on each target. Applications expose metrics in Prometheus format
+      (counters, gauges, histograms). Prometheus stores the time-series data and Grafana visualizes it.
+"14":
+  - topic: Troubleshooting
+    q: A Pod is stuck in Pending. What are the most common causes?
+    a: >-
+      1) Insufficient CPU/memory on any node (check <code>kubectl describe pod</code> for events). 2) No nodes match
+      the Pod's nodeSelector or nodeAffinity. 3) Taints on nodes with no matching tolerations. 4) PVC is pending
+      (no available PV or StorageClass). Check events with <code>kubectl get events --sort-by=.lastTimestamp</code>.
+  - topic: Troubleshooting
+    q: What does CrashLoopBackOff mean?
+    a: >-
+      The container starts, crashes, and K8s keeps restarting it with exponential backoff (10s, 20s, 40s... up to 5
+      min). Check <code>kubectl logs &lt;pod&gt; --previous</code> to see the crash output. Common causes: missing env
+      vars or config, failed DB connections, OOMKilled, or a bad entrypoint command.
+  - topic: Troubleshooting
+    q: What does ImagePullBackOff mean?
+    a: >-
+      Kubelet can't pull the container image. Common causes: typo in the image name, image doesn't exist in the
+      registry, private registry with no imagePullSecrets configured, or network connectivity to the registry is
+      blocked.
+"15":
+  - topic: Helm
+    q: What's the difference between a Helm chart, release, and repository?
+    a: >-
+      A <strong>chart</strong> is a package of K8s manifest templates + values. A <strong>release</strong> is an
+      installed instance of a chart (you can install the same chart multiple times with different release names). A
+      <strong>repository</strong> is where charts are stored and shared (like a package registry).
+  - topic: Helm
+    q: What does <code>helm upgrade --install</code> do?
+    a: >-
+      If the release doesn't exist, it installs it. If it does exist, it upgrades it. This is idempotent and commonly
+      used in CI/CD pipelines so the same command works for first deploy and subsequent updates.
+  - topic: Helm
+    q: How do you roll back a failed Helm release?
+    a: >-
+      <code>helm rollback &lt;release&gt; &lt;revision&gt;</code>. Use <code>helm history &lt;release&gt;</code> to see
+      past revisions. Helm keeps a history of releases as Secrets (or ConfigMaps) in the namespace. You can set
+      <code>--max-history</code> to limit how many revisions are kept.
+"16":
+  - topic: Helm Templates
+    q: What are the main built-in objects in Helm templates?
+    a: >-
+      <code>.Release</code> (name, namespace, revision), <code>.Values</code> (from values.yaml and overrides),
+      <code>.Chart</code> (from Chart.yaml — name, version), <code>.Capabilities</code> (K8s version, API versions),
+      and <code>.Template</code> (current template name and base path).
+  - topic: Helm Templates
+    q: What does <code>{{ include "mychart.labels" . | nindent 4 }}</code> do?
+    a: >-
+      Calls the named template "mychart.labels" with the current context (.), captures its output as a string, then
+      indents every line by 4 spaces. <code>include</code> is preferred over <code>template</code> because it returns
+      a string you can pipe through functions.
+"17":
+  - topic: Helm Advanced
+    q: What are Helm hooks and when would you use them?
+    a: >-
+      Hooks are resources annotated with <code>helm.sh/hook</code> that run at specific lifecycle points:
+      pre-install, post-install, pre-upgrade, post-upgrade, pre-delete, post-delete. Common uses: database migrations
+      (pre-upgrade Job), smoke tests (post-install Job), backup before upgrade (pre-upgrade Job).
+  - topic: Helm Advanced
+    q: What's the difference between <code>include</code> and <code>template</code> in Helm?
+    a: >-
+      <code>template</code> inserts the output inline and can't be piped to other functions. <code>include</code>
+      captures the output as a string, so you can pipe it: <code>{{ include "my.tpl" . | nindent 4 }}</code>. Always
+      prefer <code>include</code>.
+"18":
+  - topic: Helm Production
+    q: What is GitOps and how does it relate to Helm?
+    a: >-
+      GitOps uses Git as the single source of truth for declarative infrastructure. A GitOps operator (ArgoCD, Flux)
+      watches a Git repo, detects changes to Helm charts/values, and automatically syncs them to the cluster. Benefits:
+      audit trail (git log), rollback (git revert), PR-based reviews for infra changes.
+  - topic: Helm Production
+    q: What is the difference between ArgoCD and Flux?
+    a: >-
+      Both are GitOps controllers. ArgoCD has a rich web UI, Application CRD, and multi-cluster support out of the box.
+      Flux is more lightweight, CLI-driven, and composable (separate controllers for source, Helm, Kustomize). ArgoCD
+      is more popular for teams that want a dashboard; Flux for teams that prefer everything-as-code.
+"19":
+  - topic: Deployments
+    q: What is a canary deployment in Kubernetes?
+    a: >-
+      Routing a small percentage of traffic to a new version while most traffic goes to the old version. If metrics
+      look good, gradually increase the percentage. In raw K8s you can do this with two Deployments and weighted
+      Services, but tools like Argo Rollouts and Flagger automate the progressive rollout and can auto-rollback on
+      metric degradation.
+  - topic: Deployments
+    q: What is a PodDisruptionBudget and why is it important?
+    a: >-
+      A PDB declares the minimum number of Pods that must remain available during voluntary disruptions (node drain,
+      cluster upgrades, scaling down). Without a PDB, a node drain could evict all your Pods at once.
+      Example: <code>minAvailable: 2</code> or <code>maxUnavailable: 1</code>.
+"20":
+  - topic: Autoscaling
+    q: What's the difference between HPA and VPA?
+    a: >-
+      <strong>HPA</strong> (Horizontal Pod Autoscaler) scales the number of Pod replicas based on metrics.
+      <strong>VPA</strong> (Vertical Pod Autoscaler) adjusts the resource requests/limits of existing Pods. HPA scales
+      out/in, VPA scales up/down. Generally don't use both on the same resource for CPU — they can fight each other.
+  - topic: Autoscaling
+    q: What is KEDA and when would you use it?
+    a: >-
+      KEDA (Kubernetes Event-Driven Autoscaling) scales workloads based on external event sources: message queue depth
+      (RabbitMQ, SQS, Kafka), cron schedules, Prometheus metrics, HTTP request rate, and 50+ other scalers. Use it
+      when HPA's CPU/memory metrics aren't the right scaling signal.
+"21":
+  - topic: Cluster Management
+    q: What is the correct order for upgrading a Kubernetes cluster?
+    a: >-
+      1) Upgrade etcd. 2) Upgrade control plane nodes one at a time (API server, controller manager, scheduler).
+      3) Upgrade worker nodes one at a time (cordon, drain, upgrade kubelet, uncordon). Always upgrade one minor
+      version at a time (e.g., 1.28 → 1.29, not 1.28 → 1.30). Test in a staging cluster first.
+  - topic: Cluster Management
+    q: What does <code>kubectl drain</code> do?
+    a: >-
+      Marks the node as unschedulable (cordon) and evicts all Pods. Pods managed by controllers (Deployments,
+      StatefulSets) are rescheduled on other nodes. Standalone Pods are deleted and not rescheduled. Use
+      <code>--ignore-daemonsets</code> (DaemonSet Pods can't be evicted) and <code>--delete-emptydir-data</code>
+      if Pods use emptyDir volumes.
+  - topic: Cluster Management
+    q: What are the main differences between EKS, GKE, and AKS?
+    a: >-
+      All are managed K8s — the cloud provider runs the control plane. <strong>GKE</strong>: most mature, Autopilot
+      mode for fully managed nodes, best integrated with Google Cloud. <strong>EKS</strong>: AWS-native, uses IAM for
+      auth, Fargate for serverless Pods. <strong>AKS</strong>: Azure-native, free control plane, tight Azure AD
+      integration. All support standard K8s APIs — workloads are portable between them.
