@@ -15,12 +15,20 @@ A self-hosted, static course platform. Fork it, replace the content, build, depl
 
 ## What you get
 
-- **Lesson pages** rendered from markdown
-- **Interactive exercises** with shuffle-able variants and difficulty levels
-- **Flashcards** with flip/rate sessions
-- **Spaced repetition (SRS)** scheduling for exercises and flashcards
-- **Daily practice** sessions pulling from weak/due items
-- **Streak tracking** and analytics
+- **Lesson pages** rendered from markdown with syntax highlighting, side-by-side code comparisons, and callout blocks
+- **Exercises** — warmups and challenges with multiple variants per exercise, shuffle to get a fresh set each time
+- **Difficulty modes** — easy, mixed, balanced, progressive, or hard — controls which challenge variants you get
+- **Self-rating** — rate each exercise "Got it", "Struggled", or "Had to peek" to feed the SRS scheduler
+- **Concept filters** — focus practice on a specific concept within a module
+- **Hints and solutions** with annotations (tips, gotchas, idioms, complexity notes)
+- **Thinking timer** — configurable countdown that locks hints/solutions so you attempt the problem first
+- **Flashcards** with flip/rate sessions, keyboard shortcuts, and multiple review modes (random, due, weakest)
+- **Spaced repetition (SRS)** — SM-2 algorithm scheduling for both exercises and flashcards
+- **Daily practice** — swipe-style sessions with smart mode selection: review due items, drill weak spots, mixed, or discover new exercises
+- **Pomodoro timer** — session timer with presets (25/5, 50/10, 90/20) and break reminders
+- **Streak tracking** and GitHub-style activity heatmap
+- **Analytics dashboard** — weak concept report, module strength rankings, top 10 weakest exercises, rating breakdowns
+- **Personal notes** on any exercise, exportable as markdown
 - **10 themes** (gruvbox, solarized, everforest, OLED dark, persona 5, factorio, and more)
 - **Data export/import** (all progress stored in localStorage)
 - **Offline support** via service worker
