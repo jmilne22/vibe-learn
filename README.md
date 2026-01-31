@@ -12,7 +12,7 @@ A self-hosted, static course platform. Write your lessons in markdown, define ex
 |--------|---------|--------|
 | **Go** | 18 modules + 4 projects | Complete |
 | **C** | 18 modules + 4 projects | Scaffold (content coming soon) |
-| **Kubernetes & Helm** | 22 modules + 8 projects | Scaffold (content coming soon) |
+| **Kubernetes & Helm** | 22 modules + 8 projects | Hidden — content written, exercises not reviewed |
 | **Rust** | 18 modules + 2 projects | Scaffold (content coming soon) |
 
 ## What you get
