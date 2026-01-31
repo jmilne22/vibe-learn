@@ -1,0 +1,965 @@
+challenges:
+  - id: mailjet-auth-server
+    title: "Authenticated HTTP Server"
+    difficulty: 2
+    companies: [Mailjet]
+    concepts: [HTTP, Authentication, Redis, PostgreSQL, Error Handling]
+    source: "Mailjet's public Go interview take-home"
+    sourceUrl: "https://github.com/mailjet/go-interview"
+    requirements: |
+      Build an HTTP server in Go that is protected by authentication and returns a simple response.
+
+      Requirements:
+
+      - The server exposes a protected endpoint that requires authentication
+      - Authentication is done via **HTTP Basic Auth**
+      - Credentials must be checked in **Redis** first
+      - If Redis fails to respond (down, timeout), credentials must be checked in **PostgreSQL** as a fallback
+      - Use only the Go **standard library** for HTTP handling (database drivers are allowed)
+      - Return appropriate HTTP status codes (200 for success, 401 for unauthorized, 500 for server errors)
+
+      The server should handle the Redis-down scenario gracefully — if Redis is unavailable, the user should still be able to authenticate via Postgres without seeing an error.
+    acceptanceCriteria:
+      - "Server responds to HTTP requests on a configurable port"
+      - "Unauthenticated requests receive 401 Unauthorized"
+      - "Valid credentials (checked in Redis) return 200 with a response body"
+      - "When Redis is down, credentials are checked in PostgreSQL instead"
+      - "Invalid credentials return 401 regardless of which backend is used"
+      - "Server handles concurrent requests without data races"
+    hints:
+      - title: "Basic Auth in Go"
+        content: |
+          The `net/http` request object has a `BasicAuth()` method that returns the username and password. No need to parse the Authorization header manually.
+      - title: "Redis fallback pattern"
+        content: |
+          Try Redis first with a short timeout. If it returns an error (connection refused, timeout), fall back to a Postgres query. A simple `if err != nil` after the Redis call is enough to trigger the fallback.
+      - title: "Testing without infrastructure"
+        content: |
+          Use Docker Compose to spin up Redis and Postgres for integration tests. For unit tests, define an interface for credential checking and mock it.
+    extensions:
+      - "Add session tokens so credentials aren't checked on every request"
+      - "Add rate limiting per IP address"
+      - "Add a health check endpoint that reports Redis and Postgres status"
+
+  - id: intercloud-rest-api
+    title: "REST Microservice"
+    difficulty: 2
+    companies: [InterCloud]
+    concepts: [REST, JSON, MongoDB, Query Parameters, Validation]
+    source: "InterCloud's public Go engineering challenge"
+    sourceUrl: "https://github.com/intercloud/go-coding-challenge"
+    requirements: |
+      Build a production-ready REST API microservice in Go that serves data from a database.
+
+      Requirements:
+
+      - Expose a `GET /api/v1/items` endpoint that returns a JSON array of records
+      - Support **query parameter filtering** (e.g., `?type=trivia&found=true`)
+      - Validate query parameters — return 400 for invalid values
+      - Return appropriate HTTP status codes (200, 400, 404, 500)
+      - Structure the code with clear **layer separation** (handler, service, repository)
+      - Include proper error handling — don't leak internal errors to the client
+
+      Seed the database with sample data on startup. You can use any database (SQLite, Postgres, or in-memory), but the repository layer should be swappable.
+    acceptanceCriteria:
+      - "GET /api/v1/items returns a JSON array of all records"
+      - "Query parameters correctly filter results"
+      - "Invalid query parameters return 400 Bad Request"
+      - "Empty results return 200 with an empty array, not 404"
+      - "Internal errors return 500 without leaking details"
+      - "Code is organized into handler, service, and repository layers"
+    hints:
+      - title: "Layer separation"
+        content: |
+          Define a `Repository` interface with methods like `FindAll(filters)`. The handler parses HTTP params, the service applies business logic, the repository talks to the database. Each layer only knows about the one below it.
+      - title: "Query parameter parsing"
+        content: |
+          Use `r.URL.Query()` to get a `url.Values` map. Iterate over allowed filter fields and build your database query dynamically. Reject unknown parameters.
+    extensions:
+      - "Add pagination with `?page=1&limit=10` and return total count in response headers"
+      - "Add sorting with `?sort=name&order=asc`"
+      - "Add Swagger/OpenAPI documentation"
+      - "Add Docker Compose setup with the database"
+
+  - id: uber-email-service
+    title: "Email Service with Failover"
+    difficulty: 3
+    companies: [Uber]
+    concepts: [HTTP, Interfaces, Error Handling, Resilience, API Design]
+    source: "Uber's public (archived) coding challenge for their tools team"
+    sourceUrl: "https://github.com/uber-archive/coding-challenge-tools/blob/master/coding_challenge.md"
+    requirements: |
+      Build an abstraction layer for sending email that supports multiple providers with automatic failover.
+
+      Requirements:
+
+      - Support at least **two email provider backends** (e.g., SendGrid-like and Mailgun-like APIs)
+      - If the primary provider fails (returns an error or times out), **automatically retry with the next provider**
+      - Expose a **single REST API endpoint** for sending email: `POST /send`
+      - The API should accept: `to`, `from`, `subject`, and `body` fields
+      - Validate all input fields — reject malformed email addresses and empty fields
+      - Return appropriate status codes (200 for sent, 400 for validation errors, 503 if all providers fail)
+
+      The email providers can be mocked (you don't need real API keys). Define a clean provider interface so new providers can be added without changing the core logic.
+
+      Build this as a JSON REST API with a client/server architecture.
+    acceptanceCriteria:
+      - "POST /send successfully sends email via the primary provider"
+      - "If the primary provider fails, the secondary provider is tried automatically"
+      - "If all providers fail, a 503 Service Unavailable is returned"
+      - "Invalid input (missing fields, bad email format) returns 400"
+      - "The provider interface is clean enough to add a new provider without modifying existing code"
+      - "Timeouts are enforced on provider HTTP calls"
+    hints:
+      - title: "Provider interface"
+        content: |
+          Define something like `type EmailProvider interface { Send(msg Message) error }`. Then your service holds a slice of providers and iterates through them until one succeeds.
+      - title: "Failover logic"
+        content: |
+          A simple loop works: try each provider in order, return on the first success. For more sophistication, add a circuit breaker that remembers which providers are down and skips them temporarily.
+      - title: "Mocking providers"
+        content: |
+          Create fake providers that return success or error based on configuration. This lets you test failover without real APIs. Use `httptest.NewServer` if you want to simulate real HTTP calls.
+    extensions:
+      - "Add a circuit breaker that temporarily skips providers that have failed recently"
+      - "Add request logging with provider used and response time"
+      - "Add a health endpoint showing provider status"
+      - "Add retry with exponential backoff before failing over to the next provider"
+
+  - id: form3-api-client
+    title: "API Client Library"
+    difficulty: 3
+    companies: [Form3]
+    concepts: [HTTP Client, Interfaces, Testing, Docker, Error Handling]
+    source: "Form3's public Go take-home exercise for backend engineers"
+    sourceUrl: "https://github.com/form3tech-oss/interview-accountapi"
+    requirements: |
+      Write a **client library** in Go that wraps a REST API. The library should be something another Go developer could import and use.
+
+      Requirements:
+
+      - Implement three operations: **Create**, **Fetch**, and **Delete** for a resource (e.g., accounts, users, or any entity)
+      - Use **only the Go standard library** (`net/http`) for HTTP calls — no third-party HTTP client libraries
+      - The library should handle:
+        - JSON marshalling/unmarshalling
+        - HTTP error responses (4xx, 5xx) as Go errors
+        - Request timeouts via `context.Context`
+      - Write **thorough tests** that run against a real (or fake) API server
+      - The API server can be a simple mock you build, or use `httptest.NewServer`
+
+      This is a library, not a CLI or web app. The deliverable is a Go package with a clean, documented API that other code can import.
+    acceptanceCriteria:
+      - "Create sends a POST request and returns the created resource"
+      - "Fetch sends a GET request and returns the resource or an error if not found"
+      - "Delete sends a DELETE request and returns an error if the resource doesn't exist"
+      - "HTTP errors (4xx, 5xx) are returned as descriptive Go errors"
+      - "Requests respect context cancellation and timeouts"
+      - "No third-party HTTP libraries used — only net/http"
+      - "Tests cover success paths, error paths, and edge cases"
+    hints:
+      - title: "Client structure"
+        content: |
+          A common pattern is a `Client` struct holding a base URL and `*http.Client`. Methods like `Create(ctx, resource)` build the request, call `Do`, and parse the response. Keep the constructor simple: `NewClient(baseURL string)`.
+      - title: "Error handling"
+        content: |
+          Check the response status code before decoding the body. For non-2xx responses, read the body as an error message and return a custom error type that includes the status code.
+      - title: "Testing against a real server"
+        content: |
+          Use `httptest.NewServer` to spin up a fake API server in your tests. This lets you test the full HTTP round-trip without external dependencies. Assert on both the client's return values and the requests the server received.
+    extensions:
+      - "Add pagination support for a List operation"
+      - "Add retry logic with exponential backoff for 5xx errors"
+      - "Add request/response logging via a configurable middleware"
+      - "Package it with a Docker Compose setup that runs tests against a containerized API"
+
+  - id: middleware-chain
+    title: "HTTP Middleware Chain"
+    difficulty: 3
+    companies: []
+    concepts: [HTTP, Interfaces, Functions, Closures]
+    source: "Inspired by justinas/alice — a popular open-source Go middleware chaining library (not an interview question)"
+    sourceUrl: "https://github.com/justinas/alice"
+    requirements: |
+      Build an HTTP middleware system and a collection of useful middleware components.
+
+      Implement the following middleware:
+
+      1. **Logging** — log method, path, status code, and duration for every request
+      2. **Recovery** — catch panics in handlers and return a 500 response instead of crashing
+      3. **CORS** — add configurable Cross-Origin Resource Sharing headers
+      4. **Auth** — simple API key authentication via header (reject unauthorized requests with 401)
+      5. **Rate Limiting** — limit requests per client IP using a simple in-memory counter
+
+      Build a middleware chain that lets you compose middleware easily:
+
+      ```go
+      chain := NewChain(logging, recovery, cors)
+      mux.Handle("/api/data", chain.Then(dataHandler))
+      mux.Handle("/api/admin", chain.Append(auth).Then(adminHandler))
+      ```
+
+      Write a demo HTTP server that uses all five middleware components.
+    acceptanceCriteria:
+      - "Logging middleware logs method, path, status, and duration"
+      - "Recovery middleware catches panics and returns 500"
+      - "CORS middleware adds appropriate headers and handles preflight requests"
+      - "Auth middleware rejects requests without a valid API key"
+      - "Rate limit middleware returns 429 when limit is exceeded"
+      - "Middleware can be composed in any order"
+      - "The chain is immutable — Append returns a new chain"
+    hints:
+      - title: "The middleware signature"
+        content: |
+          The standard Go middleware signature is `func(http.Handler) http.Handler`. Each middleware wraps the next handler, forming a chain. Start by implementing one middleware that follows this pattern, then the rest will follow the same shape.
+      - title: "Capturing the status code"
+        content: |
+          `http.ResponseWriter` doesn't expose the status code after `WriteHeader` is called. Create a `responseRecorder` wrapper that captures the status code so your logging middleware can access it.
+      - title: "Chain implementation"
+        content: |
+          A chain is just a slice of `func(http.Handler) http.Handler`. `Then(handler)` applies them in reverse order (last added wraps first). `Append()` creates a new slice to keep immutability.
+    extensions:
+      - "Add request ID middleware that generates and propagates a unique ID per request"
+      - "Add response compression middleware (gzip)"
+      - "Implement request body size limiting middleware"
+      - "Add metrics middleware that exposes Prometheus-compatible counters"
+
+  - id: rate-limiter
+    title: "Rate Limiter"
+    difficulty: 4
+    companies: []
+    concepts: [Concurrency, Channels, Mutex, Maps, Algorithms]
+    source: "John Crickett's 'Build Your Own' open challenge series"
+    sourceUrl: "https://codingchallenges.fyi/challenges/challenge-rate-limiter/"
+    requirements: |
+      Build a rate limiter that supports multiple algorithms and can be used as HTTP middleware.
+
+      Implement at least two of these algorithms:
+
+      - **Token Bucket** — tokens accumulate at a fixed rate up to a maximum capacity; each request consumes one token
+      - **Fixed Window Counter** — count requests in fixed time intervals; reject if threshold exceeded
+      - **Sliding Window Log** — track timestamps of each request; reject if count within the window exceeds the limit
+      - **Sliding Window Counter** — hybrid approach using weighted counts from current and previous windows
+
+      Requirements:
+
+      - **Per-key limiting** — each client (identified by a string key) has its own rate limit
+      - **Thread safety** — multiple goroutines may call the limiter concurrently
+      - **Configurable limits** — allow setting the rate and window size at creation time
+      - **Automatic cleanup** — expired entries should not leak memory
+
+      Build an HTTP middleware wrapper and a demo API server with `/limited` and `/unlimited` endpoints to demonstrate the rate limiter in action.
+    acceptanceCriteria:
+      - "Requests within the limit are allowed; requests over the limit are rejected"
+      - "Each key is tracked independently"
+      - "At least two different algorithms are implemented and selectable"
+      - "Concurrent calls from multiple goroutines do not cause data races (passes go test -race)"
+      - "Old entries are cleaned up and don't leak memory"
+      - "HTTP middleware returns 429 Too Many Requests when the limit is exceeded"
+    hints:
+      - title: "Token bucket"
+        content: |
+          Store a token count and a last-refill timestamp per key. On each request, calculate how many tokens to add since the last refill, cap at the maximum, then try to consume one. If tokens > 0, allow the request.
+      - title: "Data structure"
+        content: |
+          A `map[string]*bucket` protected by a `sync.Mutex` is a solid starting point. For better concurrency, consider `sync.Map` or sharding by key hash.
+      - title: "Cleanup strategy"
+        content: |
+          Use a background goroutine with `time.Ticker` to periodically sweep expired entries. Make sure to stop the ticker when the rate limiter is no longer needed (think `Close()` method).
+    extensions:
+      - "Implement all four algorithms and benchmark them against each other"
+      - "Add Redis as a shared backend so the rate limiter works across multiple servers"
+      - "Add response headers (X-RateLimit-Remaining, X-RateLimit-Reset) to the middleware"
+      - "Add a configurable burst allowance on top of the steady-state rate"
+
+  - id: unity-tcp-hub
+    title: "TCP Message Hub"
+    difficulty: 4
+    companies: [Unity]
+    concepts: [TCP, Networking, Concurrency, Protocol Design, Binary Encoding]
+    source: "Unity Technologies' public Go backend take-home assignment"
+    sourceUrl: "https://github.com/Unity-Technologies/mz-golang-backend-assignment"
+    requirements: |
+      Build a TCP-based message relay system with a hub (server) and client.
+
+      **Hub (server):**
+      - Accept TCP connections from multiple clients simultaneously
+      - Assign each connected client a unique ID
+      - Support three message types:
+        1. **Identity** — client requests its own ID; hub responds with the ID
+        2. **List** — client requests all connected user IDs (excluding itself)
+        3. **Relay** — client sends a message body to one or more recipients by ID; hub forwards the body to those recipients
+
+      **Client:**
+      - Connect to the hub via TCP
+      - Support sending and receiving all three message types
+
+      **Constraints:**
+      - Use **pure TCP** — no HTTP, no WebSockets
+      - Maximum 255 recipients per relay message
+      - Maximum message body size: 1024 KB
+      - Design an efficient **binary protocol** that minimizes memory and CPU usage
+      - The protocol does not need multiplexing
+
+      Include unit tests and ensure the implementation passes concurrent usage scenarios.
+    acceptanceCriteria:
+      - "Hub accepts multiple simultaneous TCP connections"
+      - "Each client receives a unique ID via the Identity message"
+      - "List returns all connected client IDs except the requester"
+      - "Relay delivers the message body to the specified recipients"
+      - "Recipients that are no longer connected are handled gracefully"
+      - "The binary protocol is documented and efficient"
+      - "No goroutine leaks when clients disconnect"
+    hints:
+      - title: "Protocol design"
+        content: |
+          Use a simple binary format: a 1-byte message type, followed by type-specific fields. For relay messages: 1 byte for recipient count, N x 8 bytes for recipient IDs, 4 bytes for body length, then the body. Use `encoding/binary` for reading/writing fixed-size fields.
+      - title: "Connection management"
+        content: |
+          Keep a `map[uint64]net.Conn` protected by a `sync.RWMutex`. Each connection gets its own goroutine for reading. When a client disconnects, remove it from the map and close the connection.
+      - title: "Testing"
+        content: |
+          Use `net.Pipe()` for unit tests — it creates a pair of connected `net.Conn` objects in memory without needing a real TCP listener. For integration tests, start the hub on localhost with a random port.
+    extensions:
+      - "Add heartbeat/ping messages to detect dead connections"
+      - "Add message acknowledgments so senders know if delivery succeeded"
+      - "Add broadcast support (relay to all connected clients)"
+      - "Benchmark the protocol under load and optimize for throughput"
+
+  - id: lru-cache
+    title: "LRU Cache with TTL"
+    difficulty: 4
+    companies: [HashiCorp]
+    concepts: [Maps, Linked Lists, Concurrency, Generics]
+    source: "Inspired by HashiCorp's open-source golang-lru library (not an interview question — this is a widely-used Go package)"
+    sourceUrl: "https://github.com/hashicorp/golang-lru"
+    requirements: |
+      Build a thread-safe Least Recently Used (LRU) cache with per-entry TTL (time-to-live).
+
+      Your cache should support:
+
+      - **Get(key)** — retrieve a value, return a miss if not found or expired. Marks the entry as recently used.
+      - **Put(key, value, ttl)** — store a value with a time-to-live. If the cache is full, evict the least recently used entry.
+      - **Delete(key)** — explicitly remove an entry
+      - **Len()** — return the number of non-expired entries
+      - **Configurable capacity** — set the maximum number of entries at creation time
+
+      The cache must be safe for concurrent access from multiple goroutines.
+
+      Expired entries should be lazily cleaned up on access, plus periodically by a background sweeper.
+
+      Build a benchmark that demonstrates the cache performance with concurrent readers and writers.
+    acceptanceCriteria:
+      - "Get returns the correct value for existing, non-expired keys"
+      - "Get returns a miss for expired or non-existent keys"
+      - "Put evicts the least recently used entry when capacity is reached"
+      - "Get and Put update the recency of an entry"
+      - "TTL is enforced — expired entries are not returned"
+      - "Thread-safe under concurrent access (passes go test -race)"
+      - "Background sweeper periodically removes expired entries"
+    hints:
+      - title: "Classic LRU structure"
+        content: |
+          An LRU cache is typically a **hash map + doubly linked list**. The map gives O(1) lookups, the linked list gives O(1) eviction and reordering. On access, move the node to the front. On eviction, remove from the back.
+      - title: "TTL integration"
+        content: |
+          Store an `expiresAt time.Time` alongside each entry. On `Get`, check if the entry has expired before returning it. If expired, remove it and return a miss.
+      - title: "Thread safety approach"
+        content: |
+          A `sync.RWMutex` works well — use `RLock` for `Get` and `Lock` for `Put`/`Delete`. However, since `Get` also modifies the list (moves to front), you may need a full `Lock` for `Get` too, or use a more clever sharded approach.
+    extensions:
+      - "Add generic type support so the cache works with any key/value types"
+      - "Implement sharded locking for better concurrent throughput"
+      - "Add cache statistics — hit rate, miss rate, eviction count"
+      - "Add an OnEvict callback that fires when entries are evicted"
+
+  - id: web-crawler
+    title: "Concurrent Web Crawler"
+    difficulty: 5
+    companies: [Google]
+    concepts: [Goroutines, Channels, WaitGroup, HTTP, Sync]
+    source: "Official Go Tour concurrency exercise by the Go team at Google"
+    sourceUrl: "https://go.dev/tour/concurrency/10"
+    requirements: |
+      Build a concurrent web crawler that starts from a seed URL and discovers linked pages up to a configurable depth.
+
+      Requirements:
+
+      - Accept a starting URL and a maximum crawl depth
+      - Follow links (`<a href="...">`) found in each page
+      - Crawl pages **concurrently** using goroutines
+      - **Limit concurrency** — no more than N simultaneous HTTP requests
+      - **Avoid duplicates** — never crawl the same URL twice
+      - **Respect the same domain** — only follow links on the same host as the seed URL
+      - Output a list of all discovered URLs, organized by depth
+
+      The crawler should handle errors gracefully — timeouts, unreachable hosts, malformed URLs — without crashing or hanging.
+    acceptanceCriteria:
+      - "Starting from a seed URL, discovers and outputs linked pages"
+      - "Respects the maximum depth setting"
+      - "Concurrent crawling with a configurable concurrency limit"
+      - "Never visits the same URL twice"
+      - "Only follows links on the same domain as the seed"
+      - "Handles network errors, timeouts, and malformed URLs gracefully"
+      - "Completes without deadlocks or goroutine leaks"
+    hints:
+      - title: "Concurrency architecture"
+        content: |
+          A common pattern is a **worker pool** — spawn N worker goroutines that read URLs from a shared channel. A coordinator goroutine manages the queue and tracks visited URLs. Use a `sync.WaitGroup` or a done channel to know when crawling is complete.
+      - title: "Avoiding deadlocks"
+        content: |
+          The tricky part is knowing when to stop. If workers send new URLs back to the same channel they read from, you can deadlock. Consider using a buffered channel or a separate "results" channel that the coordinator reads from.
+      - title: "URL normalization"
+        content: |
+          Before checking if a URL has been visited, normalize it — resolve relative paths, remove fragments (`#section`), and ensure consistent trailing slashes. The `net/url` package is your friend here.
+    extensions:
+      - "Add robots.txt support — respect crawl-delay and disallowed paths"
+      - "Extract and display page titles alongside URLs"
+      - "Output a site map in DOT format for graph visualization"
+      - "Add rate limiting per domain to be a polite crawler"
+
+  - id: wolt-delivery-calculator
+    title: "Delivery Order Price Calculator"
+    difficulty: 2
+    companies: [Wolt, DoorDash]
+    concepts: [REST, JSON, HTTP Client, Geospatial, Business Logic]
+    source: "Wolt's (DoorDash) public backend internship pre-assignment — updated annually"
+    sourceUrl: "https://github.com/woltapp/backend-internship-2025"
+    requirements: |
+      Build a backend service that calculates the total price of a delivery order.
+
+      Requirements:
+
+      - Expose a `GET /api/v1/delivery-order-price` endpoint
+      - Accept query parameters: `venue_slug`, `cart_value`, `user_lat`, `user_lon`
+      - Fetch venue data (location, delivery pricing rules) from an external API
+      - Calculate the delivery fee based on **straight-line distance** between the user and the venue
+      - Apply **distance-based pricing tiers** — the fee increases in steps as distance grows
+      - Apply a **small order surcharge** if the cart value is below the venue's minimum
+      - Return a JSON response with: `total_price`, `small_order_surcharge`, `cart_value`, and `delivery` fee breakdown
+
+      All monetary values are in **cents** (integers, not floats) to avoid floating-point precision issues.
+    acceptanceCriteria:
+      - "Endpoint returns correct JSON response with all required price fields"
+      - "Delivery fee increases correctly with distance using the venue's pricing tiers"
+      - "Small order surcharge is applied when cart value is below the minimum"
+      - "Distance is calculated as straight-line (Haversine or Euclidean approximation)"
+      - "All monetary values are integers in cents — no floating point"
+      - "Invalid or missing parameters return 400 Bad Request"
+    hints:
+      - title: "Distance calculation"
+        content: |
+          For short distances, a simple Euclidean approximation works: convert lat/lon to meters using `lat * 111320` for Y and `lon * 111320 * cos(lat)` for X. For more accuracy, use the Haversine formula from `math`.
+      - title: "Pricing tiers"
+        content: |
+          The venue's pricing rules define distance ranges and a per-10m fee for each range. Loop through the tiers, calculate how many meters fall in each range, multiply by the per-unit fee, and sum them up.
+      - title: "External API integration"
+        content: |
+          Use `net/http` to fetch venue data. Parse the JSON response into a struct. Cache the response if you want to avoid repeated calls for the same venue.
+    extensions:
+      - "Add caching for venue data with a configurable TTL"
+      - "Support multiple distance calculation methods (Haversine vs Vincenty)"
+      - "Add a maximum delivery distance — reject orders beyond it"
+      - "Add Docker Compose setup with integration tests"
+
+  - id: hashicorp-retryable-http
+    title: "Retryable HTTP Client"
+    difficulty: 2
+    companies: [HashiCorp]
+    concepts: [HTTP Client, Error Handling, Exponential Backoff, Interfaces]
+    source: "Build a simplified version of HashiCorp's open-source go-retryablehttp library"
+    sourceUrl: "https://github.com/hashicorp/go-retryablehttp"
+    requirements: |
+      Build a drop-in `http.Client` wrapper that automatically retries failed requests with exponential backoff.
+
+      Requirements:
+
+      - Wrap the standard `net/http.Client` — the API should feel familiar to anyone who uses `http.Do()`
+      - **Retry on**: connection errors, 5xx server errors, and 429 Too Many Requests
+      - **Don't retry on**: 4xx client errors (except 429), successful responses, or context cancellation
+      - **Exponential backoff** — wait time doubles with each retry: 1s, 2s, 4s, 8s...
+      - **Jitter** — add random jitter to backoff times to avoid thundering herd
+      - **Configurable** — max retries, base wait time, max wait time
+      - **Request body handling** — the body must be re-readable for retries (you can't re-read a consumed `io.Reader`)
+
+      Write a demo that shows the client retrying against a flaky server that fails intermittently.
+    acceptanceCriteria:
+      - "Successful responses are returned immediately without retrying"
+      - "5xx responses trigger a retry up to the configured maximum"
+      - "429 responses trigger a retry (ideally respecting Retry-After header)"
+      - "4xx responses (except 429) are returned immediately as errors"
+      - "Backoff time increases exponentially between retries"
+      - "Jitter is applied so retries aren't perfectly synchronized"
+      - "Request bodies can be re-read across retries"
+      - "Context cancellation stops retries immediately"
+    hints:
+      - title: "Body re-reading"
+        content: |
+          The standard `http.Request.Body` is an `io.ReadCloser` — once read, it's gone. Either buffer the body into a `[]byte` and create a new `bytes.Reader` for each attempt, or accept a `func() (io.Reader, error)` body factory.
+      - title: "Backoff with jitter"
+        content: |
+          Base formula: `wait = baseWait * 2^attempt`. Add jitter: `wait = wait/2 + rand(wait/2)`. This spreads retries out and prevents multiple clients from retrying at exactly the same time.
+      - title: "Retry-After header"
+        content: |
+          When a 429 response includes a `Retry-After` header, parse it (it can be seconds or an HTTP date) and use it as the wait time instead of your calculated backoff.
+    extensions:
+      - "Add a configurable CheckRetry function so users can customize retry logic"
+      - "Add request/response logging hooks"
+      - "Add a Backoff interface so users can provide custom backoff strategies"
+      - "Support connection pooling and keep-alive across retries"
+
+  - id: cloudflare-ping
+    title: "ICMP Ping Tool"
+    difficulty: 3
+    companies: [Cloudflare]
+    concepts: [Networking, ICMP, Raw Sockets, Statistics, CLI]
+    source: "Cloudflare's public internship application challenge"
+    sourceUrl: "https://github.com/cloudflare-internship-2020/internship-application-systems"
+    requirements: |
+      Build a command-line `ping` tool that sends ICMP echo requests and measures round-trip times.
+
+      Requirements:
+
+      - Accept a hostname or IP address as a command-line argument
+      - Send **ICMP Echo Request** packets in a loop (once per second by default)
+      - Listen for **ICMP Echo Reply** packets and measure the round-trip time
+      - Display each reply: `Reply from <ip>: bytes=<size> time=<rtt>ms TTL=<ttl>`
+      - On exit (Ctrl+C), print **summary statistics**:
+        - Packets sent, received, and lost (with loss percentage)
+        - Min, max, and average RTT
+      - Handle DNS resolution — convert hostnames to IP addresses
+
+      You must construct and parse ICMP packets manually — don't shell out to the system `ping` command.
+    acceptanceCriteria:
+      - "Sends ICMP Echo Request packets to the target host"
+      - "Receives and displays Echo Reply with RTT measurement"
+      - "Handles DNS resolution for hostnames"
+      - "Displays packet loss percentage on exit"
+      - "Displays min/avg/max RTT statistics on exit"
+      - "Handles unreachable hosts and timeouts gracefully"
+    hints:
+      - title: "ICMP packet structure"
+        content: |
+          An ICMP Echo Request is 8+ bytes: type (1 byte, value 8), code (1 byte, value 0), checksum (2 bytes), identifier (2 bytes), sequence number (2 bytes), then optional data. The checksum is computed over the entire ICMP message using the standard internet checksum algorithm.
+      - title: "Raw sockets in Go"
+        content: |
+          Use `net.ListenPacket("ip4:icmp", "0.0.0.0")` or the `golang.org/x/net/icmp` package. On Linux, you may need `CAP_NET_RAW` or root privileges. Alternatively, use `net.Dial("ip4:icmp", target)` for a connected socket.
+      - title: "Signal handling"
+        content: |
+          Use `os/signal` to catch SIGINT (Ctrl+C). When the signal fires, stop sending, print summary statistics, and exit. A channel-based approach works well: `signal.Notify(sigCh, os.Interrupt)`.
+    extensions:
+      - "Add configurable packet count (-c flag) and interval (-i flag)"
+      - "Add configurable packet size"
+      - "Add flood ping mode for throughput testing"
+      - "Add IPv6 support (ICMPv6)"
+
+  - id: cloudflare-http-client
+    title: "Raw Socket HTTP Client"
+    difficulty: 4
+    companies: [Cloudflare]
+    concepts: [TCP, HTTP, Raw Sockets, TLS, Performance Measurement]
+    source: "Cloudflare's public systems engineering hiring assignment"
+    sourceUrl: "https://github.com/cloudflare-hiring/cloudflare-2020-systems-engineering-assignment"
+    requirements: |
+      Build a CLI tool that makes HTTP requests using **raw TCP sockets** — no `net/http` allowed.
+
+      **Part 1 — HTTP Client:**
+      - Accept a URL as a command-line argument
+      - Open a TCP connection to the server (resolve DNS, connect to port 80 or 443)
+      - Send a well-formed HTTP/1.1 request by writing raw bytes to the socket
+      - Parse the HTTP response: status line, headers, and body
+      - Print the response body to stdout
+      - For HTTPS URLs, wrap the TCP connection in TLS using `crypto/tls`
+
+      **Part 2 — Performance Profiling:**
+      - Add a `--profile <count>` flag that makes N requests to the same URL
+      - After all requests complete, print:
+        - Number of **successful** and **failed** requests
+        - **Fastest**, **slowest**, and **mean** response times
+        - **Median** response time
+        - **Percentage of requests succeeded**
+        - Total size of all response bodies
+
+      You may only use the `net` package for networking — `net/http` is off-limits.
+    acceptanceCriteria:
+      - "Fetches and displays the response body for a given URL"
+      - "HTTP request is constructed manually (not using net/http)"
+      - "Supports both HTTP and HTTPS (TLS) connections"
+      - "Profile mode makes N requests and reports timing statistics"
+      - "Reports fastest, slowest, mean, and median response times"
+      - "Handles connection errors and timeouts gracefully"
+    hints:
+      - title: "HTTP/1.1 request format"
+        content: |
+          A minimal HTTP/1.1 request is: `GET /path HTTP/1.1\r\nHost: hostname\r\nConnection: close\r\n\r\n`. Write this string to the TCP connection using `conn.Write()`. The `Host` header is required in HTTP/1.1.
+      - title: "Parsing the response"
+        content: |
+          Read from the connection into a buffer. The status line ends at the first `\r\n`. Headers end at `\r\n\r\n`. The body is everything after that. For `Content-Length` responses, read exactly that many bytes. For `Transfer-Encoding: chunked`, you'll need to parse chunk sizes.
+      - title: "TLS connections"
+        content: |
+          For HTTPS, wrap the `net.Conn` with `tls.Client(conn, &tls.Config{ServerName: hostname})`. Call `Handshake()` explicitly to catch TLS errors early. Everything else works the same — just read/write to the TLS connection instead.
+    extensions:
+      - "Add HTTP/1.1 keep-alive support for profile mode (reuse connections)"
+      - "Add support for following redirects (3xx responses)"
+      - "Add DNS lookup time, TCP connect time, and TLS handshake time to the profile output"
+      - "Add support for custom headers and request methods"
+
+  - id: dns-resolver
+    title: "DNS Resolver"
+    difficulty: 3
+    companies: []
+    concepts: [Networking, UDP, Binary Encoding, Protocol Parsing, Recursion]
+    source: "John Crickett's Coding Challenges — implementing DNS resolution per RFC 1035"
+    sourceUrl: "https://codingchallenges.fyi/challenges/challenge-dns-resolver/"
+    requirements: |
+      Build a DNS resolver that can look up domain names by querying DNS servers directly.
+
+      Requirements:
+
+      - Accept a domain name as input and resolve it to an IP address
+      - Construct a **DNS query packet** in the binary wire format defined by RFC 1035
+      - Send the query over **UDP** to a DNS server (e.g., 8.8.8.8 or 1.1.1.1)
+      - Parse the **DNS response packet** — extract the answer records
+      - Support at least **A records** (IPv4 addresses) and **CNAME records**
+      - Implement **recursive resolution** — start from the root nameservers, follow referrals through TLD servers to authoritative servers
+
+      The DNS wire format is binary: a 12-byte header, followed by the question section (encoded domain name + type + class), then answer sections with the same encoding.
+    acceptanceCriteria:
+      - "Resolves a domain name to an IP address by querying DNS servers"
+      - "DNS query packet is correctly formatted per RFC 1035"
+      - "DNS response is correctly parsed (header, question, answer sections)"
+      - "A records and CNAME records are handled"
+      - "Recursive resolution follows referrals from root to authoritative servers"
+      - "Handles DNS errors (NXDOMAIN, SERVFAIL) gracefully"
+    hints:
+      - title: "DNS packet header"
+        content: |
+          The header is 12 bytes: ID (2), Flags (2), QDCOUNT (2), ANCOUNT (2), NSCOUNT (2), ARCOUNT (2). Use `encoding/binary.BigEndian` to read/write these fields. Set the RD (Recursion Desired) flag if querying a recursive resolver.
+      - title: "Domain name encoding"
+        content: |
+          Domain names use length-prefixed labels: `google.com` becomes `\x06google\x03com\x00`. Each label is preceded by its length as a single byte, and the name ends with a zero byte. In responses, names may use **compression pointers** (top 2 bits of the length byte set to 1).
+      - title: "Recursive resolution"
+        content: |
+          Start by querying a root server (e.g., 198.41.0.4). The response won't have the answer but will include NS records pointing to TLD servers. Query the TLD server, which points to the authoritative server. Query that for the final answer. Follow CNAME chains if needed.
+    extensions:
+      - "Add AAAA record support (IPv6)"
+      - "Add MX record support"
+      - "Add a local cache with TTL-based expiration"
+      - "Add support for DNS over TCP (for large responses)"
+
+  - id: load-balancer
+    title: "HTTP Load Balancer"
+    difficulty: 3
+    companies: []
+    concepts: [HTTP, Reverse Proxy, Health Checks, Concurrency, Algorithms]
+    source: "John Crickett's Coding Challenges"
+    sourceUrl: "https://codingchallenges.fyi/challenges/challenge-load-balancer/"
+    requirements: |
+      Build an HTTP load balancer that distributes incoming requests across multiple backend servers.
+
+      Requirements:
+
+      - Accept incoming HTTP requests on a configurable port
+      - **Forward requests** to one of several backend servers (reverse proxy)
+      - Copy the request headers and body to the backend, return the backend's response to the client
+      - Implement **round-robin** load balancing — each request goes to the next server in rotation
+      - Implement **health checking** — periodically probe each backend with an HTTP request
+      - **Remove unhealthy backends** from the rotation automatically
+      - **Re-add backends** when they become healthy again
+      - Read backend server addresses from a **configuration file**
+
+      Build 2-3 simple backend servers (can just return "Hello from server N") for testing.
+    acceptanceCriteria:
+      - "Requests are forwarded to backend servers and responses returned to the client"
+      - "Round-robin distributes requests evenly across healthy backends"
+      - "Health checks detect when a backend goes down"
+      - "Unhealthy backends are removed from rotation"
+      - "Backends are re-added when health checks pass again"
+      - "Request headers and body are preserved through the proxy"
+      - "The load balancer handles backend failures gracefully (returns 503 if all backends are down)"
+    hints:
+      - title: "Reverse proxy basics"
+        content: |
+          For each incoming request, create a new `http.Request` targeting the chosen backend, copy the headers and body, send it with `http.Client.Do()`, then copy the backend's response headers and body back to the original `http.ResponseWriter`. Go's `httputil.ReverseProxy` does this, but building it manually teaches more.
+      - title: "Health check loop"
+        content: |
+          Run a background goroutine with a `time.Ticker` that sends `GET /health` to each backend every few seconds. Track each backend's health status with a boolean. Use a `sync.RWMutex` to protect the backend list so the health checker and request handler don't race.
+      - title: "Round-robin with atomics"
+        content: |
+          Keep an `atomic.Uint64` counter. On each request, increment it and mod by the number of healthy backends to pick the next one. This avoids needing a mutex for the counter.
+    extensions:
+      - "Add weighted round-robin — backends with higher weights get more traffic"
+      - "Add least-connections routing — send to the backend with the fewest active requests"
+      - "Add sticky sessions — route requests from the same client to the same backend"
+      - "Add request rate limiting per client IP"
+
+  - id: redis-server
+    title: "Redis Server"
+    difficulty: 4
+    companies: [Redis]
+    concepts: [TCP, Protocol Parsing, Data Structures, Concurrency, TTL]
+    source: "John Crickett's Coding Challenges — implementing the Redis RESP protocol"
+    sourceUrl: "https://codingchallenges.fyi/challenges/challenge-redis/"
+    requirements: |
+      Build a Redis-compatible server that implements the RESP (Redis Serialization Protocol) and core commands.
+
+      **Protocol (RESP2):**
+      - Simple Strings: `+OK\r\n`
+      - Errors: `-ERR message\r\n`
+      - Integers: `:42\r\n`
+      - Bulk Strings: `$5\r\nhello\r\n`
+      - Arrays: `*2\r\n$3\r\nGET\r\n$3\r\nkey\r\n`
+
+      **Commands to implement:**
+      - `PING` — returns `PONG`
+      - `ECHO <message>` — returns the message
+      - `SET <key> <value> [EX seconds]` — store a key-value pair with optional expiry
+      - `GET <key>` — retrieve a value (return nil for missing or expired keys)
+      - `DEL <key> [key ...]` — delete one or more keys
+      - `EXISTS <key>` — return 1 if key exists, 0 otherwise
+      - `INCR <key>` / `DECR <key>` — increment/decrement integer values
+      - `LPUSH` / `RPUSH` / `LRANGE` — basic list operations
+
+      The server must handle **multiple concurrent clients** over TCP.
+    acceptanceCriteria:
+      - "Server listens on a configurable port and accepts TCP connections"
+      - "RESP protocol is correctly parsed and responses correctly formatted"
+      - "PING, ECHO, SET, GET, DEL, EXISTS commands work correctly"
+      - "SET with EX flag expires keys after the specified time"
+      - "INCR/DECR work on integer values and return errors on non-integers"
+      - "LPUSH, RPUSH, LRANGE work for basic list operations"
+      - "Multiple clients can connect and operate concurrently"
+      - "Compatible with redis-cli (the official Redis CLI can connect and run commands)"
+    hints:
+      - title: "RESP parsing"
+        content: |
+          Read from the TCP connection one byte at a time to determine the type (first byte: +, -, :, $, *). For bulk strings, read the length, then read exactly that many bytes plus the trailing `\r\n`. For arrays, read the count, then recursively read that many elements.
+      - title: "Data storage"
+        content: |
+          A `map[string]interface{}` protected by a `sync.RWMutex` works for the basic case. Store strings as `string`, lists as `[]string`, and integers as `int64`. For TTL, store an `expiresAt` alongside each value and check it on every GET.
+      - title: "Concurrent clients"
+        content: |
+          Accept connections in a loop, spawn a goroutine per client. Each goroutine reads commands from its connection, executes them against the shared data store, and writes responses back. The mutex protects the shared state.
+    extensions:
+      - "Add pub/sub support (SUBSCRIBE, PUBLISH)"
+      - "Add persistence — save the dataset to disk (RDB-style snapshots)"
+      - "Add MULTI/EXEC transaction support"
+      - "Add key-space notifications"
+
+  - id: google-btree
+    title: "In-Memory B-Tree"
+    difficulty: 4
+    companies: [Google]
+    concepts: [Data Structures, Generics, Algorithms, Iteration, Testing]
+    source: "Build a simplified version of Google's open-source btree package for Go"
+    sourceUrl: "https://github.com/google/btree"
+    requirements: |
+      Build an in-memory B-Tree data structure that maintains sorted key-value pairs with efficient insertion, deletion, and range queries.
+
+      Requirements:
+
+      - **Configurable degree** — the tree's branching factor (minimum degree) is set at creation time
+      - **Insert(key, value)** — add or update a key-value pair, maintaining B-Tree invariants
+      - **Delete(key)** — remove a key, rebalancing nodes as needed
+      - **Get(key)** — retrieve a value by key in O(log n)
+      - **Ascend(start, fn)** — iterate over all items in ascending order from a starting key, calling a function for each item (stop when the function returns false)
+      - **Descend(start, fn)** — same but in descending order
+      - **Len()** — return the number of items in the tree
+      - Use **Go generics** so the tree works with any ordered key type
+
+      B-Tree rules:
+      - Every node has at most `2*degree - 1` keys
+      - Every non-root node has at least `degree - 1` keys
+      - Insertions split full nodes proactively (split on the way down)
+      - Deletions may require merging or borrowing from siblings
+    acceptanceCriteria:
+      - "Insert maintains B-Tree invariants (all leaves at the same depth)"
+      - "Get retrieves the correct value for existing keys and returns miss for absent keys"
+      - "Delete removes keys and rebalances correctly"
+      - "Ascend and Descend iterate in correct sorted order"
+      - "Works with different key types via generics"
+      - "Handles edge cases: empty tree, single element, duplicate keys (update)"
+      - "Performance is O(log n) for Get, Insert, Delete"
+    hints:
+      - title: "Node structure"
+        content: |
+          Each node holds a sorted slice of items (key-value pairs) and a slice of child pointers. Leaf nodes have no children. The number of children is always one more than the number of items (each child pointer sits between two keys).
+      - title: "Proactive splitting"
+        content: |
+          On the way down during insertion, if you encounter a full node, split it before descending. This guarantees that when you reach the leaf, it always has room for the new key. Split means: move the median key up to the parent and create two half-full children.
+      - title: "Deletion cases"
+        content: |
+          Three cases: (1) key is in a leaf — just remove it. (2) key is in an internal node — replace with predecessor or successor from a child, then delete from the child. (3) child has minimum keys — merge with sibling or borrow from sibling before descending.
+    extensions:
+      - "Add Clone() with copy-on-write semantics for snapshotting"
+      - "Add Min() and Max() for O(log n) minimum/maximum retrieval"
+      - "Benchmark against Go's built-in map for sorted iteration workloads"
+      - "Add a String() method that pretty-prints the tree structure"
+
+  - id: flyio-tcp-proxy
+    title: "TCP Proxy"
+    difficulty: 4
+    companies: [Fly.io]
+    concepts: [TCP, Networking, Concurrency, Configuration, Proxying]
+    source: "Fly.io's public platform engineer hiring challenge"
+    sourceUrl: "https://github.com/fly-hiring/platform-challenge"
+    requirements: |
+      Build a configurable TCP proxy that forwards connections to backend servers.
+
+      Requirements:
+
+      - Accept TCP connections on one or more **listen addresses**
+      - Forward each connection to a **backend target** based on configuration
+      - Support multiple **apps**, each with its own listen address and set of backend targets
+      - **Load balance** across multiple backends for the same app (round-robin)
+      - **Bidirectional proxying** — data flows in both directions between client and backend
+      - Read configuration from a **YAML or JSON file**:
+
+      ```yaml
+      apps:
+        - name: web
+          listen: ":8080"
+          backends:
+            - "localhost:9001"
+            - "localhost:9002"
+        - name: api
+          listen: ":8081"
+          backends:
+            - "localhost:9003"
+      ```
+
+      - Handle backend failures gracefully — if a backend is unreachable, try the next one
+      - Clean up resources properly when either side of the connection closes
+
+      This is a **raw TCP proxy** — it does not parse HTTP or any application protocol. It just forwards bytes.
+    acceptanceCriteria:
+      - "Accepts TCP connections on configured listen addresses"
+      - "Forwards data bidirectionally between client and backend"
+      - "Supports multiple apps with independent listen addresses"
+      - "Round-robin distributes connections across backends"
+      - "Unreachable backends are skipped — next backend is tried"
+      - "Connections are cleaned up properly on close (no goroutine leaks)"
+      - "Configuration is loaded from a file"
+    hints:
+      - title: "Bidirectional copy"
+        content: |
+          After connecting to a backend, spawn two goroutines: one copies client→backend, the other copies backend→client. Use `io.Copy` for efficient zero-copy forwarding. When either copy finishes (connection closed), close both sides.
+      - title: "Connection lifecycle"
+        content: |
+          Use `sync.WaitGroup` or `errgroup` to wait for both copy goroutines to finish before cleaning up. Set TCP deadlines to detect dead connections. Call `conn.CloseWrite()` (TCP half-close) to signal EOF without closing the read side.
+      - title: "Graceful backend failover"
+        content: |
+          On connect failure, try the next backend in the list. If all backends fail, close the client connection with an error. Keep the backend rotation per-app so failover doesn't affect other apps.
+    extensions:
+      - "Add health checking — periodically probe backends and remove unhealthy ones"
+      - "Add connection draining for graceful shutdown"
+      - "Add metrics: connections per app, bytes transferred, backend error counts"
+      - "Add hot config reloading — watch the config file and update routing without restart"
+
+  - id: mit-mapreduce
+    title: "MapReduce"
+    difficulty: 4
+    companies: []
+    concepts: [Distributed Systems, RPC, Concurrency, Fault Tolerance, File I/O]
+    source: "MIT 6.5840 (formerly 6.824) Distributed Systems lab — based on Google's MapReduce paper"
+    sourceUrl: "https://pdos.csail.mit.edu/6.824/labs/lab-mr.html"
+    requirements: |
+      Build a MapReduce system with a coordinator and workers that can process large datasets in parallel.
+
+      **Coordinator:**
+      - Manage the overall MapReduce job
+      - Split input into **map tasks** and assign them to workers via RPC
+      - Once all map tasks complete, create **reduce tasks** and assign them to workers
+      - Track task status: idle, in-progress, or completed
+      - Handle **worker failures** — if a task isn't completed within a timeout (e.g., 10 seconds), reassign it to another worker
+
+      **Workers:**
+      - Request tasks from the coordinator via RPC
+      - For **map tasks**: read an input file, call the user's Map function on each line, partition output into intermediate files (one per reduce task) using `hash(key) % nReduce`
+      - For **reduce tasks**: read all intermediate files for that reduce partition, sort by key, call the user's Reduce function for each unique key, write output
+
+      **Test it** with a word-count example:
+      - Map: emit `(word, "1")` for each word in the input
+      - Reduce: sum all values for each key, emit `(word, count)`
+
+      The coordinator and workers run as separate processes on the same machine, communicating over Unix-domain RPC.
+    acceptanceCriteria:
+      - "Coordinator assigns map tasks to workers via RPC"
+      - "Workers execute map tasks and produce partitioned intermediate files"
+      - "After all maps complete, coordinator assigns reduce tasks"
+      - "Workers execute reduce tasks and produce final output files"
+      - "Word count produces correct results across multiple workers"
+      - "Worker failures are detected (timeout) and tasks are reassigned"
+      - "No duplicate output — exactly-once semantics via atomic file rename"
+    hints:
+      - title: "RPC in Go"
+        content: |
+          Use Go's `net/rpc` package. The coordinator exports methods like `RequestTask(args, reply)` and `ReportTask(args, reply)`. Workers call these in a loop: request a task, execute it, report completion, repeat. Use Unix domain sockets for local communication.
+      - title: "Intermediate file naming"
+        content: |
+          Name intermediate files `mr-X-Y` where X is the map task number and Y is the reduce partition. Each reduce task reads all files with its partition number (all `mr-*-Y` files). Write to temp files first, then atomically rename to avoid partial writes.
+      - title: "Fault tolerance"
+        content: |
+          The coordinator tracks when each task was assigned. A background goroutine checks for tasks that have been in-progress longer than the timeout and marks them as idle again. Workers are stateless — if they crash, their in-progress tasks are simply reassigned.
+    extensions:
+      - "Add a web UI showing job progress (map tasks done, reduce tasks done)"
+      - "Support multiple MapReduce jobs in sequence"
+      - "Add combiner support — partial reduction in the map phase for efficiency"
+      - "Benchmark with increasingly large datasets"
+
+  - id: teleport-job-worker
+    title: "Job Worker Service"
+    difficulty: 5
+    companies: [Teleport]
+    concepts: [gRPC, mTLS, Linux, Cgroups, Process Management, Streaming]
+    source: "Teleport's public systems engineering interview challenge"
+    sourceUrl: "https://github.com/gravitational/careers/blob/main/challenges/systems/challenge-1.md"
+    requirements: |
+      Build a job worker service that provides an API to run arbitrary Linux processes with resource controls and output streaming.
+
+      **Three components:**
+
+      **1. Library** — a reusable Go package for job management:
+      - **Start** a job (run a Linux command as a child process)
+      - **Stop** a job (send SIGTERM, then SIGKILL after timeout)
+      - **Query** job status (running, exited, exit code)
+      - **Stream** the combined stdout/stderr output of a running job
+
+      **2. gRPC API Server:**
+      - Expose the library's functionality over gRPC
+      - Authenticate clients using **mTLS** (mutual TLS) — both server and client present certificates
+      - Authorize based on the client certificate's Common Name (CN)
+
+      **3. CLI Client:**
+      - Connect to the server over mTLS
+      - Commands: `start <cmd>`, `stop <jobid>`, `status <jobid>`, `logs <jobid>`
+      - `logs` should stream output in real-time (server-side streaming RPC)
+
+      **Resource Controls (Linux cgroups):**
+      - Limit **CPU** usage (e.g., 50% of one core)
+      - Limit **memory** (e.g., 256MB max)
+      - Each job runs in its own cgroup
+
+      Generate test certificates for mTLS (self-signed CA, server cert, client cert).
+    acceptanceCriteria:
+      - "Library can start, stop, query, and stream output of Linux processes"
+      - "gRPC server exposes all library operations"
+      - "mTLS authentication — only clients with valid certificates can connect"
+      - "CLI client can start jobs, check status, stop jobs, and stream logs"
+      - "Jobs are isolated in their own cgroups with CPU and memory limits"
+      - "Output streaming works in real-time (not buffered until job completes)"
+      - "Stopping a job cleans up the process and its cgroup"
+    hints:
+      - title: "Process management"
+        content: |
+          Use `os/exec.Command` to start processes. Set `cmd.SysProcAttr` to create a new process group so you can kill the entire group. Capture stdout/stderr with `cmd.StdoutPipe()` and `cmd.StderrPipe()`, merge them with `io.MultiReader`.
+      - title: "mTLS setup"
+        content: |
+          Generate certs with `openssl` or Go's `crypto/x509`. The server's `tls.Config` needs `ClientAuth: tls.RequireAndVerifyClientCert` and the CA cert in `ClientCAs`. The client needs its own cert/key pair and the CA cert in `RootCAs`.
+      - title: "Cgroups v2"
+        content: |
+          Cgroups v2 uses a unified hierarchy at `/sys/fs/cgroup/`. Create a directory for each job, write limits to `cpu.max` (e.g., `50000 100000` for 50% of one core) and `memory.max` (e.g., `268435456` for 256MB). Add the process PID to `cgroup.procs`.
+    extensions:
+      - "Add disk I/O limiting via cgroups"
+      - "Add job queuing with configurable concurrency limits"
+      - "Add a web dashboard showing all running jobs and their resource usage"
+      - "Add log persistence — store job output on disk and allow replaying completed job logs"

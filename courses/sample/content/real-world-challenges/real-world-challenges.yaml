@@ -1,0 +1,83 @@
+challenges:
+  - id: todo-api
+    title: "Todo REST API"
+    difficulty: 2
+    companies: [Acme Corp, Contoso]
+    concepts: [REST, JSON, CRUD, HTTP Methods]
+    source: "Classic introductory backend project"
+    sourceUrl: "https://developer.mozilla.org/en-US/docs/Learn/Server-side/Express_Nodejs/Tutorial_local_library_website"
+    requirements: |
+      Build a REST API for managing a todo list.
+
+      Your API should support the following endpoints:
+
+      - `GET /todos` — list all todos
+      - `POST /todos` — create a new todo
+      - `GET /todos/:id` — get a single todo
+      - `PUT /todos/:id` — update a todo
+      - `DELETE /todos/:id` — delete a todo
+
+      Each todo has:
+      - An `id` (auto-generated)
+      - A `title` (string)
+      - A `completed` flag (boolean)
+      - A `createdAt` timestamp
+
+      Store todos in memory (no database required). Return JSON responses with appropriate HTTP status codes.
+    acceptanceCriteria:
+      - "GET /todos returns a JSON array of all todos"
+      - "POST /todos creates a todo and returns 201"
+      - "GET /todos/:id returns 404 for missing IDs"
+      - "PUT /todos/:id updates the title and/or completed flag"
+      - "DELETE /todos/:id removes the todo and returns 204"
+    hints:
+      - title: "Getting started"
+        content: |
+          Pick any HTTP framework for your language. Use an in-memory slice or map to store todos. Focus on getting the routes working first, then worry about validation.
+      - title: "Status codes"
+        content: |
+          Use `201 Created` for POST, `204 No Content` for DELETE, `404 Not Found` for missing resources, and `400 Bad Request` for invalid input.
+    extensions:
+      - "Add filtering by completed status (GET /todos?completed=true)"
+      - "Add pagination support"
+      - "Persist todos to a file so they survive restarts"
+
+  - id: markdown-parser
+    title: "Markdown to HTML Parser"
+    difficulty: 3
+    companies: [GitHub, Atlassian]
+    concepts: [String Parsing, Regex, Recursion, HTML]
+    source: "Based on John Gruber's original Markdown specification"
+    sourceUrl: "https://daringfireball.net/projects/markdown/syntax"
+    requirements: |
+      Build a basic markdown-to-HTML converter that handles a subset of markdown syntax.
+
+      Support the following elements:
+
+      - **Headings** — `# H1` through `###### H6`
+      - **Bold** — `**text**`
+      - **Italic** — `*text*`
+      - **Code** — inline `` `code` `` and fenced code blocks
+      - **Links** — `[text](url)`
+      - **Unordered lists** — lines starting with `- `
+      - **Paragraphs** — text separated by blank lines
+
+      Read markdown from stdin or a file, output HTML to stdout.
+    acceptanceCriteria:
+      - "Headings (h1-h6) are converted correctly"
+      - "Bold and italic text render with <strong> and <em>"
+      - "Inline code uses <code>, fenced blocks use <pre><code>"
+      - "Links produce valid <a> tags"
+      - "Unordered lists produce <ul>/<li> elements"
+      - "Paragraphs are wrapped in <p> tags"
+    hints:
+      - title: "Approach"
+        content: |
+          Process the input line by line. Handle block-level elements (headings, lists, code blocks, paragraphs) first, then apply inline transformations (bold, italic, code, links) within each block.
+      - title: "Regex tips"
+        content: |
+          For inline elements, regex works well: `\*\*(.+?)\*\*` for bold, `\*(.+?)\*` for italic, `` `(.+?)` `` for inline code. Process bold before italic to avoid conflicts.
+    extensions:
+      - "Add ordered list support"
+      - "Add blockquote support"
+      - "Handle nested inline formatting (bold inside italic)"

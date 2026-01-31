@@ -1,0 +1,14 @@
+{
+  "name": "analytics",
+  "label": "Weak Concepts",
+  "shortLabel": "WC",
+  "sidebarColor": "var(--orange)",
+  "sidebarOrder": 3,
+  "template": "analytics.html",
+  "scripts": ["analytics.js"],
+  "dataFile": null,
+  "dataGlobal": null,
+  "contentPattern": "exercises/",
+  "backupKey": null,
+  "dashboardScripts": []
+}

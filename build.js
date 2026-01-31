@@ -6,6 +6,9 @@
  * (markdown lessons, YAML exercises, YAML flashcards) + shared engine
  * templates, and produces complete static sites in dist/<slug>/.
  *
+ * Feature pages (flashcards, daily-practice, analytics, real-world-challenges,
+ * etc.) are self-contained plugins in engine/plugins/<name>/.
+ *
  * Dependencies: marked (markdown → HTML), js-yaml (YAML parsing)
  *
  * Usage:
@@ -33,6 +36,7 @@ const TEMPLATES_DIR = path.join(ENGINE_DIR, 'templates');
 const JS_DIR = path.join(ENGINE_DIR, 'js');
 const CSS_DIR = path.join(ENGINE_DIR, 'css');
 const THEMES_DIR = path.join(ENGINE_DIR, 'themes');
+const PLUGINS_DIR = path.join(ENGINE_DIR, 'plugins');
 
 // ---------------------------------------------------------------------------
 // Utilities
@@ -68,6 +72,34 @@ function discoverCourses() {
     return fs.readdirSync(COURSES_DIR).filter(slug => {
         const manifest = path.join(COURSES_DIR, slug, 'course.json');
         return fs.statSync(path.join(COURSES_DIR, slug)).isDirectory() && fs.existsSync(manifest);
+    });
+}
+
+// ---------------------------------------------------------------------------
+// Plugin Discovery
+// ---------------------------------------------------------------------------
+function discoverPlugins() {
+    if (!fs.existsSync(PLUGINS_DIR)) return [];
+    return fs.readdirSync(PLUGINS_DIR)
+        .filter(d => {
+            const manifestPath = path.join(PLUGINS_DIR, d, 'manifest.json');
+            return fs.existsSync(manifestPath);
+        })
+        .map(d => {
+            const manifest = JSON.parse(fs.readFileSync(
+                path.join(PLUGINS_DIR, d, 'manifest.json'), 'utf8'));
+            manifest._dir = path.join(PLUGINS_DIR, d);
+            return manifest;
+        })
+        .sort((a, b) => (a.sidebarOrder || 99) - (b.sidebarOrder || 99));
+}
+
+function getActivePlugins(plugins, contentDir) {
+    return plugins.filter(p => {
+        if (!p.contentPattern) return true;
+        const contentPath = path.join(contentDir, p.contentPattern);
+        // Support both file and directory patterns
+        return fs.existsSync(contentPath);
     });
 }
 
@@ -182,9 +214,10 @@ function processCodeBlocks(html) {
 const moduleTemplate = loadTemplate('module.html');
 const projectTemplate = loadTemplate('project.html');
 const indexTemplate = loadTemplate('index.html');
-const flashcardsTemplate = loadTemplate('flashcards.html');
-const dailyPracticeTemplate = loadTemplate('daily-practice.html');
-const analyticsTemplate = loadTemplate('analytics.html');
+
+// Discover all plugins once at startup
+const allPlugins = discoverPlugins();
+console.log(`Discovered plugins: ${allPlugins.map(p => p.name).join(', ') || '(none)'}`);
 
 // ---------------------------------------------------------------------------
 // buildCourse(slug) — builds a single course into dist/<slug>/
@@ -198,7 +231,6 @@ function buildCourse(slug) {
 
     const LESSONS_DIR = path.join(CONTENT_DIR, 'lessons');
     const EXERCISES_DIR = path.join(CONTENT_DIR, 'exercises');
-    const FLASHCARDS_DIR = path.join(CONTENT_DIR, 'flashcards');
     const ASSETS_DIR = path.join(CONTENT_DIR, 'assets');
 
     // 1. Load & validate course.json
@@ -219,7 +251,11 @@ function buildCourse(slug) {
     mkdirp(path.join(COURSE_DIST, 'data'));
     mkdirp(path.join(COURSE_DIST, 'themes'));
 
-    // 3. Compute derived data
+    // 3. Determine active plugins for this course
+    const activePlugins = getActivePlugins(allPlugins, CONTENT_DIR);
+    console.log(`Active plugins for ${slug}: ${activePlugins.map(p => p.name).join(', ') || '(none)'}`);
+
+    // 4. Compute derived data
     const moduleNames = {};
     modules.forEach(m => { moduleNames[m.id] = m.title; });
 
@@ -257,11 +293,30 @@ function buildCourse(slug) {
         }
     });
 
-    sidebarPages.push({ file: 'flashcards.html', label: 'Flashcards', num: 'FC', title: 'Flashcards', type: 'feature' });
-    sidebarPages.push({ file: 'daily-practice.html', label: 'Daily Practice', num: 'DP', title: 'Daily Practice', type: 'feature' });
-    sidebarPages.push({ file: 'analytics.html', label: 'Weak Concepts', num: 'WC', title: 'Weak Concepts', type: 'feature' });
+    // Add active plugin pages to sidebar
+    activePlugins.forEach(p => {
+        sidebarPages.push({
+            file: p.name + '.html',
+            label: p.label,
+            num: p.shortLabel,
+            title: p.label,
+            type: 'feature',
+            sidebarColor: p.sidebarColor
+        });
+    });
 
-    // 4. Generate course-data.js
+    // Build plugin info for runtime (CourseConfig.plugins)
+    const pluginsConfig = activePlugins.map(p => ({
+        name: p.name,
+        label: p.label,
+        shortLabel: p.shortLabel,
+        sidebarColor: p.sidebarColor,
+        sidebarOrder: p.sidebarOrder,
+        backupKey: p.backupKey,
+        file: p.name + '.html'
+    }));
+
+    // 5. Generate course-data.js
     console.log('Generating course-data.js...');
     const courseConfigData = {
         course: course,
@@ -272,7 +327,8 @@ function buildCourse(slug) {
         moduleNames: moduleNames,
         modulesWithExercises: modulesWithExercises,
         modulesWithoutExercises: modulesWithoutExercises,
-        sidebarPages: sidebarPages
+        sidebarPages: sidebarPages,
+        plugins: pluginsConfig
     };
 
     fs.writeFileSync(
@@ -280,7 +336,7 @@ function buildCourse(slug) {
         `// Auto-generated by build.js — do not edit\nwindow.CourseConfig = ${JSON.stringify(courseConfigData, null, 2)};\n`
     );
 
-    // 5. Navigation helpers (scoped to this course's data)
+    // 6. Navigation helpers (scoped to this course's data)
     function buildNavLinks(currentFile) {
         return `            <a href="index.html" class="nav-btn prev-btn">&larr; Dashboard</a>`;
     }
@@ -311,7 +367,7 @@ function buildCourse(slug) {
         return `    <script src="course.js"></script>\n    <script src="exercise-renderer.js"></script>\n    <script src="module-loader.js"></script>`;
     }
 
-    // 6. Generate module HTML pages
+    // 7. Generate module HTML pages
     console.log('Generating module pages...');
     modules.forEach(mod => {
         const mdFile = path.join(LESSONS_DIR, mod.file + '.md');
@@ -365,7 +421,7 @@ function buildCourse(slug) {
         console.log(`  ${currentFile}`);
     });
 
-    // 7. Generate project HTML pages
+    // 8. Generate project HTML pages
     console.log('Generating project pages...');
     projects.forEach(proj => {
         const mdFile = path.join(LESSONS_DIR, proj.file + '.md');
@@ -391,7 +447,7 @@ function buildCourse(slug) {
         console.log(`  ${currentFile}`);
     });
 
-    // 8. Generate index.html (dashboard)
+    // 9. Generate index.html (dashboard)
     console.log('Generating index.html...');
 
     function buildModuleListHtml() {
@@ -447,6 +503,15 @@ function buildCourse(slug) {
         return html;
     }
 
+    // Build plugin nav pills for the dashboard
+    function buildPluginNavPills() {
+        let html = '';
+        activePlugins.forEach(p => {
+            html += `                <a href="${p.name}.html" class="nav-pill">${p.label}</a>\n`;
+        });
+        return html;
+    }
+
     const moduleCount = modules.filter(m => m.id > 0).length;
 
     let indexPage = indexTemplate
@@ -454,40 +519,87 @@ function buildCourse(slug) {
         .replace(/\{\{COURSE_DESCRIPTION\}\}/g, course.description)
         .replace(/\{\{MODULE_COUNT\}\}/g, String(moduleCount))
         .replace('{{THEME_LINKS}}', themeLinksHtml)
-        .replace('{{MODULE_LIST}}', buildModuleListHtml());
+        .replace('{{MODULE_LIST}}', buildModuleListHtml())
+        .replace('{{PLUGIN_NAV_PILLS}}', buildPluginNavPills());
 
     fs.writeFileSync(path.join(COURSE_DIST, 'index.html'), indexPage);
     console.log('  index.html');
 
-    // 9. Generate flashcards page
-    console.log('Generating flashcards.html...');
-    let flashcardsPage = flashcardsTemplate
-        .replace(/\{\{COURSE_NAME\}\}/g, course.name)
-        .replace('{{THEME_LINKS}}', themeLinksHtml);
+    // 10. Build plugins (generic loop)
+    console.log('Building plugins...');
+    activePlugins.forEach(plugin => {
+        console.log(`  Plugin: ${plugin.name}`);
 
-    fs.writeFileSync(path.join(COURSE_DIST, 'flashcards.html'), flashcardsPage);
-    console.log('  flashcards.html');
+        // 10a. Load and generate data file if configured
+        if (plugin.dataFile && plugin.contentPattern) {
+            const contentPath = path.join(CONTENT_DIR, plugin.contentPattern);
+            if (fs.existsSync(contentPath) && fs.statSync(contentPath).isFile()) {
+                const raw = fs.readFileSync(contentPath, 'utf8');
+                let parsed;
+                try {
+                    parsed = yaml.load(raw) || {};
+                } catch (e) {
+                    console.error(`  Invalid YAML in ${plugin.contentPattern}:`, e.message);
+                    process.exit(1);
+                }
 
-    // 10. Generate daily-practice page
-    console.log('Generating daily-practice.html...');
-    let dpPage = dailyPracticeTemplate
-        .replace(/\{\{COURSE_NAME\}\}/g, course.name)
-        .replace('{{THEME_LINKS}}', themeLinksHtml)
-        .replace('{{MODULE_FILTER_BUTTONS}}', buildModuleFilterButtons());
+                // Run custom build transform if plugin has build.js
+                const customBuildPath = path.join(plugin._dir, 'build.js');
+                if (fs.existsSync(customBuildPath)) {
+                    const customBuild = require(customBuildPath);
+                    if (typeof customBuild.transform === 'function') {
+                        parsed = customBuild.transform(parsed, { marked, yaml, course, modules });
+                    }
+                }
 
-    fs.writeFileSync(path.join(COURSE_DIST, 'daily-practice.html'), dpPage);
-    console.log('  daily-practice.html');
+                // Check for empty data (e.g., empty challenges array)
+                const dataKeys = Object.keys(parsed);
+                const isEmpty = dataKeys.length === 0 ||
+                    (dataKeys.length === 1 && Array.isArray(parsed[dataKeys[0]]) && parsed[dataKeys[0]].length === 0);
 
-    // 11. Generate analytics page
-    console.log('Generating analytics.html...');
-    let analyticsPage = analyticsTemplate
-        .replace(/\{\{COURSE_NAME\}\}/g, course.name)
-        .replace('{{THEME_LINKS}}', themeLinksHtml);
+                fs.writeFileSync(
+                    path.join(COURSE_DIST, plugin.dataFile),
+                    `// Auto-generated from ${plugin.contentPattern} - do not edit directly\nwindow.${plugin.dataGlobal} = ${JSON.stringify(parsed)};\n`
+                );
+                console.log(`    ${plugin.dataFile}${isEmpty ? ' (empty)' : ''}`);
+            }
+        }
 
-    fs.writeFileSync(path.join(COURSE_DIST, 'analytics.html'), analyticsPage);
-    console.log('  analytics.html');
+        // 10b. Process and output HTML template
+        const templatePath = path.join(plugin._dir, plugin.template);
+        if (fs.existsSync(templatePath)) {
+            let templateContent = fs.readFileSync(templatePath, 'utf8');
+            templateContent = templateContent
+                .replace(/\{\{COURSE_NAME\}\}/g, course.name)
+                .replace(/\{\{THEME_LINKS\}\}/g, themeLinksHtml)
+                .replace(/\{\{MODULE_FILTER_BUTTONS\}\}/g, buildModuleFilterButtons());
 
-    // 12. Compile exercise YAML → JS
+            fs.writeFileSync(path.join(COURSE_DIST, plugin.name + '.html'), templateContent);
+            console.log(`    ${plugin.name}.html`);
+        }
+
+        // 10c. Copy plugin JS files to dist
+        plugin.scripts.forEach(script => {
+            const scriptSrc = path.join(plugin._dir, script);
+            if (fs.existsSync(scriptSrc)) {
+                fs.copyFileSync(scriptSrc, path.join(COURSE_DIST, script));
+                console.log(`    ${script}`);
+            }
+        });
+
+        // 10d. Copy dashboard scripts if any
+        if (plugin.dashboardScripts) {
+            plugin.dashboardScripts.forEach(script => {
+                const scriptSrc = path.join(plugin._dir, script);
+                if (fs.existsSync(scriptSrc)) {
+                    fs.copyFileSync(scriptSrc, path.join(COURSE_DIST, script));
+                    console.log(`    ${script} (dashboard)`);
+                }
+            });
+        }
+    });
+
+    // 11. Compile exercise YAML → JS
     console.log('Compiling exercise data...');
     const exerciseFiles = fs.existsSync(EXERCISES_DIR)
         ? fs.readdirSync(EXERCISES_DIR).filter(f => f.match(/^module\d+-variants\.yaml$/))
@@ -514,28 +626,7 @@ function buildCourse(slug) {
         console.log(`  data/${jsFile}`);
     });
 
-    // 13. Generate flashcard-data.js
-    console.log('Generating flashcard-data.js...');
-    const flashcardYamlPath = path.join(FLASHCARDS_DIR, 'flashcards.yaml');
-    if (fs.existsSync(flashcardYamlPath)) {
-        const flashcardRaw = fs.readFileSync(flashcardYamlPath, 'utf8');
-        let flashcardParsed;
-        try {
-            flashcardParsed = yaml.load(flashcardRaw) || {};
-        } catch (e) {
-            console.error('  Invalid YAML in flashcards.yaml:', e.message);
-            process.exit(1);
-        }
-        fs.writeFileSync(
-            path.join(COURSE_DIST, 'flashcard-data.js'),
-            `// Auto-generated from flashcards.yaml - do not edit directly\nwindow.FlashcardData = ${JSON.stringify(flashcardParsed)};\n`
-        );
-        console.log('  flashcard-data.js');
-    } else {
-        console.warn('  Warning: flashcards.yaml not found, skipping flashcard-data.js');
-    }
-
-    // 14. Copy engine JS files
+    // 12. Copy engine JS files
     console.log('Copying engine JS files...');
     if (fs.existsSync(JS_DIR)) {
         fs.readdirSync(JS_DIR).filter(f => f.endsWith('.js')).forEach(file => {
@@ -544,7 +635,7 @@ function buildCourse(slug) {
         });
     }
 
-    // 15. Copy engine CSS files
+    // 13. Copy engine CSS files
     console.log('Copying CSS files...');
     const cssSource = fs.existsSync(CSS_DIR) ? CSS_DIR : ROOT;
     const styleCss = path.join(cssSource, 'style.css');
@@ -556,7 +647,7 @@ function buildCourse(slug) {
         console.log('  style.css (from root)');
     }
 
-    // 16. Copy theme CSS files
+    // 14. Copy theme CSS files
     console.log('Copying theme files...');
     const themesSource = fs.existsSync(THEMES_DIR) ? THEMES_DIR : path.join(ROOT, 'themes');
     if (fs.existsSync(themesSource)) {
@@ -566,7 +657,7 @@ function buildCourse(slug) {
         });
     }
 
-    // 17. Copy assets (favicon, etc.)
+    // 15. Copy assets (favicon, etc.)
     console.log('Copying assets...');
     if (fs.existsSync(ASSETS_DIR)) {
         fs.readdirSync(ASSETS_DIR).forEach(file => {
@@ -575,7 +666,7 @@ function buildCourse(slug) {
         });
     }
 
-    // 18. Generate sw.js (service worker)
+    // 16. Generate sw.js (service worker)
     console.log('Generating sw.js...');
 
     const distFiles = collectDistFiles(COURSE_DIST, '');

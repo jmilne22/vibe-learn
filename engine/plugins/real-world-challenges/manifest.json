@@ -1,0 +1,14 @@
+{
+  "name": "real-world-challenges",
+  "label": "Real-World Challenges",
+  "shortLabel": "RW",
+  "sidebarColor": "var(--red)",
+  "sidebarOrder": 4,
+  "template": "real-world-challenges.html",
+  "scripts": ["real-world-challenges.js"],
+  "dataFile": "real-world-challenge-data.js",
+  "dataGlobal": "RealWorldChallengeData",
+  "contentPattern": "real-world-challenges/real-world-challenges.yaml",
+  "backupKey": "real-world-challenges",
+  "dashboardScripts": []
+}

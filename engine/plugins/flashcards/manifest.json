@@ -1,0 +1,14 @@
+{
+  "name": "flashcards",
+  "label": "Flashcards",
+  "shortLabel": "FC",
+  "sidebarColor": "var(--cyan)",
+  "sidebarOrder": 1,
+  "template": "flashcards.html",
+  "scripts": ["flashcard-engine.js"],
+  "dataFile": "flashcard-data.js",
+  "dataGlobal": "FlashcardData",
+  "contentPattern": "flashcards/flashcards.yaml",
+  "backupKey": null,
+  "dashboardScripts": []
+}

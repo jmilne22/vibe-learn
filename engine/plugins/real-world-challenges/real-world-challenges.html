@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-World Challenges — {{COURSE_NAME}}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="style.css">
+{{THEME_LINKS}}
+    <style>
+        .rwc-stats {
+            display: flex;
+            gap: 1.5rem;
+            margin: 1.5rem 0;
+            flex-wrap: wrap;
+        }
+        .rwc-stat {
+            background: var(--bg-card);
+            border: 1px solid var(--bg-lighter);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            text-align: center;
+            min-width: 120px;
+        }
+        .rwc-stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--red);
+        }
+        .rwc-stat-label {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin-top: 0.25rem;
+        }
+        .rwc-filters {
+            background: var(--bg-card);
+            border: 1px solid var(--bg-lighter);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+        .rwc-filter-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 0.75rem;
+            flex-wrap: wrap;
+        }
+        .rwc-filter-row:last-child { margin-bottom: 0; }
+        .rwc-filter-label {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            min-width: 80px;
+        }
+        .rwc-filter-options {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .rwc-filter-btn {
+            padding: 0.35rem 0.75rem;
+            border: 1px solid var(--bg-lighter);
+            background: transparent;
+            color: var(--text-dim);
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-family: 'JetBrains Mono', monospace;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .rwc-filter-btn:hover {
+            border-color: var(--text);
+            color: var(--text);
+        }
+        .rwc-filter-btn.active {
+            background: var(--red);
+            color: #fff;
+            border-color: var(--red);
+        }
+        .rwc-challenge-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .rwc-card {
+            background: var(--bg-card);
+            border: 1px solid var(--bg-lighter);
+            border-radius: 8px;
+            padding: 1.5rem;
+            transition: border-color 0.2s;
+        }
+        .rwc-card:hover {
+            border-color: var(--red);
+        }
+        .rwc-card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+            flex-wrap: wrap;
+        }
+        .rwc-card-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text);
+            flex: 1;
+            min-width: 200px;
+        }
+        .rwc-difficulty {
+            display: inline-flex;
+            gap: 2px;
+        }
+        .rwc-difficulty-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--bg-lighter);
+        }
+        .rwc-difficulty-dot.filled {
+            background: var(--red);
+        }
+        .rwc-status-badge {
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .rwc-status-badge.not-started {
+            background: var(--bg-lighter);
+            color: var(--text-dim);
+        }
+        .rwc-status-badge.in-progress {
+            background: rgba(255, 165, 0, 0.15);
+            color: var(--orange);
+        }
+        .rwc-status-badge.completed {
+            background: rgba(0, 255, 127, 0.15);
+            color: var(--green-bright);
+        }
+        .rwc-tags {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.75rem;
+        }
+        .rwc-company-tag {
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+            background: rgba(255, 0, 0, 0.1);
+            color: var(--red);
+            border: 1px solid rgba(255, 0, 0, 0.2);
+        }
+        .rwc-concept-tag {
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-family: 'JetBrains Mono', monospace;
+            background: rgba(0, 200, 255, 0.1);
+            color: var(--cyan);
+            border: 1px solid rgba(0, 200, 255, 0.2);
+        }
+        .rwc-source {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            font-style: italic;
+            margin-bottom: 0.75rem;
+        }
+        .rwc-source-label {
+            font-style: normal;
+            font-weight: 600;
+            color: var(--text);
+        }
+        .rwc-source a {
+            color: var(--cyan);
+            text-decoration: none;
+        }
+        .rwc-source a:hover {
+            text-decoration: underline;
+        }
+        .rwc-details {
+            margin-top: 0.75rem;
+        }
+        .rwc-details summary {
+            cursor: pointer;
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            font-family: 'JetBrains Mono', monospace;
+            padding: 0.5rem 0;
+            user-select: none;
+        }
+        .rwc-details summary:hover {
+            color: var(--text);
+        }
+        .rwc-details[open] summary {
+            color: var(--text);
+            margin-bottom: 0.75rem;
+        }
+        .rwc-section {
+            margin-bottom: 1.25rem;
+        }
+        .rwc-section-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 0.5rem;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        .rwc-requirements {
+            font-size: 0.9rem;
+            line-height: 1.7;
+            color: var(--text);
+        }
+        .rwc-requirements code {
+            background: var(--bg-lighter);
+            padding: 0.15rem 0.4rem;
+            border-radius: 3px;
+            font-size: 0.85em;
+        }
+        .rwc-requirements pre {
+            background: var(--bg-dark);
+            padding: 1rem;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 0.75rem 0;
+        }
+        .rwc-requirements pre code {
+            background: none;
+            padding: 0;
+        }
+        .rwc-requirements ul, .rwc-requirements ol {
+            padding-left: 1.5rem;
+            margin: 0.5rem 0;
+        }
+        .rwc-checklist {
+            list-style: none;
+            padding-left: 0;
+        }
+        .rwc-checklist li {
+            padding: 0.25rem 0;
+            font-size: 0.9rem;
+            color: var(--text);
+        }
+        .rwc-check-label {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            cursor: pointer;
+        }
+        .rwc-check-label span {
+            flex: 1;
+        }
+        .rwc-check {
+            margin-top: 0.3rem;
+            accent-color: var(--green-bright);
+            cursor: pointer;
+        }
+        .rwc-check:checked + span {
+            text-decoration: line-through;
+            color: var(--text-dim);
+        }
+        .rwc-hints-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .rwc-hint-toggle {
+            margin: 0;
+        }
+        .rwc-hint-toggle summary {
+            cursor: pointer;
+            color: var(--orange);
+            font-size: 0.85rem;
+            font-family: 'JetBrains Mono', monospace;
+            padding: 0.35rem 0;
+            user-select: none;
+        }
+        .rwc-hint-toggle summary:hover {
+            color: var(--text);
+        }
+        .rwc-hint-content {
+            padding: 0.5rem 0 0.5rem 1rem;
+            border-left: 2px solid var(--orange);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: var(--text);
+        }
+        .rwc-hint-content code {
+            background: var(--bg-lighter);
+            padding: 0.15rem 0.4rem;
+            border-radius: 3px;
+            font-size: 0.85em;
+        }
+        .rwc-extensions {
+            list-style: none;
+            padding-left: 0;
+        }
+        .rwc-extensions li {
+            padding: 0.35rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+            font-size: 0.9rem;
+            color: var(--text-dim);
+        }
+        .rwc-extensions li::before {
+            content: '+';
+            position: absolute;
+            left: 0;
+            color: var(--green-bright);
+            font-weight: 700;
+        }
+        .rwc-action-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid;
+            margin-top: 0.75rem;
+        }
+        .rwc-action-btn.start {
+            background: transparent;
+            color: var(--orange);
+            border-color: var(--orange);
+        }
+        .rwc-action-btn.start:hover {
+            background: var(--orange);
+            color: #fff;
+        }
+        .rwc-action-btn.complete {
+            background: transparent;
+            color: var(--green-bright);
+            border-color: var(--green-bright);
+        }
+        .rwc-action-btn.complete:hover {
+            background: var(--green-bright);
+            color: var(--bg-dark);
+        }
+        .rwc-action-btn.reopen {
+            background: transparent;
+            color: var(--text-dim);
+            border-color: var(--bg-lighter);
+        }
+        .rwc-action-btn.reopen:hover {
+            border-color: var(--text-dim);
+            color: var(--text);
+        }
+        .rwc-action-btn.reset {
+            background: transparent;
+            color: var(--text-dim);
+            border-color: var(--bg-lighter);
+            font-size: 0.75rem;
+            padding: 0.35rem 0.75rem;
+        }
+        .rwc-action-btn.reset:hover {
+            border-color: var(--text-dim);
+            color: var(--text);
+        }
+        .rwc-action-group {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            margin-top: 0.75rem;
+        }
+        .rwc-action-group .rwc-action-btn {
+            margin-top: 0;
+        }
+        .rwc-empty {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-dim);
+        }
+        @media (max-width: 600px) {
+            .rwc-card-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body data-page="real-world-challenges">
+    <div class="container">
+        <nav>
+            <a href="index.html" class="nav-btn prev-btn">&larr; Dashboard</a>
+        </nav>
+
+        <div class="module-header">
+            <div class="module-tag" style="background: var(--red); color: #fff; padding: 0.2rem 0.8rem; border-radius: 4px;">REAL-WORLD CHALLENGES</div>
+            <h1>Real-World Challenges</h1>
+            <p class="module-desc">Open-ended engineering challenges inspired by real company problems. No solutions — just requirements, hints, and acceptance criteria.</p>
+        </div>
+
+        <!-- Stats -->
+        <div class="rwc-stats" id="rwc-stats">
+            <div class="rwc-stat">
+                <div class="rwc-stat-value" id="rwc-total">0</div>
+                <div class="rwc-stat-label">Total</div>
+            </div>
+            <div class="rwc-stat">
+                <div class="rwc-stat-value" id="rwc-in-progress" style="color: var(--orange);">0</div>
+                <div class="rwc-stat-label">In Progress</div>
+            </div>
+            <div class="rwc-stat">
+                <div class="rwc-stat-value" id="rwc-completed" style="color: var(--green-bright);">0</div>
+                <div class="rwc-stat-label">Completed</div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="rwc-filters" id="rwc-filters">
+            <div class="rwc-filter-row">
+                <span class="rwc-filter-label">Difficulty:</span>
+                <div class="rwc-filter-options" id="rwc-difficulty-filter">
+                    <button class="rwc-filter-btn active" data-difficulty="all">All</button>
+                    <button class="rwc-filter-btn" data-difficulty="3">3</button>
+                    <button class="rwc-filter-btn" data-difficulty="4">4</button>
+                    <button class="rwc-filter-btn" data-difficulty="5">5</button>
+                </div>
+            </div>
+            <div class="rwc-filter-row">
+                <span class="rwc-filter-label">Status:</span>
+                <div class="rwc-filter-options" id="rwc-status-filter">
+                    <button class="rwc-filter-btn active" data-status="all">All</button>
+                    <button class="rwc-filter-btn" data-status="not-started">Not Started</button>
+                    <button class="rwc-filter-btn" data-status="in-progress">In Progress</button>
+                    <button class="rwc-filter-btn" data-status="completed">Completed</button>
+                </div>
+            </div>
+            <div class="rwc-filter-row">
+                <span class="rwc-filter-label">Company:</span>
+                <div class="rwc-filter-options" id="rwc-company-filter">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Challenge list -->
+        <div class="rwc-challenge-list" id="rwc-challenge-list"></div>
+
+        <!-- Empty state -->
+        <div id="rwc-empty" class="rwc-empty" hidden>
+            <h3>No challenges match your filters</h3>
+            <p>Try adjusting the filters above.</p>
+        </div>
+
+        <div class="nav-buttons" style="margin-top: 2rem;">
+            <a href="index.html" class="nav-btn prev-btn">&larr; Dashboard</a>
+        </div>
+    </div>
+
+    <script src="course-data.js"></script>
+    <script src="course-config.js"></script>
+    <script src="real-world-challenge-data.js"></script>
+    <script src="theme.js"></script>
+    <script src="sidebar.js"></script>
+    <script src="progress.js"></script>
+    <script src="real-world-challenges.js"></script>
+</body>
+</html>

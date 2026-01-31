@@ -1,0 +1,14 @@
+{
+  "name": "daily-practice",
+  "label": "Daily Practice",
+  "shortLabel": "DP",
+  "sidebarColor": "var(--orange)",
+  "sidebarOrder": 2,
+  "template": "daily-practice.html",
+  "scripts": ["daily-practice.js"],
+  "dataFile": null,
+  "dataGlobal": null,
+  "contentPattern": "exercises/",
+  "backupKey": null,
+  "dashboardScripts": []
+}

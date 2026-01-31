@@ -68,25 +68,20 @@
             <div class="sidebar-content">
         `;
 
-        // Daily practice link
-        const isPractice = currentPage === 'daily-practice.html';
-        const isFlashcards = currentPage === 'flashcards.html';
-        const isAnalytics = currentPage === 'analytics.html';
-        html += `
-            <a href="daily-practice.html" class="sidebar-link${isPractice ? ' active' : ''}" style="border-left-color: ${isPractice ? 'var(--orange)' : 'transparent'}; color: ${isPractice ? 'var(--orange)' : 'var(--text-dim)'};">
-                <span class="sidebar-module-num" style="color: var(--orange);">DP</span>
-                Daily Practice
-            </a>
-            <a href="flashcards.html" class="sidebar-link${isFlashcards ? ' active' : ''}" style="border-left-color: ${isFlashcards ? 'var(--cyan)' : 'transparent'}; color: ${isFlashcards ? 'var(--cyan)' : 'var(--text-dim)'};">
-                <span class="sidebar-module-num" style="color: var(--cyan);">FC</span>
-                Flashcards
-            </a>
-            <a href="analytics.html" class="sidebar-link${isAnalytics ? ' active' : ''}" style="border-left-color: ${isAnalytics ? 'var(--orange)' : 'transparent'}; color: ${isAnalytics ? 'var(--orange)' : 'var(--text-dim)'};">
-                <span class="sidebar-module-num" style="color: var(--orange);">WC</span>
-                Weak Concepts
-            </a>
-            <hr style="border: none; border-top: 1px solid var(--border); margin: 0.5rem 0;">
-        `;
+        // Plugin feature links (read from CourseConfig.plugins)
+        var plugins = (window.CourseConfig && window.CourseConfig.plugins) || [];
+        plugins.forEach(function(plugin) {
+            var pluginFile = plugin.file || (plugin.name + '.html');
+            var isActive = currentPage === pluginFile;
+            var color = plugin.sidebarColor || 'var(--text-dim)';
+            html += '\n            <a href="' + pluginFile + '" class="sidebar-link' + (isActive ? ' active' : '') + '" style="border-left-color: ' + (isActive ? color : 'transparent') + '; color: ' + (isActive ? color : 'var(--text-dim)') + ';">' +
+                '<span class="sidebar-module-num" style="color: ' + color + ';">' + plugin.shortLabel + '</span>' +
+                plugin.label +
+            '</a>';
+        });
+        if (plugins.length > 0) {
+            html += '\n            <hr style="border: none; border-top: 1px solid var(--border); margin: 0.5rem 0;">';
+        }
 
         // All pages - with sections nested under active page
         // Skip feature items (DP, FC, WC) — already rendered above

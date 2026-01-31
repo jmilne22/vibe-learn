@@ -1,10 +1,18 @@
 var BACKUP_KEYS = (function() {
     var sk = window.CourseConfigHelper ? function(s) { return window.CourseConfigHelper.storageKey(s); } : function(s) { return 'go-course-' + s; };
-    return [
+    var keys = [
         sk('progress'), sk('exercise-progress'), sk('srs'), sk('personal-notes'),
         sk('last-module'), sk('theme'), sk('focus-mode'), sk('timer-sound'),
         sk('sidebar'), sk('streaks'), sk('activity'), sk('session')
     ];
+    // Add plugin backup keys
+    var plugins = (window.CourseConfig && window.CourseConfig.plugins) || [];
+    plugins.forEach(function(plugin) {
+        if (plugin.backupKey) {
+            keys.push(sk(plugin.backupKey));
+        }
+    });
+    return keys;
 })();
 
 window.exportAllData = function () {
