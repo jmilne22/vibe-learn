@@ -273,6 +273,13 @@ variants:
       block: 1
       difficulty: 2
       concept: Set Operations
+      docLinks:
+        - url: https://go.dev/blog/maps
+          title: "Go Blog: Go maps in action"
+          note: maps as sets (map[T]struct{})
+        - url: https://go.dev/ref/spec#Map_types
+          title: "Go Spec: Map types"
+          note: map type declarations
       variants:
         - id: v1
           title: Set Calculator
@@ -580,6 +587,13 @@ variants:
       block: 2
       difficulty: 3
       concept: Diffing Collections
+      docLinks:
+        - url: https://go.dev/blog/maps
+          title: "Go Blog: Go maps in action"
+          note: membership testing with maps
+        - url: https://pkg.go.dev/sort#Strings
+          title: Package sort.Strings
+          note: sorting result slices
       variants:
         - id: v1
           title: Change Detector

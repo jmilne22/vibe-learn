@@ -326,6 +326,13 @@ variants:
       block: 1
       difficulty: 2
       concept: os.Environ
+      docLinks:
+        - url: https://pkg.go.dev/os#Environ
+          title: Package os.Environ
+          note: reading environment variables
+        - url: https://pkg.go.dev/strings#Split
+          title: Package strings.Split
+          note: parsing KEY=VALUE pairs
       variants:
         - id: v1
           title: Env Printer
@@ -605,6 +612,13 @@ variants:
       block: 1
       difficulty: 2
       concept: strconv
+      docLinks:
+        - url: https://pkg.go.dev/strconv
+          title: Package strconv
+          note: string-to-number conversions
+        - url: https://pkg.go.dev/os#Args
+          title: Package os.Args
+          note: command-line argument access
       variants:
         - id: v1
           title: Simple Calculator

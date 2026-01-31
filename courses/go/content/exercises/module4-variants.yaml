@@ -293,6 +293,13 @@ variants:
       block: 1
       difficulty: 2
       concept: io.Writer
+      docLinks:
+        - url: https://pkg.go.dev/io#Writer
+          title: Package io.Writer
+          note: the fundamental writer interface
+        - url: https://go.dev/doc/effective_go#interfaces
+          title: "Effective Go: Interfaces"
+          note: implicit interface satisfaction
       variants:
         - id: v1
           title: UpperWriter
@@ -499,6 +506,13 @@ variants:
       block: 1
       difficulty: 2
       concept: Type Switches
+      docLinks:
+        - url: https://go.dev/ref/spec#Type_switches
+          title: "Go Spec: Type switches"
+          note: switching on interface types
+        - url: https://go.dev/doc/effective_go#type_switch
+          title: "Effective Go: Type switch"
+          note: type switch patterns
       variants:
         - id: v1
           title: Describe Any Value

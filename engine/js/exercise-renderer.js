@@ -68,6 +68,22 @@
         return html;
     }
 
+    // Render documentation links (collapsible details block)
+    function renderDocLinks(docLinks) {
+        if (!docLinks || docLinks.length === 0) return '';
+        return `<details>
+                <summary>\uD83D\uDCDA Documentation</summary>
+                <div class="hint-content">
+                    <p style="margin-bottom: 0.5rem; color: var(--text-dim);">Relevant Go docs:</p>
+                    <ul style="margin: 0; padding-left: 1.5rem;">
+                        ${docLinks.map(link =>
+                            `<li><a href="${link.url}" target="_blank" rel="noopener" style="color: var(--cyan);">${link.title}</a>${link.note ? ` <span style="color: var(--text-dim);">\u2014 ${link.note}</span>` : ''}</li>`
+                        ).join('\n                        ')}
+                    </ul>
+                </div>
+            </details>`;
+    }
+
     // Render solution details block with optional annotations
     function renderSolution(solution, annotations) {
         let html = `<details>
@@ -150,6 +166,11 @@
         // Hints
         html += renderHints(variant.hints);
 
+        // Documentation links (challenge-level, not on warmups)
+        if (challenge && challenge.docLinks) {
+            html += renderDocLinks(challenge.docLinks);
+        }
+
         // Solution with annotations
         html += renderSolution(variant.solution, variant.annotations);
 
@@ -200,6 +221,7 @@
         getDifficultyStars,
         getVariantDifficulty,
         renderAnnotations,
+        renderDocLinks,
         renderHints,
         renderSolution,
         renderExpected,

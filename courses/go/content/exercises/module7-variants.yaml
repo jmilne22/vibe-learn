@@ -328,6 +328,16 @@ variants:
   challenges:
     - id: challenge_1
       concept: YAML Config Runner
+      docLinks:
+        - url: https://pkg.go.dev/os#ReadFile
+          title: Package os.ReadFile
+          note: reading file contents
+        - url: https://pkg.go.dev/os/exec#Command
+          title: Package exec.Command
+          note: running external commands
+        - url: https://pkg.go.dev/gopkg.in/yaml.v3
+          title: Package yaml.v3
+          note: YAML parsing into structs
       variants:
         - id: v1
           title: YAML Task Executor
@@ -445,6 +455,13 @@ variants:
                 <code>IsDir()</code>, and <code>Type()</code> methods.
     - id: challenge_2
       concept: Environment Variables
+      docLinks:
+        - url: https://pkg.go.dev/os#LookupEnv
+          title: Package os.LookupEnv
+          note: checking if env var exists
+        - url: https://pkg.go.dev/os#Setenv
+          title: Package os.Setenv
+          note: setting environment variables
       variants:
         - id: v1
           title: Required Env Vars

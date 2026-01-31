@@ -665,6 +665,13 @@ variants:
       block: 1
       difficulty: 3
       concept: Build Tags
+      docLinks:
+        - url: https://pkg.go.dev/cmd/go#hdr-Build_constraints
+          title: "Go Command: Build constraints"
+          note: //go:build syntax
+        - url: https://pkg.go.dev/go/build#hdr-Build_Constraints
+          title: Package go/build constraints
+          note: build tag semantics
       variants:
         - id: v1
           title: Build Tagged Tests
@@ -1157,6 +1164,16 @@ variants:
       block: 2
       difficulty: 3
       concept: End-to-End Testing
+      docLinks:
+        - url: https://pkg.go.dev/net/http/httptest
+          title: Package httptest
+          note: test servers and response recorders
+        - url: https://pkg.go.dev/testing#T.Cleanup
+          title: Package testing.T.Cleanup
+          note: teardown after tests
+        - url: https://pkg.go.dev/net/http/httptest#NewServer
+          title: Package httptest.NewServer
+          note: starting a test HTTP server
       variants:
         - id: v1
           title: End-to-End HTTP Test

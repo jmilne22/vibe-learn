@@ -267,6 +267,13 @@ variants:
       block: 1
       difficulty: 2
       concept: Structs & Methods
+      docLinks:
+        - url: https://go.dev/ref/spec#Method_declarations
+          title: "Go Spec: Method declarations"
+          note: defining methods on types
+        - url: https://go.dev/doc/effective_go#methods
+          title: "Effective Go: Methods"
+          note: method design patterns
       variants:
         - id: v1
           title: Simple String Cache
@@ -506,6 +513,13 @@ variants:
       block: 1
       difficulty: 2
       concept: Generics
+      docLinks:
+        - url: https://go.dev/ref/spec#Type_parameter_declarations
+          title: "Go Spec: Type parameters"
+          note: generic type syntax
+        - url: https://go.dev/blog/intro-generics
+          title: "Go Blog: An Introduction To Generics"
+          note: generics tutorial
       variants:
         - id: v1
           title: Generic Filter
@@ -688,6 +702,13 @@ variants:
       block: 2
       difficulty: 3
       concept: Stacks
+      docLinks:
+        - url: https://go.dev/ref/spec#Slice_types
+          title: "Go Spec: Slice types"
+          note: slices as dynamic arrays for stacks
+        - url: https://go.dev/ref/spec#Appending_and_copying_slices
+          title: "Go Spec: Appending and copying slices"
+          note: append for push, reslice for pop
       variants:
         - id: v1
           title: Balanced Brackets

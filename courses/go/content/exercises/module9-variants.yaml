@@ -393,6 +393,13 @@ variants:
       block: 1
       difficulty: 2
       concept: Test Coverage
+      docLinks:
+        - url: https://pkg.go.dev/testing
+          title: Package testing
+          note: Go testing framework
+        - url: https://go.dev/blog/cover
+          title: "Go Blog: The cover story"
+          note: test coverage analysis
       variants:
         - id: v1
           title: Full Coverage for Absolute Value
@@ -736,6 +743,13 @@ variants:
       block: 2
       difficulty: 3
       concept: Interfaces
+      docLinks:
+        - url: https://go.dev/doc/effective_go#interfaces
+          title: "Effective Go: Interfaces"
+          note: designing testable interfaces
+        - url: https://pkg.go.dev/errors
+          title: Package errors
+          note: error wrapping and inspection
       variants:
         - id: v1
           title: Mock a Fetcher Interface

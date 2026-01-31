@@ -312,6 +312,16 @@ variants:
       block: 1
       difficulty: 3
       concept: Process List
+      docLinks:
+        - url: https://pkg.go.dev/os/exec#Command
+          title: Package exec.Command
+          note: running external commands
+        - url: https://pkg.go.dev/strings#Fields
+          title: Package strings.Fields
+          note: splitting whitespace-delimited output
+        - url: https://pkg.go.dev/strconv#ParseFloat
+          title: Package strconv.ParseFloat
+          note: parsing numeric columns
       variants:
         - id: v1
           title: High CPU Processes
@@ -603,6 +613,13 @@ variants:
       block: 2
       difficulty: 3
       concept: Git Status Parser
+      docLinks:
+        - url: https://pkg.go.dev/os/exec#Cmd.Output
+          title: Package exec.Cmd.Output
+          note: capturing command output
+        - url: https://pkg.go.dev/bufio#Scanner
+          title: Package bufio.Scanner
+          note: line-by-line output processing
       variants:
         - id: v1
           title: Git Status Counter

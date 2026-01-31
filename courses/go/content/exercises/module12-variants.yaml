@@ -374,6 +374,13 @@ variants:
       block: 1
       difficulty: 3
       concept: Fan-Out Fan-In
+      docLinks:
+        - url: https://pkg.go.dev/sync#WaitGroup
+          title: Package sync.WaitGroup
+          note: coordinating goroutines
+        - url: https://go.dev/blog/pipelines
+          title: "Go Blog: Pipelines and cancellation"
+          note: fan-out fan-in pattern
       variants:
         - id: v1
           title: Merge Channels
@@ -672,6 +679,13 @@ variants:
       block: 2
       difficulty: 3
       concept: Rate Limiter
+      docLinks:
+        - url: https://pkg.go.dev/time#Ticker
+          title: Package time.Ticker
+          note: periodic ticks for rate limiting
+        - url: https://pkg.go.dev/golang.org/x/time/rate
+          title: Package rate (x/time)
+          note: production-grade rate limiter
       variants:
         - id: v1
           title: Ticker Rate Limiter
@@ -955,6 +969,16 @@ variants:
       block: 3
       difficulty: 4
       concept: Graceful Shutdown
+      docLinks:
+        - url: https://pkg.go.dev/os/signal#Notify
+          title: Package signal.Notify
+          note: receiving OS signals
+        - url: https://pkg.go.dev/context#WithCancel
+          title: Package context.WithCancel
+          note: cancellation propagation
+        - url: https://pkg.go.dev/net/http#Server.Shutdown
+          title: Package http.Server.Shutdown
+          note: graceful HTTP shutdown
       variants:
         - id: v1
           title: Signal-Based Shutdown

@@ -362,6 +362,13 @@ variants:
   challenges:
     - id: challenge_1
       concept: Full Bubble Tea App
+      docLinks:
+        - url: https://pkg.go.dev/github.com/charmbracelet/bubbletea
+          title: Package bubbletea
+          note: The Elm Architecture for terminals
+        - url: https://pkg.go.dev/github.com/charmbracelet/lipgloss
+          title: Package lipgloss
+          note: terminal styling and layout
       variants:
         - id: v1
           title: Counter App

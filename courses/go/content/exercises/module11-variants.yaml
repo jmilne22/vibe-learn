@@ -416,6 +416,16 @@ variants:
   challenges:
     - id: challenge_1
       concept: API Client
+      docLinks:
+        - url: https://pkg.go.dev/net/http#Client
+          title: Package http.Client
+          note: configuring HTTP clients
+        - url: https://pkg.go.dev/net/http#NewRequest
+          title: Package http.NewRequest
+          note: building custom requests
+        - url: https://pkg.go.dev/encoding/json#NewDecoder
+          title: Package json.NewDecoder
+          note: streaming JSON decoding
       variants:
         - id: v1
           title: Reusable API Client Struct
@@ -543,6 +553,13 @@ variants:
               text: Checking <code>result != nil</code> lets callers skip decoding when they don't need the response body.
     - id: challenge_2
       concept: Middleware
+      docLinks:
+        - url: https://pkg.go.dev/net/http#Handler
+          title: Package http.Handler
+          note: the Handler interface
+        - url: https://pkg.go.dev/net/http#HandlerFunc
+          title: Package http.HandlerFunc
+          note: adapter for functions as handlers
       variants:
         - id: v1
           title: Logging Middleware

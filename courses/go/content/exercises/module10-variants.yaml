@@ -441,6 +441,13 @@ variants:
       block: 1
       difficulty: 2
       concept: Strategy Pattern
+      docLinks:
+        - url: https://go.dev/doc/effective_go#interfaces
+          title: "Effective Go: Interfaces"
+          note: interfaces enable strategy swapping
+        - url: https://pkg.go.dev/sort#Interface
+          title: Package sort.Interface
+          note: stdlib strategy pattern example
       variants:
         - id: v1
           title: Sort Strategy
@@ -756,6 +763,13 @@ variants:
       block: 2
       difficulty: 3
       concept: Builder Pattern
+      docLinks:
+        - url: https://go.dev/doc/effective_go#methods
+          title: "Effective Go: Methods"
+          note: method chaining on pointer receivers
+        - url: https://pkg.go.dev/strings#Builder
+          title: Package strings.Builder
+          note: stdlib builder pattern example
       variants:
         - id: v1
           title: SQL Query Builder

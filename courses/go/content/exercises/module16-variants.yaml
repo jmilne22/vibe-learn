@@ -506,6 +506,13 @@ variants:
       block: 1
       difficulty: 2
       concept: Edge Case Testing
+      docLinks:
+        - url: https://pkg.go.dev/testing
+          title: Package testing
+          note: test functions and subtests
+        - url: https://go.dev/blog/subtests
+          title: "Go Blog: Using Subtests and Sub-benchmarks"
+          note: organizing test cases
       variants:
         - id: v1
           title: Test SafeDivide Edge Cases
@@ -814,6 +821,13 @@ variants:
       block: 2
       difficulty: 3
       concept: Code Coverage
+      docLinks:
+        - url: https://go.dev/blog/cover
+          title: "Go Blog: The cover story"
+          note: go test -cover and -coverprofile
+        - url: https://pkg.go.dev/cmd/go#hdr-Testing_flags
+          title: "Go Command: Testing flags"
+          note: -covermode, -coverprofile flags
       variants:
         - id: v1
           title: Achieve Coverage for FizzBuzz

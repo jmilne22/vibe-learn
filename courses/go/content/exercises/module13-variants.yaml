@@ -466,6 +466,13 @@ variants:
   challenges:
     - id: challenge_1
       concept: Project Layout
+      docLinks:
+        - url: https://go.dev/doc/modules/layout
+          title: "Go Docs: Module layout"
+          note: organizing Go modules
+        - url: https://pkg.go.dev/cmd/go#hdr-Internal_Directories
+          title: "Go Command: internal directories"
+          note: access control via internal/
       variants:
         - id: v1
           title: Design CLI Tool Layout

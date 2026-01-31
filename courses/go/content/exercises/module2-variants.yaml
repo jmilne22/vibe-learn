@@ -377,6 +377,13 @@ variants:
       block: 1
       difficulty: 2
       concept: Pointer Parameters
+      docLinks:
+        - url: https://go.dev/ref/spec#Pointer_types
+          title: "Go Spec: Pointer types"
+          note: pointer type declarations
+        - url: https://go.dev/doc/effective_go#pointers_vs_values
+          title: "Effective Go: Pointers vs. Values"
+          note: when to use pointer parameters
       variants:
         - id: v1
           title: Swap Two Integers
@@ -523,6 +530,13 @@ variants:
       block: 1
       difficulty: 2
       concept: Pointer Receivers
+      docLinks:
+        - url: https://go.dev/doc/effective_go#pointers_vs_values
+          title: "Effective Go: Pointers vs. Values"
+          note: pointer receivers modify the receiver
+        - url: https://go.dev/ref/spec#Method_declarations
+          title: "Go Spec: Method declarations"
+          note: method syntax with receivers
       variants:
         - id: v1
           title: Counter Struct
@@ -735,6 +749,13 @@ variants:
       block: 2
       difficulty: 2
       concept: Nil Pointers
+      docLinks:
+        - url: https://go.dev/ref/spec#The_zero_value
+          title: "Go Spec: The zero value"
+          note: nil is the zero value for pointers
+        - url: https://go.dev/doc/effective_go#pointers_vs_values
+          title: "Effective Go: Pointers vs. Values"
+          note: nil checks and safe dereferencing
       variants:
         - id: v1
           title: Safe Dereference
@@ -909,6 +930,16 @@ variants:
       block: 2
       difficulty: 3
       concept: Linked Structures
+      docLinks:
+        - url: https://go.dev/ref/spec#Pointer_types
+          title: "Go Spec: Pointer types"
+          note: self-referential struct pointers
+        - url: https://go.dev/ref/spec#Struct_types
+          title: "Go Spec: Struct types"
+          note: defining linked node structs
+        - url: https://pkg.go.dev/container/list
+          title: Package container/list
+          note: stdlib doubly linked list for reference
       variants:
         - id: v1
           title: "Linked List: Build and Traverse"
