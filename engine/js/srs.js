@@ -12,7 +12,7 @@
  *   4 = solved independently, self-rated "struggled"
  *   3 = used hints but not solution
  *   2 = viewed solution
- *   1 = viewed solution, self-rated "had to peek"
+ *   1 = viewed solution, self-rated "needed solution"
  *   0 = not engaged
  */
 (function() {
@@ -92,7 +92,7 @@
 
         if (solutionViewed) {
             // Viewed solution
-            if (selfRating === 3) return 1;      // had to peek
+            if (selfRating === 3) return 1;      // needed solution
             if (selfRating === 2) return 2;      // struggled
             return 2;                             // default
         }

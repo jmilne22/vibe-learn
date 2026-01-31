@@ -404,9 +404,9 @@
                     '<div style="width: ' + pctStr + '%; height: 100%; background: var(--orange); border-radius: 4px; display: flex; align-items: center; padding-left: 8px; color: var(--bg-dark); font-weight: 700; font-size: 0.8rem;">' + report.ratings.struggled + '</div>' +
                 '</div>' +
             '</div>' +
-            // Had to peek
+            // Needed solution
             '<div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem;">' +
-                '<span style="min-width: 6rem; color: var(--red);">Had to peek</span>' +
+                '<span style="min-width: 6rem; color: var(--red);">Needed solution</span>' +
                 '<div style="flex: 1; height: 24px; background: var(--bg-lighter); border-radius: 4px; overflow: hidden;">' +
                     '<div style="width: ' + pctPeek + '%; height: 100%; background: var(--red); border-radius: 4px; display: flex; align-items: center; padding-left: 8px; color: var(--bg-dark); font-weight: 700; font-size: 0.8rem;">' + report.ratings.peeked + '</div>' +
                 '</div>' +

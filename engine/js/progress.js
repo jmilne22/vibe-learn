@@ -76,9 +76,9 @@
         return `
         <div class="self-rating" data-exercise-key="${key}">
             <span class="self-rating-label">${isCompleted ? 'Rated:' : 'How did it go?'}</span>
-            <button class="rating-btn ${currentRating === 1 ? 'active got-it' : ''}" data-rating="1" title="Solved it independently">Got it</button>
-            <button class="rating-btn ${currentRating === 2 ? 'active struggled' : ''}" data-rating="2" title="Needed hints or took a while">Struggled</button>
-            <button class="rating-btn ${currentRating === 3 ? 'active peeked' : ''}" data-rating="3" title="Had to look at the solution">Had to peek</button>
+            <button class="rating-btn ${currentRating === 1 ? 'active got-it' : ''}" data-rating="1" title="I knew the approach and wrote it without getting stuck">Got it</button>
+            <button class="rating-btn ${currentRating === 2 ? 'active struggled' : ''}" data-rating="2" title="Solved it, but had to think hard, debug a lot, or check hints">Struggled</button>
+            <button class="rating-btn ${currentRating === 3 ? 'active peeked' : ''}" data-rating="3" title="Couldn't solve it without looking at the solution">Needed solution</button>
         </div>`;
     }
 

@@ -353,7 +353,7 @@
             </div>
             <div class="dp-stat">
                 <div class="dp-stat-value" style="color: var(--purple);">${peeked}</div>
-                <div class="dp-stat-label">Had to Peek</div>
+                <div class="dp-stat-label">Needed Solution</div>
             </div>`;
     }
 
