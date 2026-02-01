@@ -11,162 +11,12 @@
     <link rel="stylesheet" href="style.css">
 {{THEME_LINKS}}
     <style>
+        :root {
+            --session-accent: var(--orange);
+            --session-gradient: linear-gradient(90deg, var(--green-bright), var(--orange));
+        }
         .dp-header {
             margin: 2rem 0 1.5rem;
-        }
-        .dp-stats {
-            display: flex;
-            gap: 1.5rem;
-            margin: 1.5rem 0;
-            flex-wrap: wrap;
-        }
-        .dp-stat {
-            background: var(--bg-card);
-            border: 1px solid var(--bg-lighter);
-            border-radius: 8px;
-            padding: 1rem 1.5rem;
-            text-align: center;
-            min-width: 120px;
-        }
-        .dp-stat-value {
-            font-size: 1.5rem;
-            font-weight: 700;
-            font-family: 'JetBrains Mono', monospace;
-            color: var(--orange);
-        }
-        .dp-stat-label {
-            font-size: 0.8rem;
-            color: var(--text-dim);
-            margin-top: 0.25rem;
-        }
-        .dp-config {
-            background: var(--bg-card);
-            border: 1px solid var(--bg-lighter);
-            border-radius: 8px;
-            padding: 1.5rem;
-            margin: 1.5rem 0;
-        }
-        .dp-config-row {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            margin-bottom: 1rem;
-            flex-wrap: wrap;
-        }
-        .dp-config-label {
-            font-size: 0.85rem;
-            color: var(--text-dim);
-            min-width: 100px;
-        }
-        .dp-config-options {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-        }
-        .dp-start-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            padding: 0.75rem 2rem;
-            background: var(--orange);
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            font-family: 'Space Grotesk', sans-serif;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .dp-start-btn:hover {
-            background: var(--orange);
-            filter: brightness(1.2);
-        }
-        .dp-start-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        .dp-session-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin: 1.5rem 0 1rem;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-        }
-        .dp-session-progress {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.85rem;
-            color: var(--text-dim);
-        }
-        .dp-session-progress strong {
-            color: var(--orange);
-        }
-        .dp-session-module {
-            font-size: 0.8rem;
-            color: var(--cyan);
-            font-family: 'JetBrains Mono', monospace;
-        }
-        .dp-nav-btns {
-            display: flex;
-            gap: 0.75rem;
-            margin-top: 1.5rem;
-        }
-        .dp-next-btn {
-            padding: 0.6rem 1.5rem;
-            background: var(--orange);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            font-family: 'JetBrains Mono', monospace;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .dp-next-btn:hover {
-            background: #fff;
-            color: var(--bg-dark);
-        }
-        .dp-skip-btn {
-            padding: 0.6rem 1.5rem;
-            background: transparent;
-            color: var(--text-dim);
-            border: 1px solid var(--bg-lighter);
-            border-radius: 6px;
-            font-size: 0.9rem;
-            font-family: 'JetBrains Mono', monospace;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .dp-skip-btn:hover {
-            border-color: var(--text);
-            color: var(--text);
-        }
-        .dp-option:disabled {
-            opacity: 0.35;
-            cursor: not-allowed;
-            pointer-events: none;
-        }
-        .dp-complete {
-            background: var(--bg-card);
-            border: 2px solid var(--green-bright);
-            border-radius: 12px;
-            padding: 2rem;
-            text-align: center;
-            margin: 2rem 0;
-        }
-        .dp-complete h2 {
-            color: var(--green-bright);
-            margin-bottom: 1rem;
-        }
-        .dp-complete-stats {
-            display: flex;
-            gap: 2rem;
-            justify-content: center;
-            margin: 1.5rem 0;
-            flex-wrap: wrap;
         }
         .dp-empty {
             text-align: center;
@@ -176,56 +26,6 @@
         .dp-empty h3 {
             color: var(--text);
             margin-bottom: 0.5rem;
-        }
-        .dp-progress-bar {
-            width: 100%;
-            height: 6px;
-            background: var(--bg-lighter);
-            border-radius: 3px;
-            overflow: hidden;
-            margin: 1rem 0;
-        }
-        .dp-progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--green-bright), var(--orange));
-            border-radius: 3px;
-            transition: width 0.3s ease;
-        }
-        .dp-rating-guide {
-            margin: 0.75rem 0 1rem;
-            font-size: 0.8rem;
-        }
-        .dp-rating-guide-toggle {
-            color: var(--text-dim);
-            cursor: pointer;
-            user-select: none;
-            font-family: 'JetBrains Mono', monospace;
-        }
-        .dp-rating-guide-toggle:hover {
-            color: var(--text);
-        }
-        .dp-rating-guide-arrow {
-            display: inline-block;
-            transition: transform 0.2s;
-            font-size: 0.7rem;
-        }
-        .dp-rating-guide.open .dp-rating-guide-arrow {
-            transform: rotate(90deg);
-        }
-        .dp-rating-guide-content {
-            display: none;
-            margin-top: 0.5rem;
-            padding: 0.75rem 1rem;
-            background: var(--bg-card);
-            border: 1px solid var(--bg-lighter);
-            border-radius: 6px;
-            line-height: 1.6;
-        }
-        .dp-rating-guide.open .dp-rating-guide-content {
-            display: block;
-        }
-        .dp-rating-guide-content p {
-            margin-bottom: 0.25rem;
         }
     </style>
 </head>
@@ -242,73 +42,73 @@
         </div>
 
         <!-- Stats -->
-        <div class="dp-stats" id="dp-stats">
-            <div class="dp-stat">
-                <div class="dp-stat-value" id="dp-due">0</div>
-                <div class="dp-stat-label">Due for Review</div>
+        <div class="session-stats" id="dp-stats">
+            <div class="session-stat">
+                <div class="session-stat-value" id="dp-due">0</div>
+                <div class="session-stat-label">Due for Review</div>
             </div>
-            <div class="dp-stat">
-                <div class="dp-stat-value" id="dp-weak">0</div>
-                <div class="dp-stat-label">Weak Exercises</div>
+            <div class="session-stat">
+                <div class="session-stat-value" id="dp-weak">0</div>
+                <div class="session-stat-label">Weak Exercises</div>
             </div>
-            <div class="dp-stat">
-                <div class="dp-stat-value" id="dp-total">0</div>
-                <div class="dp-stat-label">Total Tracked</div>
+            <div class="session-stat">
+                <div class="session-stat-value" id="dp-total">0</div>
+                <div class="session-stat-label">Total Tracked</div>
             </div>
         </div>
 
         <!-- Configuration -->
-        <div class="dp-config" id="dp-config">
-            <div class="dp-config-row">
-                <span class="dp-config-label">Exercises:</span>
-                <div class="dp-config-options" id="dp-count-options">
-                    <button class="dp-option" data-count="5">5</button>
-                    <button class="dp-option active" data-count="10">10</button>
-                    <button class="dp-option" data-count="15">15</button>
-                    <button class="dp-option" data-count="20">20</button>
+        <div class="session-config" id="dp-config">
+            <div class="session-config-row">
+                <span class="session-config-label">Exercises:</span>
+                <div class="session-config-options" id="dp-count-options">
+                    <button class="session-option" data-count="5">5</button>
+                    <button class="session-option active" data-count="10">10</button>
+                    <button class="session-option" data-count="15">15</button>
+                    <button class="session-option" data-count="20">20</button>
                 </div>
             </div>
-            <div class="dp-config-row">
-                <span class="dp-config-label">Mode:</span>
-                <div class="dp-config-options" id="dp-mode-options">
-                    <button class="dp-option active" data-mode="review">Due for Review</button>
-                    <button class="dp-option" data-mode="weakest">Weakest</button>
-                    <button class="dp-option" data-mode="mixed">Mixed</button>
-                    <button class="dp-option" data-mode="discover">Discover</button>
+            <div class="session-config-row">
+                <span class="session-config-label">Mode:</span>
+                <div class="session-config-options" id="dp-mode-options">
+                    <button class="session-option active" data-mode="review">Due for Review</button>
+                    <button class="session-option" data-mode="weakest">Weakest</button>
+                    <button class="session-option" data-mode="mixed">Mixed</button>
+                    <button class="session-option" data-mode="discover">Discover</button>
                 </div>
             </div>
-            <div class="dp-config-row">
-                <span class="dp-config-label">Type:</span>
-                <div class="dp-config-options" id="dp-type-options">
-                    <button class="dp-option active" data-type="all">All</button>
-                    <button class="dp-option" data-type="warmup">Warmups</button>
-                    <button class="dp-option" data-type="challenge">Challenges</button>
+            <div class="session-config-row">
+                <span class="session-config-label">Type:</span>
+                <div class="session-config-options" id="dp-type-options">
+                    <button class="session-option active" data-type="all">All</button>
+                    <button class="session-option" data-type="warmup">Warmups</button>
+                    <button class="session-option" data-type="challenge">Challenges</button>
                 </div>
             </div>
-            <div class="dp-config-row">
-                <span class="dp-config-label">Modules:</span>
-                <div class="dp-config-options" id="dp-module-options">
+            <div class="session-config-row">
+                <span class="session-config-label">Modules:</span>
+                <div class="session-config-options" id="dp-module-options">
 {{MODULE_FILTER_BUTTONS}}
                 </div>
             </div>
-            <div style="margin-top: 1rem;">
-                <button class="dp-start-btn" id="dp-start" onclick="startSession()" style="width: 100%; padding: 1rem; font-size: 1.1rem;">Start Session</button>
+            <div class="session-start-area">
+                <button class="session-start-btn-main" id="dp-start" onclick="startSession()" style="width: 100%; padding: 1rem; font-size: 1.1rem;">Start Session</button>
                 <p id="dp-start-hint" style="color: var(--orange); font-size: 0.85rem; margin-top: 0.5rem; display: none;"></p>
             </div>
         </div>
 
         <!-- Session area (hidden until started) -->
         <div id="dp-session" hidden>
-            <div class="dp-session-header">
-                <span class="dp-session-progress" id="dp-session-label">Exercise <strong>1</strong> of <strong>10</strong></span>
-                <span class="dp-session-module" id="dp-session-module"></span>
+            <div class="session-header">
+                <span class="session-header-progress" id="dp-session-label">Exercise <strong>1</strong> of <strong>10</strong></span>
+                <span class="session-category" id="dp-session-module"></span>
             </div>
-            <div class="dp-progress-bar">
-                <div class="dp-progress-fill" id="dp-session-bar" style="width: 0%"></div>
+            <div class="session-progress-bar">
+                <div class="session-progress-fill" id="dp-session-bar" style="width: 0%"></div>
             </div>
-            <div class="dp-rating-guide" id="dp-rating-guide">
-                <span class="dp-rating-guide-toggle" onclick="this.parentElement.classList.toggle('open')">How should I rate? <span class="dp-rating-guide-arrow">&#9656;</span></span>
-                <div class="dp-rating-guide-content">
+            <div class="session-rating-guide" id="dp-rating-guide">
+                <span class="session-rating-guide-toggle" onclick="this.parentElement.classList.toggle('open')">How should I rate? <span class="session-rating-guide-arrow">&#9656;</span></span>
+                <div class="session-rating-guide-content">
                     <p><strong style="color: var(--green-bright);">Got it</strong> &mdash; I knew the approach and wrote it without getting stuck</p>
                     <p><strong style="color: var(--orange);">Struggled</strong> &mdash; Solved it, but had to think hard, check hints, or debug a lot</p>
                     <p><strong style="color: var(--purple);">Needed solution</strong> &mdash; Couldn't solve it without looking at the answer</p>
@@ -316,18 +116,18 @@
                 </div>
             </div>
             <div id="dp-exercise-container"></div>
-            <div class="dp-nav-btns" id="dp-nav-standard">
-                <button class="dp-next-btn" id="dp-next" onclick="nextExercise()">Next &rarr;</button>
-                <button class="dp-skip-btn" onclick="skipExercise()">Skip</button>
+            <div class="session-nav-btns" id="dp-nav-standard">
+                <button class="session-next-btn" id="dp-next" onclick="nextExercise()">Next &rarr;</button>
+                <button class="session-skip-btn" onclick="skipExercise()">Skip</button>
             </div>
         </div>
 
         <!-- Session complete (hidden until done) -->
-        <div id="dp-complete" class="dp-complete" hidden>
+        <div id="dp-complete" class="session-complete" hidden>
             <h2>Session Complete</h2>
-            <div class="dp-complete-stats" id="dp-results"></div>
+            <div class="session-complete-stats" id="dp-results"></div>
             <div style="margin-top: 1.5rem;">
-                <button class="dp-start-btn" onclick="location.reload()">New Session</button>
+                <button class="session-start-btn-main" onclick="location.reload()">New Session</button>
                 <a href="index.html" style="margin-left: 1rem; color: var(--text-dim);">Back to Dashboard</a>
             </div>
         </div>
@@ -349,6 +149,7 @@
     <script src="streaks.js"></script>
     <script src="exercise-renderer.js"></script>
     <script src="algorithm-data.js"></script>
+    <script src="session-engine.js"></script>
     <script src="daily-practice.js"></script>
 </body>
 </html>

@@ -726,7 +726,7 @@ body.focus-mode .container > * {
 
 body.focus-mode .lesson,
 body.focus-mode #dp-session,
-body.focus-mode .dp-complete,
+body.focus-mode .session-complete,
 body.focus-mode #dp-empty {
     opacity: 1;
 }
@@ -1891,4 +1891,230 @@ footer {
 .clear-progress--danger {
     border-color: var(--red);
     color: var(--red);
+}
+
+/* ============================================================
+   Session Engine — shared practice session components
+   ============================================================ */
+.session-stats {
+    display: flex;
+    gap: 1.5rem;
+    margin: 1.5rem 0;
+    flex-wrap: wrap;
+}
+.session-stat {
+    background: var(--bg-card);
+    border: 1px solid var(--bg-lighter);
+    border-radius: 8px;
+    padding: 1rem 1.5rem;
+    text-align: center;
+    min-width: 100px;
+}
+.session-stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--session-accent, var(--orange));
+}
+.session-stat-label {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    margin-top: 0.25rem;
+}
+.session-config {
+    background: var(--bg-card);
+    border: 1px solid var(--bg-lighter);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+}
+.session-config-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+.session-config-label {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    min-width: 100px;
+}
+.session-config-options {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+.session-option {
+    background: transparent;
+    border: 2px solid var(--bg-lighter);
+    color: var(--text);
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'JetBrains Mono', monospace;
+}
+.session-option:hover {
+    border-color: var(--session-accent, var(--orange));
+    color: var(--session-accent, var(--orange));
+}
+.session-option.active {
+    background: var(--session-accent, var(--orange));
+    border-color: var(--session-accent, var(--orange));
+    color: white;
+    font-weight: 600;
+}
+.session-option:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+.session-start-area {
+    margin-top: 1rem;
+}
+.session-start-btn-main {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 2rem;
+    background: var(--session-accent, var(--orange));
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    font-family: 'Space Grotesk', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.session-start-btn-main:hover {
+    filter: brightness(1.2);
+}
+.session-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 1.5rem 0 1rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+.session-header-progress {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+}
+.session-header-progress strong {
+    color: var(--session-accent, var(--orange));
+}
+.session-category {
+    font-size: 0.8rem;
+    color: var(--cyan);
+    font-family: 'JetBrains Mono', monospace;
+}
+.session-progress-bar {
+    width: 100%;
+    height: 6px;
+    background: var(--bg-lighter);
+    border-radius: 3px;
+    overflow: hidden;
+    margin: 1rem 0;
+}
+.session-progress-fill {
+    height: 100%;
+    background: var(--session-gradient, linear-gradient(90deg, var(--green-bright), var(--orange)));
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+.session-nav-btns {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+}
+.session-next-btn {
+    padding: 0.6rem 1.5rem;
+    background: var(--session-accent, var(--orange));
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.session-next-btn:hover {
+    filter: brightness(1.2);
+}
+.session-skip-btn {
+    padding: 0.6rem 1.5rem;
+    background: transparent;
+    color: var(--text-dim);
+    border: 1px solid var(--bg-lighter);
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-family: 'JetBrains Mono', monospace;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.session-skip-btn:hover {
+    border-color: var(--text);
+    color: var(--text);
+}
+.session-complete {
+    background: var(--bg-card);
+    border: 2px solid var(--session-accent, var(--orange));
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    margin: 2rem 0;
+}
+.session-complete h2 {
+    color: var(--session-accent, var(--orange));
+    margin-bottom: 1rem;
+}
+.session-complete-stats {
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+    margin: 1.5rem 0;
+    flex-wrap: wrap;
+}
+.session-rating-guide {
+    margin: 0.75rem 0 1rem;
+    font-size: 0.8rem;
+}
+.session-rating-guide-toggle {
+    color: var(--text-dim);
+    cursor: pointer;
+    user-select: none;
+    font-family: 'JetBrains Mono', monospace;
+}
+.session-rating-guide-toggle:hover {
+    color: var(--text);
+}
+.session-rating-guide-arrow {
+    display: inline-block;
+    transition: transform 0.2s;
+    font-size: 0.7rem;
+}
+.session-rating-guide.open .session-rating-guide-arrow {
+    transform: rotate(90deg);
+}
+.session-rating-guide-content {
+    display: none;
+    margin-top: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: var(--bg-card);
+    border: 1px solid var(--bg-lighter);
+    border-radius: 6px;
+    line-height: 1.6;
+}
+.session-rating-guide.open .session-rating-guide-content {
+    display: block;
+}
+.session-rating-guide-content p {
+    margin-bottom: 0.25rem;
 }

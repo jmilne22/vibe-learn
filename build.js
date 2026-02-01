@@ -500,10 +500,10 @@ function buildCourse(slug) {
     }
 
     function buildModuleFilterButtons() {
-        let html = '                    <button class="dp-option active" data-module="all">All</button>\n';
+        let html = '                    <button class="session-option active" data-module="all">All</button>\n';
         modules.forEach(mod => {
             if (mod.id === 0) return;
-            html += `                    <button class="dp-option" data-module="${mod.id}">M${mod.id}</button>\n`;
+            html += `                    <button class="session-option" data-module="${mod.id}">M${mod.id}</button>\n`;
         });
         return html;
     }

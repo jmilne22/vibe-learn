@@ -11,222 +11,12 @@
     <link rel="stylesheet" href="style.css">
 {{THEME_LINKS}}
     <style>
+        :root {
+            --session-accent: var(--purple);
+            --session-gradient: linear-gradient(90deg, var(--purple), var(--cyan));
+        }
         .algo-header {
             margin: 2rem 0 1.5rem;
-        }
-        .algo-stats {
-            display: flex;
-            gap: 1.5rem;
-            margin: 1.5rem 0;
-            flex-wrap: wrap;
-        }
-        .algo-stat {
-            background: var(--bg-card);
-            border: 1px solid var(--bg-lighter);
-            border-radius: 8px;
-            padding: 1rem 1.5rem;
-            text-align: center;
-            min-width: 100px;
-        }
-        .algo-stat-value {
-            font-size: 1.5rem;
-            font-weight: 700;
-            font-family: 'JetBrains Mono', monospace;
-            color: var(--purple);
-        }
-        .algo-stat-label {
-            font-size: 0.8rem;
-            color: var(--text-dim);
-            margin-top: 0.25rem;
-        }
-        .algo-config {
-            background: var(--bg-card);
-            border: 1px solid var(--bg-lighter);
-            border-radius: 8px;
-            padding: 1.5rem;
-            margin: 1.5rem 0;
-        }
-        .algo-config-row {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            margin-bottom: 1rem;
-            flex-wrap: wrap;
-        }
-        .algo-config-label {
-            font-size: 0.85rem;
-            color: var(--text-dim);
-            min-width: 100px;
-        }
-        .algo-config-options {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-        }
-        .algo-option {
-            background: transparent;
-            border: 2px solid var(--bg-lighter);
-            color: var(--text);
-            padding: 0.4rem 0.8rem;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-family: 'JetBrains Mono', monospace;
-        }
-        .algo-option:hover {
-            border-color: var(--purple);
-            color: var(--purple);
-        }
-        .algo-option.active {
-            background: var(--purple);
-            border-color: var(--purple);
-            color: white;
-            font-weight: 600;
-        }
-        .algo-start-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            padding: 0.75rem 2rem;
-            background: var(--purple);
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            font-family: 'Space Grotesk', sans-serif;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .algo-start-btn:hover {
-            filter: brightness(1.2);
-        }
-        .algo-session-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin: 1.5rem 0 1rem;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-        }
-        .algo-session-progress {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.85rem;
-            color: var(--text-dim);
-        }
-        .algo-session-progress strong {
-            color: var(--purple);
-        }
-        .algo-session-category {
-            font-size: 0.8rem;
-            color: var(--cyan);
-            font-family: 'JetBrains Mono', monospace;
-        }
-        .algo-progress-bar {
-            width: 100%;
-            height: 6px;
-            background: var(--bg-lighter);
-            border-radius: 3px;
-            overflow: hidden;
-            margin: 1rem 0;
-        }
-        .algo-progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--purple), var(--cyan));
-            border-radius: 3px;
-            transition: width 0.3s ease;
-        }
-        .algo-nav-btns {
-            display: flex;
-            gap: 0.75rem;
-            margin-top: 1.5rem;
-        }
-        .algo-next-btn {
-            padding: 0.6rem 1.5rem;
-            background: var(--purple);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            font-family: 'JetBrains Mono', monospace;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .algo-next-btn:hover {
-            filter: brightness(1.2);
-        }
-        .algo-skip-btn {
-            padding: 0.6rem 1.5rem;
-            background: transparent;
-            color: var(--text-dim);
-            border: 1px solid var(--bg-lighter);
-            border-radius: 6px;
-            font-size: 0.9rem;
-            font-family: 'JetBrains Mono', monospace;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .algo-skip-btn:hover {
-            border-color: var(--text);
-            color: var(--text);
-        }
-        .algo-complete {
-            background: var(--bg-card);
-            border: 2px solid var(--purple);
-            border-radius: 12px;
-            padding: 2rem;
-            text-align: center;
-            margin: 2rem 0;
-        }
-        .algo-complete h2 {
-            color: var(--purple);
-            margin-bottom: 1rem;
-        }
-        .algo-complete-stats {
-            display: flex;
-            gap: 2rem;
-            justify-content: center;
-            margin: 1.5rem 0;
-            flex-wrap: wrap;
-        }
-        .algo-rating-guide {
-            margin: 0.75rem 0 1rem;
-            font-size: 0.8rem;
-        }
-        .algo-rating-guide-toggle {
-            color: var(--text-dim);
-            cursor: pointer;
-            user-select: none;
-            font-family: 'JetBrains Mono', monospace;
-        }
-        .algo-rating-guide-toggle:hover {
-            color: var(--text);
-        }
-        .algo-rating-guide-arrow {
-            display: inline-block;
-            transition: transform 0.2s;
-            font-size: 0.7rem;
-        }
-        .algo-rating-guide.open .algo-rating-guide-arrow {
-            transform: rotate(90deg);
-        }
-        .algo-rating-guide-content {
-            display: none;
-            margin-top: 0.5rem;
-            padding: 0.75rem 1rem;
-            background: var(--bg-card);
-            border: 1px solid var(--bg-lighter);
-            border-radius: 6px;
-            line-height: 1.6;
-        }
-        .algo-rating-guide.open .algo-rating-guide-content {
-            display: block;
-        }
-        .algo-rating-guide-content p {
-            margin-bottom: 0.25rem;
         }
         .algo-pattern-primer {
             border: 2px solid var(--purple);
@@ -280,78 +70,78 @@
         </div>
 
         <!-- Stats -->
-        <div class="algo-stats" id="algo-stats">
-            <div class="algo-stat">
-                <div class="algo-stat-value" id="algo-total">0</div>
-                <div class="algo-stat-label">Total Problems</div>
+        <div class="session-stats" id="algo-stats">
+            <div class="session-stat">
+                <div class="session-stat-value" id="algo-total">0</div>
+                <div class="session-stat-label">Total Problems</div>
             </div>
-            <div class="algo-stat">
-                <div class="algo-stat-value" id="algo-practiced">0</div>
-                <div class="algo-stat-label">Practiced</div>
+            <div class="session-stat">
+                <div class="session-stat-value" id="algo-practiced">0</div>
+                <div class="session-stat-label">Practiced</div>
             </div>
-            <div class="algo-stat">
-                <div class="algo-stat-value" id="algo-due">0</div>
-                <div class="algo-stat-label">Due for Review</div>
+            <div class="session-stat">
+                <div class="session-stat-value" id="algo-due">0</div>
+                <div class="session-stat-label">Due for Review</div>
             </div>
-            <div class="algo-stat">
-                <div class="algo-stat-value" id="algo-weak">0</div>
-                <div class="algo-stat-label">Weak</div>
+            <div class="session-stat">
+                <div class="session-stat-value" id="algo-weak">0</div>
+                <div class="session-stat-label">Weak</div>
             </div>
         </div>
 
         <!-- Configuration -->
-        <div class="algo-config" id="algo-config">
-            <div class="algo-config-row">
-                <span class="algo-config-label">Category:</span>
-                <div class="algo-config-options" id="algo-category-options">
-                    <button class="algo-option active" data-category="all">All</button>
+        <div class="session-config" id="algo-config">
+            <div class="session-config-row">
+                <span class="session-config-label">Category:</span>
+                <div class="session-config-options" id="algo-category-options">
+                    <button class="session-option active" data-category="all">All</button>
                 </div>
             </div>
-            <div class="algo-config-row">
-                <span class="algo-config-label">Session Size:</span>
-                <div class="algo-config-options" id="algo-count-options">
-                    <button class="algo-option" data-count="5">5</button>
-                    <button class="algo-option active" data-count="10">10</button>
-                    <button class="algo-option" data-count="15">15</button>
-                    <button class="algo-option" data-count="20">20</button>
+            <div class="session-config-row">
+                <span class="session-config-label">Session Size:</span>
+                <div class="session-config-options" id="algo-count-options">
+                    <button class="session-option" data-count="5">5</button>
+                    <button class="session-option active" data-count="10">10</button>
+                    <button class="session-option" data-count="15">15</button>
+                    <button class="session-option" data-count="20">20</button>
                 </div>
             </div>
-            <div class="algo-config-row">
-                <span class="algo-config-label">Difficulty:</span>
-                <div class="algo-config-options" id="algo-difficulty-options">
-                    <button class="algo-option" data-difficulty="easy">Easy</button>
-                    <button class="algo-option active" data-difficulty="balanced">Balanced</button>
-                    <button class="algo-option" data-difficulty="progressive">Progressive</button>
-                    <button class="algo-option" data-difficulty="hard">Hard</button>
+            <div class="session-config-row">
+                <span class="session-config-label">Difficulty:</span>
+                <div class="session-config-options" id="algo-difficulty-options">
+                    <button class="session-option" data-difficulty="easy">Easy</button>
+                    <button class="session-option active" data-difficulty="balanced">Balanced</button>
+                    <button class="session-option" data-difficulty="progressive">Progressive</button>
+                    <button class="session-option" data-difficulty="hard">Hard</button>
                 </div>
             </div>
-            <div class="algo-config-row">
-                <span class="algo-config-label">Mode:</span>
-                <div class="algo-config-options" id="algo-mode-options">
-                    <button class="algo-option" data-mode="discover">Discover</button>
-                    <button class="algo-option active" data-mode="mixed">Mixed</button>
-                    <button class="algo-option" data-mode="review">Review</button>
-                    <button class="algo-option" data-mode="weakest">Weakest</button>
+            <div class="session-config-row">
+                <span class="session-config-label">Mode:</span>
+                <div class="session-config-options" id="algo-mode-options">
+                    <button class="session-option" data-mode="discover">Discover</button>
+                    <button class="session-option active" data-mode="mixed">Mixed</button>
+                    <button class="session-option" data-mode="review">Review</button>
+                    <button class="session-option" data-mode="weakest">Weakest</button>
                 </div>
             </div>
-            <div style="margin-top: 1rem;">
-                <button class="algo-start-btn" id="algo-start" onclick="AlgorithmPractice.startSession()" style="width: 100%; padding: 1rem; font-size: 1.1rem;">Start Session</button>
+            <div class="session-start-area">
+                <button class="session-start-btn-main" id="algo-start" onclick="AlgorithmPractice.startSession()" style="width: 100%; padding: 1rem; font-size: 1.1rem;">Start Session</button>
                 <p id="algo-start-hint" style="color: var(--purple); font-size: 0.85rem; margin-top: 0.5rem; display: none;"></p>
             </div>
         </div>
 
         <!-- Session area -->
         <div id="algo-session" hidden>
-            <div class="algo-session-header">
-                <span class="algo-session-progress" id="algo-session-label">Problem <strong>1</strong> of <strong>10</strong></span>
-                <span class="algo-session-category" id="algo-session-category"></span>
+            <div class="session-header">
+                <span class="session-header-progress" id="algo-session-label">Problem <strong>1</strong> of <strong>10</strong></span>
+                <span class="session-category" id="algo-session-category"></span>
             </div>
-            <div class="algo-progress-bar">
-                <div class="algo-progress-fill" id="algo-session-bar" style="width: 0%"></div>
+            <div class="session-progress-bar">
+                <div class="session-progress-fill" id="algo-session-bar" style="width: 0%"></div>
             </div>
-            <div class="algo-rating-guide" id="algo-rating-guide">
-                <span class="algo-rating-guide-toggle" onclick="this.parentElement.classList.toggle('open')">How should I rate? <span class="algo-rating-guide-arrow">&#9656;</span></span>
-                <div class="algo-rating-guide-content">
+            <div class="session-rating-guide" id="algo-rating-guide">
+                <span class="session-rating-guide-toggle" onclick="this.parentElement.classList.toggle('open')">How should I rate? <span class="session-rating-guide-arrow">&#9656;</span></span>
+                <div class="session-rating-guide-content">
                     <p><strong style="color: var(--green-bright);">Got it</strong> &mdash; I knew the approach and wrote it without getting stuck</p>
                     <p><strong style="color: var(--orange);">Struggled</strong> &mdash; Solved it, but had to think hard, check hints, or debug a lot</p>
                     <p><strong style="color: var(--purple);">Needed solution</strong> &mdash; Couldn't solve it without looking at the answer</p>
@@ -359,18 +149,18 @@
                 </div>
             </div>
             <div id="algo-exercise-container"></div>
-            <div class="algo-nav-btns" id="algo-nav">
-                <button class="algo-next-btn" onclick="AlgorithmPractice.nextExercise()">Next &rarr;</button>
-                <button class="algo-skip-btn" onclick="AlgorithmPractice.skipExercise()">Skip</button>
+            <div class="session-nav-btns" id="algo-nav">
+                <button class="session-next-btn" onclick="AlgorithmPractice.nextExercise()">Next &rarr;</button>
+                <button class="session-skip-btn" onclick="AlgorithmPractice.skipExercise()">Skip</button>
             </div>
         </div>
 
         <!-- Session complete -->
-        <div id="algo-complete" class="algo-complete" hidden>
+        <div id="algo-complete" class="session-complete" hidden>
             <h2>Session Complete</h2>
-            <div class="algo-complete-stats" id="algo-results"></div>
+            <div class="session-complete-stats" id="algo-results"></div>
             <div style="margin-top: 1.5rem;">
-                <button class="algo-start-btn" onclick="location.reload()">New Session</button>
+                <button class="session-start-btn-main" onclick="location.reload()">New Session</button>
                 <a href="index.html" style="margin-left: 1rem; color: var(--text-dim);">Back to Dashboard</a>
             </div>
         </div>
@@ -415,6 +205,7 @@
     <script src="exercise-core.js"></script>
     <script src="exercise-renderer.js"></script>
     <script src="algorithm-data.js"></script>
+    <script src="session-engine.js"></script>
     <script src="algorithms.js"></script>
 </body>
 </html>

@@ -3,32 +3,34 @@
  *
  * Builds exercise queues from SRS data and renders exercises
  * from across multiple modules for focused review sessions.
+ * Uses SessionEngine for session lifecycle.
  */
 (function() {
     'use strict';
 
-    // Module names for display
+    var SE = window.SessionEngine;
+
     var MODULE_NAMES = (window.CourseConfigHelper && window.CourseConfigHelper.moduleNames) || {};
-
-    // Modules that have no variant data files — exercises from these can never render
     var MODULES_WITHOUT_VARIANTS = new Set((window.CourseConfigHelper && window.CourseConfigHelper.modulesWithoutExercises) || [7, 8, 11, 13]);
-
-    // Modules that DO have variant data — used by Discover mode
     var MODULES_WITH_VARIANTS = (window.CourseConfigHelper && window.CourseConfigHelper.modulesWithExercises) || [1, 2, 3, 4, 5, 6, 9, 10, 12, 14, 15, 16, 17];
 
-    let sessionConfig = { count: 10, mode: 'review', type: 'all', modules: 'all' };
-    let sessionQueue = [];
-    let sessionIndex = 0;
-    let sessionResults = { completed: 0, skipped: 0, ratings: { 1: 0, 2: 0, 3: 0 } };
+    var sessionConfig = { count: 10, mode: 'review', type: 'all', modules: 'all' };
+    var session = null;
 
     // --- Initialization ---
 
     function init() {
         updateStats();
         setupConfigButtons();
-        preselectBestMode();
 
-        // URL param autostart (#1)
+        var bestMode = SE.preselectBestMode(isRenderableExercise);
+        sessionConfig.mode = bestMode;
+        var btn = document.querySelector('#dp-mode-options .session-option[data-mode="' + bestMode + '"]');
+        if (btn) {
+            SE.setActiveOption('dp-mode-options', 'session-option', btn);
+        }
+        updateModuleButtonStates();
+
         var urlConfig = parseUrlConfig();
         if (urlConfig) {
             if (urlConfig.mode) sessionConfig.mode = urlConfig.mode;
@@ -37,10 +39,9 @@
             if (urlConfig.type) sessionConfig.type = urlConfig.type;
             if (urlConfig.autostart) {
                 history.replaceState(null, '', window.location.pathname);
-                startSession();
+                doStartSession();
             }
         }
-
     }
 
     function parseUrlConfig() {
@@ -62,100 +63,59 @@
     function updateStats() {
         if (!window.SRS) return;
 
-        const due = window.SRS.getDueExercises().filter(e => isRenderableExercise(e.key));
-        const weak = window.SRS.getWeakestExercises(10).filter(e => e.easeFactor < 2.0 && isRenderableExercise(e.key));
-        const all = window.SRS.getAll();
-        const total = Object.keys(all).filter(isRenderableExercise).length;
+        var due = window.SRS.getDueExercises().filter(function(e) { return isRenderableExercise(e.key); });
+        var weak = window.SRS.getWeakestExercises(10).filter(function(e) { return e.easeFactor < 2.0 && isRenderableExercise(e.key); });
+        var all = window.SRS.getAll();
+        var total = Object.keys(all).filter(isRenderableExercise).length;
 
-        setText('dp-due', due.length);
-        setText('dp-weak', weak.length);
-        setText('dp-total', total);
+        SE.setText('dp-due', due.length);
+        SE.setText('dp-weak', weak.length);
+        SE.setText('dp-total', total);
     }
 
-    /** Check whether a key can actually render as an exercise (not a flashcard, not a variant-less module) */
     function isRenderableExercise(key) {
         if (key.startsWith('fc_')) return false;
         if (key.startsWith('algo_')) return true;
-        const match = key.match(/^m(\d+)_/);
+        var match = key.match(/^m(\d+)_/);
         if (!match) return false;
         return !MODULES_WITHOUT_VARIANTS.has(parseInt(match[1]));
     }
 
-    /** Pre-select the best mode based on current SRS state */
-    function preselectBestMode() {
-        if (!window.SRS) return;
-
-        var due = window.SRS.getDueExercises().filter(function(e) { return isRenderableExercise(e.key); });
-        var weak = window.SRS.getWeakestExercises(10).filter(function(e) { return e.easeFactor < 2.0 && isRenderableExercise(e.key); });
-
-        var bestMode;
-        if (due.length >= 5) {
-            bestMode = 'review';
-        } else if (weak.length >= 3) {
-            bestMode = 'weakest';
-        } else if (due.length > 0 || weak.length > 0) {
-            bestMode = 'mixed';
-        } else {
-            bestMode = 'discover';
-        }
-
-        sessionConfig.mode = bestMode;
-        var btn = document.querySelector('#dp-mode-options .dp-option[data-mode="' + bestMode + '"]');
-        if (btn) {
-            setActiveOption('dp-mode-options', btn);
-        }
-        updateModuleButtonStates();
-    }
-
     function setupConfigButtons() {
-        document.querySelectorAll('#dp-count-options .dp-option').forEach(btn => {
-            btn.addEventListener('click', () => {
-                setActiveOption('dp-count-options', btn);
-                sessionConfig.count = parseInt(btn.dataset.count);
-            });
-        });
+        SE.setupOptionGroup('dp-count-options', 'session-option', sessionConfig, 'count', parseInt);
 
-        document.querySelectorAll('#dp-mode-options .dp-option').forEach(btn => {
-            btn.addEventListener('click', () => {
-                setActiveOption('dp-mode-options', btn);
+        // Mode buttons need extra logic: update module button states
+        document.querySelectorAll('#dp-mode-options .session-option').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                SE.setActiveOption('dp-mode-options', 'session-option', btn);
                 sessionConfig.mode = btn.dataset.mode;
                 updateModuleButtonStates();
             });
         });
 
-        document.querySelectorAll('#dp-type-options .dp-option').forEach(btn => {
-            btn.addEventListener('click', () => {
-                setActiveOption('dp-type-options', btn);
-                sessionConfig.type = btn.dataset.type;
-            });
-        });
+        SE.setupOptionGroup('dp-type-options', 'session-option', sessionConfig, 'type');
 
-        document.querySelectorAll('#dp-module-options .dp-option').forEach(btn => {
-            btn.addEventListener('click', () => {
+        // Module buttons: multi-select behavior
+        document.querySelectorAll('#dp-module-options .session-option').forEach(function(btn) {
+            btn.addEventListener('click', function() {
                 if (btn.disabled) return;
 
-                // Module filter supports multi-select: clicking "All" resets, clicking a module toggles it
                 if (btn.dataset.module === 'all') {
-                    // Reset to all
-                    document.querySelectorAll('#dp-module-options .dp-option').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('#dp-module-options .session-option').forEach(function(b) { b.classList.remove('active'); });
                     btn.classList.add('active');
                     sessionConfig.modules = 'all';
                 } else {
-                    // Remove "All" active state
-                    const allBtn = document.querySelector('#dp-module-options .dp-option[data-module="all"]');
+                    var allBtn = document.querySelector('#dp-module-options .session-option[data-module="all"]');
                     if (allBtn) allBtn.classList.remove('active');
 
-                    // Toggle this module
                     btn.classList.toggle('active');
 
-                    // Collect active modules
-                    const activeModules = [];
-                    document.querySelectorAll('#dp-module-options .dp-option.active').forEach(b => {
+                    var activeModules = [];
+                    document.querySelectorAll('#dp-module-options .session-option.active').forEach(function(b) {
                         if (b.dataset.module !== 'all') activeModules.push(parseInt(b.dataset.module));
                     });
 
                     if (activeModules.length === 0) {
-                        // Nothing selected — revert to all
                         if (allBtn) allBtn.classList.add('active');
                         sessionConfig.modules = 'all';
                     } else {
@@ -166,10 +126,9 @@
         });
     }
 
-    /** Disable module buttons that have no variant data when Discover mode is selected */
     function updateModuleButtonStates() {
         var isDiscover = sessionConfig.mode === 'discover';
-        document.querySelectorAll('#dp-module-options .dp-option').forEach(function(btn) {
+        document.querySelectorAll('#dp-module-options .session-option').forEach(function(btn) {
             var mod = btn.dataset.module;
             if (mod === 'all') return;
             var modNum = parseInt(mod);
@@ -184,13 +143,12 @@
                 btn.title = '';
             }
         });
-        // If discover deselected some modules, check if we need to reset to All
         if (isDiscover) {
             var activeModules = [];
-            document.querySelectorAll('#dp-module-options .dp-option.active').forEach(function(b) {
+            document.querySelectorAll('#dp-module-options .session-option.active').forEach(function(b) {
                 if (b.dataset.module !== 'all') activeModules.push(parseInt(b.dataset.module));
             });
-            var allBtn = document.querySelector('#dp-module-options .dp-option[data-module="all"]');
+            var allBtn = document.querySelector('#dp-module-options .session-option[data-module="all"]');
             if (activeModules.length === 0 && allBtn && !allBtn.classList.contains('active')) {
                 allBtn.classList.add('active');
                 sessionConfig.modules = 'all';
@@ -200,174 +158,186 @@
 
     // --- Session Management ---
 
-    window.startSession = function() {
+    function doStartSession() {
         if (sessionConfig.mode === 'discover') {
             startDiscoverSession();
             return;
         }
 
-        sessionQueue = buildQueue(sessionConfig.mode, sessionConfig.count);
+        var queue = buildQueue(sessionConfig.mode, sessionConfig.count);
 
-        if (sessionQueue.length === 0) {
+        session = SE.createSession({
+            ids: {
+                config: 'dp-config',
+                stats: 'dp-stats',
+                session: 'dp-session',
+                label: 'dp-session-label',
+                bar: 'dp-session-bar',
+                container: 'dp-exercise-container',
+                complete: 'dp-complete',
+                results: 'dp-results',
+                hint: 'dp-start-hint'
+            },
+            itemLabel: 'Exercise',
+            accentColor: 'orange',
+            onRender: renderCurrentExercise,
+            extraShowOnStart: ['dp-nav-standard'],
+            onSessionStart: function() {
+                document.body.classList.add('dp-in-session');
+            }
+        });
+        session.queue = queue;
+
+        if (!SE.startSession(session)) {
             var hintEl = document.getElementById('dp-start-hint');
             if (hintEl) {
                 var modeLabel = sessionConfig.mode === 'review' ? 'due for review'
                     : sessionConfig.mode === 'weakest' ? 'weak enough'
                     : 'matching';
-                hintEl.textContent = 'Not enough exercises ' + modeLabel + ' yet — try Discover mode, or complete and rate exercises in the course modules.';
+                hintEl.textContent = 'Not enough exercises ' + modeLabel + ' yet \u2014 try Discover mode, or complete and rate exercises in the course modules.';
                 hintEl.style.display = '';
             }
             return;
         }
 
-        // Clear any previous hint
-        var hintEl = document.getElementById('dp-start-hint');
-        if (hintEl) hintEl.style.display = 'none';
-
-        sessionIndex = 0;
-        sessionResults = { completed: 0, skipped: 0, ratings: { 1: 0, 2: 0, 3: 0 } };
-
-        hide('dp-config');
-        hide('dp-stats');
-        show('dp-session');
-        show('dp-nav-standard');
-        document.body.classList.add('dp-in-session');
-
         // Show loading state while variant data loads
-        const container = document.getElementById('dp-exercise-container');
+        var container = document.getElementById('dp-exercise-container');
         if (container) {
             container.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-dim);">Loading...</div>';
         }
 
-        // Collect unique module numbers that need variant data
-        const modulesToLoad = new Set();
-        sessionQueue.forEach(item => {
+        // Preload variant data for queued modules
+        var modulesToLoad = new Set();
+        session.queue.forEach(function(item) {
             if (item.moduleNum !== null && !MODULES_WITHOUT_VARIANTS.has(item.moduleNum)) {
                 modulesToLoad.add(item.moduleNum);
             }
         });
 
-        // Preload all variant scripts in parallel
-        const loadPromises = [];
-        modulesToLoad.forEach(moduleNum => {
+        var loadPromises = [];
+        modulesToLoad.forEach(function(moduleNum) {
             if (!loadedModules.has(moduleNum)) {
                 loadPromises.push(preloadModuleData(moduleNum));
             }
         });
 
         Promise.all(loadPromises).then(function() {
-            renderCurrentExercise();
+            renderCurrentExercise(session);
         });
-    };
+    }
 
     function startDiscoverSession() {
-        sessionIndex = 0;
-        sessionResults = { completed: 0, skipped: 0, ratings: { 1: 0, 2: 0, 3: 0 } };
+        session = SE.createSession({
+            ids: {
+                config: 'dp-config',
+                stats: 'dp-stats',
+                session: 'dp-session',
+                label: 'dp-session-label',
+                bar: 'dp-session-bar',
+                container: 'dp-exercise-container',
+                complete: 'dp-complete',
+                results: 'dp-results',
+                hint: 'dp-start-hint'
+            },
+            itemLabel: 'Exercise',
+            accentColor: 'orange',
+            onRender: renderCurrentExercise,
+            extraShowOnStart: ['dp-nav-standard'],
+            onSessionStart: function() {
+                document.body.classList.add('dp-in-session');
+            }
+        });
+        // Set a placeholder queue so startSession succeeds
+        session.queue = [{ key: '_placeholder' }];
 
-        hide('dp-config');
-        hide('dp-stats');
-        show('dp-session');
-        show('dp-nav-standard');
-        document.body.classList.add('dp-in-session');
+        SE.startSession(session);
 
         var container = document.getElementById('dp-exercise-container');
         if (container) {
             container.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-dim);">Loading exercise data...</div>';
         }
 
-        // Determine which modules to load
         var targetModules = sessionConfig.modules === 'all'
             ? MODULES_WITH_VARIANTS
             : MODULES_WITH_VARIANTS.filter(function(m) {
                 return sessionConfig.modules.includes(m);
             });
 
-        // Preload ALL target module data
         var loadPromises = targetModules.map(function(moduleNum) {
             return preloadModuleData(moduleNum);
         });
 
         Promise.all(loadPromises).then(function() {
-            sessionQueue = buildDiscoverQueue(sessionConfig.count);
-            if (sessionQueue.length === 0) {
-                hide('dp-session');
-                show('dp-empty');
+            session.queue = buildDiscoverQueue(sessionConfig.count);
+            session.index = 0;
+            if (session.queue.length === 0) {
+                SE.hide('dp-session');
+                SE.show('dp-empty');
                 return;
             }
-            renderCurrentExercise();
+            SE.renderSessionHeader(session);
+            renderCurrentExercise(session);
         });
-    }
-
-    window.nextExercise = function() {
-        sessionResults.completed++;
-        if (window.Streaks) window.Streaks.recordActivity();
-        advance();
-    };
-
-    window.skipExercise = function() {
-        sessionResults.skipped++;
-        advance();
-    };
-
-
-    function advance() {
-        sessionIndex++;
-        if (sessionIndex >= sessionQueue.length) {
-            finishSession();
-        } else {
-            renderCurrentExercise();
-        }
-    }
-
-    function finishSession() {
-        hide('dp-session');
-        show('dp-complete');
-
-        const resultsEl = document.getElementById('dp-results');
-        if (!resultsEl) return;
-
-        const progress = window.ExerciseProgress?.loadAll() || {};
-        let gotIt = 0, struggled = 0, peeked = 0;
-        sessionQueue.forEach(item => {
-            const p = progress[item.key];
-            if (p?.selfRating === 1) gotIt++;
-            else if (p?.selfRating === 2) struggled++;
-            else if (p?.selfRating === 3) peeked++;
-        });
-
-        resultsEl.innerHTML = `
-            <div class="dp-stat">
-                <div class="dp-stat-value" style="color: var(--green-bright);">${sessionResults.completed}</div>
-                <div class="dp-stat-label">Completed</div>
-            </div>
-            <div class="dp-stat">
-                <div class="dp-stat-value" style="color: var(--text-dim);">${sessionResults.skipped}</div>
-                <div class="dp-stat-label">Skipped</div>
-            </div>
-            <div class="dp-stat">
-                <div class="dp-stat-value" style="color: var(--green-bright);">${gotIt}</div>
-                <div class="dp-stat-label">Got It</div>
-            </div>
-            <div class="dp-stat">
-                <div class="dp-stat-value" style="color: var(--orange);">${struggled}</div>
-                <div class="dp-stat-label">Struggled</div>
-            </div>
-            <div class="dp-stat">
-                <div class="dp-stat-value" style="color: var(--purple);">${peeked}</div>
-                <div class="dp-stat-label">Needed Solution</div>
-            </div>`;
     }
 
     // --- Queue Building ---
 
-    function shuffle(arr) {
-        for (var i = arr.length - 1; i > 0; i--) {
-            var j = Math.floor(Math.random() * (i + 1));
-            var tmp = arr[i];
-            arr[i] = arr[j];
-            arr[j] = tmp;
+    function matchesFilters(key) {
+        if (key.startsWith('fc_')) return false;
+
+        if (key.startsWith('algo_')) {
+            if (sessionConfig.type === 'warmup') return false;
+            return true;
         }
-        return arr;
+
+        var modMatch = key.match(/^m(\d+)_/);
+        var moduleNum = modMatch ? parseInt(modMatch[1]) : null;
+
+        if (moduleNum !== null && MODULES_WITHOUT_VARIANTS.has(moduleNum)) return false;
+
+        if (sessionConfig.type !== 'all') {
+            var isWarmup = key.includes('warmup');
+            var isChallenge = key.includes('challenge');
+            if (sessionConfig.type === 'warmup' && !isWarmup) return false;
+            if (sessionConfig.type === 'challenge' && !isChallenge) return false;
+        }
+
+        if (sessionConfig.modules !== 'all') {
+            if (moduleNum === null || !sessionConfig.modules.includes(moduleNum)) return false;
+        }
+
+        return true;
+    }
+
+    function buildQueue(mode, count) {
+        var candidates = SE.buildSRSQueue(mode, count, matchesFilters);
+
+        if ((mode === 'review' || mode === 'weakest') && candidates.length < 5) {
+            return [];
+        }
+
+        // Pad with random tracked exercises if needed
+        if (candidates.length < count && window.SRS) {
+            var all = window.SRS.getAll();
+            var existing = {};
+            candidates.forEach(function(c) { existing[c.key] = true; });
+            var extras = Object.keys(all)
+                .filter(function(key) { return !existing[key] && matchesFilters(key); })
+                .map(function(key) { var item = all[key]; item.key = key; return item; })
+                .sort(function() { return Math.random() - 0.5; });
+            candidates = candidates.concat(extras);
+        }
+
+        return candidates.slice(0, count).map(function(item) {
+            var match = item.key.match(/^(?:fc_)?m(\d+)_/);
+            var moduleNum = match ? parseInt(match[1]) : null;
+            return {
+                key: item.key,
+                moduleNum: moduleNum,
+                moduleName: MODULE_NAMES[moduleNum] || ('Module ' + moduleNum),
+                srsData: item
+            };
+        });
     }
 
     function buildDiscoverQueue(count) {
@@ -390,38 +360,28 @@
             var variants = moduleData.variants;
             var moduleName = MODULE_NAMES[moduleNum] || ('Module ' + moduleNum);
 
-            // Collect warmups
             if (variants.warmups && (sessionConfig.type === 'all' || sessionConfig.type === 'warmup')) {
                 variants.warmups.forEach(function(warmup) {
                     if (!warmup.variants) return;
                     warmup.variants.forEach(function(variant) {
                         var key = 'm' + moduleNum + '_' + warmup.id + '_' + variant.id;
                         allItems.push({
-                            key: key,
-                            moduleNum: moduleNum,
-                            moduleName: moduleName,
-                            type: 'warmup',
-                            challenge: null,
-                            variant: variant,
+                            key: key, moduleNum: moduleNum, moduleName: moduleName,
+                            type: 'warmup', challenge: null, variant: variant,
                             inSRS: !!srsData[key]
                         });
                     });
                 });
             }
 
-            // Collect challenges
             if (variants.challenges && (sessionConfig.type === 'all' || sessionConfig.type === 'challenge')) {
                 variants.challenges.forEach(function(challenge) {
                     if (!challenge.variants) return;
                     challenge.variants.forEach(function(variant) {
                         var key = 'm' + moduleNum + '_' + challenge.id + '_' + variant.id;
                         allItems.push({
-                            key: key,
-                            moduleNum: moduleNum,
-                            moduleName: moduleName,
-                            type: 'challenge',
-                            challenge: challenge,
-                            variant: variant,
+                            key: key, moduleNum: moduleNum, moduleName: moduleName,
+                            type: 'challenge', challenge: challenge, variant: variant,
                             inSRS: !!srsData[key]
                         });
                     });
@@ -429,7 +389,7 @@
             }
         });
 
-        // Include algorithm exercises if AlgorithmData is available
+        // Include algorithm exercises
         if (window.AlgorithmData && window.AlgorithmData.categories && (sessionConfig.type === 'all' || sessionConfig.type === 'challenge')) {
             window.AlgorithmData.categories.forEach(function(cat) {
                 if (!cat.problems) return;
@@ -438,168 +398,57 @@
                     problem.variants.forEach(function(variant) {
                         var key = 'algo_' + cat.id + '_' + problem.id + '_' + variant.id;
                         allItems.push({
-                            key: key,
-                            moduleNum: null,
-                            moduleName: cat.name,
+                            key: key, moduleNum: null, moduleName: cat.name,
                             type: 'challenge',
                             challenge: {
-                                id: problem.id,
-                                concept: problem.concept,
-                                difficulty: problem.difficulty,
-                                docLinks: problem.docLinks,
+                                id: problem.id, concept: problem.concept,
+                                difficulty: problem.difficulty, docLinks: problem.docLinks,
                                 variants: problem.variants
                             },
-                            variant: variant,
-                            inSRS: !!srsData[key]
+                            variant: variant, inSRS: !!srsData[key]
                         });
                     });
                 });
             });
         }
 
-        // Split into unseen and seen
         var unseen = allItems.filter(function(item) { return !item.inSRS; });
         var seen = allItems.filter(function(item) { return item.inSRS; });
 
-        // Shuffle both pools, prioritize unseen
-        shuffle(unseen);
-        shuffle(seen);
+        SE.shuffle(unseen);
+        SE.shuffle(seen);
 
-        var queue = unseen.concat(seen).slice(0, count);
-        return queue;
-    }
-
-    function matchesFilters(key) {
-        const cfg = sessionConfig;
-
-        // Flashcard keys (fc_m1_0 etc.) aren't exercises — never include them
-        if (key.startsWith('fc_')) return false;
-
-        // Algorithm exercises: always challenges, module filter doesn't apply
-        if (key.startsWith('algo_')) {
-            if (cfg.type === 'warmup') return false;
-            return true;
-        }
-
-        // Extract module number
-        const modMatch = key.match(/^m(\d+)_/);
-        const moduleNum = modMatch ? parseInt(modMatch[1]) : null;
-
-        // Skip modules that have no variant data files
-        if (moduleNum !== null && MODULES_WITHOUT_VARIANTS.has(moduleNum)) return false;
-
-        // Type filter
-        if (cfg.type !== 'all') {
-            const isWarmup = key.includes('warmup');
-            const isChallenge = key.includes('challenge');
-            if (cfg.type === 'warmup' && !isWarmup) return false;
-            if (cfg.type === 'challenge' && !isChallenge) return false;
-        }
-
-        // Module filter
-        if (cfg.modules !== 'all') {
-            if (moduleNum === null || !cfg.modules.includes(moduleNum)) return false;
-        }
-
-        return true;
-    }
-
-    function buildQueue(mode, count) {
-        if (!window.SRS) return [];
-
-        let candidates = [];
-
-        if (mode === 'review') {
-            candidates = window.SRS.getDueExercises();
-        } else if (mode === 'weakest') {
-            candidates = window.SRS.getWeakestExercises(count * 2);
-        } else if (mode === 'mixed') {
-            const due = window.SRS.getDueExercises();
-            const weak = window.SRS.getWeakestExercises(count);
-            // Interleave: due first, then weak, deduplicated
-            const seen = new Set();
-            candidates = [];
-            [...due, ...weak].forEach(item => {
-                if (!seen.has(item.key)) {
-                    seen.add(item.key);
-                    candidates.push(item);
-                }
-            });
-        }
-
-        // Apply type and module filters
-        candidates = candidates.filter(item => matchesFilters(item.key));
-
-        // Review and weakest need a minimum pool to be meaningful —
-        // below 5 exercises the mode doesn't have enough signal
-        if ((mode === 'review' || mode === 'weakest') && candidates.length < 5) {
-            return [];
-        }
-
-        // Pad with random tracked exercises to fill the requested count
-        if (candidates.length < count) {
-            const all = window.SRS.getAll();
-            const existing = new Set(candidates.map(c => c.key));
-            const extras = Object.entries(all)
-                .filter(([key]) => !existing.has(key) && matchesFilters(key))
-                .map(([key, item]) => ({ key, ...item }))
-                .sort(() => Math.random() - 0.5);
-            candidates.push(...extras);
-        }
-
-        // Limit to requested count and resolve to renderable items
-        return candidates.slice(0, count).map(item => {
-            const match = item.key.match(/^(?:fc_)?m(\d+)_/);
-            const moduleNum = match ? parseInt(match[1]) : null;
-            return {
-                key: item.key,
-                moduleNum,
-                moduleName: MODULE_NAMES[moduleNum] || `Module ${moduleNum}`,
-                srsData: item
-            };
-        });
+        return unseen.concat(seen).slice(0, count);
     }
 
     // --- Exercise Rendering ---
 
-    function renderCurrentExercise() {
-        const item = sessionQueue[sessionIndex];
+    function renderCurrentExercise(sess) {
+        var item = sess.queue[sess.index];
         if (!item) return;
 
-        // Update header
-        const labelEl = document.getElementById('dp-session-label');
-        if (labelEl) {
-            labelEl.innerHTML = `Exercise <strong>${sessionIndex + 1}</strong> of <strong>${sessionQueue.length}</strong>`;
-        }
-
-        const moduleEl = document.getElementById('dp-session-module');
+        var moduleEl = document.getElementById('dp-session-module');
         if (moduleEl) {
-            moduleEl.textContent = item.moduleNum ? `Module ${item.moduleNum}: ${item.moduleName}` : item.moduleName;
+            moduleEl.textContent = item.moduleNum ? 'Module ' + item.moduleNum + ': ' + item.moduleName : (item.moduleName || '');
         }
 
-        // Update progress bar
-        const barEl = document.getElementById('dp-session-bar');
-        if (barEl) {
-            barEl.style.width = `${(sessionIndex / sessionQueue.length) * 100}%`;
-        }
-
-        const container = document.getElementById('dp-exercise-container');
+        var container = document.getElementById('dp-exercise-container');
         if (!container) return;
 
         // Discover items carry their variant data directly
         if (item.variant) {
-            const html = window.ExerciseRenderer?.renderExerciseCard({
+            var html = window.ExerciseRenderer ? window.ExerciseRenderer.renderExerciseCard({
                 num: 1,
                 variant: item.variant,
                 challenge: item.challenge,
                 type: item.type,
                 exerciseKey: item.key,
-                moduleLabel: `M${item.moduleNum}`
-            });
+                moduleLabel: 'M' + item.moduleNum
+            }) : null;
             if (html) {
                 container.innerHTML = html;
                 if (window.initExerciseProgress) window.initExerciseProgress();
-                container.querySelectorAll('.exercise').forEach(ex => {
+                container.querySelectorAll('.exercise').forEach(function(ex) {
                     if (window.ExerciseRenderer) {
                         window.ExerciseRenderer.initPersonalNotes(ex);
                     }
@@ -609,89 +458,71 @@
         }
 
         // Standard path: render from key lookup
-        const exerciseHtml = renderFromKey(item);
+        var exerciseHtml = renderFromKey(item);
         if (exerciseHtml) {
             container.innerHTML = exerciseHtml;
-            // Initialize progress tracking and notes
             if (window.initExerciseProgress) window.initExerciseProgress();
-            container.querySelectorAll('.exercise').forEach(ex => {
+            container.querySelectorAll('.exercise').forEach(function(ex) {
                 if (window.ExerciseRenderer) {
                     window.ExerciseRenderer.initPersonalNotes(ex);
                 }
             });
         } else {
-            // Fallback: exercise lives in the module page
-            container.innerHTML = `
-                <div class="exercise" style="text-align: center; padding: 2rem;">
-                    <h4 style="margin-bottom: 0.5rem;">Module ${item.moduleNum}: ${item.moduleName}</h4>
-                    <p style="color: var(--text-dim); margin-bottom: 1.25rem;">This exercise is available in the module page.</p>
-                    <a href="module${item.moduleNum}.html" class="dp-next-btn" style="text-decoration: none; display: inline-block;">
-                        Open Module ${item.moduleNum} &rarr;
-                    </a>
-                </div>`;
+            container.innerHTML =
+                '<div class="exercise" style="text-align: center; padding: 2rem;">' +
+                    '<h4 style="margin-bottom: 0.5rem;">Module ' + item.moduleNum + ': ' + item.moduleName + '</h4>' +
+                    '<p style="color: var(--text-dim); margin-bottom: 1.25rem;">This exercise is available in the module page.</p>' +
+                    '<a href="module' + item.moduleNum + '.html" class="session-next-btn" style="text-decoration: none; display: inline-block;">' +
+                        'Open Module ' + item.moduleNum + ' &rarr;' +
+                    '</a>' +
+                '</div>';
         }
     }
 
     function renderFromKey(item) {
-        const key = item.key;
+        var key = item.key;
 
-        // Algorithm exercises: resolve from AlgorithmData
         if (key.startsWith('algo_')) {
             return renderAlgoExercise(key, item);
         }
 
-        // Parse the key to find the exercise
-        // Format: m{moduleNum}_{exerciseId}_{variantId}  (variant system)
-        //    or:  m{moduleNum}_{type}_{num}               (static exercises)
-
-        // Check if we have variant data loaded in the registry
-        const registry = window.moduleDataRegistry;
+        var registry = window.moduleDataRegistry;
         if (!registry || !registry[item.moduleNum]) {
-            // Try to load dynamically
             loadModuleData(item.moduleNum);
-            return null; // Will render fallback
+            return null;
         }
 
-        const moduleData = registry[item.moduleNum];
-        const variants = moduleData.variants;
+        var moduleData = registry[item.moduleNum];
+        var variants = moduleData.variants;
         if (!variants) return null;
 
-        // Try to find the exercise in warmups or challenges
-        const keyParts = key.replace(`m${item.moduleNum}_`, '');
+        var keyParts = key.replace('m' + item.moduleNum + '_', '');
 
-        // Search warmups
         if (variants.warmups) {
-            for (const warmup of variants.warmups) {
-                for (const variant of warmup.variants) {
-                    const testKey = `${warmup.id}_${variant.id}`;
-                    if (keyParts === testKey) {
-                        return window.ExerciseRenderer?.renderExerciseCard({
-                            num: 1,
-                            variant,
-                            challenge: null,
-                            type: 'warmup',
-                            exerciseKey: key,
-                            moduleLabel: `M${item.moduleNum}`
-                        }) || null;
+            for (var wi = 0; wi < variants.warmups.length; wi++) {
+                var warmup = variants.warmups[wi];
+                for (var wvi = 0; wvi < warmup.variants.length; wvi++) {
+                    var wv = warmup.variants[wvi];
+                    if (keyParts === warmup.id + '_' + wv.id) {
+                        return window.ExerciseRenderer ? window.ExerciseRenderer.renderExerciseCard({
+                            num: 1, variant: wv, challenge: null, type: 'warmup',
+                            exerciseKey: key, moduleLabel: 'M' + item.moduleNum
+                        }) : null;
                     }
                 }
             }
         }
 
-        // Search challenges
         if (variants.challenges) {
-            for (const challenge of variants.challenges) {
-                for (const variant of challenge.variants) {
-                    const testKey = `${challenge.id}_${variant.id}`;
-                    if (keyParts === testKey) {
-                        return window.ExerciseRenderer?.renderExerciseCard({
-                            num: 1,
-                            variant,
-                            challenge,
-                            type: 'challenge',
-                            exerciseKey: key,
-                            moduleLabel: `M${item.moduleNum}`
-                        }) || null;
+            for (var ci = 0; ci < variants.challenges.length; ci++) {
+                var challenge = variants.challenges[ci];
+                for (var cvi = 0; cvi < challenge.variants.length; cvi++) {
+                    var cv = challenge.variants[cvi];
+                    if (keyParts === challenge.id + '_' + cv.id) {
+                        return window.ExerciseRenderer ? window.ExerciseRenderer.renderExerciseCard({
+                            num: 1, variant: cv, challenge: challenge, type: 'challenge',
+                            exerciseKey: key, moduleLabel: 'M' + item.moduleNum
+                        }) : null;
                     }
                 }
             }
@@ -700,19 +531,10 @@
         return null;
     }
 
-    /** Resolve an algo_ key to a rendered exercise card */
     function renderAlgoExercise(key, item) {
         var algoData = window.AlgorithmData;
         if (!algoData || !algoData.categories) return null;
 
-        // Parse key: algo_{categoryId}_{problemId}_{variantId}
-        var parts = key.replace('algo_', '').split('_');
-        if (parts.length < 3) return null;
-
-        // Category ID may contain hyphens, problem ID may too
-        // Format: algo_<catId>_<problemId>_<variantId>
-        var variantId = parts[parts.length - 1];
-        // Try to find the right category/problem by searching
         for (var ci = 0; ci < algoData.categories.length; ci++) {
             var cat = algoData.categories[ci];
             if (!key.startsWith('algo_' + cat.id + '_')) continue;
@@ -728,20 +550,15 @@
                 for (var vi = 0; vi < problem.variants.length; vi++) {
                     var variant = problem.variants[vi];
                     if (variant.id === vId) {
-                        return window.ExerciseRenderer?.renderExerciseCard({
-                            num: 1,
-                            variant: variant,
+                        return window.ExerciseRenderer ? window.ExerciseRenderer.renderExerciseCard({
+                            num: 1, variant: variant,
                             challenge: {
-                                id: problem.id,
-                                concept: problem.concept,
-                                difficulty: problem.difficulty,
-                                docLinks: problem.docLinks,
+                                id: problem.id, concept: problem.concept,
+                                difficulty: problem.difficulty, docLinks: problem.docLinks,
                                 variants: problem.variants
                             },
-                            type: 'challenge',
-                            exerciseKey: key,
-                            moduleLabel: cat.name
-                        }) || null;
+                            type: 'challenge', exerciseKey: key, moduleLabel: cat.name
+                        }) : null;
                     }
                 }
             }
@@ -749,52 +566,34 @@
         return null;
     }
 
-    // Dynamically load a module's variant data
-    const loadedModules = new Set();
+    // --- Module Data Loading ---
 
-    /** Preload a module's variant data, returning a Promise that resolves when done */
+    var loadedModules = new Set();
+
     function preloadModuleData(moduleNum) {
         if (loadedModules.has(moduleNum)) return Promise.resolve();
         loadedModules.add(moduleNum);
 
         return new Promise(function(resolve) {
-            const script = document.createElement('script');
-            script.src = `data/module${moduleNum}-variants.js`;
+            var script = document.createElement('script');
+            script.src = 'data/module' + moduleNum + '-variants.js';
             script.onload = resolve;
-            script.onerror = resolve; // resolve anyway — fallback will show for this module
+            script.onerror = resolve;
             document.head.appendChild(script);
         });
     }
 
-    /** Legacy sync loader — used by renderFromKey as a last resort */
     function loadModuleData(moduleNum) {
         if (loadedModules.has(moduleNum)) return;
         preloadModuleData(moduleNum);
     }
 
-    // --- Helpers ---
+    // --- Public API ---
 
-    function setText(id, text) {
-        const el = document.getElementById(id);
-        if (el) el.textContent = text;
-    }
+    window.startSession = doStartSession;
+    window.nextExercise = function() { if (session) SE.nextExercise(session); };
+    window.skipExercise = function() { if (session) SE.skipExercise(session); };
 
-    function show(id) {
-        const el = document.getElementById(id);
-        if (el) el.hidden = false;
-    }
-
-    function hide(id) {
-        const el = document.getElementById(id);
-        if (el) el.hidden = true;
-    }
-
-    function setActiveOption(containerId, activeBtn) {
-        document.querySelectorAll(`#${containerId} .dp-option`).forEach(b => b.classList.remove('active'));
-        activeBtn.classList.add('active');
-    }
-
-    // Init on DOM ready
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {

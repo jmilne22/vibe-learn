@@ -463,6 +463,7 @@ All JavaScript runs in the browser with no framework. Scripts communicate throug
 | `exercise-core.js` | Shared exercise logic library — pure functions for shuffle/variant selection (5 difficulty modes), UI components (thinking timer, difficulty selector, shuffle button, concept filter), and shared CSS injection. Used by both `course.js` and the algorithms plugin |
 | `course.js` | Module exercise renderer. Listens for `moduleDataLoaded`, delegates to `exercise-core.js` for variant selection and UI components, renders prompts/hints/solutions with self-rating buttons |
 | `exercise-renderer.js` | Shared rendering utilities — hints (progressive disclosure), solutions (syntax-highlighted with annotations), difficulty stars, test cases, and personal notes textarea |
+| `session-engine.js` | Shared session lifecycle for practice plugins. Provides queue building (SRS review/weakest/mixed), session state management (start/next/skip/advance/finish), progress bar rendering, results screen, and config button wiring. Used by both `algorithms.js` and `daily-practice.js` |
 | `progress.js` | Tracks per-exercise state in localStorage: attempted/completed, hints used, solution viewed, self-rating (got it / struggled / needed solution), last attempted timestamp |
 | `srs.js` | SM-2 spaced repetition scheduler. Exposes `window.SRS` — records quality scores, computes ease factor + interval + next review date. Used by exercises, flashcards, and daily practice |
 | `sidebar.js` | Navigation sidebar. Reads `CourseConfig.plugins` to dynamically render plugin page links alongside module/project links. Collapsible on desktop, overlay on mobile |
@@ -476,8 +477,8 @@ All JavaScript runs in the browser with no framework. Scripts communicate throug
 | File | What it does |
 |------|-------------|
 | `flashcard-engine.js` | Flashcard session manager. Builds decks filtered by module, supports random and SRS-due ordering, handles flip animation and rate interaction |
-| `daily-practice.js` | Builds exercise queues from SRS data. Four modes: review (due items), discover (random new), weak (lowest ease factor), mixed (due + weak). Includes both module exercises and algorithm problems. Dynamically loads module variant data as needed |
-| `algorithms.js` | Session-based algorithm practice. Builds queues from AlgorithmData across 10 categories with discover/review/weakest/mixed modes. SRS key format: `algo_{categoryId}_{problemId}_{variantId}` |
+| `daily-practice.js` | Builds exercise queues from SRS data. Four modes: review (due items), discover (random new), weak (lowest ease factor), mixed (due + weak). Includes both module exercises and algorithm problems. Dynamically loads module variant data as needed. Delegates session lifecycle to `session-engine.js` |
+| `algorithms.js` | Session-based algorithm practice. Builds queues from AlgorithmData across 10 categories with discover/review/weakest/mixed modes. SRS key format: `algo_{categoryId}_{problemId}_{variantId}`. Delegates session lifecycle to `session-engine.js` |
 | `analytics.js` | Weak concept report. Groups SRS data by module, computes average ease factor, classifies module strength (strong/good/moderate/weak/too early), lists weakest individual exercises |
 | `real-world-challenges.js` | Renders challenge cards with difficulty, company/concept tags, source attribution, collapsible requirements/hints/acceptance criteria (interactive checkboxes), and status tracking (not-started / in-progress / completed) |
 
