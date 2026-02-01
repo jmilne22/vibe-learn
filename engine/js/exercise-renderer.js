@@ -98,11 +98,19 @@
 
     // Render expected output / test cases
     function renderExpected(variant) {
-        if (variant.testCases && variant.testCases.length > 0) {
-            return `<div class="expected">
-                <div class="expected-title">Expected Output</div>
-                <pre>${variant.testCases.map(tc => `${tc.input} \u2192 ${tc.output}`).join('\n')}</pre>
-            </div>`;
+        if (variant.testCases) {
+            if (Array.isArray(variant.testCases) && variant.testCases.length > 0) {
+                return `<div class="expected">
+                    <div class="expected-title">Expected Output</div>
+                    <pre>${variant.testCases.map(tc => `${tc.input} \u2192 ${tc.output}`).join('\n')}</pre>
+                </div>`;
+            }
+            if (typeof variant.testCases === 'string' && variant.testCases.trim()) {
+                return `<div class="expected">
+                    <div class="expected-title">Test Cases</div>
+                    <pre>${escapeHtml(variant.testCases)}</pre>
+                </div>`;
+            }
         }
         if (variant.expected) {
             return `<div class="expected">

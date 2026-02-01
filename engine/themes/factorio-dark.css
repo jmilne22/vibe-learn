@@ -626,14 +626,66 @@
     color: #131314;
 }
 
-/* Option buttons (flashcards, daily practice) - active state must override base button styles */
-[data-theme="factorio-dark"] .dp-option.active {
+/* Option buttons (flashcards, daily practice, algorithms) - active state must override base button styles */
+[data-theme="factorio-dark"] .dp-option.active,
+[data-theme="factorio-dark"] .algo-option.active {
     background: linear-gradient(180deg, #ffd54f 0%, #fca311 50%, #d48806 100%);
     color: #131314;
     box-shadow:
         inset 1px 1px 0 rgba(255,255,255,0.4),
         inset -1px -1px 0 rgba(0,0,0,0.2),
         0 0 8px rgba(252, 163, 17, 0.3);
+}
+[data-theme="factorio-dark"] .algo-option:not(.active) {
+    border: 1px solid #3a3a3d;
+}
+[data-theme="factorio-dark"] .algo-option:not(.active):hover {
+    border-color: var(--orange);
+    color: var(--orange);
+    box-shadow: 0 0 8px rgba(252, 163, 17, 0.2);
+}
+/* Algorithm practice buttons */
+[data-theme="factorio-dark"] button.algo-start-btn {
+    background: linear-gradient(180deg, #ffd54f 0%, #fca311 50%, #d48806 100%);
+    color: #131314;
+    border-radius: 0;
+    box-shadow:
+        inset 1px 1px 0 rgba(255,255,255,0.4),
+        inset -1px -1px 0 rgba(0,0,0,0.2);
+}
+[data-theme="factorio-dark"] button.algo-start-btn:hover {
+    background: linear-gradient(180deg, #ffe082 0%, #ffd54f 50%, #fca311 100%);
+    color: #131314;
+    box-shadow:
+        inset 1px 1px 0 rgba(255,255,255,0.5),
+        inset -1px -1px 0 rgba(0,0,0,0.2),
+        0 0 12px rgba(252, 163, 17, 0.4);
+}
+[data-theme="factorio-dark"] button.algo-next-btn {
+    background: linear-gradient(180deg, #ffd54f 0%, #fca311 50%, #d48806 100%);
+    color: #131314;
+    border-radius: 0;
+    box-shadow:
+        inset 1px 1px 0 rgba(255,255,255,0.4),
+        inset -1px -1px 0 rgba(0,0,0,0.2);
+}
+[data-theme="factorio-dark"] button.algo-next-btn:hover {
+    background: linear-gradient(180deg, #ffe082 0%, #ffd54f 50%, #fca311 100%);
+    color: #131314;
+    box-shadow:
+        inset 1px 1px 0 rgba(255,255,255,0.5),
+        inset -1px -1px 0 rgba(0,0,0,0.2),
+        0 0 12px rgba(252, 163, 17, 0.4);
+}
+[data-theme="factorio-dark"] button.algo-skip-btn {
+    border: 1px solid #3a3a3d;
+    border-radius: 0;
+    color: var(--text-dim);
+}
+[data-theme="factorio-dark"] button.algo-skip-btn:hover {
+    border-color: var(--orange);
+    color: var(--orange);
+    box-shadow: 0 0 8px rgba(252, 163, 17, 0.2);
 }
 
 /* Track titles - production panel header */

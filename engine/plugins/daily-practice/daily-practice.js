@@ -75,6 +75,7 @@
     /** Check whether a key can actually render as an exercise (not a flashcard, not a variant-less module) */
     function isRenderableExercise(key) {
         if (key.startsWith('fc_')) return false;
+        if (key.startsWith('algo_')) return true;
         const match = key.match(/^m(\d+)_/);
         if (!match) return false;
         return !MODULES_WITHOUT_VARIANTS.has(parseInt(match[1]));
@@ -428,6 +429,34 @@
             }
         });
 
+        // Include algorithm exercises if AlgorithmData is available
+        if (window.AlgorithmData && window.AlgorithmData.categories && (sessionConfig.type === 'all' || sessionConfig.type === 'challenge')) {
+            window.AlgorithmData.categories.forEach(function(cat) {
+                if (!cat.problems) return;
+                cat.problems.forEach(function(problem) {
+                    if (!problem.variants) return;
+                    problem.variants.forEach(function(variant) {
+                        var key = 'algo_' + cat.id + '_' + problem.id + '_' + variant.id;
+                        allItems.push({
+                            key: key,
+                            moduleNum: null,
+                            moduleName: cat.name,
+                            type: 'challenge',
+                            challenge: {
+                                id: problem.id,
+                                concept: problem.concept,
+                                difficulty: problem.difficulty,
+                                docLinks: problem.docLinks,
+                                variants: problem.variants
+                            },
+                            variant: variant,
+                            inSRS: !!srsData[key]
+                        });
+                    });
+                });
+            });
+        }
+
         // Split into unseen and seen
         var unseen = allItems.filter(function(item) { return !item.inSRS; });
         var seen = allItems.filter(function(item) { return item.inSRS; });
@@ -445,6 +474,12 @@
 
         // Flashcard keys (fc_m1_0 etc.) aren't exercises — never include them
         if (key.startsWith('fc_')) return false;
+
+        // Algorithm exercises: always challenges, module filter doesn't apply
+        if (key.startsWith('algo_')) {
+            if (cfg.type === 'warmup') return false;
+            return true;
+        }
 
         // Extract module number
         const modMatch = key.match(/^m(\d+)_/);
@@ -539,7 +574,7 @@
 
         const moduleEl = document.getElementById('dp-session-module');
         if (moduleEl) {
-            moduleEl.textContent = `Module ${item.moduleNum}: ${item.moduleName}`;
+            moduleEl.textContent = item.moduleNum ? `Module ${item.moduleNum}: ${item.moduleName}` : item.moduleName;
         }
 
         // Update progress bar
@@ -599,6 +634,12 @@
 
     function renderFromKey(item) {
         const key = item.key;
+
+        // Algorithm exercises: resolve from AlgorithmData
+        if (key.startsWith('algo_')) {
+            return renderAlgoExercise(key, item);
+        }
+
         // Parse the key to find the exercise
         // Format: m{moduleNum}_{exerciseId}_{variantId}  (variant system)
         //    or:  m{moduleNum}_{type}_{num}               (static exercises)
@@ -656,6 +697,55 @@
             }
         }
 
+        return null;
+    }
+
+    /** Resolve an algo_ key to a rendered exercise card */
+    function renderAlgoExercise(key, item) {
+        var algoData = window.AlgorithmData;
+        if (!algoData || !algoData.categories) return null;
+
+        // Parse key: algo_{categoryId}_{problemId}_{variantId}
+        var parts = key.replace('algo_', '').split('_');
+        if (parts.length < 3) return null;
+
+        // Category ID may contain hyphens, problem ID may too
+        // Format: algo_<catId>_<problemId>_<variantId>
+        var variantId = parts[parts.length - 1];
+        // Try to find the right category/problem by searching
+        for (var ci = 0; ci < algoData.categories.length; ci++) {
+            var cat = algoData.categories[ci];
+            if (!key.startsWith('algo_' + cat.id + '_')) continue;
+            if (!cat.problems) continue;
+
+            var remainder = key.replace('algo_' + cat.id + '_', '');
+            for (var pi = 0; pi < cat.problems.length; pi++) {
+                var problem = cat.problems[pi];
+                if (!remainder.startsWith(problem.id + '_')) continue;
+                var vId = remainder.replace(problem.id + '_', '');
+                if (!problem.variants) continue;
+
+                for (var vi = 0; vi < problem.variants.length; vi++) {
+                    var variant = problem.variants[vi];
+                    if (variant.id === vId) {
+                        return window.ExerciseRenderer?.renderExerciseCard({
+                            num: 1,
+                            variant: variant,
+                            challenge: {
+                                id: problem.id,
+                                concept: problem.concept,
+                                difficulty: problem.difficulty,
+                                docLinks: problem.docLinks,
+                                variants: problem.variants
+                            },
+                            type: 'challenge',
+                            exerciseKey: key,
+                            moduleLabel: cat.name
+                        }) || null;
+                    }
+                }
+            }
+        }
         return null;
     }
 

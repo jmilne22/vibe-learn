@@ -1,0 +1,13 @@
+{
+  "name": "algorithms",
+  "label": "Algorithm Practice",
+  "shortLabel": "AL",
+  "sidebarColor": "var(--purple)",
+  "sidebarOrder": 5,
+  "template": "algorithms.html",
+  "scripts": ["algorithms.js"],
+  "dataFile": "algorithm-data.js",
+  "dataGlobal": "AlgorithmData",
+  "contentPattern": "algorithms/algorithms.yaml",
+  "backupKey": "algorithms"
+}
