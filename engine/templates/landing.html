@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="vibe-learn — a self-hosted, static course platform with exercises, algorithm practice, flashcards, spaced repetition, and 10 themes.">
+    <meta name="description" content="vibe-learn — a static course platform. Write markdown, define exercises in YAML, build, deploy. Exercises, flashcards, spaced repetition, analytics, 10 themes. No backend.">
     <title>vibe-learn</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -75,6 +75,126 @@
             color: var(--text-dim);
             font-size: 0.82rem;
             line-height: 1.5;
+        }
+
+        /* --- Discovery section --- */
+        .discovery {
+            margin: 3rem 0;
+        }
+        .discovery-intro {
+            color: var(--text-dim);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+            max-width: 600px;
+        }
+        .discovery-items {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1px;
+            background: var(--border);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .discovery-item {
+            background: var(--bg-card);
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 1.25rem;
+            padding: 1.25rem 1.5rem;
+            align-items: start;
+        }
+        .discovery-item .di-arrow {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--green-bright);
+            padding-top: 0.15rem;
+        }
+        .discovery-item .di-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 0.2rem;
+        }
+        .discovery-item .di-desc {
+            color: var(--text-dim);
+            font-size: 0.82rem;
+            line-height: 1.5;
+        }
+        .discovery-item .di-code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--green-dim);
+            margin-top: 0.4rem;
+        }
+
+        /* --- How it works --- */
+        .how-it-works {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin: 3rem 0;
+        }
+        .step {
+            text-align: center;
+        }
+        .step-num {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--green-bright);
+            letter-spacing: 0.1em;
+            margin-bottom: 0.5rem;
+        }
+        .step-title {
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 0.35rem;
+        }
+        .step-desc {
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+        .step-code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            background: var(--bg-code);
+            color: var(--green-dim);
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            margin-top: 0.6rem;
+            text-align: left;
+            white-space: pre;
+            line-height: 1.6;
+        }
+        @media (max-width: 680px) {
+            .how-it-works { grid-template-columns: 1fr; }
+        }
+
+        /* --- CTA --- */
+        .cta {
+            text-align: center;
+            margin: 2.5rem 0 3rem;
+        }
+        a.cta-btn {
+            display: inline-block;
+            padding: 0.75rem 2rem;
+            background: var(--green-bright);
+            color: #000;
+            font-weight: 700;
+            font-size: 0.95rem;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: opacity 0.2s, transform 0.15s;
+        }
+        a.cta-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+        .cta-sub {
+            color: var(--text-dim);
+            font-size: 0.82rem;
+            margin-top: 0.6rem;
         }
 
         /* --- Courses section --- */
@@ -170,10 +290,10 @@
             <div class="hero-brand">// vibe-learn</div>
             <h1>Self-hosted<br><span class="accent">course platform</span></h1>
             <p class="hero-sub">
-                Write lessons in markdown, define exercises in YAML, run one build command.
-                You get a full course site with exercises, flashcards, algorithm practice, spaced
-                repetition, real-world challenges, analytics, and offline support. No backend, no
-                database, no accounts &mdash; just static files you can host anywhere.
+                Markdown lessons, YAML exercises, one build command. The engine handles
+                rendering, spaced repetition, daily practice, analytics, flashcards, and
+                offline support. You just write the content. No backend, no database,
+                no accounts &mdash; static files you can host anywhere.
             </p>
         </div>
 
@@ -241,8 +361,78 @@
             </div>
         </div>
 
+        <!-- Discovery -->
+        <div class="discovery">
+            <div class="section-label">// zero config</div>
+            <p class="discovery-intro">
+                Everything is auto-discovered. No registries, no config files to update, no wiring.
+                Drop files in the right place and the build figures out the rest.
+            </p>
+            <div class="discovery-items">
+                <div class="discovery-item">
+                    <div class="di-arrow">&gt;</div>
+                    <div>
+                        <div class="di-title">Drop a course folder &rarr; it appears on the site</div>
+                        <div class="di-desc">The build scans <code>courses/</code> for any directory with a <code>course.json</code>. Add a folder, rebuild, done. Each course gets isolated progress via its own localStorage prefix.</div>
+                        <div class="di-code">courses/python/ + course.json &rarr; auto-discovered</div>
+                    </div>
+                </div>
+                <div class="discovery-item">
+                    <div class="di-arrow">&gt;</div>
+                    <div>
+                        <div class="di-title">Drop a plugin folder &rarr; it wires into every course</div>
+                        <div class="di-desc">Plugins live in <code>engine/plugins/</code> with a <code>manifest.json</code>. The sidebar, dashboard, data backup, and navigation are all driven by discovered plugins. No hardcoded feature lists.</div>
+                        <div class="di-code">engine/plugins/my-feature/ + manifest.json &rarr; auto-wired</div>
+                    </div>
+                </div>
+                <div class="discovery-item">
+                    <div class="di-arrow">&gt;</div>
+                    <div>
+                        <div class="di-title">Add a content file &rarr; the feature activates for that course</div>
+                        <div class="di-desc">Each plugin declares a content pattern. If a course has matching files, it gets the feature. No files? The page doesn't exist &mdash; no dead links, no errors. The Go course has algorithm problems; Rust doesn't. Both just work.</div>
+                        <div class="di-code">content/algorithms/algorithms.yaml exists &rarr; algorithms page active</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- How it works -->
+        <div class="section-label">// how it works</div>
+        <div class="how-it-works">
+            <div class="step">
+                <div class="step-num">01</div>
+                <div class="step-title">Write content</div>
+                <div class="step-desc">Lessons in markdown, exercises in YAML. Drop them in a course directory.</div>
+                <div class="step-code">courses/go/content/
+  lessons/*.md
+  exercises/*.yaml
+  flashcards/*.yaml</div>
+            </div>
+            <div class="step">
+                <div class="step-num">02</div>
+                <div class="step-title">Build</div>
+                <div class="step-desc">One command. Markdown is rendered, YAML compiled to JS, everything bundled.</div>
+                <div class="step-code">npm run build</div>
+            </div>
+            <div class="step">
+                <div class="step-num">03</div>
+                <div class="step-title">Deploy anywhere</div>
+                <div class="step-desc">Pure static files. GitHub Pages, Netlify, S3, a USB stick. No server needed.</div>
+                <div class="step-code">dist/
+  index.html
+  go/
+  rust/
+  ...</div>
+            </div>
+        </div>
+
+        <div class="cta">
+            <a href="https://github.com/jmilne22/vibe-learn" class="cta-btn">Fork on GitHub</a>
+            <div class="cta-sub">Replace the content, build, deploy. The engine is generic &mdash; the courses are just data.</div>
+        </div>
+
         <!-- Courses -->
-        <div class="section-label">// courses</div>
+        <div class="section-label">// included courses</div>
         <div class="course-grid">
 {{COURSE_CARDS}}
         </div>
@@ -250,7 +440,7 @@
         <!-- Footer -->
         <div class="landing-footer">
             <a href="https://github.com/jmilne22/vibe-learn">GitHub</a>
-            <div class="vibe-tag">100% vibe-coded. The entire platform was generated by AI.</div>
+            <div class="vibe-tag">100% vibe-coded with Claude. Zero lines of human-written code.</div>
         </div>
     </div>
     <script src="theme.js"></script>
