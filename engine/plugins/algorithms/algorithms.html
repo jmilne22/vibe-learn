@@ -1,15 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Algorithm Practice | {{COURSE_NAME}}</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-    <link rel="icon" href="favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="style.css">
-{{THEME_LINKS}}
+{{> head}}
     <style>
         :root {
             --session-accent: var(--purple);
@@ -332,9 +325,7 @@
 </head>
 <body data-module="algorithms">
     <div class="container">
-        <nav>
-            <a href="index.html">&larr; Dashboard</a>
-        </nav>
+{{> dashboard-nav}}
 
         <div class="module-header algo-header">
             <div class="module-tag">// ALGORITHM PRACTICE</div>
