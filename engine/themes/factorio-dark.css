@@ -1116,3 +1116,11 @@
 [data-theme="factorio-dark"] .floating-session-timer {
     animation: none;
 }
+
+/* Mobile: match header negative margins to reduced floating timer padding */
+@media (max-width: 768px) {
+    [data-theme="factorio-dark"] .floating-session-timer .session-timer-header {
+        margin: -0.6rem -0.75rem 0.5rem -0.75rem;
+        padding: 0.4rem 0.75rem;
+    }
+}

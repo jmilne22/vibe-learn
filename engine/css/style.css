@@ -1378,7 +1378,12 @@ footer {
     }
 
     .module-header h1 {
-        font-size: 2rem;
+        font-size: 1.75rem;
+    }
+
+    .module-header .description,
+    .module-desc {
+        font-size: 0.95rem;
     }
 
     .nav-buttons {
@@ -1406,6 +1411,190 @@ footer {
 
     .theme-picker-label {
         font-size: 0.65rem;
+    }
+
+    /* Exercise cards */
+    .exercise {
+        padding: 1.25rem;
+        margin: 1.25rem 0;
+    }
+
+    .exercise-header h3 {
+        font-size: 1.05rem;
+    }
+
+    /* Session timer */
+    .session-timer {
+        padding: 0.75rem 1rem;
+    }
+
+    .floating-session-timer {
+        width: min(260px, calc(100% - 1rem));
+        right: 0.5rem;
+        bottom: 0.5rem;
+        padding: 0.6rem 0.75rem;
+        border-radius: 8px;
+    }
+
+    .floating-session-timer .session-title {
+        font-size: 0.65rem;
+        letter-spacing: 0.5px;
+    }
+
+    .floating-session-timer .session-countdown {
+        font-size: 0.85rem;
+    }
+
+    .floating-session-timer .session-meta {
+        font-size: 0.7rem;
+        margin-top: 0.4rem;
+    }
+
+    .floating-session-timer .session-controls {
+        gap: 0.3rem;
+        margin-top: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .floating-session-timer .session-control-btn {
+        padding: 0.25rem 0.55rem;
+        font-size: 0.65rem;
+    }
+
+    .floating-session-timer .session-duration-row {
+        margin-top: 0.5rem;
+        font-size: 0.65rem;
+    }
+
+    .floating-session-timer .session-duration-select {
+        padding: 0.2rem 0.5rem;
+        font-size: 0.65rem;
+    }
+
+    .floating-session-timer .session-timer-header {
+        margin: -0.6rem -0.75rem 0.4rem -0.75rem;
+        padding: 0.4rem 0.75rem;
+    }
+
+    .session-title {
+        font-size: 0.75rem;
+    }
+
+    .session-countdown {
+        font-size: 0.95rem;
+    }
+
+    /* Session config */
+    .session-config {
+        padding: 1rem;
+    }
+
+    .session-config-label {
+        min-width: auto;
+        font-size: 0.8rem;
+    }
+
+    .session-stat {
+        padding: 0.75rem 1rem;
+        min-width: 80px;
+    }
+
+    .session-stat-value {
+        font-size: 1.2rem;
+    }
+
+    .session-complete {
+        padding: 1.25rem;
+    }
+
+    /* Flashcards */
+    .flashcard,
+    .flashcard-inner,
+    .flashcard-front,
+    .flashcard-back {
+        min-height: 200px;
+    }
+
+    .flashcard-front,
+    .flashcard-back {
+        padding: 1.25rem;
+    }
+
+    /* Module list items */
+    .module-item {
+        gap: 0.5rem;
+        padding: 0.75rem;
+    }
+
+    .module-link {
+        gap: 0.5rem;
+    }
+
+    .module-num {
+        min-width: auto;
+        font-size: 0.7rem;
+    }
+
+    /* Code blocks */
+    .lesson pre,
+    .code-block {
+        padding: 1rem;
+        font-size: 0.82rem;
+    }
+
+    /* Visual box */
+    .visual-box {
+        padding: 1.25rem;
+        font-size: 0.82rem;
+    }
+
+    /* Self-rating buttons */
+    .self-rating {
+        flex-wrap: wrap;
+    }
+
+    .rating-btn {
+        padding: 0.25rem 0.6rem;
+        font-size: 0.75rem;
+    }
+
+    /* Quick buttons */
+    .quick-btn {
+        padding: 0.75rem 1rem;
+    }
+
+    /* Dashboard */
+    .dashboard-header {
+        margin: 1rem 0 1.5rem;
+    }
+
+    .stats-panel .stat-value {
+        font-size: 1.2rem;
+    }
+
+    .stat-value {
+        font-size: 1.2rem;
+    }
+
+    /* Data actions */
+    .data-actions {
+        gap: 0.5rem;
+    }
+
+    .data-btn {
+        font-size: 0.75rem;
+        padding: 0.4rem 0.75rem;
+    }
+
+    /* Session nav buttons */
+    .session-nav-btns {
+        flex-wrap: wrap;
+    }
+
+    .session-next-btn,
+    .session-skip-btn {
+        font-size: 0.82rem;
+        padding: 0.5rem 1.25rem;
     }
 }
 
@@ -1744,7 +1933,43 @@ footer {
         gap: 0.5rem;
     }
     .stat-item {
-        min-width: 80px;
+        min-width: 70px;
+    }
+    .module-header h1 {
+        font-size: 1.5rem;
+    }
+    .exercise {
+        padding: 1rem;
+        border-radius: 8px;
+    }
+    .exercise-header h3 {
+        font-size: 0.95rem;
+    }
+    .session-stats {
+        gap: 0.75rem;
+    }
+    .session-stat {
+        padding: 0.6rem 0.75rem;
+        min-width: 70px;
+    }
+    .session-stat-value {
+        font-size: 1rem;
+    }
+    .flashcard,
+    .flashcard-inner,
+    .flashcard-front,
+    .flashcard-back {
+        min-height: 170px;
+    }
+    .flashcard-front,
+    .flashcard-back {
+        padding: 1rem;
+    }
+    .session-complete-stats {
+        gap: 1rem;
+    }
+    h2 {
+        font-size: 1.25rem;
     }
 }
 .session-start-btn {
