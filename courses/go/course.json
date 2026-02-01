@@ -2,7 +2,7 @@
   "course": {
     "name": "Go Course",
     "slug": "go-course",
-    "description": "Interactive Go programming course with 17 modules covering fundamentals, CLI tools, concurrency, testing, and capstone projects.",
+    "description": "Interactive Go programming course with 18 modules covering fundamentals, CLI tools, concurrency, testing, algorithms, and capstone projects.",
     "storagePrefix": "go-course"
   },
   "tracks": [
@@ -12,7 +12,8 @@
     { "id": 3, "title": "Production Code", "modules": [9, 10, 11] },
     { "id": 4, "title": "Advanced", "modules": [12] },
     { "id": 5, "title": "Real-World", "modules": [13, 14, 15] },
-    { "id": 6, "title": "Testing", "modules": [16, 17] }
+    { "id": 6, "title": "Testing", "modules": [16, 17] },
+    { "id": 7, "title": "Algorithms", "modules": [18] }
   ],
   "modules": [
     { "id": 0, "num": "00", "title": "Go Quick Reference", "description": "Commands, links, and common errors for quick lookup", "file": "module0", "hasExercises": false },
@@ -32,7 +33,8 @@
     { "id": 14, "num": "14", "title": "System Interaction", "description": "Detecting what's available, running external commands, parsing their output. The glue between Go and the OS.", "file": "module14", "hasExercises": true },
     { "id": 15, "num": "15", "title": "Sets & Diffing", "description": "Set operations are everywhere. Comparing lists, finding differences, computing what changed.", "file": "module15", "hasExercises": true },
     { "id": 16, "num": "16", "title": "Unit Testing", "description": "Testing individual functions and components in isolation. Go's testing is simple but powerful.", "file": "module16", "hasExercises": true },
-    { "id": 17, "num": "17", "title": "Integration Testing", "description": "Testing real components working together: HTTP servers, databases, file systems, external services.", "file": "module17", "hasExercises": true }
+    { "id": 17, "num": "17", "title": "Integration Testing", "description": "Testing real components working together: HTTP servers, databases, file systems, external services.", "file": "module17", "hasExercises": true },
+    { "id": 18, "num": "18", "title": "Algorithms & Problem Solving", "description": "Big O notation, algorithm patterns, and fundamental data structure implementations in Go.", "file": "module18", "hasExercises": true }
   ],
   "projects": [
     { "id": "p1", "num": "P1", "title": "Task Runner", "file": "project-taskrunner", "afterModule": 7, "description": "Build a simple task runner that reads YAML configs and executes commands. Applies concepts from Module 7." },

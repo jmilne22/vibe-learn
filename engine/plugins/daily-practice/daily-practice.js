@@ -75,7 +75,6 @@
 
     function isRenderableExercise(key) {
         if (key.startsWith('fc_')) return false;
-        if (key.startsWith('algo_')) return true;
         var match = key.match(/^m(\d+)_/);
         if (!match) return false;
         return !MODULES_WITHOUT_VARIANTS.has(parseInt(match[1]));
@@ -285,11 +284,6 @@
     function matchesFilters(key) {
         if (key.startsWith('fc_')) return false;
 
-        if (key.startsWith('algo_')) {
-            if (sessionConfig.type === 'warmup') return false;
-            return true;
-        }
-
         var modMatch = key.match(/^m(\d+)_/);
         var moduleNum = modMatch ? parseInt(modMatch[1]) : null;
 
@@ -389,29 +383,6 @@
             }
         });
 
-        // Include algorithm exercises
-        if (window.AlgorithmData && window.AlgorithmData.categories && (sessionConfig.type === 'all' || sessionConfig.type === 'challenge')) {
-            window.AlgorithmData.categories.forEach(function(cat) {
-                if (!cat.problems) return;
-                cat.problems.forEach(function(problem) {
-                    if (!problem.variants) return;
-                    problem.variants.forEach(function(variant) {
-                        var key = 'algo_' + cat.id + '_' + problem.id + '_' + variant.id;
-                        allItems.push({
-                            key: key, moduleNum: null, moduleName: cat.name,
-                            type: 'challenge',
-                            challenge: {
-                                id: problem.id, concept: problem.concept,
-                                difficulty: problem.difficulty, docLinks: problem.docLinks,
-                                variants: problem.variants
-                            },
-                            variant: variant, inSRS: !!srsData[key]
-                        });
-                    });
-                });
-            });
-        }
-
         var unseen = allItems.filter(function(item) { return !item.inSRS; });
         var seen = allItems.filter(function(item) { return item.inSRS; });
 
@@ -482,10 +453,6 @@
     function renderFromKey(item) {
         var key = item.key;
 
-        if (key.startsWith('algo_')) {
-            return renderAlgoExercise(key, item);
-        }
-
         var registry = window.moduleDataRegistry;
         if (!registry || !registry[item.moduleNum]) {
             loadModuleData(item.moduleNum);
@@ -528,41 +495,6 @@
             }
         }
 
-        return null;
-    }
-
-    function renderAlgoExercise(key, item) {
-        var algoData = window.AlgorithmData;
-        if (!algoData || !algoData.categories) return null;
-
-        for (var ci = 0; ci < algoData.categories.length; ci++) {
-            var cat = algoData.categories[ci];
-            if (!key.startsWith('algo_' + cat.id + '_')) continue;
-            if (!cat.problems) continue;
-
-            var remainder = key.replace('algo_' + cat.id + '_', '');
-            for (var pi = 0; pi < cat.problems.length; pi++) {
-                var problem = cat.problems[pi];
-                if (!remainder.startsWith(problem.id + '_')) continue;
-                var vId = remainder.replace(problem.id + '_', '');
-                if (!problem.variants) continue;
-
-                for (var vi = 0; vi < problem.variants.length; vi++) {
-                    var variant = problem.variants[vi];
-                    if (variant.id === vId) {
-                        return window.ExerciseRenderer ? window.ExerciseRenderer.renderExerciseCard({
-                            num: 1, variant: variant,
-                            challenge: {
-                                id: problem.id, concept: problem.concept,
-                                difficulty: problem.difficulty, docLinks: problem.docLinks,
-                                variants: problem.variants
-                            },
-                            type: 'challenge', exerciseKey: key, moduleLabel: cat.name
-                        }) : null;
-                    }
-                }
-            }
-        }
         return null;
     }
 

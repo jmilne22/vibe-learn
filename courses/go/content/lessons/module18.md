@@ -1,0 +1,648 @@
+## Big O Notation
+
+Before diving into patterns, you need to talk about how fast things are. Big O describes how runtime or memory grows as input grows.
+
+*Common complexities*
+
+```go
+// O(1) — Constant: doesn't depend on input size
+func getFirst(nums []int) int {
+    return nums[0]
+}
+
+// O(log n) — Logarithmic: halves the problem each step
+func binarySearch(sorted []int, target int) int {
+    lo, hi := 0, len(sorted)-1
+    for lo <= hi {
+        mid := lo + (hi-lo)/2
+        if sorted[mid] == target {
+            return mid
+        } else if sorted[mid] < target {
+            lo = mid + 1
+        } else {
+            hi = mid - 1
+        }
+    }
+    return -1
+}
+
+// O(n) — Linear: visits each element once
+func sum(nums []int) int {
+    total := 0
+    for _, n := range nums {
+        total += n
+    }
+    return total
+}
+
+// O(n log n) — Linearithmic: typical for good sorting
+// sort.Ints uses this internally
+
+// O(n²) — Quadratic: nested loops over the same data
+func hasDuplicate(nums []int) bool {
+    for i := 0; i < len(nums); i++ {
+        for j := i + 1; j < len(nums); j++ {
+            if nums[i] == nums[j] {
+                return true
+            }
+        }
+    }
+    return false
+}
+```
+
+*Space complexity*
+
+```go
+// O(1) space — modifies in place
+func reverseInPlace(nums []int) {
+    for i, j := 0, len(nums)-1; i < j; i, j = i+1, j-1 {
+        nums[i], nums[j] = nums[j], nums[i]
+    }
+}
+
+// O(n) space — creates a new structure proportional to input
+func frequencies(nums []int) map[int]int {
+    freq := make(map[int]int)
+    for _, n := range nums {
+        freq[n]++
+    }
+    return freq
+}
+```
+
+> **The key insight:** Big O isn't about exact speed — it's about *scaling*. An O(n) solution that processes 1 million items in 10ms would take 10 seconds at O(n²). That's the difference between usable and broken.
+
+## Hash Maps
+
+The most common pattern in algorithm problems. Use a map to turn O(n²) lookups into O(n).
+
+*Pattern: frequency counting*
+
+```go
+// Count occurrences of each element
+func topKFrequent(nums []int, k int) []int {
+    freq := make(map[int]int)
+    for _, n := range nums {
+        freq[n]++
+    }
+
+    // Bucket sort by frequency
+    buckets := make([][]int, len(nums)+1)
+    for num, count := range freq {
+        buckets[count] = append(buckets[count], num)
+    }
+
+    var result []int
+    for i := len(buckets) - 1; i >= 0 && len(result) < k; i-- {
+        result = append(result, buckets[i]...)
+    }
+    return result[:k]
+}
+```
+
+*Pattern: complement lookup*
+
+```go
+// Find two numbers that sum to target — O(n) instead of O(n²)
+func twoSum(nums []int, target int) (int, int) {
+    seen := make(map[int]int) // value -> index
+    for i, n := range nums {
+        complement := target - n
+        if j, ok := seen[complement]; ok {
+            return j, i
+        }
+        seen[n] = i
+    }
+    return -1, -1
+}
+```
+
+> **When to use:** Whenever you need fast lookups, counting, or duplicate detection. Maps give O(1) average lookup vs O(n) for slice scanning.
+
+## Two Pointers
+
+Use two indices moving through a sorted array or from both ends. Eliminates nested loops.
+
+*Pattern: opposite ends*
+
+```go
+// Check if a string is a palindrome
+func isPalindrome(s string) bool {
+    runes := []rune(s)
+    left, right := 0, len(runes)-1
+    for left < right {
+        if runes[left] != runes[right] {
+            return false
+        }
+        left++
+        right--
+    }
+    return true
+}
+```
+
+*Pattern: sorted pair search*
+
+```go
+// Find pair summing to target in a SORTED array — O(n) time, O(1) space
+func twoSumSorted(nums []int, target int) (int, int) {
+    left, right := 0, len(nums)-1
+    for left < right {
+        sum := nums[left] + nums[right]
+        if sum == target {
+            return left, right
+        } else if sum < target {
+            left++
+        } else {
+            right--
+        }
+    }
+    return -1, -1
+}
+```
+
+> **When to use:** Sorted data, palindrome checks, comparing elements from both ends, removing duplicates in-place. The key signal is "sorted array" or "compare from edges".
+
+## Sliding Window
+
+Maintain a window (subarray/substring) that slides across the data. Avoids recomputing from scratch.
+
+*Pattern: fixed-size window*
+
+```go
+// Maximum sum of k consecutive elements
+func maxSumWindow(nums []int, k int) int {
+    if len(nums) < k {
+        return 0
+    }
+
+    // Compute initial window sum
+    windowSum := 0
+    for i := 0; i < k; i++ {
+        windowSum += nums[i]
+    }
+
+    maxSum := windowSum
+    // Slide: add right, remove left
+    for i := k; i < len(nums); i++ {
+        windowSum += nums[i] - nums[i-k]
+        if windowSum > maxSum {
+            maxSum = windowSum
+        }
+    }
+    return maxSum
+}
+```
+
+*Pattern: variable-size window*
+
+```go
+// Longest substring without repeating characters
+func lengthOfLongestSubstring(s string) int {
+    seen := make(map[byte]int)
+    maxLen := 0
+    left := 0
+
+    for right := 0; right < len(s); right++ {
+        if idx, ok := seen[s[right]]; ok && idx >= left {
+            left = idx + 1
+        }
+        seen[s[right]] = right
+        if right-left+1 > maxLen {
+            maxLen = right - left + 1
+        }
+    }
+    return maxLen
+}
+```
+
+> **When to use:** Subarray/substring problems asking for "longest", "shortest", "maximum sum". The signal is a contiguous sequence with a constraint.
+
+## Stacks
+
+Last-in, first-out. In Go, a slice is your stack.
+
+*Pattern: matching pairs*
+
+```go
+// Validate balanced parentheses
+func isValid(s string) bool {
+    stack := []rune{}
+    pairs := map[rune]rune{')': '(', ']': '[', '}': '{'}
+
+    for _, ch := range s {
+        if ch == '(' || ch == '[' || ch == '{' {
+            stack = append(stack, ch)
+        } else {
+            if len(stack) == 0 || stack[len(stack)-1] != pairs[ch] {
+                return false
+            }
+            stack = stack[:len(stack)-1] // pop
+        }
+    }
+    return len(stack) == 0
+}
+```
+
+*Stack operations in Go*
+
+```go
+// Push
+stack = append(stack, value)
+
+// Peek (top element)
+top := stack[len(stack)-1]
+
+// Pop
+top := stack[len(stack)-1]
+stack = stack[:len(stack)-1]
+
+// IsEmpty
+empty := len(stack) == 0
+```
+
+> **When to use:** Matching brackets, undo operations, expression evaluation, monotonic sequences. The signal is "most recent" or "nesting".
+
+## Binary Search
+
+Repeatedly halve the search space. Only works on sorted data.
+
+*Pattern: standard binary search*
+
+```go
+func binarySearch(nums []int, target int) int {
+    lo, hi := 0, len(nums)-1
+    for lo <= hi {
+        mid := lo + (hi-lo)/2 // avoids overflow vs (lo+hi)/2
+        if nums[mid] == target {
+            return mid
+        } else if nums[mid] < target {
+            lo = mid + 1
+        } else {
+            hi = mid - 1
+        }
+    }
+    return -1
+}
+```
+
+*Pattern: search for insertion point*
+
+```go
+// Find leftmost position where target could be inserted
+func searchInsert(nums []int, target int) int {
+    lo, hi := 0, len(nums)
+    for lo < hi {
+        mid := lo + (hi-lo)/2
+        if nums[mid] < target {
+            lo = mid + 1
+        } else {
+            hi = mid
+        }
+    }
+    return lo
+}
+```
+
+> **When to use:** Sorted arrays, finding boundaries, minimizing/maximizing a value where you can binary search the answer space. Go's `sort.Search` implements this pattern.
+
+## Linked Lists
+
+Pointer manipulation. Go doesn't have a built-in singly-linked list for algorithms — you define the node.
+
+*Node definition*
+
+```go
+type ListNode struct {
+    Val  int
+    Next *ListNode
+}
+```
+
+*Pattern: reverse a linked list*
+
+```go
+func reverseList(head *ListNode) *ListNode {
+    var prev *ListNode
+    curr := head
+    for curr != nil {
+        next := curr.Next  // save next
+        curr.Next = prev   // reverse pointer
+        prev = curr        // advance prev
+        curr = next        // advance curr
+    }
+    return prev
+}
+```
+
+*Pattern: fast/slow pointers (cycle detection)*
+
+```go
+func hasCycle(head *ListNode) bool {
+    slow, fast := head, head
+    for fast != nil && fast.Next != nil {
+        slow = slow.Next
+        fast = fast.Next.Next
+        if slow == fast {
+            return true
+        }
+    }
+    return false
+}
+```
+
+> **When to use:** Reversals, cycle detection, finding middle element, merging sorted lists. The fast/slow pointer trick shows up constantly.
+
+## Trees
+
+Recursive structures. Most tree problems have elegant recursive solutions.
+
+*Node definition*
+
+```go
+type TreeNode struct {
+    Val   int
+    Left  *TreeNode
+    Right *TreeNode
+}
+```
+
+*Pattern: tree traversals*
+
+```go
+// Inorder: Left → Node → Right (gives sorted order for BSTs)
+func inorder(root *TreeNode) []int {
+    if root == nil {
+        return nil
+    }
+    var result []int
+    result = append(result, inorder(root.Left)...)
+    result = append(result, root.Val)
+    result = append(result, inorder(root.Right)...)
+    return result
+}
+
+// Preorder: Node → Left → Right (useful for copying/serializing)
+func preorder(root *TreeNode) []int {
+    if root == nil {
+        return nil
+    }
+    result := []int{root.Val}
+    result = append(result, preorder(root.Left)...)
+    result = append(result, preorder(root.Right)...)
+    return result
+}
+
+// Max depth (classic recursive pattern)
+func maxDepth(root *TreeNode) int {
+    if root == nil {
+        return 0
+    }
+    left := maxDepth(root.Left)
+    right := maxDepth(root.Right)
+    if left > right {
+        return left + 1
+    }
+    return right + 1
+}
+```
+
+> **When to use:** Hierarchical data, BST operations, path problems. The base case is almost always `if root == nil`. Think recursively: solve for left subtree, solve for right subtree, combine.
+
+## Graphs & BFS
+
+Graphs are nodes connected by edges. BFS explores level by level using a queue.
+
+*Pattern: BFS with a queue*
+
+```go
+// BFS traversal of an adjacency list graph
+func bfs(graph map[int][]int, start int) []int {
+    visited := make(map[int]bool)
+    queue := []int{start}
+    visited[start] = true
+    var order []int
+
+    for len(queue) > 0 {
+        node := queue[0]
+        queue = queue[1:]
+        order = append(order, node)
+
+        for _, neighbor := range graph[node] {
+            if !visited[neighbor] {
+                visited[neighbor] = true
+                queue = append(queue, neighbor)
+            }
+        }
+    }
+    return order
+}
+```
+
+*Pattern: DFS with recursion*
+
+```go
+func dfs(graph map[int][]int, node int, visited map[int]bool) {
+    visited[node] = true
+    for _, neighbor := range graph[node] {
+        if !visited[neighbor] {
+            dfs(graph, neighbor, visited)
+        }
+    }
+}
+```
+
+> **When to use:** Shortest path (BFS), connected components, cycle detection in graphs, flood fill. BFS finds shortest unweighted paths; DFS explores full branches.
+
+## Sorting Algorithms
+
+Understanding how sorting works under the hood.
+
+*Merge Sort — O(n log n), stable*
+
+```go
+func mergeSort(nums []int) []int {
+    if len(nums) <= 1 {
+        return nums
+    }
+    mid := len(nums) / 2
+    left := mergeSort(nums[:mid])
+    right := mergeSort(nums[mid:])
+    return merge(left, right)
+}
+
+func merge(left, right []int) []int {
+    result := make([]int, 0, len(left)+len(right))
+    i, j := 0, 0
+    for i < len(left) && j < len(right) {
+        if left[i] <= right[j] {
+            result = append(result, left[i])
+            i++
+        } else {
+            result = append(result, right[j])
+            j++
+        }
+    }
+    result = append(result, left[i:]...)
+    result = append(result, right[j:]...)
+    return result
+}
+```
+
+> **Key insight:** Go's `sort.Slice` uses a hybrid algorithm (introsort). You won't rewrite sorting in production — but understanding merge sort teaches divide-and-conquer, and it's a common interview question.
+
+## Heaps & Priority Queues
+
+A heap gives you the min (or max) element in O(log n). Go provides `container/heap`.
+
+*Using container/heap*
+
+```go
+import "container/heap"
+
+// IntHeap implements heap.Interface for a min-heap of ints
+type IntHeap []int
+
+func (h IntHeap) Len() int           { return len(h) }
+func (h IntHeap) Less(i, j int) bool { return h[i] < h[j] }
+func (h IntHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
+
+func (h *IntHeap) Push(x interface{}) {
+    *h = append(*h, x.(int))
+}
+
+func (h *IntHeap) Pop() interface{} {
+    old := *h
+    n := len(old)
+    x := old[n-1]
+    *h = old[:n-1]
+    return x
+}
+
+// Usage
+func kthSmallest(nums []int, k int) int {
+    h := &IntHeap{}
+    heap.Init(h)
+    for _, n := range nums {
+        heap.Push(h, n)
+    }
+    var result int
+    for i := 0; i < k; i++ {
+        result = heap.Pop(h).(int)
+    }
+    return result
+}
+```
+
+> **When to use:** "K-th largest/smallest", "top K elements", "merge K sorted lists", scheduling problems. The signal is needing repeated access to the extreme element.
+
+## Tries (Prefix Trees)
+
+A tree where each node represents a character. Fast prefix lookups.
+
+*Pattern: basic trie*
+
+```go
+type TrieNode struct {
+    children map[rune]*TrieNode
+    isEnd    bool
+}
+
+type Trie struct {
+    root *TrieNode
+}
+
+func NewTrie() *Trie {
+    return &Trie{root: &TrieNode{children: make(map[rune]*TrieNode)}}
+}
+
+func (t *Trie) Insert(word string) {
+    node := t.root
+    for _, ch := range word {
+        if _, ok := node.children[ch]; !ok {
+            node.children[ch] = &TrieNode{children: make(map[rune]*TrieNode)}
+        }
+        node = node.children[ch]
+    }
+    node.isEnd = true
+}
+
+func (t *Trie) Search(word string) bool {
+    node := t.root
+    for _, ch := range word {
+        if _, ok := node.children[ch]; !ok {
+            return false
+        }
+        node = node.children[ch]
+    }
+    return node.isEnd
+}
+
+func (t *Trie) StartsWith(prefix string) bool {
+    node := t.root
+    for _, ch := range prefix {
+        if _, ok := node.children[ch]; !ok {
+            return false
+        }
+        node = node.children[ch]
+    }
+    return true
+}
+```
+
+> **When to use:** Autocomplete, spell checking, prefix matching, word search problems. The signal is "all words starting with..." or building a dictionary.
+
+## Choosing the Right Pattern
+
+| Problem Signal | Pattern | Example |
+|---|---|---|
+| "Find pair/complement" | Hash Map | Two Sum |
+| "Count occurrences" | Hash Map | Frequency count |
+| "Sorted array + pair" | Two Pointers | Two Sum II |
+| "Palindrome" | Two Pointers | Valid Palindrome |
+| "Longest/shortest subarray" | Sliding Window | Max subarray sum |
+| "Matching/nesting" | Stack | Valid Parentheses |
+| "Sorted + find element" | Binary Search | Search Insert Position |
+| "Reverse/cycle in list" | Linked List pointers | Reverse Linked List |
+| "Tree structure" | Recursion/DFS | Max Depth |
+| "Shortest path" | BFS | Word Ladder |
+| "Top K / Kth element" | Heap | Kth Largest |
+| "Prefix matching" | Trie | Autocomplete |
+
+## Algorithm Practice Arena
+
+The exercises below teach you the building blocks — implementing the data structures and mechanics themselves. Once you're comfortable with them, head to the **[Algorithm Practice](/algorithms.html)** arena to apply these patterns to real problems like Two Sum, Valid Parentheses, and more.
+
+## Exercises
+
+Progress through each section in order, or jump to where you need practice.
+
+Practice individual concepts you just learned.
+
+<div id="warmups-container">
+            <noscript><p class="js-required">JavaScript is required for the interactive exercises.</p></noscript>
+            </div>
+
+### 💪 Challenges
+
+Combine concepts and learn patterns. Each challenge has multiple variants at different difficulties.
+
+<div id="challenges-container">
+            <noscript><p class="js-required">JavaScript is required for the interactive exercises.</p></noscript>
+            </div>
+
+## Module 18 Summary
+
+- **Big O notation** — how runtime/space scales with input size
+- **Hash Maps** — O(1) lookups for counting, complements, deduplication
+- **Two Pointers** — opposite ends or same direction on sorted data
+- **Sliding Window** — fixed or variable windows over contiguous sequences
+- **Stacks** — LIFO for matching, nesting, undo operations
+- **Binary Search** — halving sorted search space in O(log n)
+- **Linked Lists** — pointer manipulation, reversal, cycle detection
+- **Trees** — recursive traversals, depth calculations, BST operations
+- **Graphs & BFS** — level-order exploration, shortest paths
+- **Sorting** — merge sort and divide-and-conquer
+- **Heaps** — priority queues via container/heap
+- **Tries** — prefix trees for string operations
