@@ -4,7 +4,8 @@
     "slug": "c-course",
     "description": "Interactive C programming course covering fundamentals, pointers, memory management, data structures, and systems programming. Based on K&R, King's \"A Modern Approach\", Gustedt's \"Modern C\", and Seacord's \"Effective C\".",
     "storagePrefix": "c-course",
-    "status": "Coming soon — content is being written"
+    "status": "Coming soon — content is being written",
+    "hidden": true
   },
   "tracks": [
     { "id": 0, "title": "Foundation", "modules": [0] },

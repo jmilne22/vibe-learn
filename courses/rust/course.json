@@ -4,7 +4,8 @@
     "slug": "rust-course",
     "description": "Interactive Rust programming course based on The Rust Programming Language book, covering ownership, traits, concurrency, and capstone projects.",
     "storagePrefix": "rust-course",
-    "status": "Coming soon — content is being written"
+    "status": "Coming soon — content is being written",
+    "hidden": true
   },
   "tracks": [
     { "id": 0, "title": "Getting Started", "modules": [0, 1] },
