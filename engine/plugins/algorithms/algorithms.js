@@ -224,25 +224,9 @@
             }
         });
 
-        var srsData = window.SRS ? window.SRS.getAll() : {};
-        var practiced = 0;
-        Object.keys(srsData).forEach(function(key) {
-            if (key.startsWith('algo_')) practiced++;
-        });
-
-        var dueCount = 0;
-        var weakCount = 0;
-        if (window.SRS) {
-            dueCount = window.SRS.getDueExercises().filter(function(e) { return e.key.startsWith('algo_'); }).length;
-            weakCount = window.SRS.getWeakestExercises(50).filter(function(e) {
-                return e.key.startsWith('algo_') && e.easeFactor < 2.0;
-            }).length;
-        }
-
+        var stats = SE.updateStats({ due: 'algo-due', weak: 'algo-weak' }, algoFilter);
         SE.setText('algo-total', totalVariants);
-        SE.setText('algo-practiced', practiced);
-        SE.setText('algo-due', dueCount);
-        SE.setText('algo-weak', weakCount);
+        SE.setText('algo-practiced', stats.total);
     }
 
     // --- Queue Building ---
@@ -278,14 +262,8 @@
             return buildDiscoverQueue(count, config.difficulty);
         }
 
-        var candidates = SE.buildSRSQueue(mode, count, categoryFilter);
-
-        if ((mode === 'review' || mode === 'weakest') && candidates.length < 5) {
-            return [];
-        }
-        if (mode === 'mixed' && candidates.length === 0) {
-            return [];
-        }
+        var candidates = SE.buildPaddedSRSQueue(mode, count, categoryFilter, { pad: false });
+        if (candidates.length === 0) return [];
 
         var allProblems = getAllProblems();
         var problemMap = {};
@@ -309,21 +287,12 @@
 
     function buildDiscoverQueue(count, difficulty) {
         var allProblems = getAllProblems();
-        var srsData = window.SRS ? window.SRS.getAll() : {};
 
         if (difficulty && difficulty !== 'mixed') {
             allProblems = filterByDifficulty(allProblems, difficulty);
         }
 
-        var unseen = allProblems.filter(function(p) { return !srsData[p.key]; });
-        var seen = allProblems.filter(function(p) { return !!srsData[p.key]; });
-
-        SE.shuffle(unseen);
-        SE.shuffle(seen);
-
-        return unseen.concat(seen).slice(0, count).map(function(p) {
-            return { key: p.key, category: p.category, problem: p.problem, variant: p.variant };
-        });
+        return SE.buildDiscoverQueue(allProblems, count);
     }
 
     function filterByDifficulty(problems, difficulty) {

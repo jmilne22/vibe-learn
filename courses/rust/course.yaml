@@ -1,0 +1,85 @@
+course:
+  name: "Rust Course"
+  slug: rust-course
+  description: "Interactive Rust programming course based on The Rust Programming Language book, covering ownership, traits, concurrency, and capstone projects."
+  storagePrefix: rust-course
+  status: "Coming soon — content is being written"
+  hidden: true
+
+tracks:
+  - title: Getting Started
+    modules: [0, 1]
+  - title: Fundamentals
+    modules: [2, 3, 4, 5]
+  - title: Building Blocks
+    modules: [6, 7, 8]
+  - title: Generics & Traits
+    modules: [9, 10]
+  - title: Applied Rust
+    modules: [11, 12, 13]
+  - title: Concurrency & Advanced
+    modules: [14, 15, 16, 17]
+
+modules:
+  - title: Rust Quick Reference
+    description: "Installation, cargo commands, common errors, and quick lookup reference."
+    hasExercises: false
+  - title: Hello World & Guessing Game
+    description: "Your first Rust program, cargo basics, and building a number guessing game."
+  - title: Common Programming Concepts
+    description: "Variables, mutability, data types, functions, and control flow in Rust."
+  - title: Understanding Ownership
+    description: "Ownership rules, borrowing, references, and the slice type. Rust's core innovation."
+  - title: Using Structs
+    description: "Defining and instantiating structs, method syntax, and associated functions."
+  - title: Enums & Pattern Matching
+    description: "Defining enums, the Option type, and exhaustive pattern matching with match."
+  - title: "Packages, Crates & Modules"
+    description: "Organizing code with packages, crates, modules, and the use keyword."
+    hasExercises: false
+  - title: Common Collections
+    description: "Vectors, strings, and hash maps — Rust's most-used collection types."
+  - title: Error Handling
+    description: "Recoverable errors with Result, unrecoverable errors with panic!, and the ? operator."
+  - title: "Generic Types, Traits & Lifetimes"
+    description: "Generics for code reuse, traits for shared behavior, and lifetimes for reference validity."
+  - title: Writing Automated Tests
+    description: "Writing tests, running tests, and test organization in Rust."
+  - title: Iterators & Closures
+    description: "Closures as anonymous functions, iterator adaptors, and functional patterns."
+  - title: Cargo & Crates.io
+    description: "Release profiles, publishing crates, workspaces, and cargo install."
+    hasExercises: false
+  - title: Smart Pointers
+    description: "Box, Rc, RefCell, and building your own smart pointers."
+  - title: Fearless Concurrency
+    description: "Threads, message passing with channels, and shared-state concurrency with Mutex."
+  - title: OOP Features of Rust
+    description: "Trait objects, the dyn keyword, and object-oriented patterns in Rust."
+    hasExercises: false
+  - title: Patterns & Matching
+    description: "All the places patterns can be used, refutability, and pattern syntax."
+  - title: Advanced Features
+    description: "Unsafe Rust, advanced traits, advanced types, macros, and FFI."
+
+projects:
+  - id: p1
+    num: P1
+    title: CLI Grep Tool (minigrep)
+    file: project-minigrep
+    afterModule: 8
+    description: "Build a command-line search tool. Applies concepts from modules on error handling, ownership, and iterators. Based on TRPL Chapter 12."
+  - id: p2
+    num: P2
+    title: Multithreaded Web Server
+    file: project-webserver
+    afterModule: 14
+    description: "Build a multithreaded web server from scratch. Applies concurrency, smart pointers, and trait objects. Based on TRPL Chapter 20."
+
+annotationTypes:
+  ownership: { icon: Own, cssClass: ann-ownership }
+  lifetime: { icon: "'a", cssClass: ann-lifetime }
+  gotcha: { icon: "!", cssClass: ann-gotcha }
+  unsafe: { icon: "\u26A0", cssClass: ann-unsafe }
+  idiom: { icon: Rs, cssClass: ann-idiom }
+  pattern: { icon: "P", cssClass: ann-pattern }

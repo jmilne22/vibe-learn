@@ -1,0 +1,129 @@
+course:
+  name: "Kubernetes & Helm Course"
+  slug: k8s-course
+  description: "Kubernetes from the ground up, following the \"Hard Way\" philosophy: understand every component before using abstractions. Covers core K8s, networking, security, Helm chart development, and production patterns."
+  storagePrefix: k8s-course
+  status: "In progress — all modules written, exercises pending"
+  hidden: true
+
+tracks:
+  - title: Foundation
+    modules: [0, 1]
+  - title: Core Concepts
+    modules: [2, 3, 4, 5]
+  - title: Networking & Services
+    modules: [6, 7, 8]
+  - title: Configuration & Storage
+    modules: [9, 10]
+  - title: Security & Operations
+    modules: [11, 12, 13, 14]
+  - title: Helm
+    modules: [15, 16, 17, 18]
+  - title: Production Patterns
+    modules: [19, 20, 21]
+
+modules:
+  - title: Quick Reference
+    description: "kubectl cheat sheet, resource kinds, common labels/annotations, YAML gotchas, and API version reference."
+    hasExercises: false
+  - title: Containers & Local Setup
+    description: "What containers are, Docker basics, setting up a local cluster with Docker Desktop / minikube / kind, and kubectl."
+  - title: Cluster Architecture
+    description: "Control plane vs data plane, API server, etcd, scheduler, controller manager, kubelet, kube-proxy, and the reconciliation loop."
+  - title: The API Server & kubectl
+    description: "RESTful resource model, API groups and versions, kubectl verbs, output formats, dry-run, and kubectl explain."
+  - title: Pods
+    description: "Pod spec, multi-container patterns (sidecar, init, ambassador), resource requests and limits, QoS classes, and pod lifecycle."
+  - title: Workload Controllers
+    description: "ReplicaSets, Deployments, rolling updates, DaemonSets, StatefulSets, Jobs, and CronJobs."
+  - title: Services & Networking
+    description: "Pod networking model, Service types (ClusterIP, NodePort, LoadBalancer, ExternalName), kube-proxy modes, and endpoints."
+  - title: Ingress & Gateway API
+    description: "Ingress resources, ingress controllers, TLS termination, Gateway API, and path-based and host-based routing."
+  - title: DNS & Service Discovery
+    description: "CoreDNS, service DNS records, headless Services, and ExternalDNS."
+  - title: ConfigMaps & Secrets
+    description: "ConfigMaps from literals and files, Secret types, env vars vs volume mounts, and immutable ConfigMaps."
+  - title: Persistent Storage
+    description: "Volumes, PersistentVolumes, PersistentVolumeClaims, StorageClasses, dynamic provisioning, and access modes."
+  - title: RBAC & Security
+    description: "ServiceAccounts, Roles, ClusterRoles, RoleBindings, Pod Security Standards, SecurityContext, and NetworkPolicies."
+  - title: Namespaces & Resource Management
+    description: "Namespace isolation, ResourceQuotas, LimitRanges, namespace strategies, labels, and selectors."
+  - title: Observability & Probes
+    description: "Liveness, readiness, and startup probes, metrics-server, Prometheus basics, logging conventions, and kubectl debug."
+  - title: Troubleshooting
+    description: "Debugging CrashLoopBackOff, ImagePullBackOff, Pending pods, OOMKilled, events, logs, and systematic debugging methodology."
+  - title: Helm Fundamentals
+    description: "What Helm solves, charts, releases, repositories, helm install/upgrade/rollback, and values overrides."
+  - title: Chart Development
+    description: "Chart structure, Chart.yaml, values.yaml, templates, built-in objects, Go template basics, and helm create."
+  - title: Advanced Helm Templates
+    description: "Named templates, _helpers.tpl, include vs template, tpl, toYaml/nindent, conditionals, loops, hooks, subcharts, and dependencies."
+  - title: Helm in Production
+    description: "Chart testing and linting, OCI registries, Helmfile, GitOps with ArgoCD and Flux, chart versioning, and signing."
+  - title: Deployment Strategies
+    description: "Blue-green, canary with Argo Rollouts, progressive delivery, PodDisruptionBudgets, and rollback strategies."
+  - title: Autoscaling
+    description: "HPA with CPU, memory, and custom metrics, VPA, Cluster Autoscaler, and KEDA for event-driven scaling."
+  - title: Cluster Management
+    description: "kubeadm, managed K8s (EKS, GKE, AKS), version upgrades, etcd backup/restore, node maintenance, and cluster federation."
+    hasExercises: false
+
+projects:
+  - id: p1
+    num: P1
+    title: Deploy nginx with Probes
+    file: project-deploy-nginx
+    afterModule: 4
+    description: "Deploy nginx to your local cluster with resource limits, liveness/readiness probes, and multiple replicas. Your first real deployment."
+  - id: p2
+    num: P2
+    title: Expose a Guestbook App
+    file: project-guestbook
+    afterModule: 8
+    description: "Deploy a Redis-backed guestbook with frontend and backend Services, DNS-based discovery, and Ingress routing."
+  - id: p3
+    num: P3
+    title: Stateful App with Persistence
+    file: project-stateful-app
+    afterModule: 10
+    description: "Deploy PostgreSQL with a StatefulSet, PVC for persistent data, ConfigMap for config, and Secrets for credentials."
+  - id: p4
+    num: P4
+    title: Deploy a Microservices App
+    file: project-microservices-app
+    afterModule: 10
+    description: "Write raw K8s manifests for a 3-service app (frontend, API, Postgres): Deployments, Services, ConfigMaps, Secrets, Ingress. No Helm."
+  - id: p5
+    num: P5
+    title: Secure & Harden a Cluster
+    file: project-secure-cluster
+    afterModule: 14
+    description: "Given a cluster with security gaps, write manifests to lock it down: RBAC, NetworkPolicies, Pod Security Standards, proper Secrets."
+  - id: p6
+    num: P6
+    title: Build a Helm Chart
+    file: project-helm-chart
+    afterModule: 18
+    description: "Package a multi-service app as a Helm chart with proper values.yaml, conditionals, helpers, tests, and environment overrides."
+  - id: p7
+    num: P7
+    title: Monitoring Stack
+    file: project-monitoring-stack
+    afterModule: 18
+    description: "Deploy Prometheus and Grafana using Helm charts, set up ServiceMonitors, and create a dashboard for your app's metrics."
+  - id: p8
+    num: P8
+    title: Production Deployment Pipeline
+    file: project-production-pipeline
+    afterModule: 21
+    description: "Full GitOps pipeline: Helm chart + ArgoCD Application + HPA + PDB + canary rollouts + automated rollback. Capstone."
+
+annotationTypes:
+  gotcha: { icon: "!", cssClass: ann-gotcha }
+  pattern: { icon: "P", cssClass: ann-pattern }
+  kubectl: { icon: "$", cssClass: ann-kubectl }
+  security: { icon: sec, cssClass: ann-security }
+  deprecated: { icon: "D", cssClass: ann-deprecated }
+  helm: { icon: "H", cssClass: ann-helm }

@@ -61,16 +61,7 @@
     }
 
     function updateStats() {
-        if (!window.SRS) return;
-
-        var due = window.SRS.getDueExercises().filter(function(e) { return isRenderableExercise(e.key); });
-        var weak = window.SRS.getWeakestExercises(10).filter(function(e) { return e.easeFactor < 2.0 && isRenderableExercise(e.key); });
-        var all = window.SRS.getAll();
-        var total = Object.keys(all).filter(isRenderableExercise).length;
-
-        SE.setText('dp-due', due.length);
-        SE.setText('dp-weak', weak.length);
-        SE.setText('dp-total', total);
+        SE.updateStats({ due: 'dp-due', weak: 'dp-weak', total: 'dp-total' }, isRenderableExercise);
     }
 
     function isRenderableExercise(key) {
@@ -180,7 +171,7 @@
             itemLabel: 'Exercise',
             accentColor: 'orange',
             onRender: renderCurrentExercise,
-            extraShowOnStart: ['dp-nav-standard'],
+            extraShowOnStart: ['dp-nav'],
             onSessionStart: function() {
                 document.body.classList.add('dp-in-session');
             }
@@ -241,7 +232,7 @@
             itemLabel: 'Exercise',
             accentColor: 'orange',
             onRender: renderCurrentExercise,
-            extraShowOnStart: ['dp-nav-standard'],
+            extraShowOnStart: ['dp-nav'],
             onSessionStart: function() {
                 document.body.classList.add('dp-in-session');
             }
@@ -304,25 +295,10 @@
     }
 
     function buildQueue(mode, count) {
-        var candidates = SE.buildSRSQueue(mode, count, matchesFilters);
+        var candidates = SE.buildPaddedSRSQueue(mode, count, matchesFilters);
+        if (candidates.length === 0) return [];
 
-        if ((mode === 'review' || mode === 'weakest') && candidates.length < 5) {
-            return [];
-        }
-
-        // Pad with random tracked exercises if needed
-        if (candidates.length < count && window.SRS) {
-            var all = window.SRS.getAll();
-            var existing = {};
-            candidates.forEach(function(c) { existing[c.key] = true; });
-            var extras = Object.keys(all)
-                .filter(function(key) { return !existing[key] && matchesFilters(key); })
-                .map(function(key) { var item = all[key]; item.key = key; return item; })
-                .sort(function() { return Math.random() - 0.5; });
-            candidates = candidates.concat(extras);
-        }
-
-        return candidates.slice(0, count).map(function(item) {
+        return candidates.map(function(item) {
             var match = item.key.match(/^(?:fc_)?m(\d+)_/);
             var moduleNum = match ? parseInt(match[1]) : null;
             return {
@@ -344,7 +320,6 @@
                 return sessionConfig.modules.includes(m);
             });
 
-        var srsData = window.SRS ? window.SRS.getAll() : {};
         var allItems = [];
 
         targetModules.forEach(function(moduleNum) {
@@ -358,11 +333,10 @@
                 variants.warmups.forEach(function(warmup) {
                     if (!warmup.variants) return;
                     warmup.variants.forEach(function(variant) {
-                        var key = 'm' + moduleNum + '_' + warmup.id + '_' + variant.id;
                         allItems.push({
-                            key: key, moduleNum: moduleNum, moduleName: moduleName,
-                            type: 'warmup', challenge: null, variant: variant,
-                            inSRS: !!srsData[key]
+                            key: 'm' + moduleNum + '_' + warmup.id + '_' + variant.id,
+                            moduleNum: moduleNum, moduleName: moduleName,
+                            type: 'warmup', challenge: null, variant: variant
                         });
                     });
                 });
@@ -372,24 +346,17 @@
                 variants.challenges.forEach(function(challenge) {
                     if (!challenge.variants) return;
                     challenge.variants.forEach(function(variant) {
-                        var key = 'm' + moduleNum + '_' + challenge.id + '_' + variant.id;
                         allItems.push({
-                            key: key, moduleNum: moduleNum, moduleName: moduleName,
-                            type: 'challenge', challenge: challenge, variant: variant,
-                            inSRS: !!srsData[key]
+                            key: 'm' + moduleNum + '_' + challenge.id + '_' + variant.id,
+                            moduleNum: moduleNum, moduleName: moduleName,
+                            type: 'challenge', challenge: challenge, variant: variant
                         });
                     });
                 });
             }
         });
 
-        var unseen = allItems.filter(function(item) { return !item.inSRS; });
-        var seen = allItems.filter(function(item) { return item.inSRS; });
-
-        SE.shuffle(unseen);
-        SE.shuffle(seen);
-
-        return unseen.concat(seen).slice(0, count);
+        return SE.buildDiscoverQueue(allItems, count);
     }
 
     // --- Exercise Rendering ---

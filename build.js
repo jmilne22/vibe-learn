@@ -37,6 +37,7 @@ const JS_DIR = path.join(ENGINE_DIR, 'js');
 const CSS_DIR = path.join(ENGINE_DIR, 'css');
 const THEMES_DIR = path.join(ENGINE_DIR, 'themes');
 const PLUGINS_DIR = path.join(ENGINE_DIR, 'plugins');
+const PARTIALS_DIR = path.join(ENGINE_DIR, 'partials');
 
 // ---------------------------------------------------------------------------
 // Utilities
@@ -49,6 +50,30 @@ function loadTemplate(name) {
     return fs.readFileSync(path.join(TEMPLATES_DIR, name), 'utf8');
 }
 
+function loadPartials() {
+    const partials = {};
+    if (fs.existsSync(PARTIALS_DIR)) {
+        fs.readdirSync(PARTIALS_DIR).filter(f => f.endsWith('.html')).forEach(f => {
+            const name = f.replace('.html', '');
+            partials[name] = fs.readFileSync(path.join(PARTIALS_DIR, f), 'utf8');
+        });
+    }
+    return partials;
+}
+
+function processPartials(template, partials, manifest) {
+    return template.replace(/\{\{>\s*([\w-]+)\s*\}\}/g, (match, name) => {
+        if (!partials[name]) {
+            console.warn(`  Warning: partial "${name}" not found`);
+            return match;
+        }
+        let content = partials[name];
+        if (manifest.prefix) content = content.replace(/\{\{PREFIX\}\}/g, manifest.prefix);
+        if (manifest.nextFn) content = content.replace(/\{\{NEXT_FN\}\}/g, manifest.nextFn);
+        if (manifest.skipFn) content = content.replace(/\{\{SKIP_FN\}\}/g, manifest.skipFn);
+        return content;
+    });
+}
 
 function collectDistFiles(dir, base) {
     let files = [];
@@ -70,9 +95,41 @@ function collectDistFiles(dir, base) {
 function discoverCourses() {
     if (!fs.existsSync(COURSES_DIR)) return [];
     return fs.readdirSync(COURSES_DIR).filter(slug => {
-        const manifest = path.join(COURSES_DIR, slug, 'course.json');
-        return fs.statSync(path.join(COURSES_DIR, slug)).isDirectory() && fs.existsSync(manifest);
+        const dir = path.join(COURSES_DIR, slug);
+        if (!fs.statSync(dir).isDirectory()) return false;
+        return fs.existsSync(path.join(dir, 'course.yaml')) || fs.existsSync(path.join(dir, 'course.json'));
     });
+}
+
+function loadCourseManifest(courseDir) {
+    const yamlPath = path.join(courseDir, 'course.yaml');
+    const jsonPath = path.join(courseDir, 'course.json');
+    let raw;
+    if (fs.existsSync(yamlPath)) {
+        raw = yaml.load(fs.readFileSync(yamlPath, 'utf8'));
+    } else {
+        raw = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+    }
+    return normalizeCourse(raw);
+}
+
+function normalizeCourse(raw) {
+    if (raw.modules) {
+        raw.modules.forEach((mod, index) => {
+            if (mod.id === undefined) mod.id = index;
+            if (mod.num === undefined) mod.num = String(mod.id).padStart(2, '0');
+            if (mod.file === undefined) mod.file = 'module' + mod.id;
+            if (mod.hasExercises === undefined) mod.hasExercises = true;
+        });
+    }
+    if (raw.tracks) {
+        raw.tracks.forEach((track, index) => {
+            if (track.id === undefined) track.id = index;
+        });
+    }
+    if (!raw.projects) raw.projects = [];
+    if (!raw.annotationTypes) raw.annotationTypes = {};
+    return raw;
 }
 
 // ---------------------------------------------------------------------------
@@ -222,7 +279,9 @@ const indexTemplate = loadTemplate('index.html');
 
 // Discover all plugins once at startup
 const allPlugins = discoverPlugins();
+const allPartials = loadPartials();
 console.log(`Discovered plugins: ${allPlugins.map(p => p.name).join(', ') || '(none)'}`);
+console.log(`Loaded partials: ${Object.keys(allPartials).join(', ') || '(none)'}`);
 
 // ---------------------------------------------------------------------------
 // buildCourse(slug) — builds a single course into dist/<slug>/
@@ -238,9 +297,9 @@ function buildCourse(slug) {
     const EXERCISES_DIR = path.join(CONTENT_DIR, 'exercises');
     const ASSETS_DIR = path.join(CONTENT_DIR, 'assets');
 
-    // 1. Load & validate course.json
-    console.log('Loading course.json...');
-    const courseJson = JSON.parse(fs.readFileSync(path.join(COURSE_DIR, 'course.json'), 'utf8'));
+    // 1. Load & validate course manifest (YAML preferred, JSON fallback)
+    console.log('Loading course manifest...');
+    const courseJson = loadCourseManifest(COURSE_DIR);
     const { course, tracks, modules, projects, annotationTypes } = courseJson;
 
     if (!course || !course.name || !course.slug) {
@@ -580,6 +639,7 @@ function buildCourse(slug) {
         const templatePath = path.join(plugin._dir, plugin.template);
         if (fs.existsSync(templatePath)) {
             let templateContent = fs.readFileSync(templatePath, 'utf8');
+            templateContent = processPartials(templateContent, allPartials, plugin);
             templateContent = templateContent
                 .replace(/\{\{COURSE_NAME\}\}/g, course.name)
                 .replace(/\{\{THEME_LINKS\}\}/g, themeLinksHtml)

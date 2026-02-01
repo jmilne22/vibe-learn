@@ -1,0 +1,98 @@
+course:
+  name: "Go Course"
+  slug: go-course
+  description: "Interactive Go programming course with 18 modules covering fundamentals, CLI tools, concurrency, testing, algorithms, and capstone projects."
+  storagePrefix: go-course
+
+tracks:
+  - title: Foundation
+    modules: [0]
+  - title: Fundamentals
+    modules: [1, 2, 3, 4, 5]
+  - title: CLI & Tools
+    modules: [6, 7, 8]
+  - title: Production Code
+    modules: [9, 10, 11]
+  - title: Advanced
+    modules: [12]
+  - title: Real-World
+    modules: [13, 14, 15]
+  - title: Testing
+    modules: [16, 17]
+  - title: Algorithms
+    modules: [18]
+
+modules:
+  - title: Go Quick Reference
+    description: "Commands, links, and common errors for quick lookup"
+    hasExercises: false
+  - title: Go Fundamentals
+    description: "Variables, types, functions, and control flow. Every concept mapped from Python."
+  - title: Pointers & Memory
+    description: "Pointers demystified. They're not scary — they're just addresses. Let's make them click."
+  - title: Structs Deep Dive
+    description: "Go's alternative to classes. Composition over inheritance, methods, and struct tags."
+  - title: Interfaces & Polymorphism
+    description: "Implicit interfaces, type assertions, and thinking in behaviors. This is Go's secret weapon."
+  - title: Data Structures
+    description: "Slices deep dive, maps, and building your own data structures with generics."
+  - title: CLI Foundations
+    description: "Arguments, flags, stdin/stdout, and building tools that feel native to the terminal."
+  - title: "Files, YAML & Shell"
+    description: "Read files, parse configs, run shell commands. Build a task runner from scratch."
+  - title: Building TUIs
+    description: "Terminal User Interfaces with Bubble Tea. Build interactive CLI apps that look amazing."
+  - title: Error Handling & Testing
+    description: "Go's explicit error handling and how to write tests that actually catch bugs."
+  - title: Design Patterns
+    description: "Patterns that actually matter. Factory, options, strategy, and builder."
+  - title: HTTP & API Design
+    description: "Build REST APIs, make HTTP requests, middleware patterns. Build a GitHub CLI."
+  - title: Concurrency & Goroutines
+    description: "Goroutines, channels, and patterns. The stuff that makes Go actually fast."
+  - title: Project Structure
+    description: "How Go projects grow from one file to many. Packages, visibility, and organization."
+  - title: System Interaction
+    description: "Detecting what's available, running external commands, parsing their output. The glue between Go and the OS."
+  - title: Sets & Diffing
+    description: "Set operations are everywhere. Comparing lists, finding differences, computing what changed."
+  - title: Unit Testing
+    description: "Testing individual functions and components in isolation. Go's testing is simple but powerful."
+  - title: Integration Testing
+    description: "Testing real components working together: HTTP servers, databases, file systems, external services."
+  - title: Algorithms & Problem Solving
+    description: "Big O notation, algorithm patterns, and fundamental data structure implementations in Go."
+
+projects:
+  - id: p1
+    num: P1
+    title: Task Runner
+    file: project-taskrunner
+    afterModule: 7
+    description: "Build a simple task runner that reads YAML configs and executes commands. Applies concepts from Module 7."
+  - id: p2
+    num: P2
+    title: File Browser
+    file: project-filebrowser
+    afterModule: 8
+    description: "Build an interactive terminal file browser using Bubble Tea. Applies concepts from Module 8."
+  - id: p3
+    num: P3
+    title: GitHub CLI
+    file: project-githubcli
+    afterModule: 11
+    description: "Build a CLI tool that interacts with the GitHub API. Applies concepts from Module 11."
+  - id: p4
+    num: P4
+    title: Parallel Downloader
+    file: project-downloader
+    afterModule: 12
+    description: "Build a concurrent file downloader with progress tracking. Applies concepts from Module 12."
+
+annotationTypes:
+  idiom: { icon: "Go", cssClass: ann-idiom }
+  complexity: { icon: "O", cssClass: ann-complexity }
+  gotcha: { icon: "!", cssClass: ann-gotcha }
+  alternative: { icon: alt, cssClass: ann-alternative }
+  stdlib: { icon: pkg, cssClass: ann-stdlib }
+  pattern: { icon: "P", cssClass: ann-pattern }

@@ -263,6 +263,88 @@
             '</div>';
     }
 
+    // --- Reusable Helpers ---
+
+    /**
+     * Update stats display from SRS data.
+     *
+     * @param {object} elementMap - { due: 'el-id', weak: 'el-id', total: 'el-id' }
+     * @param {Function} filterFn - function(key) => boolean
+     * @returns {object} { due, weak, total } counts
+     */
+    function updateStats(elementMap, filterFn) {
+        if (!window.SRS) return { due: 0, weak: 0, total: 0 };
+
+        var due = window.SRS.getDueExercises().filter(function(e) { return filterFn(e.key); });
+        var weak = window.SRS.getWeakestExercises(50).filter(function(e) {
+            return e.easeFactor < 2.0 && filterFn(e.key);
+        });
+        var all = window.SRS.getAll();
+        var total = Object.keys(all).filter(filterFn).length;
+
+        if (elementMap.due) setText(elementMap.due, due.length);
+        if (elementMap.weak) setText(elementMap.weak, weak.length);
+        if (elementMap.total) setText(elementMap.total, total);
+
+        return { due: due.length, weak: weak.length, total: total };
+    }
+
+    /**
+     * Build a discover queue: unseen items first, then seen, shuffled.
+     *
+     * @param {Array} items - Array of objects, each with a .key property
+     * @param {number} count - Desired queue size
+     * @returns {Array} Reordered slice of items
+     */
+    function buildDiscoverQueue(items, count) {
+        var srsData = window.SRS ? window.SRS.getAll() : {};
+
+        var unseen = items.filter(function(item) { return !srsData[item.key]; });
+        var seen = items.filter(function(item) { return !!srsData[item.key]; });
+
+        shuffle(unseen);
+        shuffle(seen);
+
+        return unseen.concat(seen).slice(0, count);
+    }
+
+    /**
+     * Build an SRS queue with minimum threshold checking and optional padding.
+     *
+     * @param {string} mode - 'review', 'weakest', or 'mixed'
+     * @param {number} count - Desired queue size
+     * @param {Function} filterFn - function(key) => boolean
+     * @param {object} [opts] - { minThreshold: 5, pad: true }
+     * @returns {Array} SRS candidate objects or empty array if below threshold
+     */
+    function buildPaddedSRSQueue(mode, count, filterFn, opts) {
+        opts = opts || {};
+        var minThreshold = opts.minThreshold !== undefined ? opts.minThreshold : 5;
+        var pad = opts.pad !== undefined ? opts.pad : true;
+
+        var candidates = buildSRSQueue(mode, count, filterFn);
+
+        if ((mode === 'review' || mode === 'weakest') && candidates.length < minThreshold) {
+            return [];
+        }
+        if (mode === 'mixed' && candidates.length === 0) {
+            return [];
+        }
+
+        if (pad && candidates.length < count && window.SRS) {
+            var all = window.SRS.getAll();
+            var existing = {};
+            candidates.forEach(function(c) { existing[c.key] = true; });
+            var extras = Object.keys(all)
+                .filter(function(key) { return !existing[key] && filterFn(key); })
+                .map(function(key) { var item = all[key]; item.key = key; return item; })
+                .sort(function() { return Math.random() - 0.5; });
+            candidates = candidates.concat(extras);
+        }
+
+        return candidates.slice(0, count);
+    }
+
     // --- Public API ---
 
     window.SessionEngine = {
@@ -280,6 +362,9 @@
         skipExercise: skipExercise,
         advance: advance,
         renderSessionHeader: renderSessionHeader,
-        finishSession: finishSession
+        finishSession: finishSession,
+        updateStats: updateStats,
+        buildDiscoverQueue: buildDiscoverQueue,
+        buildPaddedSRSQueue: buildPaddedSRSQueue
     };
 })();

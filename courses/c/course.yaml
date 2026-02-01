@@ -1,0 +1,97 @@
+course:
+  name: "C Course"
+  slug: c-course
+  description: "Interactive C programming course covering fundamentals, pointers, memory management, data structures, and systems programming. Based on K&R, King's \"A Modern Approach\", Gustedt's \"Modern C\", and Seacord's \"Effective C\"."
+  storagePrefix: c-course
+  status: "Coming soon — content is being written"
+  hidden: true
+
+tracks:
+  - title: Foundation
+    modules: [0]
+  - title: Fundamentals
+    modules: [1, 2, 3, 4]
+  - title: Arrays & Pointers
+    modules: [5, 6, 7]
+  - title: Data & Memory
+    modules: [8, 9, 10]
+  - title: Build & Debug
+    modules: [11, 12, 13]
+  - title: Low-Level
+    modules: [14, 15]
+  - title: Systems
+    modules: [16, 17]
+
+modules:
+  - title: C Quick Reference
+    description: "Compiler setup, gcc/clang flags, common errors, printf format specifiers, and quick syntax lookup."
+    hasExercises: false
+  - title: Hello World & Compilation
+    description: "Your first C program, the compilation pipeline (preprocessor, compiler, assembler, linker), and using gcc."
+  - title: Types & Operators
+    description: "Integer and floating-point types, sizeof, type conversions, arithmetic and logical operators, precedence."
+  - title: Control Flow
+    description: "if/else, switch, while, for, do-while, break, continue, goto, and structured programming idioms."
+  - title: Functions & Scope
+    description: "Function declarations and definitions, pass-by-value, scope rules, storage classes (auto, static, extern, register)."
+  - title: Arrays & Strings
+    description: "Array declaration and initialization, multidimensional arrays, C strings, string.h functions, buffer safety."
+  - title: Pointers
+    description: "Pointer basics, address-of and dereference operators, NULL, pointer-to-pointer, and function pointers."
+  - title: Pointer Arithmetic & Arrays
+    description: "Pointer arithmetic, array-pointer equivalence, pointer to arrays, const correctness with pointers."
+  - title: "Structs, Unions & Enums"
+    description: "Defining and using structs, nested structs, unions, enums, typedef, and bit-fields."
+  - title: Dynamic Memory
+    description: "malloc, calloc, realloc, free, memory leaks, dangling pointers, and valgrind basics."
+  - title: File I/O
+    description: "fopen, fclose, fread, fwrite, fprintf, fscanf, binary vs text mode, and error handling with errno."
+  - title: Preprocessor
+    description: "#include, #define, macros with arguments, conditional compilation, #pragma, include guards, and macro pitfalls."
+  - title: Multi-file Projects & Makefiles
+    description: "Header files, separate compilation, linking, Makefiles, build targets, and dependency management."
+    hasExercises: false
+  - title: Debugging & Undefined Behavior
+    description: "GDB basics, sanitizers (ASan, UBSan), common UB categories, sequence points, and strict aliasing."
+  - title: Bitwise Operations
+    description: "Bitwise AND, OR, XOR, NOT, shifts, bit masks, flag manipulation, and portable bit tricks."
+  - title: Advanced Data Structures
+    description: "Linked lists, stacks, queues, hash tables, and trees implemented in C with dynamic memory."
+  - title: Concurrency
+    description: "POSIX threads, mutexes, condition variables, C11 threads and atomics, and common concurrency pitfalls."
+  - title: Systems Programming
+    description: "Process creation (fork/exec), signals, pipes, sockets basics, and interacting with the OS."
+
+projects:
+  - id: p1
+    num: P1
+    title: RPN Calculator
+    file: project-rpn-calc
+    afterModule: 7
+    description: "Build a stack-based RPN calculator using arrays, strings, and pointers. A classic K&R exercise."
+  - id: p2
+    num: P2
+    title: Student Database
+    file: project-student-db
+    afterModule: 10
+    description: "Build a CRUD student database with file persistence using structs, dynamic memory, and file I/O."
+  - id: p3
+    num: P3
+    title: Mini Shell
+    file: project-mini-shell
+    afterModule: 13
+    description: "Build a command-line shell with parsing, fork/exec, and pipelines. A Stanford/CMU classic."
+  - id: p4
+    num: P4
+    title: Memory Allocator
+    file: project-allocator
+    afterModule: 17
+    description: "Implement a custom malloc/free allocator. The capstone project, inspired by CMU's malloc lab."
+
+annotationTypes:
+  undefined-behavior: { icon: UB, cssClass: ann-undefined-behavior }
+  gotcha: { icon: "!", cssClass: ann-gotcha }
+  idiom: { icon: "C", cssClass: ann-idiom }
+  pattern: { icon: "P", cssClass: ann-pattern }
+  stdlib: { icon: std, cssClass: ann-stdlib }
+  optimization: { icon: opt, cssClass: ann-optimization }

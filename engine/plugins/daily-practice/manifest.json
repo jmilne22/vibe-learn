@@ -10,5 +10,8 @@
   "dataGlobal": null,
   "contentPattern": "exercises/",
   "backupKey": null,
-  "dashboardScripts": []
+  "dashboardScripts": [],
+  "prefix": "dp",
+  "nextFn": "nextExercise()",
+  "skipFn": "skipExercise()"
 }

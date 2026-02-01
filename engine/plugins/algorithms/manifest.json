@@ -9,5 +9,8 @@
   "dataFile": "algorithm-data.js",
   "dataGlobal": "AlgorithmData",
   "contentPattern": "algorithms/algorithms.yaml",
-  "backupKey": "algorithms"
+  "backupKey": "algorithms",
+  "prefix": "algo",
+  "nextFn": "AlgorithmPractice.nextExercise()",
+  "skipFn": "AlgorithmPractice.skipExercise()"
 }
