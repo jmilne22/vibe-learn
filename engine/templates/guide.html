@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="vibe-learn platform guide — how to create courses, write lessons, configure plugins, and deploy.">
+    <title>Platform Guide — vibe-learn</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="style.css">
+{{THEME_LINKS}}
+    <style>
+        /* --- Guide layout --- */
+        .landing { max-width: 860px; margin: 0 auto; padding: 2rem; }
+
+        /* --- Back link --- */
+        .guide-nav {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+        }
+        .guide-nav a {
+            color: var(--green-dim);
+            text-decoration: none;
+        }
+        .guide-nav a:hover { color: var(--green-bright); }
+
+        /* --- Hero --- */
+        .hero {
+            text-align: center;
+            padding: 2rem 0 1rem;
+        }
+        .hero-brand {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--green-bright);
+            margin-bottom: 1rem;
+        }
+        .hero h1 {
+            font-size: 2.4rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            line-height: 1.15;
+            margin-bottom: 1rem;
+        }
+        .hero h1 .accent { color: var(--green-bright); }
+        .hero-sub {
+            color: var(--text-dim);
+            font-size: 1.05rem;
+            line-height: 1.6;
+            max-width: 560px;
+            margin: 0 auto;
+        }
+
+        /* --- Section labels --- */
+        .section-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--green-bright);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+        }
+
+        /* --- Table of contents --- */
+        .toc {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1.25rem 1.75rem;
+            margin: 2rem 0 3rem;
+        }
+        .toc-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--green-bright);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-bottom: 0.6rem;
+        }
+        .toc-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0 2rem;
+        }
+        .toc-list a {
+            color: var(--text-dim);
+            text-decoration: none;
+            font-size: 0.85rem;
+            line-height: 2;
+            display: flex;
+            gap: 0.5rem;
+            align-items: baseline;
+        }
+        .toc-list a:hover { color: var(--green-bright); }
+        .toc-num {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            color: var(--green-dim);
+            flex-shrink: 0;
+            width: 1.2rem;
+            text-align: right;
+        }
+
+        /* --- Guide sections --- */
+        .guide-section {
+            margin: 3.5rem 0;
+            scroll-margin-top: 1rem;
+        }
+        .guide-section h3 {
+            font-size: 1.05rem;
+            font-weight: 600;
+            margin: 1.75rem 0 0.5rem;
+            scroll-margin-top: 1rem;
+        }
+        .guide-section p, .guide-section > li {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            line-height: 1.7;
+        }
+        .guide-section ul, .guide-section ol {
+            padding-left: 1.25rem;
+            margin: 0.5rem 0;
+        }
+        .guide-section li {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            line-height: 1.7;
+            margin-bottom: 0.2rem;
+        }
+        .guide-section strong {
+            color: var(--text-main, #e0e0e0);
+        }
+
+        /* --- Intro lead paragraph --- */
+        .section-lead {
+            font-size: 0.92rem;
+            color: var(--text-dim);
+            line-height: 1.7;
+            margin-bottom: 1rem;
+            max-width: 640px;
+        }
+
+        /* --- Code blocks --- */
+        .yaml-example {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            background: var(--bg-code);
+            color: var(--green-dim);
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            margin: 0.75rem 0;
+            white-space: pre;
+            line-height: 1.6;
+            overflow-x: auto;
+        }
+
+        /* --- Inline file paths / code --- */
+        .fp {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82em;
+            background: var(--bg-code);
+            color: var(--green-dim);
+            padding: 0.1rem 0.35rem;
+            border-radius: 3px;
+        }
+
+        /* --- Callout boxes --- */
+        .callout {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--orange);
+            border-radius: 6px;
+            padding: 0.75rem 1rem;
+            margin: 1rem 0;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            line-height: 1.6;
+        }
+        .callout-label {
+            font-weight: 600;
+            color: var(--orange);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.25rem;
+        }
+
+        /* --- Plugin cards --- */
+        .plugin-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--green-bright);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1.25rem 0;
+            scroll-margin-top: 1rem;
+        }
+        .plugin-card-header {
+            display: flex;
+            align-items: baseline;
+            gap: 0.75rem;
+            margin-bottom: 0.4rem;
+        }
+        .plugin-card h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 0;
+        }
+        .plugin-card-tag {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            color: var(--bg-dark);
+            background: var(--green-bright);
+            padding: 0.1rem 0.4rem;
+            border-radius: 3px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+        }
+        .plugin-card-tag.tag-plugin { background: var(--text-dim); }
+        .plugin-card p, .plugin-card li {
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+        .plugin-card ul {
+            padding-left: 1.25rem;
+            margin: 0.4rem 0;
+        }
+        .plugin-card .plugin-activate {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--orange);
+            margin-bottom: 0.5rem;
+        }
+        .plugin-features {
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid var(--border);
+        }
+        .plugin-features-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.25rem;
+        }
+        .plugin-card.accent-orange { border-left-color: var(--orange); }
+        .plugin-card.accent-cyan { border-left-color: var(--cyan, #00d4ff); }
+        .plugin-card.accent-purple { border-left-color: var(--purple); }
+        .plugin-card.accent-red { border-left-color: var(--red); }
+
+        /* --- Tables --- */
+        .guide-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0.75rem 0;
+            font-size: 0.85rem;
+        }
+        .guide-table th, .guide-table td {
+            text-align: left;
+            padding: 0.5rem 0.75rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .guide-table th {
+            font-weight: 600;
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .guide-table td {
+            color: var(--text-dim);
+            line-height: 1.5;
+        }
+        .guide-table code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            background: var(--bg-code);
+            padding: 0.1rem 0.35rem;
+            border-radius: 3px;
+            color: var(--green-dim);
+        }
+
+        /* --- Horizontal rule between major parts --- */
+        .section-divider {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 3.5rem 0;
+        }
+
+        /* --- Footer --- */
+        .landing-footer {
+            margin-top: 4rem;
+            padding: 2rem 0;
+            border-top: 1px solid var(--border);
+            text-align: center;
+            color: var(--text-dim);
+            font-size: 0.82rem;
+            line-height: 1.8;
+        }
+        .landing-footer a {
+            color: var(--green-dim);
+            text-decoration: none;
+        }
+        .landing-footer a:hover { color: var(--green-bright); }
+
+        /* --- Responsive --- */
+        @media (max-width: 680px) {
+            .landing { padding: 1rem; }
+            .hero { padding: 1.5rem 0 0.5rem; }
+            .hero h1 { font-size: 1.6rem; }
+            .hero-sub { font-size: 0.92rem; }
+            .toc { padding: 1.15rem 1.25rem; }
+            .toc-list { grid-template-columns: 1fr; }
+            .guide-section { margin: 2.5rem 0; }
+            .plugin-card { padding: 1.15rem; }
+            .yaml-example { font-size: 0.72rem; padding: 0.6rem 0.75rem; }
+            .guide-table { font-size: 0.8rem; }
+            .guide-table th, .guide-table td { padding: 0.4rem 0.5rem; }
+        }
+        @media (max-width: 400px) {
+            .hero h1 { font-size: 1.4rem; }
+            .yaml-example { font-size: 0.65rem; }
+            .toc-list a { font-size: 0.8rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="landing">
+        <div class="guide-nav"><a href="index.html">&larr; Back to home</a></div>
+
+        <!-- Hero -->
+        <div class="hero">
+            <div class="hero-brand">// platform guide</div>
+            <h1>Building a <span class="accent">Course</span></h1>
+            <p class="hero-sub">
+                Write markdown lessons, define exercises in YAML, run one build command, deploy static files.
+                No backend, no database &mdash; the engine handles rendering, spaced repetition, and everything else.
+            </p>
+        </div>
+
+        <!-- Table of Contents -->
+        <nav class="toc">
+            <div class="toc-label">// on this page</div>
+            <ol class="toc-list">
+                <li><a href="#overview"><span class="toc-num">1</span> Overview</a></li>
+                <li><a href="#course-setup"><span class="toc-num">2</span> Course Setup</a></li>
+                <li><a href="#writing-lessons"><span class="toc-num">3</span> Writing Lessons</a></li>
+                <li><a href="#content-types"><span class="toc-num">4</span> Content Types</a></li>
+                <li><a href="#spaced-repetition"><span class="toc-num">5</span> Spaced Repetition</a></li>
+                <li><a href="#themes"><span class="toc-num">6</span> Themes</a></li>
+                <li><a href="#extending"><span class="toc-num">7</span> Building Plugins</a></li>
+                <li><a href="#ai-content"><span class="toc-num">8</span> Creating Content with AI</a></li>
+                <li><a href="#build-deploy"><span class="toc-num">9</span> Build &amp; Deploy</a></li>
+            </ol>
+        </nav>
+
+        <!-- ============================================================ -->
+        <!-- 1. Overview                                                   -->
+        <!-- ============================================================ -->
+        <div class="guide-section" id="overview">
+            <div class="section-label">// 1 &mdash; overview</div>
+            <p class="section-lead">
+                A course is a directory of markdown and YAML files. The build script compiles them into a
+                self-contained static site with lessons, interactive exercises, flashcards, analytics, and
+                spaced repetition &mdash; all running client-side with no server.
+            </p>
+            <p>Here's what happens when you run <span class="fp">npm run build</span>:</p>
+            <ol>
+                <li>The build scans <span class="fp">courses/</span> for directories containing a <span class="fp">course.yaml</span>.</li>
+                <li>For each course, it reads the manifest, compiles markdown lessons to HTML, converts YAML exercise/flashcard files to JS data, and discovers which plugins are active.</li>
+                <li>Active plugins are determined automatically &mdash; if the course has the content files a plugin expects, that plugin's page is generated. No config to update.</li>
+                <li>Output goes to <span class="fp">dist/</span> as pure static files you can host anywhere.</li>
+            </ol>
+            <div class="callout">
+                <div class="callout-label">Prerequisites</div>
+                Node.js and npm. Install dependencies once with <span class="fp">npm install</span>, then <span class="fp">npm run build</span> to compile.
+                No other tooling required.
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- 2. Course Setup                                               -->
+        <!-- ============================================================ -->
+        <div class="guide-section" id="course-setup">
+            <div class="section-label">// 2 &mdash; course setup</div>
+            <p class="section-lead">
+                Each course lives in its own folder. The build discovers it automatically &mdash; no registration step.
+            </p>
+
+            <h3 id="directory-structure">Directory structure</h3>
+            <p>Create a folder under <span class="fp">courses/</span> with a <span class="fp">course.yaml</span> and a <span class="fp">content/</span> directory.
+                Only <span class="fp">course.yaml</span> and <span class="fp">content/lessons/</span> are required. Every other subdirectory is optional &mdash;
+                add them when you want to enable the corresponding feature.</p>
+            <div class="yaml-example">courses/my-course/
+  course.yaml                                 # required — course metadata
+  content/
+    lessons/                                  # required — one .md file per module
+      module0.md
+      module1.md
+      module2.md
+    exercises/                                # optional — enables exercises + daily practice + analytics
+      module1-variants.yaml
+      module2-variants.yaml
+    flashcards/                               # optional — enables flashcard sessions
+      flashcards.yaml
+    algorithms/                               # optional — enables algorithm practice
+      algorithms.yaml
+    real-world-challenges/                    # optional — enables challenge mode
+      real-world-challenges.yaml
+    assets/                                   # optional — favicon, images
+      favicon.svg</div>
+
+            <h3 id="course-manifest">course.yaml</h3>
+            <p>This is the only configuration file. It defines the course name, module list, and how modules are grouped into tracks.</p>
+            <div class="yaml-example">course:
+  name: "My Course"
+  slug: my-course                             # becomes the URL path: dist/my-course/
+  description: "Short description for the landing page."
+  storagePrefix: my-course                    # localStorage namespace (keep unique per course)
+
+tracks:
+  - title: Getting Started
+    modules: [0, 1]
+  - title: Core Concepts
+    modules: [2, 3, 4]
+
+modules:
+  - title: Quick Reference                    # id: 0 (auto-derived from array index)
+    description: "Installation and setup."
+    hasExercises: false                        # no exercise file for this module
+  - title: Hello World                        # id: 1, file: module1
+    description: "Your first program."
+  - title: Variables & Types                  # id: 2, file: module2
+    description: "Data types and declarations."
+  - title: Control Flow                       # id: 3, file: module3
+    description: "Conditionals and loops."
+  - title: Functions                          # id: 4, file: module4
+    description: "Function syntax and closures."
+
+projects:                                     # optional — capstone projects
+  - id: p1
+    num: P1
+    title: CLI Tool
+    file: project-cli                         # reads content/lessons/project-cli.md
+    afterModule: 4                            # placed after module 4 in sidebar
+    description: "Build a command-line tool."</div>
+
+            <h3 id="auto-derived">Auto-derived fields</h3>
+            <p>You only need to write <span class="fp">title</span> and <span class="fp">description</span> for each module. These fields are derived automatically:</p>
+            <table class="guide-table">
+                <thead><tr><th>Field</th><th>Derived from</th><th>Example</th></tr></thead>
+                <tbody>
+                    <tr><td><code>id</code></td><td>Array index (0-based)</td><td><code>0</code>, <code>1</code>, <code>2</code></td></tr>
+                    <tr><td><code>num</code></td><td>Zero-padded id</td><td><code>00</code>, <code>01</code>, <code>02</code></td></tr>
+                    <tr><td><code>file</code></td><td><code>module</code> + id</td><td><code>module0</code>, <code>module1</code></td></tr>
+                    <tr><td><code>hasExercises</code></td><td>Defaults to <code>true</code></td><td>Set to <code>false</code> for reference-only modules</td></tr>
+                </tbody>
+            </table>
+
+            <h3 id="draft-courses">Draft courses</h3>
+            <p>Add <span class="fp">hidden: true</span> to the <span class="fp">course</span> block to exclude a course from the landing page. It still builds and is accessible by URL &mdash; it just won't appear in the course picker.</p>
+            <div class="yaml-example">course:
+  name: "Work in Progress"
+  slug: wip
+  hidden: true                                # builds, but not listed on landing page</div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- 3. Writing Lessons                                            -->
+        <!-- ============================================================ -->
+        <div class="guide-section" id="writing-lessons">
+            <div class="section-label">// 3 &mdash; writing lessons</div>
+            <p class="section-lead">
+                Lessons are standard Markdown files in <span class="fp">content/lessons/</span>, one per module,
+                named to match the module's file field: <span class="fp">module0.md</span>, <span class="fp">module1.md</span>, etc.
+                The build converts them to HTML with syntax highlighting and a few extra features.
+            </p>
+
+            <h3 id="code-blocks">Syntax-highlighted code</h3>
+            <p>Use fenced code blocks with a language tag. The engine uses highlight.js (190+ languages supported).</p>
+            <div class="yaml-example">```go
+func main() {
+    fmt.Println("hello")
+}
+```</div>
+
+            <h3 id="comparisons">Side-by-side comparisons</h3>
+            <p>Put an italic label (<span class="fp">*Label*</span>) on its own line before a fenced code block.
+               When two or more labeled blocks appear consecutively, the build wraps them in a side-by-side layout automatically.</p>
+            <div class="yaml-example">*Python*
+
+```python
+for i in range(5):
+    print(i)
+```
+
+*Go*
+
+```go
+for i := 0; i &lt; 5; i++ {
+    fmt.Println(i)
+}
+```</div>
+            <div class="callout">
+                <div class="callout-label">Note</div>
+                The two labeled blocks must be consecutive &mdash; no blank paragraph or heading between the closing <span class="fp">```</span>
+                and the next <span class="fp">*Label*</span>. A single labeled block (no neighbor) renders with a header but no side-by-side layout.
+            </div>
+
+            <h3 id="callout-blocks">Callout blocks</h3>
+            <p>Use a blockquote with a bold label. Common labels: Tip, Warning, Note, Important.</p>
+            <div class="yaml-example">&gt; **Tip:** Remember to save your work before clearing browser data.
+
+&gt; **Warning:** This operation will delete all stored progress.</div>
+        </div>
+
+        <hr class="section-divider">
+
+        <!-- ============================================================ -->
+        <!-- 4. Content Types (Plugin Catalog)                             -->
+        <!-- ============================================================ -->
+        <div class="guide-section" id="content-types">
+            <div class="section-label">// 4 &mdash; content types</div>
+            <p class="section-lead">
+                Beyond lessons, a course can include exercises, flashcards, algorithm problems, and real-world challenges.
+                Each content type is either a core feature (exercises) or a plugin that auto-activates when the
+                matching content file is present. Two plugins (daily practice, analytics) derive from exercise data
+                and require no content files of their own.
+            </p>
+
+            <p>The table below summarizes what to add and where. Detailed YAML format for each type follows.</p>
+
+            <table class="guide-table">
+                <thead><tr><th>Feature</th><th>Content file</th><th>Auto-activates when</th></tr></thead>
+                <tbody>
+                    <tr><td>Exercises</td><td><code>content/exercises/module&lt;id&gt;-variants.yaml</code></td><td>File exists for any module</td></tr>
+                    <tr><td>Flashcards</td><td><code>content/flashcards/flashcards.yaml</code></td><td>File exists</td></tr>
+                    <tr><td>Algorithm Practice</td><td><code>content/algorithms/algorithms.yaml</code></td><td>File exists</td></tr>
+                    <tr><td>Real-World Challenges</td><td><code>content/real-world-challenges/real-world-challenges.yaml</code></td><td>File exists</td></tr>
+                    <tr><td>Daily Practice</td><td>&mdash;</td><td><code>content/exercises/</code> directory exists</td></tr>
+                    <tr><td>Analytics</td><td>&mdash;</td><td><code>content/exercises/</code> directory exists</td></tr>
+                </tbody>
+            </table>
+
+            <!-- Exercises -->
+            <div class="plugin-card" id="plugin-exercises">
+                <div class="plugin-card-header">
+                    <h4>Exercises</h4>
+                    <span class="plugin-card-tag">Core</span>
+                </div>
+                <div class="plugin-activate">content/exercises/module&lt;id&gt;-variants.yaml</div>
+                <p>Interactive exercises with multiple variants per problem, progressive hints, annotated solutions,
+                   and self-rating that feeds the spaced repetition scheduler (see <a href="#spaced-repetition">section 5</a>).</p>
+
+                <p>Each module that has <span class="fp">hasExercises: true</span> (the default) expects a corresponding
+                   file named <span class="fp">module&lt;id&gt;-variants.yaml</span>. The file defines warmups, challenges,
+                   and optionally advanced exercises. Each exercise contains multiple <em>variants</em> &mdash; different
+                   problem phrasings testing the same concept. The engine picks one variant at random each time.</p>
+
+                <div class="yaml-example">conceptLinks:
+  Hash Maps: "#lesson-hash-maps"              # link concept names to lesson anchors
+
+variants:
+  warmups:
+    - id: warmup_1
+      concept: Hash Maps                      # groups exercise under this concept for SRS + analytics
+      variants:
+        - id: v1
+          title: Simple Lookup
+          description: "Implement a function that looks up a key..."
+          hints:
+            - "Use a dictionary/map for O(1) lookup."
+            - "Handle the case where the key doesn't exist."
+          solution: |-
+            def lookup(data, key):
+                return data.get(key)
+          annotations:
+            - type: tip
+              label: Maps
+              text: ".get() returns None instead of raising KeyError."
+        - id: v2
+          title: Count Occurrences
+          description: "Count how many times each character appears..."
+          hints:
+            - "Iterate through the string and increment a counter."
+          solution: |-
+            from collections import Counter
+            Counter(text)
+
+  challenges:
+    - id: challenge_1
+      concept: Hash Maps
+      variants:
+        - id: v1
+          title: Group Anagrams
+          description: "Group words that are anagrams of each other..."
+          hints:
+            - "Sort each word's letters to create a grouping key."
+          solution: |-
+            from collections import defaultdict
+            def group(words):
+                d = defaultdict(list)
+                for w in words:
+                    d[tuple(sorted(w))].append(w)
+                return list(d.values())
+
+  advanced:                                   # optional third tier
+    - id: advanced_1
+      concept: Hash Maps
+      variants:
+        - id: v1
+          title: LRU Cache
+          description: "Implement a least-recently-used cache..."
+          hints: [...]
+          solution: "..."</div>
+
+                <div class="plugin-features">
+                    <div class="plugin-features-label">Key features</div>
+                    <ul>
+                        <li>Multiple variants per exercise &mdash; repeated practice stays fresh</li>
+                        <li>5 difficulty modes (concept-first through blind)</li>
+                        <li>Concept filters to focus on specific topics</li>
+                        <li>Thinking timer that locks hints while you work</li>
+                        <li>Progressive hints (reveal one at a time)</li>
+                        <li>Annotated solutions with contextual tips</li>
+                        <li>Self-rating (Got it / Struggled / Needed solution) feeds SRS</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Flashcards -->
+            <div class="plugin-card accent-cyan" id="plugin-flashcards">
+                <div class="plugin-card-header">
+                    <h4>Flashcards</h4>
+                    <span class="plugin-card-tag tag-plugin">Plugin</span>
+                </div>
+                <div class="plugin-activate">content/flashcards/flashcards.yaml</div>
+                <p>Flip-and-rate flashcard sessions organized by module. Cards support markdown in answers.</p>
+
+                <p>The file is a YAML map where each key is a module ID (as a string) and the value is an array of cards.
+                   Each card has a <span class="fp">topic</span>, <span class="fp">q</span> (question), and <span class="fp">a</span> (answer).</p>
+
+                <div class="yaml-example">"1":                                          # module ID as string
+  - topic: Variables
+    q: What is the zero value of an int in Go?
+    a: "0 — all numeric types zero-value to 0."
+  - topic: Strings
+    q: Are Go strings mutable?
+    a: "No. Strings are immutable byte slices. Use []byte for mutation."
+
+"2":
+  - topic: Control Flow
+    q: Does Go have a while loop?
+    a: "No. Use `for` with just a condition: `for x &lt; 10 { }`."</div>
+
+                <div class="plugin-features">
+                    <div class="plugin-features-label">Key features</div>
+                    <ul>
+                        <li>Flip/rate card sessions with configurable deck size</li>
+                        <li>Three review modes: random, due (SRS), weakest (lowest ease)</li>
+                        <li>Keyboard shortcuts for flipping and rating</li>
+                        <li>Filter by module</li>
+                        <li>Self-rating integrates with spaced repetition</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Algorithm Practice -->
+            <div class="plugin-card accent-purple" id="plugin-algorithms">
+                <div class="plugin-card-header">
+                    <h4>Algorithm Practice</h4>
+                    <span class="plugin-card-tag tag-plugin">Plugin</span>
+                </div>
+                <div class="plugin-activate">content/algorithms/algorithms.yaml</div>
+                <p>Session-based algorithm drills organized by category, with progressive difficulty variants
+                   and optional pattern recognition primers.</p>
+
+                <p>The file defines categories (e.g. "Arrays &amp; Searching"), each containing problems with
+                   multiple variants. Each problem can include a <span class="fp">patternPrimer</span> that explains
+                   the brute-force vs. optimal approach before the student attempts the problem.</p>
+
+                <div class="yaml-example">categories:
+  - id: arrays-searching
+    name: Arrays &amp; Searching
+    icon: "#"
+    order: 1
+    description: "Hash maps, linear search, binary search"
+    problems:
+      - id: two-sum
+        name: Two Sum
+        concept: "Hash Map Complement"        # tracked in SRS + analytics
+        difficulty: 1                         # 1-3 scale for sorting/display
+        patternPrimer:                        # optional — shown before attempting
+          bruteForce: "Nested loops checking all pairs — O(n^2)"
+          bestApproach: "Single pass with hash map storing complements — O(n)"
+        variants:
+          - id: v1
+            title: Two Sum
+            difficulty: 1
+            description: "Given an array and a target, return indices that sum to target."
+            hints:
+              - "For each number, its complement is target - num."
+              - "Use a map to store each number's index as you go."
+            solution: |
+              def two_sum(nums, target):
+                  seen = {}
+                  for i, num in enumerate(nums):
+                      if target - num in seen:
+                          return [seen[target - num], i]
+                      seen[num] = i
+            testCases: |                      # optional — shown below solution
+              print(two_sum([2, 7, 11, 15], 9))  # [0, 1]
+              print(two_sum([3, 2, 4], 6))        # [1, 2]</div>
+
+                <div class="plugin-features">
+                    <div class="plugin-features-label">Key features</div>
+                    <ul>
+                        <li>Session-based drills with category and count selection</li>
+                        <li>Mastery bars showing per-problem SRS progress</li>
+                        <li>Blind mode (no description, just the problem title)</li>
+                        <li>Pattern recognition primers (brute-force vs. optimal)</li>
+                        <li>Review / discover / weakest / mixed modes via SRS</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Real-World Challenges -->
+            <div class="plugin-card accent-red" id="plugin-challenges">
+                <div class="plugin-card-header">
+                    <h4>Real-World Challenges</h4>
+                    <span class="plugin-card-tag tag-plugin">Plugin</span>
+                </div>
+                <div class="plugin-activate">content/real-world-challenges/real-world-challenges.yaml</div>
+                <p>Open-ended engineering problems with requirements, acceptance criteria, progressive hints,
+                   and optional extensions. Each challenge is tagged by company and concept.</p>
+
+                <div class="yaml-example">challenges:
+  - id: todo-api
+    title: "Todo REST API"
+    difficulty: 2                             # 1-3 dots shown in UI
+    companies: [Acme Corp, Contoso]           # shown as tags
+    concepts: [REST, JSON, CRUD]              # shown as tags
+    source: "Classic backend project"         # attribution
+    sourceUrl: "https://example.com"          # optional link
+    requirements: |
+      Build a REST API for managing a todo list.
+
+      Your API should support:
+      - GET /todos — list all todos
+      - POST /todos — create a new todo
+      - PUT /todos/:id — update a todo
+      - DELETE /todos/:id — delete a todo
+
+      Each todo has an id, title, completed flag, and createdAt timestamp.
+      Store todos in memory (no database required).
+    acceptanceCriteria:
+      - "GET /todos returns a JSON array of all todos"
+      - "POST /todos creates a todo and returns 201"
+      - "GET /todos/:id returns 404 for missing IDs"
+      - "DELETE /todos/:id returns 204"
+    hints:
+      - title: "Getting started"              # progressive — revealed one at a time
+        content: |
+          Pick any HTTP framework. Use an in-memory
+          slice or map to store todos.
+      - title: "Status codes"
+        content: |
+          201 Created for POST, 204 No Content for DELETE,
+          404 Not Found for missing resources.
+    extensions:                               # optional stretch goals
+      - "Add pagination to the list endpoint"
+      - "Add filtering by completion status"</div>
+
+                <div class="plugin-features">
+                    <div class="plugin-features-label">Key features</div>
+                    <ul>
+                        <li>Interactive acceptance criteria checklist</li>
+                        <li>Status tracking (not started / in progress / completed)</li>
+                        <li>Difficulty dots (1&ndash;3)</li>
+                        <li>Progressive hints (revealed one at a time)</li>
+                        <li>Company and concept tags for filtering</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Daily Practice -->
+            <div class="plugin-card accent-orange" id="plugin-daily-practice">
+                <div class="plugin-card-header">
+                    <h4>Daily Practice</h4>
+                    <span class="plugin-card-tag tag-plugin">Plugin</span>
+                </div>
+                <div class="plugin-activate">Auto-activates when content/exercises/ exists &mdash; no content file needed</div>
+                <p>Session-based practice that auto-selects exercises based on your SRS data. You don't write any
+                   additional content for this plugin &mdash; it pulls from your existing exercise data and the
+                   spaced repetition scheduler (see <a href="#spaced-repetition">section 5</a>).</p>
+
+                <div class="plugin-features">
+                    <div class="plugin-features-label">Key features</div>
+                    <ul>
+                        <li>4 modes: review (due items), discover (unseen), weakest (lowest ease), mixed</li>
+                        <li>Auto-selects the best mode based on how many items are due vs. weak</li>
+                        <li>Module filter to focus on specific modules</li>
+                        <li>Configurable session size</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Analytics -->
+            <div class="plugin-card accent-orange" id="plugin-analytics">
+                <div class="plugin-card-header">
+                    <h4>Analytics (Weak Concepts)</h4>
+                    <span class="plugin-card-tag tag-plugin">Plugin</span>
+                </div>
+                <div class="plugin-activate">Auto-activates when content/exercises/ exists &mdash; no content file needed</div>
+                <p>Visualizes your strengths and weaknesses across all exercises. Reads SRS data from localStorage &mdash;
+                   no additional content files required.</p>
+
+                <div class="plugin-features">
+                    <div class="plugin-features-label">Key features</div>
+                    <ul>
+                        <li>Weak concept report ranked by ease factor</li>
+                        <li>Module strength rankings</li>
+                        <li>Per-concept breakdown with ease factors and intervals</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <hr class="section-divider">
+
+        <!-- ============================================================ -->
+        <!-- 5. Spaced Repetition                                          -->
+        <!-- ============================================================ -->
+        <div class="guide-section" id="spaced-repetition">
+            <div class="section-label">// 5 &mdash; spaced repetition</div>
+            <p class="section-lead">
+                The platform uses the SM-2 algorithm (the same algorithm behind Anki) to schedule reviews.
+                Every exercise variant and flashcard is tracked independently with its own ease factor and review interval.
+            </p>
+
+            <h3 id="srs-rating">Self-rating</h3>
+            <p>After completing an exercise or flashcard, you rate yourself on a three-point scale:</p>
+            <table class="guide-table">
+                <thead><tr><th>Rating</th><th>Effect on scheduling</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>Got it</strong></td><td>Interval increases &mdash; the item comes back later</td></tr>
+                    <tr><td><strong>Struggled</strong></td><td>Interval stays short &mdash; the item comes back soon</td></tr>
+                    <tr><td><strong>Needed solution</strong></td><td>Interval resets to 1 day &mdash; the item comes back tomorrow</td></tr>
+                </tbody>
+            </table>
+            <p>Each rating adjusts the item's <em>ease factor</em>. Items you struggle with get a lower ease factor,
+               which means shorter intervals between reviews. The minimum ease factor is 1.3 to prevent
+               impossibly short intervals.</p>
+
+            <h3 id="srs-usage">Where SRS is used</h3>
+            <ul>
+                <li><strong><a href="#plugin-daily-practice">Daily Practice</a></strong> &mdash; "review" mode surfaces items whose interval has elapsed; "weakest" mode drills your lowest-ease concepts.</li>
+                <li><strong><a href="#plugin-flashcards">Flashcards</a></strong> &mdash; "due" mode shows cards that are ready for review.</li>
+                <li><strong><a href="#plugin-analytics">Analytics</a></strong> &mdash; the weak concepts report ranks concepts by ease factor.</li>
+                <li><strong><a href="#plugin-algorithms">Algorithm Practice</a></strong> &mdash; review and weakest modes use SRS data to select problems.</li>
+            </ul>
+            <p>All SRS data is stored in localStorage under each course's <span class="fp">storagePrefix</span>.
+               You can export and import progress from the dashboard's data backup panel.</p>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- 6. Themes                                                     -->
+        <!-- ============================================================ -->
+        <div class="guide-section" id="themes">
+            <div class="section-label">// 6 &mdash; themes</div>
+            <p class="section-lead">
+                10 built-in color themes, switchable from the sidebar. The selection persists in localStorage.
+            </p>
+            <table class="guide-table">
+                <thead><tr><th>Group</th><th>Variants</th></tr></thead>
+                <tbody>
+                    <tr><td>Factorio</td><td>Dark</td></tr>
+                    <tr><td>Persona 5</td><td>Dark</td></tr>
+                    <tr><td>Classic</td><td>Dark, OLED, Light</td></tr>
+                    <tr><td>Gruvbox</td><td>Dark, Light</td></tr>
+                    <tr><td>Solarized</td><td>Dark, Light</td></tr>
+                    <tr><td>Everforest</td><td>Dark, Light</td></tr>
+                </tbody>
+            </table>
+            <p>Themes work by overriding CSS variables on a <span class="fp">[data-theme]</span> selector on <span class="fp">&lt;html&gt;</span>.
+               Every page &mdash; lessons, exercises, plugin pages &mdash; automatically inherits the user's chosen theme.
+               No per-page or per-course configuration is needed.</p>
+        </div>
+
+        <hr class="section-divider">
+
+        <!-- ============================================================ -->
+        <!-- 7. Building Plugins                                           -->
+        <!-- ============================================================ -->
+        <div class="guide-section" id="extending">
+            <div class="section-label">// 7 &mdash; building plugins</div>
+            <p class="section-lead">
+                Plugins add new feature pages to courses. If you want to extend the platform beyond the built-in
+                content types, this section explains how. If you're only writing course content, you can skip this.
+            </p>
+
+            <h3 id="plugin-structure">Plugin structure</h3>
+            <p>A plugin is a directory in <span class="fp">engine/plugins/&lt;name&gt;/</span> containing:</p>
+            <table class="guide-table">
+                <thead><tr><th>File</th><th>Purpose</th></tr></thead>
+                <tbody>
+                    <tr><td><code>manifest.json</code></td><td>Metadata: name, sidebar label/color/order, content pattern, scripts, data file config</td></tr>
+                    <tr><td>HTML template</td><td>The page template (can include partials via <code>{{&gt; name}}</code>)</td></tr>
+                    <tr><td>JS file(s)</td><td>Runtime logic, copied to dist alongside the page</td></tr>
+                    <tr><td><code>build.js</code></td><td>Optional &mdash; a <code>transform(data, ctx)</code> export for build-time data processing</td></tr>
+                </tbody>
+            </table>
+
+            <p>The key field is <span class="fp">contentPattern</span>. It's a relative path under a course's <span class="fp">content/</span>
+               directory. If a course has a matching file or directory, the plugin activates for that course. No registration, no config to update.</p>
+
+            <div class="yaml-example">{
+  "name": "my-feature",
+  "label": "My Feature",                     // sidebar + nav pill label
+  "shortLabel": "MF",                        // short label for compact UI
+  "sidebarColor": "var(--cyan)",             // accent color in sidebar
+  "sidebarOrder": 6,                         // position in sidebar (lower = higher)
+  "template": "my-feature.html",             // HTML template in this directory
+  "scripts": ["my-feature.js"],              // JS files to copy to dist
+  "dataFile": "my-feature-data.js",          // generated JS data file name
+  "dataGlobal": "MyFeatureData",             // window.MyFeatureData global
+  "contentPattern": "my-feature/data.yaml",  // activates when this file exists
+  "backupKey": "my-feature",                 // localStorage key for data export
+  "prefix": "mf",                           // element ID prefix for partials
+  "nextFn": "MyFeature.next()",             // onclick for session-nav Next button
+  "skipFn": "MyFeature.skip()"              // onclick for session-nav Skip button
+}</div>
+
+            <h3 id="partials">Template partials</h3>
+            <p>HTML fragments in <span class="fp">engine/partials/</span>, included in plugin templates with
+               <span class="fp">{{&gt; partial-name}}</span> syntax. The build replaces the include directive
+               with the partial's content, substituting per-plugin placeholders.</p>
+
+            <table class="guide-table">
+                <thead><tr><th>Partial</th><th>What it provides</th></tr></thead>
+                <tbody>
+                    <tr>
+                        <td><code>head</code></td>
+                        <td>Full <code>&lt;head&gt;</code> boilerplate: <code>&lt;meta&gt;</code> tags, font loading, favicon, <code>style.css</code>, theme CSS init</td>
+                    </tr>
+                    <tr>
+                        <td><code>dashboard-nav</code></td>
+                        <td>Top navigation with dashboard back-link</td>
+                    </tr>
+                    <tr>
+                        <td><code>rating-guide</code></td>
+                        <td>Expandable "How should I rate?" panel &mdash; explains Got It / Struggled / Needed Solution</td>
+                    </tr>
+                    <tr>
+                        <td><code>session-nav</code></td>
+                        <td>Next / Skip button pair for advancing through session items</td>
+                    </tr>
+                    <tr>
+                        <td><code>session-complete</code></td>
+                        <td>"Session Complete" card with results stats and New Session / Dashboard buttons</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <p><strong>Placeholders in partials:</strong></p>
+            <ul>
+                <li><span class="fp">{{PREFIX}}</span> &mdash; replaced with the manifest's <span class="fp">prefix</span> value (e.g. <span class="fp">dp</span>, <span class="fp">algo</span>). Used for element IDs to avoid collisions.</li>
+                <li><span class="fp">{{NEXT_FN}}</span> / <span class="fp">{{SKIP_FN}}</span> &mdash; replaced with <span class="fp">nextFn</span> / <span class="fp">skipFn</span> from the manifest. Wired as <span class="fp">onclick</span> handlers on session-nav buttons.</li>
+            </ul>
+
+            <h3 id="session-engine">Session engine (<span class="fp">session-engine.js</span>)</h3>
+            <p>Shared runtime library for session-based plugins. Available globally as <span class="fp">window.SessionEngine</span>.
+               Provides session lifecycle management, SRS queue building, and DOM utilities.</p>
+
+            <table class="guide-table">
+                <thead><tr><th>Function</th><th>Description</th></tr></thead>
+                <tbody>
+                    <tr>
+                        <td><code>setupOptionGroup(containerId, btnClass, config, key, opts)</code></td>
+                        <td>Wire a group of toggle buttons: manages <code>.active</code> state, updates <code>config[key]</code>, fires optional <code>onChange</code> callback</td>
+                    </tr>
+                    <tr>
+                        <td><code>setActiveOption(containerId, btnClass, btn)</code></td>
+                        <td>Programmatically set the active button in a group (useful for dynamically built buttons)</td>
+                    </tr>
+                    <tr>
+                        <td><code>buildSRSQueue(mode, count, filterFn)</code></td>
+                        <td>Build a practice queue from SRS data. Modes: <code>review</code> (due items), <code>weakest</code> (lowest ease), <code>mixed</code> (due + weak)</td>
+                    </tr>
+                    <tr>
+                        <td><code>buildPaddedSRSQueue(mode, count, filterFn, allItemsFn)</code></td>
+                        <td>Like <code>buildSRSQueue</code> but pads short queues with random items to meet the requested count</td>
+                    </tr>
+                    <tr>
+                        <td><code>buildDiscoverQueue(allItems, count)</code></td>
+                        <td>Build a discovery queue: unseen items first, then seen items, shuffled within each group</td>
+                    </tr>
+                    <tr>
+                        <td><code>updateStats(elementMap, filterFn)</code></td>
+                        <td>Query SRS data and write due/weak/total counts to DOM elements</td>
+                    </tr>
+                    <tr>
+                        <td><code>escapeHtml(str)</code></td>
+                        <td>Escape <code>&amp;</code>, <code>&lt;</code>, <code>&gt;</code>, <code>"</code>, <code>'</code> for safe HTML rendering</td>
+                    </tr>
+                    <tr>
+                        <td><code>setText(id, text)</code></td>
+                        <td>Set <code>textContent</code> of element by ID</td>
+                    </tr>
+                    <tr>
+                        <td><code>show(id)</code> / <code>hide(id)</code></td>
+                        <td>Toggle element visibility by ID (removes/adds <code>hidden</code> attribute)</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3 id="shared-css">Shared CSS classes</h3>
+            <p>The main stylesheet provides unified classes for session-based plugin UI. Using these means
+               your plugin gets consistent styling across all themes with no per-plugin CSS.</p>
+
+            <table class="guide-table">
+                <thead><tr><th>Class</th><th>What it styles</th></tr></thead>
+                <tbody>
+                    <tr><td><code>session-config</code></td><td>Configuration panel (selectors shown before a session starts)</td></tr>
+                    <tr><td><code>session-config-row</code> / <code>session-config-label</code> / <code>session-config-options</code></td><td>Row layout within config panels: label on the left, option buttons on the right</td></tr>
+                    <tr><td><code>session-option</code></td><td>Toggle button in option groups &mdash; handles <code>.active</code> state, hover, accent color</td></tr>
+                    <tr><td><code>session-stat</code> / <code>session-stat-value</code> / <code>session-stat-label</code></td><td>Stat counters displayed in the config panel (e.g. "12 due", "5 weak")</td></tr>
+                    <tr><td><code>session-header</code> / <code>session-header-progress</code></td><td>Header bar shown during a session with current position</td></tr>
+                    <tr><td><code>session-progress-bar</code> / <code>session-progress-fill</code></td><td>Animated progress bar (width set via JS)</td></tr>
+                    <tr><td><code>session-complete</code> / <code>session-complete-stats</code></td><td>Results screen shown when a session ends</td></tr>
+                    <tr><td><code>session-start-btn-main</code></td><td>Primary action button (Start Session, New Session)</td></tr>
+                    <tr><td><code>focus-content</code></td><td>Content area styling used by focus mode on plugin pages</td></tr>
+                </tbody>
+            </table>
+
+            <p>To customize the accent color for your plugin, override the CSS variable on the page's data attribute:</p>
+            <div class="yaml-example">[data-module="my-feature"] { --session-accent: var(--cyan); }</div>
+
+            <h3 id="exercise-core">Exercise core (<span class="fp">exercise-core.js</span>)</h3>
+            <p>Shared exercise rendering utilities available as <span class="fp">window.ExerciseCore</span>.
+               Provides difficulty mode selection, variant picking, thinking timer, and shuffle logic.
+               Used by both module lesson pages and the algorithms plugin. If your plugin renders
+               exercises in the same format, you can reuse this instead of writing your own renderer.</p>
+        </div>
+
+        <hr class="section-divider">
+
+        <!-- ============================================================ -->
+        <!-- 8. Creating Content with AI                                   -->
+        <!-- ============================================================ -->
+        <div class="guide-section" id="ai-content">
+            <div class="section-label">// 8 &mdash; creating content with AI</div>
+            <p class="section-lead">
+                The YAML formats are designed to be AI-friendly: structured, predictable, and easy to
+                prompt for. You can use Claude, ChatGPT, or any LLM to generate course content.
+            </p>
+
+            <h3 id="ai-workflow">Recommended workflow</h3>
+            <ol>
+                <li><strong>Start with the lesson.</strong> Write (or generate) the markdown lesson first. This establishes the concepts that exercises and flashcards will reference.</li>
+                <li><strong>Generate exercises.</strong> Paste the YAML format from <a href="#plugin-exercises">Exercises</a> above as context, along with a list of concepts from your lesson. Ask for warmups and challenges with 2&ndash;3 variants each.</li>
+                <li><strong>Generate flashcards.</strong> Provide the module's topic list and ask for Q&amp;A pairs in the format from <a href="#plugin-flashcards">Flashcards</a>.</li>
+                <li><strong>Batch-generate supplementary content.</strong> Algorithm problems and real-world challenges work well as batch requests &mdash; ask for 5&ndash;10 at a time with the format example as context.</li>
+            </ol>
+
+            <div class="callout">
+                <div class="callout-label">Tip</div>
+                Copy a YAML example from this guide and paste it into your AI prompt as the format reference.
+                The AI will match the structure precisely. This works for every content type.
+            </div>
+
+            <p>Tooling to streamline course creation without AI is in the works.</p>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- 9. Build & Deploy                                             -->
+        <!-- ============================================================ -->
+        <div class="guide-section" id="build-deploy">
+            <div class="section-label">// 9 &mdash; build &amp; deploy</div>
+
+            <h3 id="building">Building</h3>
+            <div class="yaml-example">npm run build            # build all courses + landing page
+node build.js my-course  # build a single course (by slug)</div>
+            <p>Output goes to <span class="fp">dist/</span>. Each course gets its own subdirectory
+               (<span class="fp">dist/my-course/</span>) and the landing page is generated at <span class="fp">dist/index.html</span>.</p>
+
+            <h3 id="deploying">Deploying</h3>
+            <p>The output is pure static files &mdash; no server runtime, no database, no build step at deploy time.
+               Host the <span class="fp">dist/</span> directory anywhere that serves static files:</p>
+            <ul>
+                <li>GitHub Pages</li>
+                <li>Netlify / Vercel / Cloudflare Pages</li>
+                <li>Amazon S3 + CloudFront</li>
+                <li>Any web server or CDN</li>
+            </ul>
+            <p>All user progress is stored in the browser's localStorage. There is no backend to set up,
+               no database to manage, and no user accounts. Each course is isolated via its
+               <span class="fp">storagePrefix</span>.</p>
+        </div>
+
+        <!-- Footer -->
+        <div class="landing-footer">
+            <a href="index.html">&larr; Back to home</a>
+        </div>
+    </div>
+    <script src="theme.js"></script>
+</body>
+</html>

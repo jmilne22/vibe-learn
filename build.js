@@ -893,6 +893,21 @@ function buildLandingPage(courseInfos) {
 }
 
 // ---------------------------------------------------------------------------
+// buildGuidePage() — generates dist/guide.html platform documentation
+// ---------------------------------------------------------------------------
+function buildGuidePage() {
+    console.log('\n========== Building guide page ==========');
+
+    const guideTemplate = loadTemplate('guide.html');
+
+    let page = guideTemplate
+        .replace('{{THEME_LINKS}}', themeLinksHtml);
+
+    fs.writeFileSync(path.join(ROOT_DIST, 'guide.html'), page);
+    console.log('  dist/guide.html');
+}
+
+// ---------------------------------------------------------------------------
 // CLI entry point
 // ---------------------------------------------------------------------------
 const args = process.argv.slice(2);
@@ -922,7 +937,8 @@ if (requestedSlug) {
 
     const courseInfos = availableCourses.map(slug => buildCourse(slug));
     buildLandingPage(courseInfos);
+    buildGuidePage();
 
     console.log(`\n========== All done! ==========`);
-    console.log(`Built ${courseInfos.length} course(s) + landing page in dist/`);
+    console.log(`Built ${courseInfos.length} course(s) + landing page + guide in dist/`);
 }

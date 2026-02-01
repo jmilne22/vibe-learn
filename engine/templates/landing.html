@@ -43,6 +43,16 @@
             max-width: 540px;
             margin: 0 auto;
         }
+        .hero-guide {
+            display: inline-block;
+            margin-top: 1.25rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--green-bright);
+            text-decoration: none;
+            letter-spacing: 0.02em;
+        }
+        .hero-guide:hover { text-decoration: underline; }
 
         /* --- Feature grid --- */
         .features {
@@ -314,11 +324,9 @@
             <div class="hero-brand">// vibe-learn</div>
             <h1>Self-hosted<br><span class="accent">course platform</span></h1>
             <p class="hero-sub">
-                Markdown lessons, YAML exercises, one build command. The engine handles
-                rendering, spaced repetition, daily practice, analytics, flashcards, and
-                offline support. You just write the content. No backend, no database,
-                no accounts &mdash; static files you can host anywhere.
+                An engine for building interactive courses. Lessons in markdown, exercises in YAML &mdash; the engine adds spaced repetition, flashcards, daily practice, and analytics. No backend required.
             </p>
+            <a href="guide.html" class="hero-guide">Read the Platform Guide &rarr;</a>
         </div>
 
         <!-- Features -->
@@ -463,7 +471,7 @@
 
         <!-- Footer -->
         <div class="landing-footer">
-            <a href="https://github.com/jmilne22/vibe-learn">GitHub</a>
+            <a href="https://github.com/jmilne22/vibe-learn">GitHub</a> &middot; <a href="guide.html">Platform Guide</a>
             <div class="vibe-tag">100% vibe-coded with Claude. Zero lines of human-written code.</div>
         </div>
     </div>
