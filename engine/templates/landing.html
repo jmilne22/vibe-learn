@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="vibe-learn — a static course platform. Write markdown, define exercises in YAML, build, deploy. Exercises, flashcards, spaced repetition, analytics, 10 themes. No backend.">
+    <meta name="description" content="vibe-learn — turn markdown lessons and YAML exercises into interactive courses with spaced repetition, flashcards, and analytics. Static output, deploy anywhere.">
     <title>vibe-learn</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -43,16 +43,37 @@
             max-width: 540px;
             margin: 0 auto;
         }
-        .hero-guide {
+        .hero-ctas {
+            display: flex;
+            gap: 1.25rem;
+            justify-content: center;
+            align-items: center;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+        }
+        a.hero-cta-primary {
             display: inline-block;
-            margin-top: 1.25rem;
+            padding: 0.7rem 1.75rem;
+            background: var(--green-bright);
+            color: #000;
+            font-weight: 700;
+            font-size: 0.9rem;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: opacity 0.2s, transform 0.15s;
+        }
+        a.hero-cta-primary:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+        .hero-cta-secondary {
             font-family: 'JetBrains Mono', monospace;
             font-size: 0.85rem;
             color: var(--green-bright);
             text-decoration: none;
             letter-spacing: 0.02em;
         }
-        .hero-guide:hover { text-decoration: underline; }
+        .hero-cta-secondary:hover { text-decoration: underline; }
         .belt-items { display: none; }
 
         /* --- Feature grid --- */
@@ -323,11 +344,14 @@
         <!-- Hero -->
         <div class="hero">
             <div class="hero-brand">// vibe-learn</div>
-            <h1>Self-hosted<br><span class="accent">course platform</span></h1>
+            <h1>Turn markdown into<br><span class="accent">interactive courses</span></h1>
             <p class="hero-sub">
-                An engine for building interactive courses. Lessons in markdown, exercises in YAML &mdash; the engine adds spaced repetition, flashcards, daily practice, and analytics. No backend required.
+                Author lessons in Markdown, define exercises in YAML, run a build. You get a static course site with spaced repetition, flashcards, and analytics baked in.
             </p>
-            <a href="guide.html" class="hero-guide">Read the Platform Guide &rarr;</a>
+            <div class="hero-ctas">
+                <a href="https://github.com/jmilne22/vibe-learn" class="hero-cta-primary">Get Started on GitHub</a>
+                <a href="guide.html" class="hero-cta-secondary">Read the Guide &rarr;</a>
+            </div>
             <div class="belt-items" aria-hidden="true">
                 <div class="belt-items-scroll">
                     <span>C</span><span>Go</span><span>Rs</span><span>K8s</span><span>Py</span><span>JS</span><span>TS</span><span>SQL</span>
@@ -343,62 +367,32 @@
             <div class="feature">
                 <div class="feature-icon">&gt;_</div>
                 <div class="feature-title">Markdown lessons</div>
-                <div class="feature-desc">Syntax-highlighted code blocks, side-by-side comparisons, callout boxes. Write content, not HTML.</div>
+                <div class="feature-desc">Write lessons as plain text with syntax highlighting, code comparisons, and callout blocks. Version-control friendly, no CMS needed.</div>
             </div>
             <div class="feature">
                 <div class="feature-icon">[&thinsp;]</div>
                 <div class="feature-title">Exercises &amp; challenges</div>
-                <div class="feature-desc">Warmups and challenges with multiple variants, difficulty modes (easy&rarr;hard), progressive hints, annotated solutions, and self-rating.</div>
+                <div class="feature-desc">Warmups, challenges, multiple variants, difficulty scaling, progressive hints, and annotated solutions &mdash; all defined in YAML.</div>
             </div>
             <div class="feature">
                 <div class="feature-icon">SRS</div>
                 <div class="feature-title">Spaced repetition</div>
-                <div class="feature-desc">SM-2 algorithm schedules reviews for exercises and flashcards. Items you struggle with come back sooner.</div>
+                <div class="feature-desc">SM-2 scheduling surfaces exercises and flashcards when you&rsquo;re about to forget them. Struggled items come back sooner.</div>
             </div>
             <div class="feature">
                 <div class="feature-icon">dp</div>
                 <div class="feature-title">Daily practice</div>
-                <div class="feature-desc">Swipe-style sessions that auto-select what to practice: review due items, drill weak spots, or discover new material.</div>
+                <div class="feature-desc">Auto-generated practice sessions: review due items, drill weak concepts, or discover new material.</div>
             </div>
             <div class="feature">
                 <div class="feature-icon">FC</div>
                 <div class="feature-title">Flashcards</div>
-                <div class="feature-desc">Flip-and-rate cards with keyboard shortcuts. Filter by module, review mode (random, due, weakest), and configurable deck size.</div>
-            </div>
-            <div class="feature">
-                <div class="feature-icon">25m</div>
-                <div class="feature-title">Pomodoro timer</div>
-                <div class="feature-desc">Built-in session timer with presets (25/5, 50/10, 90/20). Focus mode hides distractions. Thinking timer locks hints while you work.</div>
+                <div class="feature-desc">Flip-and-rate decks with keyboard shortcuts. Filter by module, sort by weakness, configurable session size.</div>
             </div>
             <div class="feature">
                 <div class="feature-icon">|||</div>
-                <div class="feature-title">Analytics</div>
-                <div class="feature-desc">Weak concept reports, module strength rankings, activity heatmap, streak tracking, and rating breakdowns.</div>
-            </div>
-            <div class="feature">
-                <div class="feature-icon">RW</div>
-                <div class="feature-title">Real-world challenges</div>
-                <div class="feature-desc">Open-ended engineering problems sourced from real company repos (Cloudflare, Google, Uber, Fly.io, and more). Requirements, hints, acceptance criteria &mdash; no solutions.</div>
-            </div>
-            <div class="feature">
-                <div class="feature-icon">AL</div>
-                <div class="feature-title">Algorithm practice</div>
-                <div class="feature-desc">Session-based algorithm drills across 10 categories with progressive difficulty variants. Discover, review, or drill your weakest problems.</div>
-            </div>
-            <div class="feature">
-                <div class="feature-icon">{}</div>
-                <div class="feature-title">Plugin system</div>
-                <div class="feature-desc">Features are self-contained plugins with a manifest.json. Add flashcards, challenges, or analytics to any course by dropping in content files.</div>
-            </div>
-            <div class="feature">
-                <div class="feature-icon">css</div>
-                <div class="feature-title">10 themes</div>
-                <div class="feature-desc">Gruvbox, Solarized, Everforest, OLED dark, Persona 5, Factorio, and more. Switch from the sidebar, persists across sessions.</div>
-            </div>
-            <div class="feature">
-                <div class="feature-icon">SW</div>
-                <div class="feature-title">Offline &amp; portable</div>
-                <div class="feature-desc">Service worker caches everything for offline use. All progress in localStorage &mdash; export, import, or nuke. Host on GitHub Pages, a USB stick, anywhere.</div>
+                <div class="feature-title">Analytics &amp; progress</div>
+                <div class="feature-desc">Weak concept reports, module strength rankings, streak tracking, activity heatmaps, and full data export.</div>
             </div>
         </div>
 
@@ -406,7 +400,7 @@
         <div class="discovery">
             <div class="section-label">// zero config</div>
             <p class="discovery-intro">
-                Everything is auto-discovered. No registries, no config files to update, no wiring.
+                Content files drive features &mdash; no registries, no config files, no wiring.
                 Drop files in the right place and the build figures out the rest.
             </p>
             <div class="discovery-items">
@@ -467,21 +461,21 @@
             </div>
         </div>
 
-        <div class="cta">
-            <a href="https://github.com/jmilne22/vibe-learn" class="cta-btn">Fork on GitHub</a>
-            <div class="cta-sub">Replace the content, build, deploy. The engine is generic &mdash; the courses are just data.</div>
-        </div>
-
         <!-- Courses -->
-        <div class="section-label">// included courses</div>
+        <div class="section-label">// example courses</div>
         <div class="course-grid">
 {{COURSE_CARDS}}
         </div>
 
+        <div class="cta">
+            <a href="https://github.com/jmilne22/vibe-learn" class="cta-btn">Fork on GitHub</a>
+            <div class="cta-sub">Courses are just content files. Replace them with your own and deploy.</div>
+        </div>
+
         <!-- Footer -->
         <div class="landing-footer">
-            <a href="https://github.com/jmilne22/vibe-learn">GitHub</a> &middot; <a href="guide.html">Platform Guide</a>
-            <div class="vibe-tag">100% vibe-coded with Claude. Zero lines of human-written code.</div>
+            <a href="https://github.com/jmilne22/vibe-learn">GitHub</a> &middot; <a href="guide.html">Platform Guide</a> &middot; <a href="go/index.html">Sample Course</a>
+            <div class="vibe-tag">Built with Claude</div>
         </div>
     </div>
     <script src="theme.js"></script>
