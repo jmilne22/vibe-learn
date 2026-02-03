@@ -68,6 +68,16 @@ cd dist && python3 -m http.server 8000
 
 Open `http://localhost:8000` for the course picker, or `http://localhost:8000/go/` for a specific course.
 
+## Create a course with AI
+
+1. `npm run new-course -- your-topic` — scaffold the directory structure
+2. Open [STARTER_PROMPT.md](STARTER_PROMPT.md), fill in the config section, paste into your AI tool (Claude Code, Cursor, Copilot, etc.)
+3. `npm run build` and deploy
+
+Claude Code users: the [CLAUDE.md](CLAUDE.md) file is loaded automatically. Just say "create a course about X" and it will read the starter prompt and follow the instructions.
+
+See [STARTER_PROMPT.md](STARTER_PROMPT.md) for the complete prompt with all schemas and examples.
+
 ## Making your own course
 
 ### 1. Create a course directory

@@ -6,7 +6,8 @@
   "scripts": {
     "build": "node build.js",
     "build:go": "node build.js go",
-    "build:rust": "node build.js rust"
+    "build:rust": "node build.js rust",
+    "new-course": "node create-course.js"
   },
   "dependencies": {
     "highlight.js": "^11.11.1",

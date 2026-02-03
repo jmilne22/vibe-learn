@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="vibe-learn — turn markdown lessons and YAML exercises into interactive courses with spaced repetition, flashcards, and analytics. Static output, deploy anywhere.">
+    <meta name="description" content="vibe-learn — build interactive courses on anything with AI. Generate content with Claude Code, Cursor, or Copilot. One build command gives you a course site with spaced repetition, exercises, flashcards, and analytics.">
     <title>vibe-learn</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -38,9 +38,9 @@
         .hero h1 .accent { color: var(--green-bright); }
         .hero-sub {
             color: var(--text-dim);
-            font-size: 1.1rem;
-            line-height: 1.6;
-            max-width: 540px;
+            font-size: 1.05rem;
+            line-height: 1.7;
+            max-width: 580px;
             margin: 0 auto;
         }
         .hero-ctas {
@@ -66,26 +66,173 @@
             opacity: 0.9;
             transform: translateY(-1px);
         }
-        .hero-cta-secondary {
+        a.hero-cta-secondary {
+            display: inline-block;
+            padding: 0.7rem 1.75rem;
             font-family: 'JetBrains Mono', monospace;
             font-size: 0.85rem;
             color: var(--green-bright);
             text-decoration: none;
             letter-spacing: 0.02em;
+            border: 1px solid var(--green-bright);
+            border-radius: 8px;
+            transition: background 0.2s, transform 0.15s;
         }
-        .hero-cta-secondary:hover { text-decoration: underline; }
+        a.hero-cta-secondary:hover {
+            background: var(--bg-card);
+            transform: translateY(-1px);
+        }
         .belt-items { display: none; }
+
+        /* --- Command preview (inside hero) --- */
+        .command-preview {
+            max-width: 520px;
+            margin: 2.5rem auto 0;
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+            text-align: left;
+        }
+        .command-preview-bar {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 0.6rem 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .command-preview-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--border);
+        }
+        .command-preview-title {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            margin-left: 0.5rem;
+        }
+        .command-preview pre {
+            margin: 0;
+            padding: 1.25rem 1.5rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82rem;
+            line-height: 1.8;
+            overflow-x: auto;
+        }
+        .command-preview .cmd-prompt { color: var(--green-bright); }
+        .command-preview .cmd-text { color: var(--text); }
+        .command-preview .cmd-comment { color: var(--text-dim); }
+
+        /* --- Section spacing --- */
+        .section-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--green-bright);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin: 3rem 0 1rem;
+        }
+
+        /* --- How it works --- */
+        .how-it-works {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+        }
+        .step {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+        }
+        .step-num {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--green-bright);
+            letter-spacing: 0.1em;
+            margin-bottom: 0.5rem;
+        }
+        .step-title {
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 0.35rem;
+        }
+        .step-desc {
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            line-height: 1.5;
+            margin-bottom: 0.6rem;
+        }
+        .step-code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            background: var(--bg-code);
+            color: var(--green-dim);
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            margin-top: auto;
+            padding-top: 0.75rem;
+            text-align: left;
+            white-space: pre;
+            line-height: 1.6;
+            overflow-x: auto;
+        }
+
+        /* --- Course grid --- */
+        .course-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1rem;
+        }
+        .course-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1.75rem;
+            text-decoration: none;
+            color: inherit;
+            transition: border-color 0.2s, transform 0.15s;
+            display: flex;
+            flex-direction: column;
+        }
+        .course-card:hover {
+            border-color: var(--green-bright);
+            transform: translateY(-2px);
+        }
+        .course-card .course-name {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        .course-card .course-desc {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            flex: 1;
+        }
+        .course-card .course-status {
+            margin-top: 0.75rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--orange);
+        }
+        .course-card .course-meta {
+            margin-top: 0.75rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--green-dim);
+        }
 
         /* --- Feature grid --- */
         .features {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(2, 1fr);
             gap: 1px;
             background: var(--border);
             border: 1px solid var(--border);
             border-radius: 10px;
             overflow: hidden;
-            margin: 3rem 0;
         }
         .feature {
             background: var(--bg-card);
@@ -111,7 +258,10 @@
 
         /* --- Discovery section --- */
         .discovery {
-            margin: 3rem 0;
+            margin-top: 3rem;
+        }
+        .discovery .section-label {
+            margin-top: 0;
         }
         .discovery-intro {
             color: var(--text-dim);
@@ -160,54 +310,10 @@
             margin-top: 0.4rem;
         }
 
-        /* --- How it works --- */
-        .how-it-works {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1.5rem;
-            margin: 3rem 0;
-        }
-        .step {
-            text-align: center;
-        }
-        .step-num {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.7rem;
-            color: var(--green-bright);
-            letter-spacing: 0.1em;
-            margin-bottom: 0.5rem;
-        }
-        .step-title {
-            font-weight: 600;
-            font-size: 1rem;
-            margin-bottom: 0.35rem;
-        }
-        .step-desc {
-            color: var(--text-dim);
-            font-size: 0.85rem;
-            line-height: 1.5;
-        }
-        .step-code {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.78rem;
-            background: var(--bg-code);
-            color: var(--green-dim);
-            padding: 0.75rem 1rem;
-            border-radius: 6px;
-            margin-top: 0.6rem;
-            text-align: left;
-            white-space: pre;
-            line-height: 1.6;
-            overflow-x: auto;
-        }
-        @media (max-width: 680px) {
-            .how-it-works { grid-template-columns: 1fr; }
-        }
-
         /* --- CTA --- */
         .cta {
             text-align: center;
-            margin: 2.5rem 0 3rem;
+            margin: 3rem 0;
         }
         a.cta-btn {
             display: inline-block;
@@ -228,59 +334,6 @@
             color: var(--text-dim);
             font-size: 0.82rem;
             margin-top: 0.6rem;
-        }
-
-        /* --- Courses section --- */
-        .section-label {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.8rem;
-            color: var(--green-bright);
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            margin-bottom: 1rem;
-        }
-        .course-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 1rem;
-        }
-        .course-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 1.75rem;
-            text-decoration: none;
-            color: inherit;
-            transition: border-color 0.2s, transform 0.15s;
-            display: flex;
-            flex-direction: column;
-        }
-        .course-card:hover {
-            border-color: var(--green-bright);
-            transform: translateY(-2px);
-        }
-        .course-card .course-name {
-            font-size: 1.3rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-        }
-        .course-card .course-desc {
-            color: var(--text-dim);
-            font-size: 0.9rem;
-            line-height: 1.6;
-            flex: 1;
-        }
-        .course-card .course-status {
-            margin-top: 0.75rem;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.75rem;
-            color: var(--orange);
-        }
-        .course-card .course-meta {
-            margin-top: 0.75rem;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.75rem;
-            color: var(--green-dim);
         }
 
         /* --- Footer --- */
@@ -312,27 +365,31 @@
             .hero { padding: 2.5rem 0 0.5rem; }
             .hero h1 { font-size: 1.8rem; }
             .hero-sub { font-size: 0.95rem; }
-            .features { grid-template-columns: 1fr; margin: 2rem 0; }
+            .features { grid-template-columns: 1fr; }
             .feature { padding: 1rem 1.15rem; }
             .feature-desc { font-size: 0.8rem; }
-            .discovery { margin: 2rem 0; }
+            .discovery { margin-top: 2rem; }
             .discovery-item { padding: 1rem 1.15rem; gap: 0.75rem; }
             .discovery-item .di-title { font-size: 0.88rem; }
             .discovery-item .di-code { font-size: 0.68rem; overflow-x: auto; }
-            .how-it-works { gap: 1rem; margin: 2rem 0; }
+            .how-it-works { grid-template-columns: 1fr; gap: 1rem; }
             .step-code { font-size: 0.72rem; overflow-x: auto; }
+            .section-label { margin-top: 2rem; }
             .course-grid { grid-template-columns: 1fr; }
             .course-card { padding: 1.25rem; }
             .course-card .course-name { font-size: 1.1rem; }
             .course-card .course-desc { font-size: 0.85rem; }
             .cta { margin: 2rem 0; }
             .landing-footer { margin-top: 2.5rem; }
+            .command-preview { margin-top: 1.5rem; }
+            .command-preview pre { font-size: 0.72rem; padding: 1rem; }
         }
         @media (max-width: 400px) {
             .hero h1 { font-size: 1.5rem; }
             .hero-sub { font-size: 0.88rem; }
             .discovery-item .di-code { display: none; }
             .step-code { font-size: 0.65rem; padding: 0.6rem 0.75rem; }
+            .command-preview pre { font-size: 0.65rem; padding: 0.75rem; }
         }
         @media (min-width: 681px) and (max-width: 860px) {
             .features { grid-template-columns: repeat(2, 1fr); }
@@ -344,14 +401,33 @@
         <!-- Hero -->
         <div class="hero">
             <div class="hero-brand">// vibe-learn</div>
-            <h1>Turn markdown into<br><span class="accent">interactive courses</span></h1>
+            <h1>Build an interactive course<br><span class="accent">on anything</span></h1>
             <p class="hero-sub">
-                Author lessons in Markdown, define exercises in YAML, run a build. You get a static course site with spaced repetition, flashcards, and analytics baked in.
+                Most courses teach a language in the abstract &mdash; syntax, toy exercises, nothing real.
+                Create a course built around <em>your</em> goal: Go for CLI tools, Rust for a game engine,
+                Python for your data pipeline.
             </p>
             <div class="hero-ctas">
                 <a href="https://github.com/jmilne22/vibe-learn" class="hero-cta-primary">Get Started on GitHub</a>
-                <a href="guide.html" class="hero-cta-secondary">Read the Guide &rarr;</a>
+                <a href="guide.html" class="hero-cta-secondary">Platform Guide</a>
+                <a href="go/index.html" class="hero-cta-secondary">See a live course &rarr;</a>
             </div>
+
+            <!-- Command preview -->
+            <div class="command-preview">
+                <div class="command-preview-bar">
+                    <div class="command-preview-dot"></div>
+                    <div class="command-preview-dot"></div>
+                    <div class="command-preview-dot"></div>
+                    <div class="command-preview-title">terminal</div>
+                </div>
+                <pre><span class="cmd-prompt">$</span> <span class="cmd-text">git clone https://github.com/jmilne22/vibe-learn && cd vibe-learn</span>
+<span class="cmd-prompt">$</span> <span class="cmd-text">npm run new-course -- python</span>
+<span class="cmd-prompt">$</span> <span class="cmd-text">claude "Create a Python course for JS developers"</span>
+<span class="cmd-prompt">$</span> <span class="cmd-text">npm run build</span>
+<span class="cmd-comment"># Course ready at dist/python/</span></pre>
+            </div>
+
             <div class="belt-items" aria-hidden="true">
                 <div class="belt-items-scroll">
                     <span>C</span><span>Go</span><span>Rs</span><span>K8s</span><span>Py</span><span>JS</span><span>TS</span><span>SQL</span>
@@ -362,41 +438,61 @@
             </div>
         </div>
 
+        <!-- How it works -->
+        <div class="section-label">// how it works</div>
+        <div class="how-it-works">
+            <div class="step">
+                <div class="step-num">01</div>
+                <div class="step-title">Scaffold</div>
+                <div class="step-desc">One command creates the course directory with the right structure.</div>
+                <div class="step-code">npm run new-course -- python</div>
+            </div>
+            <div class="step">
+                <div class="step-num">02</div>
+                <div class="step-title">Generate content</div>
+                <div class="step-desc">Give the starter prompt to Claude Code, Cursor, or Copilot. It writes lessons, exercises, and flashcards.</div>
+                <div class="step-code">See STARTER_PROMPT.md</div>
+            </div>
+            <div class="step">
+                <div class="step-num">03</div>
+                <div class="step-title">Build &amp; deploy</div>
+                <div class="step-desc">One command compiles everything into a static site. Deploy anywhere.</div>
+                <div class="step-code">npm run build</div>
+            </div>
+        </div>
+
+        <!-- Courses -->
+        <div class="section-label">// built with vibe-learn</div>
+        <div class="course-grid">
+{{COURSE_CARDS}}
+        </div>
+
         <!-- Features -->
+        <div class="section-label">// what you get</div>
         <div class="features">
             <div class="feature">
                 <div class="feature-icon">&gt;_</div>
-                <div class="feature-title">Markdown lessons</div>
-                <div class="feature-desc">Write lessons as plain text with syntax highlighting, code comparisons, and callout blocks. Version-control friendly, no CMS needed.</div>
+                <div class="feature-title">Lessons &amp; code comparisons</div>
+                <div class="feature-desc">Markdown with syntax highlighting and automatic side-by-side code comparisons. Show the same concept in two languages.</div>
             </div>
             <div class="feature">
                 <div class="feature-icon">[&thinsp;]</div>
                 <div class="feature-title">Exercises &amp; challenges</div>
-                <div class="feature-desc">Warmups, challenges, multiple variants, difficulty scaling, progressive hints, and annotated solutions &mdash; all defined in YAML.</div>
+                <div class="feature-desc">Warmups, challenges, multiple variants, difficulty modes, progressive hints, and annotated solutions.</div>
             </div>
             <div class="feature">
                 <div class="feature-icon">SRS</div>
-                <div class="feature-title">Spaced repetition</div>
-                <div class="feature-desc">SM-2 scheduling surfaces exercises and flashcards when you&rsquo;re about to forget them. Struggled items come back sooner.</div>
-            </div>
-            <div class="feature">
-                <div class="feature-icon">dp</div>
-                <div class="feature-title">Daily practice</div>
-                <div class="feature-desc">Auto-generated practice sessions: review due items, drill weak concepts, or discover new material.</div>
-            </div>
-            <div class="feature">
-                <div class="feature-icon">FC</div>
-                <div class="feature-title">Flashcards</div>
-                <div class="feature-desc">Flip-and-rate decks with keyboard shortcuts. Filter by module, sort by weakness, configurable session size.</div>
+                <div class="feature-title">Spaced repetition &amp; flashcards</div>
+                <div class="feature-desc">SM-2 scheduling surfaces exercises and flashcards when you're about to forget. Daily practice with review, discover, and weak-spot modes.</div>
             </div>
             <div class="feature">
                 <div class="feature-icon">|||</div>
                 <div class="feature-title">Analytics &amp; progress</div>
-                <div class="feature-desc">Weak concept reports, module strength rankings, streak tracking, activity heatmaps, and full data export.</div>
+                <div class="feature-desc">Weak concept reports, module strength rankings, streak tracking, activity heatmaps, and full data export. All local, no accounts.</div>
             </div>
         </div>
 
-        <!-- Discovery -->
+        <!-- Zero config -->
         <div class="discovery">
             <div class="section-label">// zero config</div>
             <p class="discovery-intro">
@@ -408,73 +504,29 @@
                     <div class="di-arrow">&gt;</div>
                     <div>
                         <div class="di-title">Drop a course folder &rarr; it appears on the site</div>
-                        <div class="di-desc">The build scans <code>courses/</code> for any directory with a <code>course.yaml</code>. Add a folder, rebuild, done. Each course gets isolated progress via its own localStorage prefix.</div>
+                        <div class="di-desc">The build scans <code>courses/</code> for any directory with a <code>course.yaml</code>. Add a folder, rebuild, done.</div>
                         <div class="di-code">courses/python/ + course.yaml &rarr; auto-discovered</div>
                     </div>
                 </div>
                 <div class="discovery-item">
                     <div class="di-arrow">&gt;</div>
                     <div>
-                        <div class="di-title">Drop a plugin folder &rarr; it wires into every course</div>
-                        <div class="di-desc">Plugins live in <code>engine/plugins/</code> with a <code>manifest.json</code>. The sidebar, dashboard, data backup, and navigation are all driven by discovered plugins. No hardcoded feature lists.</div>
-                        <div class="di-code">engine/plugins/my-feature/ + manifest.json &rarr; auto-wired</div>
-                    </div>
-                </div>
-                <div class="discovery-item">
-                    <div class="di-arrow">&gt;</div>
-                    <div>
-                        <div class="di-title">Add a content file &rarr; the feature activates for that course</div>
-                        <div class="di-desc">Each plugin declares a content pattern. If a course has matching files, it gets the feature. No files? The page doesn't exist &mdash; no dead links, no errors. The Go course has algorithm problems; Rust doesn't. Both just work.</div>
-                        <div class="di-code">content/algorithms/algorithms.yaml exists &rarr; algorithms page active</div>
+                        <div class="di-title">Add a content file &rarr; the feature activates</div>
+                        <div class="di-desc">Each plugin declares a content pattern. If a course has matching files, it gets the feature. No files? The page doesn't exist &mdash; no dead links.</div>
+                        <div class="di-code">content/flashcards/flashcards.yaml exists &rarr; flashcards page active</div>
                     </div>
                 </div>
             </div>
-        </div>
-
-        <!-- How it works -->
-        <div class="section-label">// how it works</div>
-        <div class="how-it-works">
-            <div class="step">
-                <div class="step-num">01</div>
-                <div class="step-title">Write content</div>
-                <div class="step-desc">Lessons in markdown, exercises in YAML. Drop them in a course directory.</div>
-                <div class="step-code">courses/go/content/
-  lessons/*.md
-  exercises/*.yaml
-  flashcards/*.yaml</div>
-            </div>
-            <div class="step">
-                <div class="step-num">02</div>
-                <div class="step-title">Build</div>
-                <div class="step-desc">One command. Markdown is rendered, YAML compiled to JS, everything bundled.</div>
-                <div class="step-code">npm run build</div>
-            </div>
-            <div class="step">
-                <div class="step-num">03</div>
-                <div class="step-title">Deploy anywhere</div>
-                <div class="step-desc">Pure static files. GitHub Pages, Netlify, S3, a USB stick. No server needed.</div>
-                <div class="step-code">dist/
-  index.html
-  go/
-  rust/
-  ...</div>
-            </div>
-        </div>
-
-        <!-- Courses -->
-        <div class="section-label">// example courses</div>
-        <div class="course-grid">
-{{COURSE_CARDS}}
         </div>
 
         <div class="cta">
             <a href="https://github.com/jmilne22/vibe-learn" class="cta-btn">Fork on GitHub</a>
-            <div class="cta-sub">Courses are just content files. Replace them with your own and deploy.</div>
+            <div class="cta-sub">Works with Claude Code, Cursor, Copilot, or any AI coding tool. See <a href="https://github.com/jmilne22/vibe-learn/blob/main/STARTER_PROMPT.md" style="color: var(--green-dim);">STARTER_PROMPT.md</a> to get started.</div>
         </div>
 
         <!-- Footer -->
         <div class="landing-footer">
-            <a href="https://github.com/jmilne22/vibe-learn">GitHub</a> &middot; <a href="guide.html">Platform Guide</a> &middot; <a href="go/index.html">Sample Course</a>
+            <a href="https://github.com/jmilne22/vibe-learn">GitHub</a> &middot; <a href="https://github.com/jmilne22/vibe-learn/blob/main/STARTER_PROMPT.md">Starter Prompt</a> &middot; <a href="guide.html">Platform Guide</a> &middot; <a href="go/index.html">Go Course</a>
             <div class="vibe-tag">Built with Claude</div>
         </div>
     </div>

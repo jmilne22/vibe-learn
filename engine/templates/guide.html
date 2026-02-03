@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="vibe-learn platform guide — how to create courses, write lessons, configure plugins, and deploy.">
+    <meta name="description" content="vibe-learn platform guide — create courses with AI tools, write content, build, and deploy.">
     <title>Platform Guide — vibe-learn</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -259,6 +259,35 @@
         .plugin-card.accent-purple { border-left-color: var(--purple); }
         .plugin-card.accent-red { border-left-color: var(--red); }
 
+        /* --- Tool cards --- */
+        .tool-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.25rem 1.5rem;
+            margin: 1rem 0;
+        }
+        .tool-card h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 0 0 0.5rem;
+        }
+        .tool-card p, .tool-card li {
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+        .tool-card ul {
+            padding-left: 1.25rem;
+            margin: 0.4rem 0;
+        }
+        .tool-card .tool-cmd {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--orange);
+            margin-bottom: 0.4rem;
+        }
+
         /* --- Tables --- */
         .guide-table {
             width: 100%;
@@ -324,6 +353,7 @@
             .toc-list { grid-template-columns: 1fr; }
             .guide-section { margin: 2.5rem 0; }
             .plugin-card { padding: 1.15rem; }
+            .tool-card { padding: 1rem; }
             .yaml-example { font-size: 0.72rem; padding: 0.6rem 0.75rem; }
             .guide-table { font-size: 0.8rem; }
             .guide-table th, .guide-table td { padding: 0.4rem 0.5rem; }
@@ -342,10 +372,11 @@
         <!-- Hero -->
         <div class="hero">
             <div class="hero-brand">// platform guide</div>
-            <h1>Building a <span class="accent">Course</span></h1>
+            <h1>Create a Course <span class="accent">with AI</span></h1>
             <p class="hero-sub">
-                Write markdown lessons, define exercises in YAML, run one build command, deploy static files.
-                No backend, no database &mdash; the engine handles rendering, spaced repetition, and everything else.
+                Scaffold a course, tell your AI tool what to teach, run one build command.
+                You get a static site with lessons, exercises, flashcards, spaced repetition, and analytics &mdash;
+                no backend, no database.
             </p>
             <div class="belt-items" aria-hidden="true">
                 <div class="belt-items-scroll">
@@ -361,55 +392,218 @@
         <nav class="toc">
             <div class="toc-label">// on this page</div>
             <ol class="toc-list">
-                <li><a href="#overview"><span class="toc-num">1</span> Overview</a></li>
-                <li><a href="#course-setup"><span class="toc-num">2</span> Course Setup</a></li>
-                <li><a href="#writing-lessons"><span class="toc-num">3</span> Writing Lessons</a></li>
-                <li><a href="#content-types"><span class="toc-num">4</span> Content Types</a></li>
-                <li><a href="#spaced-repetition"><span class="toc-num">5</span> Spaced Repetition</a></li>
-                <li><a href="#themes"><span class="toc-num">6</span> Themes</a></li>
-                <li><a href="#extending"><span class="toc-num">7</span> Building Plugins</a></li>
-                <li><a href="#ai-content"><span class="toc-num">8</span> Creating Content with AI</a></li>
+                <li><a href="#getting-started"><span class="toc-num">1</span> Getting Started</a></li>
+                <li><a href="#ai-tools"><span class="toc-num">2</span> Using AI Tools</a></li>
+                <li><a href="#course-setup"><span class="toc-num">3</span> Course Setup</a></li>
+                <li><a href="#writing-lessons"><span class="toc-num">4</span> Writing Lessons</a></li>
+                <li><a href="#content-types"><span class="toc-num">5</span> Content Types</a></li>
+                <li><a href="#spaced-repetition"><span class="toc-num">6</span> Spaced Repetition</a></li>
+                <li><a href="#themes"><span class="toc-num">7</span> Themes</a></li>
+                <li><a href="#extending"><span class="toc-num">8</span> Building Plugins</a></li>
                 <li><a href="#build-deploy"><span class="toc-num">9</span> Build &amp; Deploy</a></li>
             </ol>
         </nav>
 
         <!-- ============================================================ -->
-        <!-- 1. Overview                                                   -->
+        <!-- 1. Getting Started                                            -->
         <!-- ============================================================ -->
-        <div class="guide-section" id="overview">
-            <div class="section-label">// 1 &mdash; overview</div>
+        <div class="guide-section" id="getting-started">
+            <div class="section-label">// 1 &mdash; getting started</div>
             <p class="section-lead">
-                A course is a directory of markdown and YAML files. The build script compiles them into a
-                self-contained static site with lessons, interactive exercises, flashcards, analytics, and
-                spaced repetition &mdash; all running client-side with no server.
+                Most courses teach a language in the abstract. You learn syntax, do toy exercises, and never
+                build anything real. vibe-learn exists because learning works better when the course is built
+                around <em>your</em> goal &mdash; learning Go to build CLI tools, learning Rust to write a game engine,
+                learning Python to automate your data pipeline.
             </p>
-            <p>Here's what happens when you run <span class="fp">npm run build</span>:</p>
+            <p>With AI tools, you can generate a course tailored to exactly what you want to build, with exercises
+               and examples that use your target domain. Three commands:</p>
+
+            <div class="yaml-example">$ npm install
+$ npm run new-course -- python
+$ npm run build</div>
+
+            <p>The scaffold command creates a course directory with the right file structure.
+               From there, you either write content manually or use an AI tool to generate it.
+               The build compiles everything into static HTML you can host anywhere.</p>
+
+            <h3 id="how-it-works">How it works</h3>
             <ol>
-                <li>The build scans <span class="fp">courses/</span> for directories containing a <span class="fp">course.yaml</span>.</li>
-                <li>For each course, it reads the manifest, compiles markdown lessons to HTML, converts YAML exercise/flashcard files to JS data, and discovers which plugins are active.</li>
-                <li>Active plugins are determined automatically &mdash; if the course has the content files a plugin expects, that plugin's page is generated. No config to update.</li>
-                <li>Output goes to <span class="fp">dist/</span> as pure static files you can host anywhere.</li>
+                <li><strong>Scaffold.</strong> <span class="fp">npm run new-course -- &lt;slug&gt;</span> creates
+                    <span class="fp">courses/&lt;slug&gt;/</span> with a minimal <span class="fp">course.yaml</span>,
+                    a starter lesson, and the directory structure for exercises, flashcards, and assets.</li>
+                <li><strong>Generate content.</strong> Open <span class="fp">STARTER_PROMPT.md</span> and paste it into
+                    Claude Code, Cursor, Copilot, or any AI coding tool. It contains full schemas for every content type.
+                    The AI generates lessons, exercises, flashcards, and optional extras. See <a href="#ai-tools">section 2</a> for tool-specific workflows.</li>
+                <li><strong>Build.</strong> <span class="fp">npm run build</span> compiles markdown + YAML into a
+                    self-contained static site. Output goes to <span class="fp">dist/</span>. Host it anywhere.</li>
             </ol>
+
             <div class="callout">
                 <div class="callout-label">Prerequisites</div>
-                Node.js and npm. Install dependencies once with <span class="fp">npm install</span>, then <span class="fp">npm run build</span> to compile.
-                No other tooling required.
+                Node.js and npm. Install dependencies once with <span class="fp">npm install</span>, then
+                <span class="fp">npm run build</span> to compile. No other tooling required.
             </div>
+
+            <h3 id="what-you-get">What the engine provides</h3>
+            <p>You provide content (markdown lessons, YAML exercises). The engine handles everything else:</p>
+            <ul>
+                <li><strong>Interactive exercises</strong> with multiple variants, progressive hints, annotated solutions, and self-rating</li>
+                <li><strong>Spaced repetition</strong> (SM-2 algorithm) scheduling reviews across exercises and flashcards</li>
+                <li><strong>Flashcard sessions</strong> with flip-and-rate interface, multiple review modes</li>
+                <li><strong>Daily practice</strong> that auto-selects exercises based on your SRS data</li>
+                <li><strong>Analytics dashboard</strong> showing weak concepts, module strengths, per-concept breakdowns</li>
+                <li><strong>Algorithm practice</strong> with session-based drills and pattern primers</li>
+                <li><strong>Real-world challenges</strong> with requirements, acceptance criteria, and progressive hints</li>
+                <li><strong>10 color themes</strong> switchable from the sidebar</li>
+                <li><strong>Plugin auto-discovery</strong> &mdash; drop a content file in the right place and the feature activates</li>
+            </ul>
+
+            <h3 id="project-structure">Project structure</h3>
+            <div class="yaml-example">vibe-learn/
+  engine/                               # Platform code — don't modify for content
+    templates/                          # HTML templates (landing, guide, lessons, etc.)
+    plugins/                            # Feature plugins (flashcards, algorithms, etc.)
+    js/                                 # Runtime JS (exercises, SRS, themes)
+    css/                                # Base styles
+    themes/                             # Color theme CSS files
+  courses/                              # One directory per course
+    go/                                 # Example: Go course
+    sample/                             # Example: Sample course
+  build.js                              # Build system — compiles everything to dist/
+  STARTER_PROMPT.md                     # AI generation prompt with all schemas
+  CLAUDE.md                             # Claude Code auto-context</div>
         </div>
 
+        <hr class="section-divider">
+
         <!-- ============================================================ -->
-        <!-- 2. Course Setup                                               -->
+        <!-- 2. Using AI Tools                                             -->
+        <!-- ============================================================ -->
+        <div class="guide-section" id="ai-tools">
+            <div class="section-label">// 2 &mdash; using AI tools</div>
+            <p class="section-lead">
+                <span class="fp">STARTER_PROMPT.md</span> is a self-contained generation prompt that works with any
+                AI coding tool. It includes every schema, every file naming convention, and a verification checklist.
+                Pick a tool below and follow the workflow.
+            </p>
+
+            <!-- Claude Code -->
+            <div class="tool-card" id="tool-claude-code">
+                <h4>Claude Code</h4>
+                <div class="tool-cmd">Terminal &mdash; runs in your project directory</div>
+                <p>The fastest path. Claude Code reads the <span class="fp">CLAUDE.md</span> file automatically,
+                   which points it to <span class="fp">STARTER_PROMPT.md</span>. You don't need to paste anything.</p>
+                <ol>
+                    <li>Open a terminal in the project root</li>
+                    <li>Run <span class="fp">claude</span> to start a session</li>
+                    <li>Say: <em>"Create a course about Python for JavaScript developers"</em></li>
+                    <li>Claude reads <span class="fp">CLAUDE.md</span>, follows <span class="fp">STARTER_PROMPT.md</span>,
+                        scaffolds the course, and generates all content files</li>
+                    <li>Review the output, then <span class="fp">npm run build</span></li>
+                </ol>
+                <p>Claude Code can also iterate on existing courses: <em>"Add 3 more modules to the Python course about
+                   decorators, generators, and async"</em> &mdash; it reads the existing <span class="fp">course.yaml</span>,
+                   understands the structure, and extends it.</p>
+            </div>
+
+            <!-- Cursor -->
+            <div class="tool-card" id="tool-cursor">
+                <h4>Cursor</h4>
+                <div class="tool-cmd">IDE &mdash; Composer or inline chat</div>
+                <p>Cursor's Composer mode works well for multi-file generation. Use the Agent or Composer panel.</p>
+                <ol>
+                    <li>Open the project in Cursor</li>
+                    <li>Open Composer (Cmd+I / Ctrl+I)</li>
+                    <li>Paste the contents of <span class="fp">STARTER_PROMPT.md</span> into the prompt, or reference it:
+                        <em>"Read STARTER_PROMPT.md and create a course about Rust for C++ developers"</em></li>
+                    <li>Composer generates files across the course directory</li>
+                    <li>Review the generated files in the editor, then <span class="fp">npm run build</span> in the terminal</li>
+                </ol>
+                <div class="callout">
+                    <div class="callout-label">Tip</div>
+                    For large courses (8+ modules), generate one module at a time in separate Composer prompts.
+                    This keeps the context window focused and produces higher quality output.
+                </div>
+            </div>
+
+            <!-- GitHub Copilot -->
+            <div class="tool-card" id="tool-copilot">
+                <h4>GitHub Copilot</h4>
+                <div class="tool-cmd">VS Code &mdash; Copilot Chat panel</div>
+                <p>Use Copilot Chat in agent mode (<span class="fp">@workspace</span>) to generate course content.</p>
+                <ol>
+                    <li>Open the project in VS Code with Copilot enabled</li>
+                    <li>Open Copilot Chat (Ctrl+Shift+I)</li>
+                    <li>Paste <span class="fp">STARTER_PROMPT.md</span> contents into the chat,
+                        or tell it: <em>"Read STARTER_PROMPT.md and follow its instructions to create a course about Kubernetes"</em></li>
+                    <li>Review generated files and run <span class="fp">npm run build</span></li>
+                </ol>
+            </div>
+
+            <!-- Windsurf -->
+            <div class="tool-card" id="tool-windsurf">
+                <h4>Windsurf</h4>
+                <div class="tool-cmd">IDE &mdash; Cascade flow</div>
+                <p>Windsurf's Cascade mode handles multi-file generation. Open the project, start a Cascade flow,
+                   and paste <span class="fp">STARTER_PROMPT.md</span> with your topic. Cascade creates the files
+                   and you can review diffs before accepting.</p>
+            </div>
+
+            <!-- Other tools -->
+            <div class="tool-card" id="tool-other">
+                <h4>ChatGPT, Claude.ai, or any LLM</h4>
+                <div class="tool-cmd">Browser &mdash; copy/paste workflow</div>
+                <p>Any LLM that can output YAML and markdown works. The process is more manual but still effective.</p>
+                <ol>
+                    <li>Run <span class="fp">npm run new-course -- &lt;slug&gt;</span> to scaffold the directory</li>
+                    <li>Open <span class="fp">STARTER_PROMPT.md</span>, fill in the configuration section at the top
+                        (topic, slug, number of modules, etc.)</li>
+                    <li>Paste the entire file into your LLM conversation</li>
+                    <li>The LLM generates <span class="fp">course.yaml</span>, lesson markdown files, exercise YAML,
+                        and flashcards following the schemas</li>
+                    <li>Copy each generated file into the correct location under <span class="fp">courses/&lt;slug&gt;/</span></li>
+                    <li>Run <span class="fp">npm run build</span> to compile</li>
+                </ol>
+                <div class="callout">
+                    <div class="callout-label">Tip</div>
+                    Generate one module at a time (lesson + exercises + flashcards for that module) rather than
+                    the entire course at once. This produces better results and avoids hitting context limits.
+                </div>
+            </div>
+
+            <h3 id="ai-tips">Getting better results</h3>
+            <ul>
+                <li><strong>Be specific about your audience.</strong> "Python for JavaScript developers" produces
+                    side-by-side comparisons and builds on existing knowledge. "Python for beginners" starts from scratch.
+                    The more context you give, the better the content.</li>
+                <li><strong>Generate iteratively.</strong> Start with <span class="fp">course.yaml</span>, review it,
+                    then generate modules one by one. Iterating is cheaper than regenerating everything.</li>
+                <li><strong>Build after each module.</strong> Run <span class="fp">node build.js &lt;slug&gt;</span>
+                    after each module to catch YAML syntax errors and missing files early.</li>
+                <li><strong>Edit the output.</strong> AI-generated content is a starting point. The best courses
+                    have hand-edited explanations, curated examples, and exercises tuned to the audience.</li>
+                <li><strong>Use the verification checklist.</strong> <span class="fp">STARTER_PROMPT.md</span> ends with
+                    a checklist of common mistakes (wrong file names, missing exercise divs, unquoted flashcard keys).
+                    Run through it before deploying.</li>
+            </ul>
+        </div>
+
+        <hr class="section-divider">
+
+        <!-- ============================================================ -->
+        <!-- 3. Course Setup                                               -->
         <!-- ============================================================ -->
         <div class="guide-section" id="course-setup">
-            <div class="section-label">// 2 &mdash; course setup</div>
+            <div class="section-label">// 3 &mdash; course setup</div>
             <p class="section-lead">
-                Each course lives in its own folder. The build discovers it automatically &mdash; no registration step.
+                Each course lives in its own folder under <span class="fp">courses/</span>.
+                The build discovers it automatically &mdash; no registration step.
             </p>
 
             <h3 id="directory-structure">Directory structure</h3>
-            <p>Create a folder under <span class="fp">courses/</span> with a <span class="fp">course.yaml</span> and a <span class="fp">content/</span> directory.
-                Only <span class="fp">course.yaml</span> and <span class="fp">content/lessons/</span> are required. Every other subdirectory is optional &mdash;
-                add them when you want to enable the corresponding feature.</p>
+            <p>The scaffold command (<span class="fp">npm run new-course -- &lt;slug&gt;</span>) creates this for you.
+                Only <span class="fp">course.yaml</span> and <span class="fp">content/lessons/</span> are required.
+                Every other subdirectory is optional &mdash; add them when you want to enable the corresponding feature.</p>
             <div class="yaml-example">courses/my-course/
   course.yaml                                 # required — course metadata
   content/
@@ -449,7 +643,7 @@ modules:
     hasExercises: false                        # no exercise file for this module
   - title: Hello World                        # id: 1, file: module1
     description: "Your first program."
-  - title: Variables & Types                  # id: 2, file: module2
+  - title: Variables &amp; Types                  # id: 2, file: module2
     description: "Data types and declarations."
   - title: Control Flow                       # id: 3, file: module3
     description: "Conditionals and loops."
@@ -485,10 +679,10 @@ projects:                                     # optional — capstone projects
         </div>
 
         <!-- ============================================================ -->
-        <!-- 3. Writing Lessons                                            -->
+        <!-- 4. Writing Lessons                                            -->
         <!-- ============================================================ -->
         <div class="guide-section" id="writing-lessons">
-            <div class="section-label">// 3 &mdash; writing lessons</div>
+            <div class="section-label">// 4 &mdash; writing lessons</div>
             <p class="section-lead">
                 Lessons are standard Markdown files in <span class="fp">content/lessons/</span>, one per module,
                 named to match the module's file field: <span class="fp">module0.md</span>, <span class="fp">module1.md</span>, etc.
@@ -531,15 +725,36 @@ for i := 0; i &lt; 5; i++ {
             <div class="yaml-example">&gt; **Tip:** Remember to save your work before clearing browser data.
 
 &gt; **Warning:** This operation will delete all stored progress.</div>
+
+            <h3 id="exercise-divs">Exercise section (critical)</h3>
+            <p>For every module that has exercises (<span class="fp">hasExercises: true</span> or omitted), the markdown file <strong>must</strong> end with this structure:</p>
+            <div class="yaml-example">## Exercises
+
+### Warmups
+
+&lt;div id="warmups-container"&gt;
+    &lt;noscript&gt;&lt;p class="js-required"&gt;JavaScript is required&lt;/p&gt;&lt;/noscript&gt;
+&lt;/div&gt;
+
+### Challenges
+
+&lt;div id="challenges-container"&gt;
+    &lt;noscript&gt;&lt;p class="js-required"&gt;JavaScript is required&lt;/p&gt;&lt;/noscript&gt;
+&lt;/div&gt;</div>
+            <div class="callout">
+                <div class="callout-label">Warning</div>
+                If these divs are missing, exercises will not render even if the YAML file exists. The build system
+                injects exercise JavaScript that targets these container IDs.
+            </div>
         </div>
 
         <hr class="section-divider">
 
         <!-- ============================================================ -->
-        <!-- 4. Content Types (Plugin Catalog)                             -->
+        <!-- 5. Content Types (Plugin Catalog)                             -->
         <!-- ============================================================ -->
         <div class="guide-section" id="content-types">
-            <div class="section-label">// 4 &mdash; content types</div>
+            <div class="section-label">// 5 &mdash; content types</div>
             <p class="section-lead">
                 Beyond lessons, a course can include exercises, flashcards, algorithm problems, and real-world challenges.
                 Each content type is either a core feature (exercises) or a plugin that auto-activates when the
@@ -569,7 +784,7 @@ for i := 0; i &lt; 5; i++ {
                 </div>
                 <div class="plugin-activate">content/exercises/module&lt;id&gt;-variants.yaml</div>
                 <p>Interactive exercises with multiple variants per problem, progressive hints, annotated solutions,
-                   and self-rating that feeds the spaced repetition scheduler (see <a href="#spaced-repetition">section 5</a>).</p>
+                   and self-rating that feeds the spaced repetition scheduler (see <a href="#spaced-repetition">section 6</a>).</p>
 
                 <p>Each module that has <span class="fp">hasExercises: true</span> (the default) expects a corresponding
                    file named <span class="fp">module&lt;id&gt;-variants.yaml</span>. The file defines warmups, challenges,
@@ -811,7 +1026,7 @@ variants:
                 <div class="plugin-activate">Auto-activates when content/exercises/ exists &mdash; no content file needed</div>
                 <p>Session-based practice that auto-selects exercises based on your SRS data. You don't write any
                    additional content for this plugin &mdash; it pulls from your existing exercise data and the
-                   spaced repetition scheduler (see <a href="#spaced-repetition">section 5</a>).</p>
+                   spaced repetition scheduler (see <a href="#spaced-repetition">section 6</a>).</p>
 
                 <div class="plugin-features">
                     <div class="plugin-features-label">Key features</div>
@@ -848,10 +1063,10 @@ variants:
         <hr class="section-divider">
 
         <!-- ============================================================ -->
-        <!-- 5. Spaced Repetition                                          -->
+        <!-- 6. Spaced Repetition                                          -->
         <!-- ============================================================ -->
         <div class="guide-section" id="spaced-repetition">
-            <div class="section-label">// 5 &mdash; spaced repetition</div>
+            <div class="section-label">// 6 &mdash; spaced repetition</div>
             <p class="section-lead">
                 The platform uses the SM-2 algorithm (the same algorithm behind Anki) to schedule reviews.
                 Every exercise variant and flashcard is tracked independently with its own ease factor and review interval.
@@ -883,10 +1098,10 @@ variants:
         </div>
 
         <!-- ============================================================ -->
-        <!-- 6. Themes                                                     -->
+        <!-- 7. Themes                                                     -->
         <!-- ============================================================ -->
         <div class="guide-section" id="themes">
-            <div class="section-label">// 6 &mdash; themes</div>
+            <div class="section-label">// 7 &mdash; themes</div>
             <p class="section-lead">
                 10 built-in color themes, switchable from the sidebar. The selection persists in localStorage.
             </p>
@@ -909,10 +1124,10 @@ variants:
         <hr class="section-divider">
 
         <!-- ============================================================ -->
-        <!-- 7. Building Plugins                                           -->
+        <!-- 8. Building Plugins                                           -->
         <!-- ============================================================ -->
         <div class="guide-section" id="extending">
-            <div class="section-label">// 7 &mdash; building plugins</div>
+            <div class="section-label">// 8 &mdash; building plugins</div>
             <p class="section-lead">
                 Plugins add new feature pages to courses. If you want to extend the platform beyond the built-in
                 content types, this section explains how. If you're only writing course content, you can skip this.
@@ -1063,33 +1278,6 @@ variants:
         </div>
 
         <hr class="section-divider">
-
-        <!-- ============================================================ -->
-        <!-- 8. Creating Content with AI                                   -->
-        <!-- ============================================================ -->
-        <div class="guide-section" id="ai-content">
-            <div class="section-label">// 8 &mdash; creating content with AI</div>
-            <p class="section-lead">
-                The YAML formats are designed to be AI-friendly: structured, predictable, and easy to
-                prompt for. You can use Claude, ChatGPT, or any LLM to generate course content.
-            </p>
-
-            <h3 id="ai-workflow">Recommended workflow</h3>
-            <ol>
-                <li><strong>Start with the lesson.</strong> Write (or generate) the markdown lesson first. This establishes the concepts that exercises and flashcards will reference.</li>
-                <li><strong>Generate exercises.</strong> Paste the YAML format from <a href="#plugin-exercises">Exercises</a> above as context, along with a list of concepts from your lesson. Ask for warmups and challenges with 2&ndash;3 variants each.</li>
-                <li><strong>Generate flashcards.</strong> Provide the module's topic list and ask for Q&amp;A pairs in the format from <a href="#plugin-flashcards">Flashcards</a>.</li>
-                <li><strong>Batch-generate supplementary content.</strong> Algorithm problems and real-world challenges work well as batch requests &mdash; ask for 5&ndash;10 at a time with the format example as context.</li>
-            </ol>
-
-            <div class="callout">
-                <div class="callout-label">Tip</div>
-                Copy a YAML example from this guide and paste it into your AI prompt as the format reference.
-                The AI will match the structure precisely. This works for every content type.
-            </div>
-
-            <p>Tooling to streamline course creation without AI is in the works.</p>
-        </div>
 
         <!-- ============================================================ -->
         <!-- 9. Build & Deploy                                             -->
