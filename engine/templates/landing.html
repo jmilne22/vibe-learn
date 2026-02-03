@@ -460,8 +460,8 @@
             <div class="step">
                 <div class="step-num">02</div>
                 <div class="step-title">Generate content</div>
-                <div class="step-desc">Give the starter prompt to Claude Code, Cursor, Copilot, or Augment. It writes lessons, exercises, and flashcards.</div>
-                <div class="step-code">See STARTER_PROMPT.md</div>
+                <div class="step-desc">Use an AI tool with the starter prompt, or edit visually with the built-in course builder.</div>
+                <div class="step-code">npm run builder</div>
             </div>
             <div class="step">
                 <div class="step-num">03</div>
@@ -524,6 +524,14 @@
                         <div class="di-title">Add a content file &rarr; the feature activates</div>
                         <div class="di-desc">Each plugin declares a content pattern. If a course has matching files, it gets the feature. No files? The page doesn't exist &mdash; no dead links.</div>
                         <div class="di-code">content/flashcards/flashcards.yaml exists &rarr; flashcards page active</div>
+                    </div>
+                </div>
+                <div class="discovery-item">
+                    <div class="di-arrow">&gt;</div>
+                    <div>
+                        <div class="di-title">Visual course builder <span style="font-size:0.7rem; color:var(--orange); font-family:'JetBrains Mono',monospace;">(WIP)</span></div>
+                        <div class="di-desc">Don't want to write YAML by hand? <span style="font-family:'JetBrains Mono',monospace; font-size:0.8rem;">npm run builder</span> launches a local web editor with forms for every content type, live markdown preview, and one-click builds.</div>
+                        <div class="di-code">npm run builder &rarr; http://localhost:3456</div>
                     </div>
                 </div>
             </div>

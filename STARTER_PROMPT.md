@@ -745,3 +745,14 @@ Before finishing, verify:
 - [ ] The `content/flashcards/` directory exists with `flashcards.yaml`
 - [ ] The `content/exercises/` directory exists (even if some modules have no exercises)
 - [ ] Side-by-side comparisons use `*Label*` on its own line before each code block
+
+## Build & Run
+
+Once all content is generated, tell the user how to build and preview the course. Use the actual slug from course.yaml:
+
+```bash
+npm run build              # or: node build.js {slug}
+cd dist && python3 -m http.server 8000
+```
+
+Then open `http://localhost:8000/{slug}/` to preview the course (substitute the real slug).
