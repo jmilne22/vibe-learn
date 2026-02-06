@@ -443,6 +443,14 @@ function buildCourse(slug) {
         const mdContent = fs.readFileSync(mdFile, 'utf8');
         let htmlContent = processCodeBlocks(marked.parse(mdContent));
 
+        // Add IDs to h2 headings so conceptLinks anchors resolve
+        htmlContent = htmlContent.replace(/<h2>([^<]+)<\/h2>/g, (match, text) => {
+            const id = 'lesson-' + text.trim().toLowerCase()
+                .replace(/&amp;\s*/g, '').replace(/[&]\s*/g, '')
+                .replace(/[^a-z0-9]+/g, '-').replace(/-+$/, '');
+            return `<h2 id="${id}">${text}</h2>`;
+        });
+
         // Inject jump-to-section box after the Exercises heading for modules with exercises
         if (mod.hasExercises) {
             const jumpBox = `<div class="exercise-jump-box"><div class="exercise-jump-label">Jump to section:</div><div class="exercise-jump-links"><a href="#warmups">🔥 Warmups</a><a href="#challenges">💪 Challenges</a></div></div>`;

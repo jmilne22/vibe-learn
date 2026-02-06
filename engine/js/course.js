@@ -380,9 +380,15 @@
         var progress = window.ExerciseProgress?.get(exerciseKey);
         var completedClass = progress?.status === 'completed' ? ' exercise-completed' : '';
 
+        var conceptLink = window.conceptLinks ? window.conceptLinks[challenge.concept] : null;
+        var conceptHtml = conceptLink
+            ? ' <a href="' + conceptLink + '" class="concept-link" style="color: var(--orange); opacity: 0.8;">(' + challenge.concept + ' \u2197)</a>'
+            : (challenge.concept ? ' <span style="font-size: 0.75rem; opacity: 0.6; color: var(--text-dim);">(' + challenge.concept + ')</span>' : '');
+
         var html = '<div class="exercise' + completedClass + '" data-challenge-id="' + challenge.id + '" data-exercise-key="' + exerciseKey + '">' +
             '<h4>Challenge ' + num + ': ' + variant.title +
                 ' <span class="variant-difficulty" title="Variant difficulty: ' + variantDiff + ' stars">' + variantStars + '</span>' +
+                conceptHtml +
             '</h4>';
 
         var hasEasierVariants = challenge.variants.some(function(v) { return EC.getVariantDifficulty(v, challenge) < variantDiff; });
@@ -605,6 +611,66 @@
             });
         }
     });
+
+    // --- Concept popup ---
+    function initConceptPopup() {
+        document.addEventListener('click', function(e) {
+            var link = e.target.closest('.concept-link');
+            if (!link) return;
+            var href = link.getAttribute('href');
+            if (!href || href.charAt(0) !== '#') return;
+            e.preventDefault();
+
+            var targetId = href.substring(1);
+            var heading = document.getElementById(targetId);
+            if (!heading) return;
+
+            // Clone content from this heading to the next h2
+            var content = document.createElement('div');
+            var node = heading.nextElementSibling;
+            while (node && node.tagName !== 'H2') {
+                content.appendChild(node.cloneNode(true));
+                node = node.nextElementSibling;
+            }
+
+            // Build popup
+            var backdrop = document.createElement('div');
+            backdrop.className = 'concept-popup-backdrop';
+
+            var popup = document.createElement('div');
+            popup.className = 'concept-popup';
+
+            var closeBtn = document.createElement('button');
+            closeBtn.className = 'concept-popup-close';
+            closeBtn.textContent = '\u2715';
+            closeBtn.setAttribute('aria-label', 'Close');
+
+            var title = document.createElement('h2');
+            title.style.marginTop = '0';
+            title.textContent = heading.textContent;
+
+            popup.appendChild(closeBtn);
+            popup.appendChild(title);
+            popup.appendChild(content);
+            backdrop.appendChild(popup);
+            document.body.appendChild(backdrop);
+
+            function close() {
+                backdrop.remove();
+                document.removeEventListener('keydown', onKey);
+            }
+            function onKey(ev) {
+                if (ev.key === 'Escape') close();
+            }
+            backdrop.addEventListener('click', function(ev) {
+                if (ev.target === backdrop) close();
+            });
+            closeBtn.addEventListener('click', close);
+            document.addEventListener('keydown', onKey);
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', initConceptPopup);
 
     // Expose functions globally for onclick handlers
     window.shuffleWarmups = shuffleWarmups;

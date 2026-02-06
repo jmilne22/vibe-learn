@@ -1163,11 +1163,84 @@ footer {
     font-size: 0.75rem;
     text-decoration: none;
     transition: all 0.2s;
+    cursor: pointer;
 }
 
 .concept-link:hover {
     text-decoration: underline;
     opacity: 1 !important;
+}
+
+/* Concept quick-reference popup */
+.concept-popup-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.concept-popup {
+    position: relative;
+    max-width: 750px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2rem;
+    z-index: 201;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.concept-popup-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.concept-popup-close:hover {
+    border-color: var(--text-main);
+    color: var(--text-main);
+}
+
+.concept-popup h2 {
+    padding-right: 2.5rem;
+}
+
+.concept-popup pre {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    line-height: 1.6;
+}
+
+.concept-popup pre code {
+    background: none;
+    padding: 0;
+    border: none;
+    font-size: inherit;
+    color: var(--text-main);
 }
 
 /* ============================================
