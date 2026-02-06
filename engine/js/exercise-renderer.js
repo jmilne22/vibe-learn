@@ -53,6 +53,15 @@
         return html;
     }
 
+    // Render quick reference panel (non-spoiler syntax reminder)
+    function renderQuickRef(quickRef) {
+        if (!quickRef) return '';
+        return `<details class="quick-ref">
+            <summary>\uD83D\uDCD6 Quick Reference</summary>
+            <div class="hint-content">${quickRef}</div>
+        </details>`;
+    }
+
     // Render hints for an exercise variant
     function renderHints(hints) {
         if (!hints || hints.length === 0) return '';
@@ -171,6 +180,11 @@
             <h4>${typeLabel} ${num}: ${escapeHtml(variant.title)}${difficultyHtml}${moduleBadge}</h4>
             <p>${variant.description}</p>`;
 
+        // Quick reference (from parent challenge/warmup group)
+        if (challenge && challenge.quickRef) {
+            html += renderQuickRef(challenge.quickRef);
+        }
+
         // Hints
         html += renderHints(variant.hints);
 
@@ -231,6 +245,7 @@
         renderAnnotations,
         renderDocLinks,
         renderHints,
+        renderQuickRef,
         renderSolution,
         renderExpected,
         renderPersonalNotes,

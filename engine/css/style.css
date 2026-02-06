@@ -498,6 +498,23 @@ details .hint-content {
     margin-top: 0.5rem;
 }
 
+/* Quick Reference panel (cyan border to distinguish from hints/solutions) */
+details.quick-ref .hint-content {
+    border-left-color: var(--cyan);
+}
+
+details.quick-ref summary {
+    color: var(--cyan);
+}
+
+details.quick-ref .hint-content pre {
+    margin: 0.5rem 0;
+}
+
+details.quick-ref .hint-content code {
+    color: var(--cyan);
+}
+
 /* ============================================
    12. Navigation Buttons
    ============================================ */

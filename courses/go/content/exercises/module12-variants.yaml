@@ -9,6 +9,9 @@ variants:
   warmups:
     - id: warmup_1
       concept: Parallel Sum
+      quickRef: |
+        <code>go func() { ch &lt;- result }()</code><br>
+                <code>ch := make(chan int)</code> &nbsp; <code>v := &lt;-ch</code>
       variants:
         - id: v1
           title: Parallel Sum
@@ -206,6 +209,8 @@ variants:
                 operations and contention.
     - id: warmup_2
       concept: Timeout Pattern
+      quickRef: |
+        <code>select { case v := &lt;-ch: ... case &lt;-time.After(d): ... }</code>
       variants:
         - id: v1
           title: Timeout Pattern
@@ -381,6 +386,9 @@ variants:
         - url: https://go.dev/blog/pipelines
           title: "Go Blog: Pipelines and cancellation"
           note: fan-out fan-in pattern
+      quickRef: |
+        Fan-out: launch N goroutines writing to channels<br>
+                Fan-in: merge channels into one with a collector goroutine
       variants:
         - id: v1
           title: Merge Channels
@@ -686,6 +694,9 @@ variants:
         - url: https://pkg.go.dev/golang.org/x/time/rate
           title: Package rate (x/time)
           note: production-grade rate limiter
+      quickRef: |
+        <code>ticker := time.NewTicker(interval)</code><br>
+                <code>select { case &lt;-ticker.C: allow }</code>
       variants:
         - id: v1
           title: Ticker Rate Limiter
@@ -979,6 +990,9 @@ variants:
         - url: https://pkg.go.dev/net/http#Server.Shutdown
           title: Package http.Server.Shutdown
           note: graceful HTTP shutdown
+      quickRef: |
+        <code>ctx, cancel := context.WithCancel(context.Background())</code><br>
+                <code>signal.Notify(sigCh, os.Interrupt)</code>
       variants:
         - id: v1
           title: Signal-Based Shutdown

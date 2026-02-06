@@ -10,6 +10,9 @@ variants:
   warmups:
     - id: warmup_1
       concept: Multiple Files
+      quickRef: |
+        Same <code>package main</code> across files in one directory<br>
+                <code>go run .</code> compiles all files in the package
       variants:
         - id: v1
           title: Split Code Across Files
@@ -128,6 +131,9 @@ variants:
                 types and functions in other files.
     - id: warmup_2
       concept: Packages
+      quickRef: |
+        <code>package mypackage</code> at top of file<br>
+                Import: <code>import "module/path/mypackage"</code>
       variants:
         - id: v1
           title: Create a Package
@@ -256,6 +262,9 @@ variants:
                 declaration in the file is what matters for code references.
     - id: warmup_3
       concept: Exported/Unexported
+      quickRef: |
+        Uppercase = exported (<code>Foo</code>), lowercase = unexported (<code>foo</code>)<br>
+                Applies to funcs, types, vars, struct fields
       variants:
         - id: v1
           title: Identify Exported Names
@@ -368,6 +377,9 @@ variants:
                 type in their own code.
     - id: warmup_4
       concept: internal/ Directory
+      quickRef: |
+        <code>internal/</code> packages can only be imported by parent module<br>
+                Use for implementation details you don't want exposed
       variants:
         - id: v1
           title: internal/ Access Rules
@@ -473,6 +485,9 @@ variants:
         - url: https://pkg.go.dev/cmd/go#hdr-Internal_Directories
           title: "Go Command: internal directories"
           note: access control via internal/
+      quickRef: |
+        <code>cmd/</code> entrypoints &nbsp; <code>internal/</code> private &nbsp; <code>pkg/</code> public<br>
+                <code>go.mod</code> at root defines the module path
       variants:
         - id: v1
           title: Design CLI Tool Layout

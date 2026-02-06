@@ -14,6 +14,9 @@ variants:
   warmups:
     - id: warmup_1
       concept: Custom Errors
+      quickRef: |
+        <code>type MyError struct { Msg string }</code><br>
+                <code>func (e *MyError) Error() string { return e.Msg }</code>
       variants:
         - id: v1
           title: Validation Error
@@ -198,6 +201,9 @@ variants:
                 <code>error</code> interface is non-nil, which would incorrectly indicate an error.
     - id: warmup_2
       concept: Table-Driven Tests
+      quickRef: |
+        <code>tests := []struct{ name string; input int; want int }{ ... }</code><br>
+                <code>for _, tt := range tests { t.Run(tt.name, func(t *testing.T) { ... }) }</code>
       variants:
         - id: v1
           title: Table-Driven Test for Reverse
@@ -400,6 +406,9 @@ variants:
         - url: https://go.dev/blog/cover
           title: "Go Blog: The cover story"
           note: test coverage analysis
+      quickRef: |
+        <code>go test -cover ./...</code><br>
+                <code>go test -coverprofile=c.out &amp;&amp; go tool cover -html=c.out</code>
       variants:
         - id: v1
           title: Full Coverage for Absolute Value
@@ -750,6 +759,9 @@ variants:
         - url: https://pkg.go.dev/errors
           title: Package errors
           note: error wrapping and inspection
+      quickRef: |
+        <code>type I interface { Method() }</code><br>
+                Accept interfaces, return structs. Mock via interface.
       variants:
         - id: v1
           title: Mock a Fetcher Interface

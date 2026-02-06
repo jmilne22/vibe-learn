@@ -11,6 +11,9 @@ variants:
   warmups:
     - id: warmup_1
       concept: Maps
+      quickRef: |
+        <code>m := map[string]int{}</code> &nbsp; <code>m[k] = v</code><br>
+                <code>v, ok := m[k]</code> &nbsp; <code>delete(m, k)</code>
       variants:
         - id: v1
           title: Remove Duplicate Strings
@@ -134,6 +137,9 @@ variants:
               text: "Two passes through the slice: one to record last indices, one to collect. Both are O(n)."
     - id: warmup_2
       concept: Generics
+      quickRef: |
+        <code>func F[T any](s []T) T { }</code><br>
+                <code>type Set[T comparable] map[T]struct{}{}</code>
       variants:
         - id: v1
           title: Merge String Maps
@@ -274,6 +280,9 @@ variants:
         - url: https://go.dev/doc/effective_go#methods
           title: "Effective Go: Methods"
           note: method design patterns
+      quickRef: |
+        <code>func (s *S) Method() { }</code><br>
+                Pointer receiver for mutation, value receiver for read-only
       variants:
         - id: v1
           title: Simple String Cache
@@ -520,6 +529,9 @@ variants:
         - url: https://go.dev/blog/intro-generics
           title: "Go Blog: An Introduction To Generics"
           note: generics tutorial
+      quickRef: |
+        <code>func F[T any](s []T) T { }</code><br>
+                <code>type Set[T comparable] map[T]struct{}{}</code>
       variants:
         - id: v1
           title: Generic Filter
@@ -709,6 +721,9 @@ variants:
         - url: https://go.dev/ref/spec#Appending_and_copying_slices
           title: "Go Spec: Appending and copying slices"
           note: append for push, reslice for pop
+      quickRef: |
+        <code>stack = append(stack, v)</code> (push)<br>
+                <code>v, stack = stack[len(stack)-1], stack[:len(stack)-1]</code> (pop)
       variants:
         - id: v1
           title: Balanced Brackets

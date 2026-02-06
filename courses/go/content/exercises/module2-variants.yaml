@@ -11,6 +11,9 @@ variants:
   warmups:
     - id: warmup_1
       concept: Pointer Basics
+      quickRef: |
+        <code>var p *int</code> &nbsp; <code>p = &amp;x</code> (address of)<br>
+                <code>*p</code> (dereference) &nbsp; Zero value is <code>nil</code>
       variants:
         - id: v1
           title: Get an Address
@@ -97,6 +100,9 @@ variants:
                 and <code>string</code> defaults to <code>""</code>. A pointer itself defaults to <code>nil</code>.
     - id: warmup_2
       concept: Dereferencing
+      quickRef: |
+        <code>*p = 42</code> (write through pointer)<br>
+                <code>v := *p</code> (read through pointer)
       variants:
         - id: v1
           title: Modify Through Pointer
@@ -179,6 +185,9 @@ variants:
                 *ptr * 2</code>.
     - id: warmup_3
       concept: Pointer Parameters
+      quickRef: |
+        <code>func f(p *int) { *p = 42 }</code><br>
+                Call with: <code>f(&amp;x)</code> &nbsp; Modifies original value
       variants:
         - id: v1
           title: Double Function
@@ -274,6 +283,9 @@ variants:
               text: It is common to mix pointer and value parameters. Only use pointers for values you intend to modify.
     - id: warmup_4
       concept: Nil Pointers
+      quickRef: |
+        <code>if p != nil { *p }</code> &nbsp; Always check before dereferencing<br>
+                Zero value of any pointer type is <code>nil</code>
       variants:
         - id: v1
           title: Check for Nil
@@ -384,6 +396,9 @@ variants:
         - url: https://go.dev/doc/effective_go#pointers_vs_values
           title: "Effective Go: Pointers vs. Values"
           note: when to use pointer parameters
+      quickRef: |
+        <code>func f(p *int) { *p = 42 }</code><br>
+                Call with: <code>f(&amp;x)</code> &nbsp; Modifies original value
       variants:
         - id: v1
           title: Swap Two Integers
@@ -537,6 +552,9 @@ variants:
         - url: https://go.dev/ref/spec#Method_declarations
           title: "Go Spec: Method declarations"
           note: method syntax with receivers
+      quickRef: |
+        <code>func (s *MyStruct) Method() { s.field = v }</code><br>
+                Pointer receiver can modify the struct
       variants:
         - id: v1
           title: Counter Struct
@@ -756,6 +774,9 @@ variants:
         - url: https://go.dev/doc/effective_go#pointers_vs_values
           title: "Effective Go: Pointers vs. Values"
           note: nil checks and safe dereferencing
+      quickRef: |
+        <code>if p != nil { *p }</code> &nbsp; Always check before dereferencing<br>
+                Zero value of any pointer type is <code>nil</code>
       variants:
         - id: v1
           title: Safe Dereference
@@ -940,6 +961,9 @@ variants:
         - url: https://pkg.go.dev/container/list
           title: Package container/list
           note: stdlib doubly linked list for reference
+      quickRef: |
+        <code>type Node struct { Val int; Next *Node }</code><br>
+                Traverse: <code>for n := head; n != nil; n = n.Next { }</code>
       variants:
         - id: v1
           title: "Linked List: Build and Traverse"

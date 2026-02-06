@@ -13,6 +13,9 @@ variants:
   warmups:
     - id: warmup_1
       concept: flag Package
+      quickRef: |
+        <code>name := flag.String("name", "default", "usage")</code><br>
+                <code>flag.Parse()</code> &nbsp; Access value with <code>*name</code>
       variants:
         - id: v1
           title: Echo Clone
@@ -150,6 +153,9 @@ variants:
                 parsing are raw <code>os.Args</code>.
     - id: warmup_2
       concept: bufio.Scanner
+      quickRef: |
+        <code>scanner := bufio.NewScanner(os.Stdin)</code><br>
+                <code>for scanner.Scan() { line := scanner.Text() }</code>
       variants:
         - id: v1
           title: Line Counter
@@ -333,6 +339,9 @@ variants:
         - url: https://pkg.go.dev/strings#Split
           title: Package strings.Split
           note: parsing KEY=VALUE pairs
+      quickRef: |
+        <code>os.Getenv("KEY")</code> &nbsp; <code>os.Setenv("KEY", "val")</code><br>
+                <code>os.LookupEnv("KEY")</code> returns (val, ok)
       variants:
         - id: v1
           title: Env Printer
@@ -619,6 +628,9 @@ variants:
         - url: https://pkg.go.dev/os#Args
           title: Package os.Args
           note: command-line argument access
+      quickRef: |
+        <code>strconv.Atoi(s)</code> &nbsp; <code>strconv.Itoa(i)</code><br>
+                <code>strconv.ParseFloat(s, 64)</code> &nbsp; <code>strconv.FormatFloat(f, 'f', 2, 64)</code>
       variants:
         - id: v1
           title: Simple Calculator

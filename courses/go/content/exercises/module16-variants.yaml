@@ -9,6 +9,9 @@ variants:
   warmups:
     - id: warmup_1
       concept: Table-Driven Tests
+      quickRef: |
+        <code>tests := []struct{ name string; input int; want int }{ ... }</code><br>
+                <code>for _, tt := range tests { t.Run(tt.name, func(t *testing.T) { ... }) }</code>
       variants:
         - id: v1
           title: Test a KV Parser
@@ -237,6 +240,9 @@ variants:
               text: Go's standard library has time.ParseDuration for real duration parsing with more units.
     - id: warmup_2
       concept: Mocking with Interfaces
+      quickRef: |
+        Define interface &rarr; real impl for prod &rarr; mock for tests<br>
+                <code>type MockDB struct { data map[string]string }</code>
       variants:
         - id: v1
           title: Test with Mock HTTP Client
@@ -513,6 +519,9 @@ variants:
         - url: https://go.dev/blog/subtests
           title: "Go Blog: Using Subtests and Sub-benchmarks"
           note: organizing test cases
+      quickRef: |
+        Test: empty input, nil, zero value, max value, duplicates<br>
+                <code>t.Run("empty input", func(t *testing.T) { ... })</code>
       variants:
         - id: v1
           title: Test SafeDivide Edge Cases
@@ -828,6 +837,9 @@ variants:
         - url: https://pkg.go.dev/cmd/go#hdr-Testing_flags
           title: "Go Command: Testing flags"
           note: -covermode, -coverprofile flags
+      quickRef: |
+        <code>go test -cover</code> &nbsp; <code>-coverprofile=c.out</code><br>
+                <code>go tool cover -html=c.out</code> for visual report
       variants:
         - id: v1
           title: Achieve Coverage for FizzBuzz

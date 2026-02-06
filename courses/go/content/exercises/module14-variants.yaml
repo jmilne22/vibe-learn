@@ -8,6 +8,9 @@ variants:
   warmups:
     - id: warmup_1
       concept: Which Clone
+      quickRef: |
+        <code>exec.LookPath("binary")</code> finds executable in PATH<br>
+                Returns full path or error if not found
       variants:
         - id: v1
           title: Which Clone
@@ -171,6 +174,8 @@ variants:
                 directories gracefully.
     - id: warmup_2
       concept: System Info
+      quickRef: |
+        <code>runtime.GOOS</code> &nbsp; <code>runtime.GOARCH</code> &nbsp; <code>runtime.NumCPU()</code>
       variants:
         - id: v1
           title: System Info
@@ -322,6 +327,9 @@ variants:
         - url: https://pkg.go.dev/strconv#ParseFloat
           title: Package strconv.ParseFloat
           note: parsing numeric columns
+      quickRef: |
+        <code>cmd := exec.Command("ps", "aux")</code><br>
+                Parse output with <code>strings.Fields(line)</code>
       variants:
         - id: v1
           title: High CPU Processes
@@ -620,6 +628,9 @@ variants:
         - url: https://pkg.go.dev/bufio#Scanner
           title: Package bufio.Scanner
           note: line-by-line output processing
+      quickRef: |
+        <code>exec.Command("git", "status", "--porcelain")</code><br>
+                Porcelain format: <code>XY filename</code> (X=staging, Y=working)
       variants:
         - id: v1
           title: Git Status Counter

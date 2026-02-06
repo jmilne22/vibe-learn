@@ -10,6 +10,9 @@ variants:
   warmups:
     - id: warmup_1
       concept: HTTP GET
+      quickRef: |
+        <code>resp, err := http.Get(url)</code><br>
+                <code>defer resp.Body.Close()</code> &nbsp; Read with <code>io.ReadAll(resp.Body)</code>
       variants:
         - id: v1
           title: Simple GET Request
@@ -109,6 +112,9 @@ variants:
                 goroutine indefinitely.
     - id: warmup_2
       concept: JSON Decoding
+      quickRef: |
+        <code>json.NewDecoder(r.Body).Decode(&amp;v)</code><br>
+                <code>json.Unmarshal(data, &amp;v)</code> for <code>[]byte</code> input
       variants:
         - id: v1
           title: Decode JSON Response
@@ -208,6 +214,9 @@ variants:
                 generic status code.
     - id: warmup_3
       concept: Custom Requests
+      quickRef: |
+        <code>req, _ := http.NewRequest("POST", url, body)</code><br>
+                <code>req.Header.Set("Content-Type", "application/json")</code>
       variants:
         - id: v1
           title: GET with Authorization Header
@@ -322,6 +331,9 @@ variants:
               text: DELETE requests typically have no body and return 204 (No Content) on success.
     - id: warmup_4
       concept: HTTP Server
+      quickRef: |
+        <code>http.HandleFunc("/path", handler)</code><br>
+                <code>http.ListenAndServe(":8080", nil)</code>
       variants:
         - id: v1
           title: Health Check Endpoint
@@ -426,6 +438,9 @@ variants:
         - url: https://pkg.go.dev/encoding/json#NewDecoder
           title: Package json.NewDecoder
           note: streaming JSON decoding
+      quickRef: |
+        <code>client := &amp;http.Client{Timeout: 10 * time.Second}</code><br>
+                <code>resp, err := client.Do(req)</code>
       variants:
         - id: v1
           title: Reusable API Client Struct
@@ -560,6 +575,9 @@ variants:
         - url: https://pkg.go.dev/net/http#HandlerFunc
           title: Package http.HandlerFunc
           note: adapter for functions as handlers
+      quickRef: |
+        <code>func middleware(next http.Handler) http.Handler { }</code><br>
+                Return <code>http.HandlerFunc(func(w, r) { next.ServeHTTP(w, r) })</code>
       variants:
         - id: v1
           title: Logging Middleware

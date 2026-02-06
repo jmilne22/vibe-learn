@@ -8,6 +8,9 @@ variants:
   warmups:
     - id: warmup_1
       concept: Functional Options
+      quickRef: |
+        <code>type Option func(*Config)</code><br>
+                <code>func WithPort(p int) Option { return func(c *Config) { c.Port = p } }</code>
       variants:
         - id: v1
           title: HTTP Client with Options
@@ -209,6 +212,9 @@ variants:
                 }</code>. Calling a nil function panics.
     - id: warmup_2
       concept: Factory Pattern
+      quickRef: |
+        <code>func New(opts ...Option) *T { }</code><br>
+                Apply options in a loop: <code>for _, o := range opts { o(cfg) }</code>
       variants:
         - id: v1
           title: Logger Factory
@@ -448,6 +454,9 @@ variants:
         - url: https://pkg.go.dev/sort#Interface
           title: Package sort.Interface
           note: stdlib strategy pattern example
+      quickRef: |
+        <code>type Strategy interface { Execute(data) result }</code><br>
+                Swap implementations at runtime
       variants:
         - id: v1
           title: Sort Strategy
@@ -770,6 +779,9 @@ variants:
         - url: https://pkg.go.dev/strings#Builder
           title: Package strings.Builder
           note: stdlib builder pattern example
+      quickRef: |
+        <code>b.SetX(x).SetY(y).Build()</code><br>
+                Methods return <code>*Builder</code> for chaining
       variants:
         - id: v1
           title: SQL Query Builder

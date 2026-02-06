@@ -10,6 +10,9 @@ variants:
   warmups:
     - id: warmup_1
       concept: Elm Architecture
+      quickRef: |
+        Model (state) &rarr; Update (handle msgs) &rarr; View (render)<br>
+                <code>type model struct { ... }</code>
       variants:
         - id: v1
           title: Basic Model Struct
@@ -105,6 +108,9 @@ variants:
               text: Text inputs start unfocused. You must call <code>.Focus()</code> for the input to accept keystrokes.
     - id: warmup_2
       concept: Update
+      quickRef: |
+        <code>func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd)</code><br>
+                Switch on <code>msg.(type)</code> to handle events
       variants:
         - id: v1
           title: Handle Quit Key
@@ -196,6 +202,9 @@ variants:
               text: In Bubble Tea, the space key is represented as <code>" "</code> (a string with one space).
     - id: warmup_3
       concept: View
+      quickRef: |
+        <code>func (m model) View() string</code><br>
+                Return a string — the full screen content
       variants:
         - id: v1
           title: Render a Counter
@@ -279,6 +288,9 @@ variants:
                 multi-select interfaces.
     - id: warmup_4
       concept: Lipgloss
+      quickRef: |
+        <code>style := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("205"))</code><br>
+                <code>style.Render("text")</code>
       variants:
         - id: v1
           title: Define a Bold Green Style
@@ -369,6 +381,9 @@ variants:
         - url: https://pkg.go.dev/github.com/charmbracelet/lipgloss
           title: Package lipgloss
           note: terminal styling and layout
+      quickRef: |
+        Implement: <code>Init()</code>, <code>Update(msg)</code>, <code>View()</code><br>
+                Run with: <code>tea.NewProgram(initialModel).Run()</code>
       variants:
         - id: v1
           title: Counter App

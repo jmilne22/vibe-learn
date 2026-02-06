@@ -336,7 +336,7 @@
                         allItems.push({
                             key: 'm' + moduleNum + '_' + warmup.id + '_' + variant.id,
                             moduleNum: moduleNum, moduleName: moduleName,
-                            type: 'warmup', challenge: null, variant: variant
+                            type: 'warmup', challenge: warmup, variant: variant
                         });
                     });
                 });
@@ -439,7 +439,7 @@
                     var wv = warmup.variants[wvi];
                     if (keyParts === warmup.id + '_' + wv.id) {
                         return window.ExerciseRenderer ? window.ExerciseRenderer.renderExerciseCard({
-                            num: 1, variant: wv, challenge: null, type: 'warmup',
+                            num: 1, variant: wv, challenge: warmup, type: 'warmup',
                             exerciseKey: key, moduleLabel: 'M' + item.moduleNum
                         }) : null;
                     }

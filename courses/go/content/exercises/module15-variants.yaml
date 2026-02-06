@@ -8,6 +8,9 @@ variants:
   warmups:
     - id: warmup_1
       concept: Sets with Maps
+      quickRef: |
+        <code>set := map[string]struct{}{}</code><br>
+                Add: <code>set[k] = struct{}{}</code> &nbsp; Check: <code>_, ok := set[k]</code>
       variants:
         - id: v1
           title: Directory Diff
@@ -155,6 +158,9 @@ variants:
               text: Using a set automatically deduplicates. If duplicates matter, use a map[string]int count instead.
     - id: warmup_2
       concept: Set Operations
+      quickRef: |
+        Union: add all from both &nbsp; Intersect: keep if in both<br>
+                Difference: keep if not in other
       variants:
         - id: v1
           title: Find Common Words
@@ -280,6 +286,9 @@ variants:
         - url: https://go.dev/ref/spec#Map_types
           title: "Go Spec: Map types"
           note: map type declarations
+      quickRef: |
+        Union: add all from both &nbsp; Intersect: keep if in both<br>
+                Difference: keep if not in other
       variants:
         - id: v1
           title: Set Calculator
@@ -594,6 +603,9 @@ variants:
         - url: https://pkg.go.dev/sort#Strings
           title: Package sort.Strings
           note: sorting result slices
+      quickRef: |
+        Added: in new but not old &nbsp; Removed: in old but not new<br>
+                Changed: in both but values differ
       variants:
         - id: v1
           title: Change Detector

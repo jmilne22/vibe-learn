@@ -9,6 +9,9 @@ variants:
   warmups:
     - id: warmup_1
       concept: os.ReadFile
+      quickRef: |
+        <code>data, err := os.ReadFile("path")</code><br>
+                Returns <code>[]byte</code> — use <code>string(data)</code> to convert
       variants:
         - id: v1
           title: Read and Print File
@@ -87,6 +90,9 @@ variants:
                 <code>Stat</code> fail but <code>IsNotExist</code> returns false.
     - id: warmup_2
       concept: os.WriteFile
+      quickRef: |
+        <code>os.WriteFile("path", []byte(s), 0644)</code><br>
+                Third arg is file permissions (octal)
       variants:
         - id: v1
           title: Write String to File
@@ -153,6 +159,9 @@ variants:
               text: Text files should end with a trailing newline. It's a POSIX convention and many tools expect it.
     - id: warmup_3
       concept: YAML Parsing
+      quickRef: |
+        <code>yaml.Unmarshal(data, &amp;v)</code> &nbsp; <code>yaml.Marshal(v)</code><br>
+                Use struct tags: <code>`yaml:"key"`</code>
       variants:
         - id: v1
           title: Parse Simple YAML Config
@@ -252,6 +261,9 @@ variants:
                 match the YAML values.
     - id: warmup_4
       concept: exec.Command
+      quickRef: |
+        <code>cmd := exec.Command("ls", "-la")</code><br>
+                <code>out, err := cmd.Output()</code> &nbsp; or <code>cmd.CombinedOutput()</code>
       variants:
         - id: v1
           title: Run a Command and Capture Output
@@ -338,6 +350,9 @@ variants:
         - url: https://pkg.go.dev/gopkg.in/yaml.v3
           title: Package yaml.v3
           note: YAML parsing into structs
+      quickRef: |
+        <code>yaml.Unmarshal(data, &amp;config)</code><br>
+                <code>exec.Command(name, args...)</code> to run shell commands
       variants:
         - id: v1
           title: YAML Task Executor
@@ -462,6 +477,9 @@ variants:
         - url: https://pkg.go.dev/os#Setenv
           title: Package os.Setenv
           note: setting environment variables
+      quickRef: |
+        <code>os.Getenv("KEY")</code> &nbsp; <code>os.Setenv("KEY", "val")</code><br>
+                <code>cmd.Env = append(os.Environ(), "K=V")</code>
       variants:
         - id: v1
           title: Required Env Vars

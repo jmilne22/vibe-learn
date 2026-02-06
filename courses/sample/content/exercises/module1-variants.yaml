@@ -8,6 +8,9 @@ variants:
   warmups:
     - id: warmup_1
       concept: Markdown
+      quickRef: |
+        <code>**bold**</code> &nbsp; <code>*italic*</code> &nbsp; <code>`inline code`</code><br>
+        <code>[link text](url)</code> &nbsp; <code>![alt](image-url)</code>
       variants:
         - id: v1
           title: Bold and Italic
@@ -43,6 +46,11 @@ variants:
           annotations: []
     - id: warmup_2
       concept: Code Blocks
+      quickRef: |
+        <pre>```language
+        code here
+        ```</pre>
+        Supported: python, javascript, go, rust, bash, json, yaml, text
       variants:
         - id: v1
           title: Fenced Code Block
@@ -72,6 +80,10 @@ variants:
           annotations: []
     - id: warmup_3
       concept: Callouts
+      quickRef: |
+        <code>&gt; **Tip:** message</code><br>
+        <code>&gt; **Warning:** message</code><br>
+        <code>&gt; **Note:** message</code>
       variants:
         - id: v1
           title: Tip Callout
@@ -98,6 +110,9 @@ variants:
   challenges:
     - id: challenge_1
       concept: Comparisons
+      quickRef: |
+        Side-by-side: put <code>*Label*</code> on its own line before each fenced code block.<br>
+        Two consecutive labeled blocks render side-by-side automatically.
       variants:
         - id: v1
           title: Side-by-Side Comparison

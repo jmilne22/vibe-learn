@@ -11,6 +11,9 @@ variants:
   warmups:
     - id: warmup_1
       concept: Struct Basics
+      quickRef: |
+        <code>type S struct { Name string; Age int }</code><br>
+                <code>s := S{Name: "Alice", Age: 30}</code>
       variants:
         - id: v1
           title: Rectangle Area and Perimeter
@@ -131,6 +134,9 @@ variants:
                 efficiently.
     - id: warmup_2
       concept: Encapsulation
+      quickRef: |
+        Uppercase = exported, lowercase = unexported<br>
+                <code>type Server struct { port int }</code> (port is private)
       variants:
         - id: v1
           title: Bank Account
@@ -324,6 +330,9 @@ variants:
         - url: https://go.dev/ref/spec#Struct_types
           title: "Go Spec: Struct types"
           note: anonymous (embedded) fields
+      quickRef: |
+        <code>type Outer struct { Inner }</code><br>
+                Outer gets Inner's methods. Access via <code>o.InnerMethod()</code>
       variants:
         - id: v1
           title: Animal Embedding
@@ -589,6 +598,9 @@ variants:
         - url: https://go.dev/blog/json
           title: "Go Blog: JSON and Go"
           note: encoding/decoding JSON with structs
+      quickRef: |
+        <code>type T struct { Name string `json:"name"` }</code><br>
+                <code>json.Marshal(v)</code> &nbsp; <code>json.Unmarshal(data, &amp;v)</code>
       variants:
         - id: v1
           title: JSON Config Parser

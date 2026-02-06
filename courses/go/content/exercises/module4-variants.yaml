@@ -12,6 +12,9 @@ variants:
   warmups:
     - id: warmup_1
       concept: fmt.Stringer
+      quickRef: |
+        <code>func (t T) String() string { return "..." }</code><br>
+                Implement <code>fmt.Stringer</code> for custom print output
       variants:
         - id: v1
           title: Person Stringer
@@ -115,6 +118,9 @@ variants:
                 receiver would not be called on values.
     - id: warmup_2
       concept: Interface Basics
+      quickRef: |
+        <code>type Reader interface { Read(p []byte) (int, error) }</code><br>
+                Implicit satisfaction — no <code>implements</code> keyword
       variants:
         - id: v1
           title: Shape Interface
@@ -300,6 +306,9 @@ variants:
         - url: https://go.dev/doc/effective_go#interfaces
           title: "Effective Go: Interfaces"
           note: implicit interface satisfaction
+      quickRef: |
+        <code>type Writer interface { Write(p []byte) (int, error) }</code><br>
+                <code>fmt.Fprintf(w, "...")</code> writes to any Writer
       variants:
         - id: v1
           title: UpperWriter
@@ -513,6 +522,8 @@ variants:
         - url: https://go.dev/doc/effective_go#type_switch
           title: "Effective Go: Type switch"
           note: type switch patterns
+      quickRef: |
+        <code>switch v := i.(type) { case int: ... case string: ... }</code>
       variants:
         - id: v1
           title: Describe Any Value

@@ -16,6 +16,9 @@ variants:
   warmups:
     - id: warmup_1
       concept: Stacks
+      quickRef: |
+        <code>stack = append(stack, v)</code> (push)<br>
+                <code>v, stack = stack[len(stack)-1], stack[:len(stack)-1]</code> (pop)
       variants:
         - id: v1
           title: Stack with a Slice
@@ -184,6 +187,9 @@ variants:
               text: A two-pointer swap on []rune is more efficient — this exercise demonstrates the stack concept.
     - id: warmup_2
       concept: Binary Search
+      quickRef: |
+        <code>lo, hi := 0, len(s)-1</code><br>
+                <code>for lo &lt;= hi { mid := lo + (hi-lo)/2; ... }</code>
       variants:
         - id: v1
           title: Classic Binary Search
@@ -344,6 +350,9 @@ variants:
               text: "Use <code>mid <= x/mid</code> instead of <code>mid*mid <= x</code> to avoid integer overflow."
     - id: warmup_3
       concept: Hash Maps
+      quickRef: |
+        <code>m := map[K]V{}</code> — O(1) average lookup/insert/delete<br>
+                Use for counting, grouping, caching
       variants:
         - id: v1
           title: Count Frequencies with a Map
@@ -459,6 +468,9 @@ variants:
               text: "n words, each of length k sorted in O(k log k). Map operations are O(1) amortized."
     - id: warmup_4
       concept: Linked Lists
+      quickRef: |
+        <code>type Node struct { Val int; Next *Node }</code><br>
+                Traverse: <code>for n != nil { n = n.Next }</code>
       variants:
         - id: v1
           title: Reverse a Linked List
@@ -587,6 +599,9 @@ variants:
               text: "Visits each node exactly once. This is the same merge used in merge sort."
     - id: warmup_5
       concept: Trees
+      quickRef: |
+        <code>type Node struct { Val int; Left, Right *Node }</code><br>
+                DFS: recursive or stack &nbsp; BFS: queue
       variants:
         - id: v1
           title: Inorder Traversal
@@ -726,6 +741,9 @@ variants:
         - url: https://pkg.go.dev/container/list
           title: container/list
           note: alternative queue implementation
+      quickRef: |
+        <code>graph := map[string][]string{}</code> (adjacency list)<br>
+                BFS: queue + visited set &nbsp; DFS: stack or recursion
       variants:
         - id: v1
           title: Implement BFS on a Graph
@@ -983,6 +1001,9 @@ variants:
         - url: https://pkg.go.dev/sort
           title: Package sort
           note: Go's standard sorting
+      quickRef: |
+        <code>sort.Ints(s)</code> &nbsp; <code>sort.Strings(s)</code><br>
+                Custom: <code>sort.Slice(s, func(i, j int) bool { return s[i] &lt; s[j] })</code>
       variants:
         - id: v1
           title: Implement Merge Sort
@@ -1261,6 +1282,9 @@ variants:
         - url: https://pkg.go.dev/container/heap
           title: container/heap
           note: heap interface and operations
+      quickRef: |
+        <code>container/heap</code> — implement <code>heap.Interface</code><br>
+                Trie: <code>type Node struct { children [26]*Node; end bool }</code>
       variants:
         - id: v1
           title: Build a Min-Heap

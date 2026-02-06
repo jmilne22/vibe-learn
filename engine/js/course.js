@@ -301,6 +301,10 @@
                     '<h4>Warmup ' + (idx + 1) + ': ' + item.variant.title + ' ' + conceptHtml + '</h4>' +
                     '<p>' + item.variant.description + '</p>';
 
+                if (item.warmup.quickRef) {
+                    html += '<details class="quick-ref"><summary>\uD83D\uDCD6 Quick Reference</summary><div class="hint-content">' + item.warmup.quickRef + '</div></details>';
+                }
+
                 if (item.variant.hints) {
                     item.variant.hints.forEach(function(hint) {
                         var title = typeof hint === 'object' ? hint.title : '\uD83D\uDCA1 Hint';
@@ -345,6 +349,10 @@
             html += '<div class="exercise' + wuCompleted + '" data-exercise-key="' + wuKey + '">' +
                 '<h4>Warmup ' + num + ': ' + variant.title + ' ' + conceptHtml + '</h4>' +
                 '<p>' + variant.description + '</p>';
+
+            if (warmup.quickRef) {
+                html += '<details class="quick-ref"><summary>\uD83D\uDCD6 Quick Reference</summary><div class="hint-content">' + warmup.quickRef + '</div></details>';
+            }
 
             if (variant.hints) {
                 variant.hints.forEach(function(hint) {
@@ -407,6 +415,10 @@
         }
 
         html += '<p>' + variant.description + '</p>';
+
+        if (challenge.quickRef) {
+            html += '<details class="quick-ref"><summary>\uD83D\uDCD6 Quick Reference</summary><div class="hint-content">' + challenge.quickRef + '</div></details>';
+        }
 
         if (variant.hints) {
             variant.hints.forEach(function(hint) {

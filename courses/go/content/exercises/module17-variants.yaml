@@ -9,6 +9,9 @@ variants:
   warmups:
     - id: warmup_1
       concept: httptest Package
+      quickRef: |
+        <code>srv := httptest.NewServer(handler)</code><br>
+                <code>defer srv.Close()</code> &nbsp; Use <code>srv.URL</code> as base URL
       variants:
         - id: v1
           title: Test an API Client
@@ -336,6 +339,9 @@ variants:
               text: Use io.ReadAll (Go 1.16+) to read an entire request body. Previously this was ioutil.ReadAll.
     - id: warmup_2
       concept: Test Fixtures
+      quickRef: |
+        <code>testdata/</code> directory (ignored by go build)<br>
+                <code>os.ReadFile("testdata/input.json")</code>
       variants:
         - id: v1
           title: File Processing Test
@@ -672,6 +678,9 @@ variants:
         - url: https://pkg.go.dev/go/build#hdr-Build_Constraints
           title: Package go/build constraints
           note: build tag semantics
+      quickRef: |
+        <code>//go:build integration</code> at top of file<br>
+                Run with: <code>go test -tags integration ./...</code>
       variants:
         - id: v1
           title: Build Tagged Tests
@@ -1174,6 +1183,9 @@ variants:
         - url: https://pkg.go.dev/net/http/httptest#NewServer
           title: Package httptest.NewServer
           note: starting a test HTTP server
+      quickRef: |
+        Build binary &rarr; <code>exec.Command("./binary", args...)</code><br>
+                Check stdout, stderr, exit code
       variants:
         - id: v1
           title: End-to-End HTTP Test

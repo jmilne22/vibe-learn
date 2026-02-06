@@ -22,6 +22,9 @@ variants:
   warmups:
     - id: warmup_1
       concept: For Loops
+      quickRef: |
+        <code>for i := 0; i &lt; n; i++ { }</code><br>
+                <code>for condition { }</code> &nbsp; <code>for { }</code> (infinite)
       variants:
         - id: v1
           title: Print 1 to 10
@@ -190,6 +193,9 @@ variants:
             }
     - id: warmup_2
       concept: If/Else
+      quickRef: |
+        <code>if x &gt; 0 { } else if x == 0 { } else { }</code><br>
+                <code>if v, ok := m[k]; ok { }</code> (init statement)
       variants:
         - id: v1
           title: Odd or Even
@@ -399,6 +405,9 @@ variants:
             }
     - id: warmup_3
       concept: Slices & Range
+      quickRef: |
+        <code>s := []int{1, 2, 3}</code> &nbsp; <code>s = append(s, v)</code><br>
+                <code>for i, v := range s { }</code> &nbsp; <code>s[lo:hi]</code>
       variants:
         - id: v1
           title: Iterate Numbers
@@ -566,6 +575,9 @@ variants:
             }
     - id: warmup_4
       concept: Maps
+      quickRef: |
+        <code>m := map[string]int{}</code> &nbsp; <code>m[k] = v</code><br>
+                <code>v, ok := m[k]</code> &nbsp; <code>delete(m, k)</code>
       variants:
         - id: v1
           title: Ages Map
@@ -767,6 +779,9 @@ variants:
             }
     - id: warmup_5
       concept: Variables & Assignment
+      quickRef: |
+        <code>var x int</code> &nbsp; <code>x := 42</code> (short declaration)<br>
+                <code>const c = 10</code> &nbsp; <code>var x, y = 1, 2</code>
       variants:
         - id: v1
           title: Declare and Print
@@ -938,6 +953,9 @@ variants:
             fmt.Printf("%q has %d characters\n", s, length)  // "Hello, Go!" has 10 characters
     - id: warmup_6
       concept: Multiple Returns
+      quickRef: |
+        <code>func f() (int, error) { return 0, nil }</code><br>
+                <code>v, err := f()</code> &nbsp; Use <code>_</code> to discard a return value
       variants:
         - id: v1
           title: Parse Email
@@ -1201,6 +1219,9 @@ variants:
         bruteForce: Use explicit var declarations with types for every variable.
         bestApproach: Use := for concise declaration inside functions; use var when zero values or package-level scope needed.
         typical: Variable declaration is O(1) — focus on choosing the right declaration style.
+      quickRef: |
+        <code>var x int = 5</code> &nbsp; <code>x := 5</code><br>
+                <code>var x int</code> (zero value) &nbsp; <code>const c = 10</code>
       variants:
         - id: v1
           title: Declare and Return Integer
@@ -1586,6 +1607,9 @@ variants:
         bruteForce: Use separate variables for each type and convert explicitly at every step.
         bestApproach: Convert types at the point of use with Go's T(value) syntax; use strconv for string-number conversions.
         typical: Type conversions are O(1) — the key is knowing which conversion function to use.
+      quickRef: |
+        <code>int(f)</code> &nbsp; <code>float64(i)</code> &nbsp; <code>string(b)</code><br>
+                <code>strconv.Itoa(i)</code> &nbsp; <code>strconv.Atoi(s)</code>
       variants:
         - id: v1
           title: Int to Float
@@ -1983,6 +2007,9 @@ variants:
         bruteForce: Concatenate strings manually with + and strconv conversions.
         bestApproach: Use fmt.Sprintf with format verbs for clean, readable string construction.
         typical: String formatting is O(n) in output length — Sprintf handles type formatting automatically.
+      quickRef: |
+        <code>fmt.Sprintf("%s is %d", name, age)</code><br>
+                Verbs: <code>%v</code> any &nbsp; <code>%d</code> int &nbsp; <code>%s</code> string &nbsp; <code>%f</code> float &nbsp; <code>%t</code> bool
       variants:
         - id: v1
           title: Greet by Name
@@ -2403,6 +2430,9 @@ variants:
         bruteForce: Write separate functions for every operation, even trivial ones.
         bestApproach: Design functions with clear input/output contracts; use same-type parameter shorthand for cleaner signatures.
         typical: Focus on correct signatures, parameter types, and return types.
+      quickRef: |
+        <code>func name(a int, b string) int { }</code><br>
+                <code>func name(a, b int) (int, error) { }</code>
       variants:
         - id: v1
           title: Greet
@@ -2832,6 +2862,9 @@ variants:
         bruteForce: Use structs or global variables to return multiple pieces of data.
         bestApproach: Use Go's native multiple return values for clean, expressive function signatures.
         typical: Multiple returns add no overhead — they are a core Go idiom.
+      quickRef: |
+        <code>func f() (int, error) { return 0, nil }</code><br>
+                <code>v, err := f()</code> &nbsp; Use <code>_</code> to discard a return value
       variants:
         - id: v1
           title: Min and Max
@@ -3310,6 +3343,9 @@ variants:
         bruteForce: Use panics or ignore errors entirely.
         bestApproach: Return errors as values; check err != nil immediately after each call that can fail.
         typical: Error handling adds minimal overhead — the pattern is if err != nil { return ..., err }.
+      quickRef: |
+        <code>if err != nil { return err }</code><br>
+                <code>fmt.Errorf("context: %w", err)</code> &nbsp; <code>errors.Is()</code>
       variants:
         - id: v1
           title: Validate Age
@@ -3785,6 +3821,9 @@ variants:
         bruteForce: Pre-allocate a large array and track the size manually.
         bestApproach: Use append() to build slices dynamically; use make() when size is known ahead of time.
         typical: append() is amortized O(1) per element — slices grow automatically.
+      quickRef: |
+        <code>s := make([]int, 0, cap)</code> &nbsp; <code>s = append(s, v)</code><br>
+                <code>s = append(s, other...)</code> (append slice)
       variants:
         - id: v1
           title: Generate Tags
@@ -4272,6 +4311,9 @@ variants:
         bruteForce: Manually copy elements one by one into new slices.
         bestApproach: Use Go's slice expressions s[a:b] for clean sub-slice extraction; use copy() for safe duplication.
         typical: Slice expressions are O(1) (shared backing array); copy is O(n).
+      quickRef: |
+        <code>s[lo:hi]</code> &nbsp; <code>len(s)</code> &nbsp; <code>cap(s)</code><br>
+                <code>copy(dst, src)</code> &nbsp; <code>s = append(s[:i], s[i+1:]...)</code> (delete)
       variants:
         - id: v1
           title: First N Elements
@@ -4706,6 +4748,9 @@ variants:
         bruteForce: Write separate loops for each variant of iteration.
         bestApproach: "Go has one loop keyword \u2014 for \u2014 with three forms: C-style, while-style, and infinite + break."
         typical: Most loops are O(n) \u2014 choose the right form for clarity.
+      quickRef: |
+        <code>for i := 0; i &lt; n; i++ { }</code><br>
+                <code>for condition { }</code> &nbsp; <code>for { }</code> (infinite)
       variants:
         - id: v1
           title: Repeat String
@@ -5206,6 +5251,9 @@ variants:
         bruteForce: Use C-style for with manual index tracking.
         bestApproach: "Use for i, v := range to iterate slices idiomatically; use _ to discard unused index or value."
         typical: Range is the idiomatic way to iterate in Go \u2014 same O(n) complexity, cleaner syntax.
+      quickRef: |
+        <code>for i, v := range slice { }</code><br>
+                <code>for k, v := range myMap { }</code> &nbsp; Use <code>_</code> to skip index/key
       variants:
         - id: v1
           title: Concat All
@@ -5684,6 +5732,9 @@ variants:
         bruteForce: Use parallel slices for keys and values and search linearly.
         bestApproach: Use maps for O(1) key lookups; build maps from data with make() or literals.
         typical: Map operations (get/set/delete) are O(1) average case.
+      quickRef: |
+        <code>m := map[string]int{}</code> &nbsp; <code>m := make(map[K]V)</code><br>
+                <code>m[k] = v</code> &nbsp; <code>delete(m, k)</code> &nbsp; <code>len(m)</code>
       variants:
         - id: v1
           title: Word Count
@@ -6164,6 +6215,9 @@ variants:
         bruteForce: Check if zero value means the key is missing (unreliable for int/string maps).
         bestApproach: "Always use value, ok := m[key] to distinguish missing keys from zero values."
         typical: "Comma-ok lookup is O(1) — same as regular map access, but safe."
+      quickRef: |
+        <code>v, ok := m[key]</code> (map lookup)<br>
+                <code>v, ok := i.(Type)</code> (type assertion)
       variants:
         - id: v1
           title: Safe Lookup
@@ -6652,6 +6706,9 @@ variants:
         bruteForce: Treat strings as byte arrays and hope for ASCII.
         bestApproach: "Use []rune(s) for Unicode-safe character operations; range over string iterates runes automatically."
         typical: "len(s) returns bytes; len([]rune(s)) returns character count. Know the difference."
+      quickRef: |
+        <code>[]rune(s)</code> &nbsp; <code>[]byte(s)</code> &nbsp; <code>string(r)</code><br>
+                <code>utf8.RuneCountInString(s)</code> &nbsp; <code>len(s)</code> counts bytes
       variants:
         - id: v1
           title: Rune Count
@@ -7147,6 +7204,9 @@ variants:
         bruteForce: Solve each sub-problem independently without leveraging Go idioms.
         bestApproach: Combine slices, maps, loops, functions, and error handling into cohesive solutions using idiomatic Go.
         typical: Multi-step problems test your ability to choose the right tool from your Go toolkit.
+      quickRef: |
+        <code>:=</code> short declare &nbsp; <code>for range</code> iterate &nbsp; <code>v, ok := m[k]</code><br>
+                <code>append(s, v)</code> &nbsp; <code>if err != nil { }</code>
       variants:
         - id: v1
           title: Word Frequency

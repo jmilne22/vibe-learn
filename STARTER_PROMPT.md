@@ -337,6 +337,9 @@ variants:
   warmups:
     - id: warmup_1                     # Unique ID within this file
       concept: Concept Name            # Must match a key in conceptLinks
+      quickRef: |                      # Optional: collapsible syntax cheat-sheet
+        <code>example syntax</code><br>  # Shown before hints — non-spoiler reference
+        Key points for this concept.
       variants:
         - id: v1                       # Variant ID (v1, v2, v3, etc.)
           title: Exercise Title
@@ -379,6 +382,8 @@ variants:
   challenges:
     - id: challenge_1
       concept: Concept Name
+      quickRef: |                      # Optional: same as warmups
+        Quick syntax reminder for this concept group.
       variants:
         - id: v1
           title: Harder Exercise
@@ -407,7 +412,8 @@ variants:
 - **Hints** should be progressive: think about it → specific hint → near-answer
 - **Solutions** must be correct, complete, and runnable
 - **Annotations** are optional but valuable (the `type` must match a key in `annotationTypes` from course.yaml)
-- HTML is allowed in descriptions, hints, and annotation text (use `<code>`, `<strong>`, etc.)
+- **quickRef** is optional per exercise group — a short, non-spoiler syntax cheat-sheet shown before hints (HTML allowed)
+- HTML is allowed in descriptions, hints, quickRef, and annotation text (use `<code>`, `<strong>`, etc.)
 
 ### Full working example
 
@@ -423,6 +429,9 @@ variants:
   warmups:
     - id: warmup_1
       concept: Variables
+      quickRef: |
+        <code>x = 42</code> — no declaration keyword needed<br>
+        <code>type(x)</code> — check type &nbsp; <code>x, y = 1, 2</code> — multiple assignment
       variants:
         - id: v1
           title: Assign a Variable
