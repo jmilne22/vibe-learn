@@ -69,6 +69,39 @@ rune     // alias for int32 (Unicode code point)
 
 > **Zero Values:** Uninitialized variables get zero values: `""` for string, `0` for numbers, `false` for bool.
 
+## Type Conversion
+
+Go never converts types implicitly — you must be explicit every time.
+
+*Python*
+
+```python
+x = 42
+y = x + 3.14      # Python auto-converts int → float
+s = "Age: " + str(x)  # Must convert to string for concat
+n = int("99")      # String → int
+```
+
+*Go*
+
+```go
+x := 42
+y := float64(x) + 3.14  // Must explicitly convert int → float64
+n := int(3.9)            // Truncates to 3 (no rounding!)
+
+// String ↔ number requires the strconv package
+import "strconv"
+s := strconv.Itoa(42)       // int → string: "42"
+n, err := strconv.Atoi("99") // string → int: 99
+
+// Single values ↔ strings
+ch := string(65)     // int → string by code point: "A"
+b := []byte("hello") // string → byte slice: [104 101 108 108 111]
+r := []rune("café")  // string → rune slice (Unicode-safe)
+```
+
+> **Gotcha:** `int()` in Go **truncates** toward zero — `int(3.9)` is `3`, `int(-2.7)` is `-2`. Use `math.Round()` if you need rounding.
+
 ## Functions
 
 *Python*
@@ -162,9 +195,7 @@ for i, item := range items {
 }
 ```
 
-## Slices & Maps
-
-### Slices (Dynamic Arrays)
+## Slices
 
 *Slices*
 
@@ -176,7 +207,129 @@ fmt.Println(len(nums))  // 4
 fmt.Println(nums[1:3])   // [2 3]
 ```
 
-### Maps (Dictionaries)
+## Indexing & Slice Expressions
+
+*Python*
+
+```python
+nums = [10, 20, 30, 40, 50]
+nums[0]       # First: 10
+nums[-1]      # Last: 50
+nums[1:3]     # Slice: [20, 30]
+nums[:3]      # First 3: [10, 20, 30]
+nums[2:]      # From index 2: [30, 40, 50]
+```
+
+*Go*
+
+```go
+nums := []int{10, 20, 30, 40, 50}
+
+// Basic indexing
+first := nums[0]              // 10
+last := nums[len(nums)-1]     // 50 (no negative indexing!)
+
+// Slice expressions: nums[from:to] — includes 'from', excludes 'to'
+middle := nums[1:3]           // [20 30]
+firstThree := nums[:3]        // [10 20 30]
+fromTwo := nums[2:]           // [30 40 50]
+copyAll := nums[:]            // [10 20 30 40 50] (shallow copy)
+
+// Index math patterns (common in exercises)
+for i := 0; i < len(nums)-1; i++ {
+    // Look-ahead: compare current with next
+    if nums[i] < nums[i+1] {
+        fmt.Println(nums[i], "< next")
+    }
+}
+
+for i := 1; i < len(nums); i++ {
+    // Look-behind: compare current with previous
+    diff := nums[i] - nums[i-1]
+    fmt.Println(diff)
+}
+
+// From the end
+lastThree := nums[len(nums)-3:]  // [30 40 50]
+```
+
+*String indexing*
+
+```go
+s := "hello"
+b := s[0]       // 104 (byte value of 'h', not a string!)
+sub := s[1:3]   // "el" (substring)
+```
+
+> **Gotcha:** Go has no negative indexing — use `len(s)-1` for the last element. Slice expressions create a **view**, not a copy — both share the same underlying array.
+
+## Creating with make()
+
+Use literals when you know the contents. Use `make()` when you need an empty collection to fill dynamically.
+
+*Python*
+
+```python
+zeros = [0] * 5       # [0, 0, 0, 0, 0]
+result = []            # Empty list, append later
+counts = {}            # Empty dict
+```
+
+*Go*
+
+```go
+// Slice with length 5, all zero values
+zeros := make([]int, 5)          // [0 0 0 0 0]
+
+// Empty slice with capacity hint (avoids reallocations)
+result := make([]int, 0, 10)     // len=0, cap=10
+result = append(result, 42)      // [42]
+
+// Empty map, ready to use
+counts := make(map[string]int)
+counts["hello"] = 1
+```
+
+> **Gotcha:** A `nil` slice works with `append` but **panics** if you index into it — use `make()` when you need to assign by index (e.g., `result[i] = value`).
+
+## Strings, Bytes & Runes
+
+Go strings are sequences of **bytes**, not characters. This matters for non-ASCII text.
+
+*Strings are bytes*
+
+```go
+s := "café"
+fmt.Println(len(s))    // 5 (bytes), not 4!
+fmt.Println(s[3])      // 169 (a byte, not 'é')
+```
+
+*Working with runes (characters)*
+
+```go
+runes := []rune("café")
+fmt.Println(len(runes))         // 4 (characters)
+fmt.Println(string(runes[:3]))  // "caf" (first 3 characters, Unicode-safe)
+
+// Range iterates by rune, not byte
+for i, ch := range "café" {
+    fmt.Printf("index %d: %c\n", i, ch)
+    // index 0: c, index 1: a, index 2: f, index 3: é
+}
+```
+
+*Python comparison*
+
+```python
+# Python 3 strings are already Unicode
+s = "café"
+len(s)    # 4 (characters, not bytes)
+s[:3]     # "caf"
+```
+
+> **Rule of thumb:** Use `string` for most work. Convert to `[]rune` when you need to index or slice by **character position**.
+
+## Maps
 
 *Creating and using maps*
 
@@ -287,15 +440,22 @@ Apply Go fundamentals with hands-on coding challenges. Each challenge has multip
 
 - **:=** for declaration + assignment inside functions
 - **Types:** string, int, float64, bool (statically typed!)
+- **Type conversion:** `float64(x)`, `strconv.Itoa()`, `strconv.Atoi()` — always explicit
 - **Functions:** `func name(params) returnType { }`
 - **Multiple returns:** `func f() (int, error)`
 - **Slices:** `[]Type{}` - dynamic arrays
+- **Indexing & slicing:** `nums[0]`, `nums[1:3]`, `nums[len(nums)-1]`
+- **make():** `make([]int, n)`, `make(map[K]V)` — for dynamic allocation
 - **Maps:** `map[KeyType]ValueType{}` - like dictionaries
+- **Runes:** `[]rune(s)` for Unicode-safe character work
 
 ### Key Patterns You Learned
 
 - **The "comma ok" idiom:** `value, ok := map[key]` - check if a map key exists
 - **Simultaneous assignment:** `a, b = b, a` - swap without temp variable
+- **Look-ahead/behind:** `nums[i+1]`, `nums[i-1]` — compare adjacent elements in loops
+- **From the end:** `nums[len(nums)-1]` (last), `nums[len(nums)-3:]` (last 3)
+- **Rune conversion round-trip:** `[]rune(s)` → manipulate → `string(runes)`
 
 ### Common Gotchas
 
@@ -303,6 +463,9 @@ Apply Go fundamentals with hands-on coding challenges. Each challenge has multip
 - **Strings are bytes, not characters** - use `[]rune(s)` for Unicode
 - **Slices are references** - modifying a slice modifies the original
 - **:= only works inside functions** - use `var` at package level
+- **No negative indexing** - use `len(s)-1` instead of `s[-1]`
+- **int() truncates** - `int(3.9)` is `3`, use `math.Round()` to round
+- **Nil slices panic on index** - use `make()` when assigning by index
 
 ### Next Steps
 
