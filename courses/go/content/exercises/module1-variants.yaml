@@ -408,10 +408,10 @@ variants:
             - input: "declareInt()"
               output: "42"
           hints:
-            - title: "Think about it"
+            - title: "\U0001F914 Think about it"
               content: >-
                 The := operator declares a new variable and infers its type from the value on the right side. What value do you need to assign?
-            - title: "Hint"
+            - title: "\U0001F4A1 Hint"
               content: >-
                 Use <code>x := 42</code> to declare and initialize x, then return it.
           solution: |-
@@ -437,10 +437,10 @@ variants:
             - input: "fullGreeting()"
               output: "\"Hello Gopher\""
           hints:
-            - title: "Think about it"
+            - title: "\U0001F914 Think about it"
               content: >-
                 You can use := multiple times in the same function. How do you join two strings with a space between them?
-            - title: "Hint"
+            - title: "\U0001F4A1 Hint"
               content: >-
                 Declare both variables, then <code>return greeting + " " + target</code>.
           solution: |-
@@ -462,10 +462,10 @@ variants:
             - input: "zeroValues()"
               output: "0, \"\", false"
           hints:
-            - title: "Think about it"
+            - title: "\U0001F914 Think about it"
               content: >-
                 When you use <code>var x int</code> without assigning a value, Go initializes it to the zero value for that type. What are the zero values for int, string, and bool?
-            - title: "Hint"
+            - title: "\U0001F4A1 Hint"
               content: >-
                 Use <code>var n int</code>, <code>var s string</code>, <code>var b bool</code>, then return all three.
           solution: |-
@@ -496,10 +496,10 @@ variants:
             - input: "swap(-1, 1)"
               output: "1, -1"
           hints:
-            - title: "Think about it"
+            - title: "\U0001F914 Think about it"
               content: >-
                 Go evaluates the right side of an assignment fully before writing to the left side. This means you can swap without a temp variable.
-            - title: "Hint"
+            - title: "\U0001F4A1 Hint"
               content: >-
                 Use <code>a, b = b, a</code> — Go's parallel assignment handles the swap.
           solution: |-
@@ -544,10 +544,10 @@ variants:
             - input: "intToString(-7)"
               output: "\"-7\""
           hints:
-            - title: "Think about it"
+            - title: "\U0001F914 Think about it"
               content: >-
                 <code>strconv.Itoa</code> converts an int to its ASCII string representation. Don't confuse it with <code>string(n)</code>, which treats n as a Unicode code point.
-            - title: "Hint"
+            - title: "\U0001F4A1 Hint"
               content: >-
                 <code>return strconv.Itoa(n)</code>
           solution: |-
@@ -574,10 +574,10 @@ variants:
             - input: "stringToInt(\"abc\")"
               output: "0, error"
           hints:
-            - title: "Think about it"
+            - title: "\U0001F914 Think about it"
               content: >-
                 <code>strconv.Atoi</code> returns two values: the parsed integer and an error. What happens when the input isn't a valid number?
-            - title: "Hint"
+            - title: "\U0001F4A1 Hint"
               content: >-
                 <code>return strconv.Atoi(s)</code> — it already returns (int, error).
           solution: |-
@@ -604,10 +604,10 @@ variants:
             - input: "truncateAndRound(-2.3)"
               output: "-2, -2"
           hints:
-            - title: "Think about it"
+            - title: "\U0001F914 Think about it"
               content: >-
                 <code>int(f)</code> truncates toward zero — it just drops the decimal. <code>math.Round(f)</code> rounds to the nearest integer. They give different results for most inputs.
-            - title: "Hint"
+            - title: "\U0001F4A1 Hint"
               content: >-
                 Return <code>int(f), int(math.Round(f))</code>.
           solution: |-
@@ -634,10 +634,10 @@ variants:
             - input: "doubleString(\"abc\")"
               output: "\"\", error"
           hints:
-            - title: "Think about it"
+            - title: "\U0001F914 Think about it"
               content: >-
                 You need three steps: parse string → do math → format back to string. Handle the error from parsing.
-            - title: "Hint"
+            - title: "\U0001F4A1 Hint"
               content: >-
                 Use <code>strconv.Atoi</code> to parse, multiply by 2, then <code>strconv.Itoa</code> to convert back.
           solution: |-
@@ -686,10 +686,10 @@ variants:
             - input: "formatLogEntry(\"INFO\", \"server started\")"
               output: "\"[INFO] server started\""
           hints:
-            - title: "Think about it"
+            - title: "\U0001F914 Think about it"
               content: >-
                 You need to build a string with brackets around the level. How do you concatenate strings in Go?
-            - title: "Hint"
+            - title: "\U0001F4A1 Hint"
               content: >-
                 Use <code>fmt.Sprintf("[%s] %s", level, message)</code> or string concatenation.
           solution: |-
@@ -718,10 +718,10 @@ variants:
             - input: "isError(\"INFO\")"
               output: "false"
           hints:
-            - title: "Think about it"
+            - title: "\U0001F914 Think about it"
               content: >-
                 You need to check if the level matches either of two values. Use <code>||</code> to combine conditions.
-            - title: "Hint"
+            - title: "\U0001F4A1 Hint"
               content: >-
                 <code>return level == "ERROR" || level == "FATAL"</code>
           solution: |-
@@ -743,10 +743,10 @@ variants:
             - input: "truncateMessage(\"ok\", 10)"
               output: "\"ok\""
           hints:
-            - title: "Think about it"
+            - title: "\U0001F914 Think about it"
               content: >-
                 Use <code>len(msg)</code> to check the length. Slice the string with <code>msg[:maxLen]</code> to get the first N characters.
-            - title: "Hint"
+            - title: "\U0001F4A1 Hint"
               content: >-
                 <code>if len(msg) > maxLen { return msg[:maxLen] + "..." }</code>
           solution: |-
@@ -772,10 +772,10 @@ variants:
             - input: "extractTimestamp(\"short\")"
               output: "\"short\""
           hints:
-            - title: "Think about it"
+            - title: "\U0001F914 Think about it"
               content: >-
                 You need to safely slice the string. What happens if you try <code>line[:19]</code> on a string shorter than 19 characters?
-            - title: "Hint"
+            - title: "\U0001F4A1 Hint"
               content: >-
                 Check <code>len(line) &lt; 19</code> first to avoid a slice bounds panic.
           solution: |-
@@ -824,11 +824,11 @@ variants:
             - input: "parseLogLevel(\"short\")"
               output: "\"\", error"
           hints:
-            - title: "Think about it"
+            - title: "\U0001F914 Think about it"
               content: >-
                 The timestamp is 19 characters, then a space, then the level. Use <code>strings.Fields</code> to split or
                 index from position 20.
-            - title: "Hint"
+            - title: "\U0001F4A1 Hint"
               content: >-
                 Split with <code>fields := strings.Fields(line)</code> and check <code>len(fields) >= 3</code>.
                 The level is <code>fields[2]</code> (index 0 = date, 1 = time, 2 = level).
@@ -862,11 +862,11 @@ variants:
             - input: "splitLogLine(\"bad line\")"
               output: "\"\", \"\", \"\", error"
           hints:
-            - title: "Think about it"
+            - title: "\U0001F914 Think about it"
               content: >-
                 Use <code>strings.Fields</code> to split the line, then reassemble the parts.
                 The timestamp is fields[0] + " " + fields[1], level is fields[2], message is the rest joined.
-            - title: "Hint"
+            - title: "\U0001F4A1 Hint"
               content: >-
                 Use <code>strings.Join(fields[3:], " ")</code> to reconstruct the message from the remaining fields.
           solution: |-
@@ -904,10 +904,10 @@ variants:
             - input: "parsePort(\"abc\")"
               output: "0, error"
           hints:
-            - title: "Think about it"
+            - title: "\U0001F914 Think about it"
               content: >-
                 Use <code>strconv.Atoi</code> first, then validate the range. Return different errors for each failure case.
-            - title: "Hint"
+            - title: "\U0001F4A1 Hint"
               content: >-
                 Parse with <code>strconv.Atoi</code>, check <code>err != nil</code>, then check <code>port &lt; 1 || port > 65535</code>.
           solution: |-
@@ -941,10 +941,10 @@ variants:
             - input: "safeLookup(map[string]string{\"host\": \"localhost\"}, \"port\")"
               output: "\"\", false"
           hints:
-            - title: "Think about it"
+            - title: "\U0001F914 Think about it"
               content: >-
                 Go maps return two values when accessed with <code>val, ok := m[key]</code>. The second value indicates whether the key was found.
-            - title: "Hint"
+            - title: "\U0001F4A1 Hint"
               content: >-
                 <code>val, ok := m[key]; return val, ok</code>
           solution: |-
@@ -991,10 +991,10 @@ variants:
             - input: "countErrors([]string{\"2024-01-15 10:30:45 INFO ok\"})"
               output: "0"
           hints:
-            - title: "Think about it"
+            - title: "\U0001F914 Think about it"
               content: >-
                 Initialize a counter to 0. Loop through lines with range. For each line, check if it contains "ERROR" and increment the counter.
-            - title: "Hint"
+            - title: "\U0001F4A1 Hint"
               content: >-
                 Use <code>strings.Contains(line, "ERROR")</code> inside the loop.
           solution: |-
@@ -1021,10 +1021,10 @@ variants:
             - input: "filterByLevel([]string{\"2024-01-15 10:30:45 INFO ok\"}, \"ERROR\")"
               output: "[]"
           hints:
-            - title: "Think about it"
+            - title: "\U0001F914 Think about it"
               content: >-
                 This is the filter-and-collect pattern: create an empty result slice, loop, and append matching items.
-            - title: "Hint"
+            - title: "\U0001F4A1 Hint"
               content: >-
                 <code>var result []string</code>, then in the loop: <code>if strings.Contains(line, level) { result = append(result, line) }</code>
           solution: |-
@@ -1058,11 +1058,11 @@ variants:
             - input: "lastN([]string{\"a\", \"b\"}, 5)"
               output: "[\"a\", \"b\"]"
           hints:
-            - title: "Think about it"
+            - title: "\U0001F914 Think about it"
               content: >-
                 Use slice syntax <code>lines[start:]</code>. Calculate the start index as <code>len(lines) - n</code>,
                 but make sure it doesn't go below 0.
-            - title: "Hint"
+            - title: "\U0001F4A1 Hint"
               content: >-
                 <code>if n > len(lines) { n = len(lines) }</code> then <code>return lines[len(lines)-n:]</code>
           solution: |-
@@ -1091,11 +1091,11 @@ variants:
             - input: "uniqueLevels([]string{\"2024-01-15 10:30:45 ERROR timeout\", \"2024-01-15 10:30:46 INFO ok\", \"2024-01-15 10:30:47 ERROR disk full\"})"
               output: "[\"ERROR\", \"INFO\"] (order may vary)"
           hints:
-            - title: "Think about it"
+            - title: "\U0001F914 Think about it"
               content: >-
                 Use a <code>map[string]bool</code> as a set to track which levels you've already seen.
                 Then collect the map keys into a slice.
-            - title: "Hint"
+            - title: "\U0001F4A1 Hint"
               content: >-
                 For each line, split with <code>strings.Fields</code>, take the third field as the level,
                 add it to a <code>seen</code> map. After the loop, collect the keys.
@@ -1149,11 +1149,11 @@ variants:
             - input: "countByLevel([]string{\"2024-01-15 10:30:45 ERROR timeout\", \"2024-01-15 10:30:46 INFO ok\", \"2024-01-15 10:30:47 ERROR disk full\"})"
               output: "map[ERROR:2 INFO:1]"
           hints:
-            - title: "Think about it"
+            - title: "\U0001F914 Think about it"
               content: >-
                 Create a <code>map[string]int</code>. For each line, extract the level and increment:
                 <code>counts[level]++</code>. The zero value of int makes this work without initialization.
-            - title: "Hint"
+            - title: "\U0001F4A1 Hint"
               content: >-
                 Split each line with <code>strings.Fields</code>, take <code>fields[2]</code> as the level,
                 and <code>counts[level]++</code>.
@@ -1188,10 +1188,10 @@ variants:
             - input: "mostCommonLevel([]string{})"
               output: "\"\""
           hints:
-            - title: "Think about it"
+            - title: "\U0001F914 Think about it"
               content: >-
                 First build a frequency map (like challenge_6 v1), then iterate the map to find the key with the highest count.
-            - title: "Hint"
+            - title: "\U0001F4A1 Hint"
               content: >-
                 Track <code>maxCount</code> and <code>maxLevel</code> while iterating the frequency map.
                 Update them when you find a count larger than the current max.
@@ -1227,11 +1227,11 @@ variants:
             - input: "errorMessages([]string{\"2024-01-15 10:30:45 ERROR timeout\", \"2024-01-15 10:30:46 INFO ok\", \"2024-01-15 10:30:47 ERROR timeout\", \"2024-01-15 10:30:48 ERROR disk full\"})"
               output: "map[timeout:2 disk full:1]"
           hints:
-            - title: "Think about it"
+            - title: "\U0001F914 Think about it"
               content: >-
                 Split each line into fields. Check if <code>fields[2] == "ERROR"</code>. If so, reconstruct the message
                 from <code>fields[3:]</code> and count it.
-            - title: "Hint"
+            - title: "\U0001F4A1 Hint"
               content: >-
                 Use <code>strings.Join(fields[3:], " ")</code> to get the message, then <code>counts[msg]++</code>.
           solution: |-
@@ -1259,11 +1259,11 @@ variants:
             - input: "hourlyBreakdown([]string{\"2024-01-15 10:30:45 ERROR timeout\", \"2024-01-15 10:45:00 INFO ok\", \"2024-01-15 14:00:00 WARN slow\"})"
               output: "map[10:2 14:1]"
           hints:
-            - title: "Think about it"
+            - title: "\U0001F914 Think about it"
               content: >-
                 The timestamp starts at position 0 and the hour is at positions 11-12 (inclusive).
                 Use <code>line[11:13]</code> to extract the two-digit hour.
-            - title: "Hint"
+            - title: "\U0001F4A1 Hint"
               content: >-
                 Check <code>len(line) >= 13</code> first, then <code>hour := line[11:13]</code> and <code>counts[hour]++</code>.
           solution: |-
@@ -1313,10 +1313,10 @@ variants:
             - input: "logSummary([]string{\"2024-01-15 10:30:45 ERROR timeout\", \"2024-01-15 10:30:46 INFO ok\", \"2024-01-15 10:30:47 WARN slow\", \"2024-01-15 10:30:48 INFO started\", \"2024-01-15 10:30:49 ERROR retry\"})"
               output: "2, 1, 2"
           hints:
-            - title: "Think about it"
+            - title: "\U0001F914 Think about it"
               content: >-
                 Declare three counters. Loop through lines, extract the level, and increment the appropriate counter.
-            - title: "Hint"
+            - title: "\U0001F4A1 Hint"
               content: >-
                 Use a switch or if/else chain on <code>fields[2]</code> to increment the right counter.
           solution: |-
@@ -1358,11 +1358,11 @@ variants:
             - input: "logReport([]string{\"2024-01-15 10:30:45 ERROR timeout\", \"2024-01-15 10:30:46 INFO ok\", \"2024-01-15 10:30:47 WARN slow\", \"2024-01-15 10:30:48 INFO started\", \"2024-01-15 10:30:49 ERROR retry\"})"
               output: "\"Total: 5\\nINFO: 2\\nWARN: 1\\nERROR: 2\\nMost common: INFO\" (or ERROR — either tied level is acceptable)"
           hints:
-            - title: "Think about it"
+            - title: "\U0001F914 Think about it"
               content: >-
                 Build a frequency map first, then find the max, then format the output string.
                 This combines maps, loops, and string formatting.
-            - title: "Hint"
+            - title: "\U0001F4A1 Hint"
               content: >-
                 Use <code>fmt.Sprintf</code> to build each line of the report and concatenate with <code>\n</code>.
           solution: |-
@@ -1408,11 +1408,11 @@ variants:
             - input: "findAnomalies([]string{\"2024-01-15 10:30:45 ERROR timeout\", \"2024-01-15 10:30:46 ERROR timeout\", \"2024-01-15 10:30:47 ERROR timeout\", \"2024-01-15 10:30:48 ERROR disk full\", \"2024-01-15 10:30:49 INFO ok\"}, 2)"
               output: "[\"timeout\"]"
           hints:
-            - title: "Think about it"
+            - title: "\U0001F914 Think about it"
               content: >-
                 First build a frequency map of error messages (like challenge_6 v3). Then filter the map
                 for entries exceeding the threshold.
-            - title: "Hint"
+            - title: "\U0001F4A1 Hint"
               content: >-
                 Two passes: (1) count error messages, (2) collect messages where <code>count > threshold</code>.
           solution: |-
@@ -1452,11 +1452,11 @@ variants:
             - input: "parseAndFilter([]string{\"2024-01-15 10:30:45 ERROR connection timeout\", \"2024-01-15 10:30:46 ERROR disk full\", \"2024-01-15 10:30:47 INFO connection ok\", \"2024-01-15 10:30:48 ERROR connection refused\"}, \"ERROR\", \"connection\")"
               output: "[\"[ERROR] connection timeout\", \"[ERROR] connection refused\"]"
           hints:
-            - title: "Think about it"
+            - title: "\U0001F914 Think about it"
               content: >-
                 Split each line, check the level matches, reconstruct the message, check for the keyword,
                 then format the output. This combines parsing, filtering, and formatting.
-            - title: "Hint"
+            - title: "\U0001F4A1 Hint"
               content: >-
                 Use <code>strings.Fields</code> to split, check <code>fields[2] == level</code>,
                 join <code>fields[3:]</code> for the message, check <code>strings.Contains(msg, keyword)</code>,
