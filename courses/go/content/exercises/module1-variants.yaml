@@ -394,10 +394,6 @@ variants:
         - url: https://go.dev/ref/spec#Short_variable_declarations
           title: "Go Spec: Short variable declarations"
           note: specification details
-      patternPrimer:
-        bruteForce: Use explicit var declarations with types for every variable.
-        bestApproach: Use := for concise declaration inside functions; use var when zero values or package-level scope needed.
-        typical: Variable declaration is O(1) — focus on choosing the right declaration style.
       variants:
         - id: v1
           title: Declare and Return Integer
@@ -526,10 +522,6 @@ variants:
         - url: https://pkg.go.dev/strconv
           title: "Package strconv"
           note: string/number conversions
-      patternPrimer:
-        bruteForce: Manually format values using fmt.Sprintf for everything.
-        bestApproach: Use strconv for string/number conversions and explicit type casts for numeric types. Always handle errors from parsing functions.
-        typical: Type conversion is O(1) for numeric types, O(n) for string conversions where n is string length.
       variants:
         - id: v1
           title: Int to String
@@ -667,10 +659,6 @@ variants:
         - url: https://pkg.go.dev/strings
           title: "Package strings"
           note: string manipulation functions
-      patternPrimer:
-        bruteForce: Write inline code without functions, duplicating logic everywhere.
-        bestApproach: Extract small, focused functions with clear inputs and outputs. Each function does one thing well.
-        typical: Keep functions short and composable. Good function design makes code testable and reusable.
       variants:
         - id: v1
           title: Format Log Entry
@@ -804,10 +792,6 @@ variants:
         - url: https://go.dev/blog/error-handling-and-go
           title: "Error handling and Go"
           note: idiomatic error handling
-      patternPrimer:
-        bruteForce: Return a single value and use sentinel values (-1, empty string) to indicate errors.
-        bestApproach: Return (value, error) pairs. Check errors immediately after the call. Return early on error.
-        typical: The (value, error) return pattern is Go's primary error handling mechanism. Master it early.
       variants:
         - id: v1
           title: Parse Log Level
@@ -972,10 +956,6 @@ variants:
         - url: https://pkg.go.dev/strings#Contains
           title: "strings.Contains"
           note: check if a string contains a substring
-      patternPrimer:
-        bruteForce: Use nested loops and manual index tracking to filter and process slices.
-        bestApproach: Use range loops with append to build result slices. Use slice expressions for sub-slices.
-        typical: Filter-and-collect with range + append is O(n). Slice expressions are O(1) since they share underlying arrays.
       variants:
         - id: v1
           title: Count Errors
@@ -1133,10 +1113,6 @@ variants:
         - url: https://go.dev/tour/moretypes/19
           title: "Go Tour: Maps"
           note: map basics
-      patternPrimer:
-        bruteForce: Use nested loops to count occurrences or find maximums manually.
-        bestApproach: Use maps for counting and aggregation. The zero value of int (0) makes frequency counting natural with map[key]++.
-        typical: Map operations (insert, lookup, delete) are O(1) average. Iterating a map is O(n). Building frequency maps is O(n).
       variants:
         - id: v1
           title: Count by Level
@@ -1296,10 +1272,6 @@ variants:
         - url: https://pkg.go.dev/fmt#Sprintf
           title: "fmt.Sprintf"
           note: string formatting
-      patternPrimer:
-        bruteForce: Write one giant function that does everything inline with deeply nested loops and conditions.
-        bestApproach: Compose small helper functions. Each function does one thing. Build complex behavior by calling simpler functions.
-        typical: These problems combine iteration, maps, string processing, and error handling. Focus on clarity over cleverness.
       variants:
         - id: v1
           title: Log Summary Counts
