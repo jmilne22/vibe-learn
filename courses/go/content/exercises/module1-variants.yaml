@@ -1102,6 +1102,77 @@ variants:
                 use <code>m[key] = true</code> to add, and <code>if m[key]</code> to check membership.
 
         - id: v5
+          title: First and Last
+          description: >-
+            Write <code>func firstAndLast(items []string) (string, string)</code>. Return the first
+            and last elements of a slice. If the slice is empty, return two empty strings.
+            If the slice has one element, return it as both first and last.
+          functionSignature: func firstAndLast(items []string) (string, string)
+          difficulty: 1
+          testCases:
+            - input: "firstAndLast([]string{\"a\", \"b\", \"c\", \"d\"})"
+              output: "\"a\", \"d\""
+            - input: "firstAndLast([]string{\"only\"})"
+              output: "\"only\", \"only\""
+            - input: "firstAndLast([]string{})"
+              output: "\"\", \"\""
+          hints:
+            - title: "\U0001F914 Think about it"
+              content: >-
+                The first element is <code>items[0]</code>. The last element is
+                <code>items[len(items)-1]</code>. But what if the slice is empty?
+            - title: "\U0001F4A1 Hint"
+              content: >-
+                Check <code>if len(items) == 0</code> first. Otherwise, access
+                <code>items[0]</code> and <code>items[len(items)-1]</code>.
+          solution: |-
+            func firstAndLast(items []string) (string, string) {
+                if len(items) == 0 {
+                    return "", ""
+                }
+                return items[0], items[len(items)-1]
+            }
+          annotations:
+            - type: gotcha
+              label: No Negative Indexing
+              text: >-
+                Go has no <code>items[-1]</code>. Use <code>items[len(items)-1]</code> for the last
+                element. Always check <code>len(items) == 0</code> first — accessing index 0 or
+                <code>len-1</code> on an empty slice panics.
+
+        - id: v6
+          title: Second to Last
+          description: >-
+            Write <code>func secondToLast(items []string) (string, bool)</code>. Return the
+            second-to-last element and <code>true</code>. If the slice has fewer than 2 elements,
+            return <code>""</code> and <code>false</code>.
+          functionSignature: func secondToLast(items []string) (string, bool)
+          difficulty: 1
+          testCases:
+            - input: "secondToLast([]string{\"a\", \"b\", \"c\", \"d\"})"
+              output: "\"c\", true"
+            - input: "secondToLast([]string{\"only\"})"
+              output: "\"\", false"
+            - input: "secondToLast([]string{})"
+              output: "\"\", false"
+          hints:
+            - title: "\U0001F914 Think about it"
+              content: >-
+                The second-to-last element is at index <code>len(items)-2</code>. When is that
+                index invalid?
+            - title: "\U0001F4A1 Hint"
+              content: >-
+                Check <code>if len(items) &lt; 2</code> first. Then return
+                <code>items[len(items)-2], true</code>.
+          solution: |-
+            func secondToLast(items []string) (string, bool) {
+                if len(items) < 2 {
+                    return "", false
+                }
+                return items[len(items)-2], true
+            }
+
+        - id: v7
           title: Reverse a Slice
           description: >-
             Write <code>func reverseStrings(items []string) []string</code>. Return a new slice
@@ -1140,7 +1211,7 @@ variants:
                 <code>len(s)-1-i</code> gives you the mirror position from the end. When <code>i=0</code>
                 you get the last element, when <code>i=1</code> the second-to-last, etc.
 
-        - id: v6
+        - id: v8
           title: Find Adjacent Duplicates
           description: >-
             Write <code>func adjacentDuplicates(lines []string) []string</code>. Return lines that
@@ -1182,7 +1253,7 @@ variants:
                 an out-of-bounds access on <code>lines[i-1]</code>. This is the most common
                 source of index panics in Go.
 
-        - id: v7
+        - id: v9
           title: Safe Slice Access
           description: >-
             Write <code>func safeGet(items []string, index int) (string, bool)</code>. Return the
@@ -1223,7 +1294,7 @@ variants:
                 Always validate indices with <code>index &lt; 0 || index >= len(s)</code> before accessing.
                 This is especially important when indices come from user input or calculations.
 
-        - id: v8
+        - id: v10
           title: Window Over Log Lines
           description: >-
             Write <code>func windows(lines []string, size int) [][]string</code>. Return all
