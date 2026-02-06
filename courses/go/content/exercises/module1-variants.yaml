@@ -1101,6 +1101,168 @@ variants:
                 Go doesn't have a built-in set type. The idiomatic approach is <code>map[T]bool</code> —
                 use <code>m[key] = true</code> to add, and <code>if m[key]</code> to check membership.
 
+        - id: v5
+          title: Reverse a Slice
+          description: >-
+            Write <code>func reverseStrings(items []string) []string</code>. Return a new slice
+            with the elements in reverse order. Use index math from both ends —
+            access elements with <code>items[len(items)-1-i]</code>.
+          functionSignature: func reverseStrings(items []string) []string
+          difficulty: 2
+          testCases:
+            - input: "reverseStrings([]string{\"a\", \"b\", \"c\", \"d\"})"
+              output: "[\"d\", \"c\", \"b\", \"a\"]"
+            - input: "reverseStrings([]string{})"
+              output: "[]"
+            - input: "reverseStrings([]string{\"only\"})"
+              output: "[\"only\"]"
+          hints:
+            - title: "\U0001F914 Think about it"
+              content: >-
+                Create a new slice with <code>make</code>. The element at index <code>i</code> in the
+                result should be the element at index <code>len(items)-1-i</code> in the original.
+            - title: "\U0001F4A1 Hint"
+              content: >-
+                <code>result := make([]string, len(items))</code>, then loop with
+                <code>result[i] = items[len(items)-1-i]</code>.
+          solution: |-
+            func reverseStrings(items []string) []string {
+                result := make([]string, len(items))
+                for i := 0; i < len(items); i++ {
+                    result[i] = items[len(items)-1-i]
+                }
+                return result
+            }
+          annotations:
+            - type: pattern
+              label: Mirror Index
+              text: >-
+                <code>len(s)-1-i</code> gives you the mirror position from the end. When <code>i=0</code>
+                you get the last element, when <code>i=1</code> the second-to-last, etc.
+
+        - id: v6
+          title: Find Adjacent Duplicates
+          description: >-
+            Write <code>func adjacentDuplicates(lines []string) []string</code>. Return lines that
+            are identical to the line immediately before them. Use a classic index loop starting
+            at <code>i=1</code> and compare <code>lines[i]</code> with <code>lines[i-1]</code>.
+          functionSignature: func adjacentDuplicates(lines []string) []string
+          difficulty: 2
+          testCases:
+            - input: "adjacentDuplicates([]string{\"ERROR timeout\", \"ERROR timeout\", \"INFO ok\", \"INFO ok\", \"INFO ok\", \"ERROR disk full\"})"
+              output: "[\"ERROR timeout\", \"INFO ok\", \"INFO ok\"]"
+            - input: "adjacentDuplicates([]string{\"a\", \"b\", \"c\"})"
+              output: "[]"
+            - input: "adjacentDuplicates([]string{})"
+              output: "[]"
+          hints:
+            - title: "\U0001F914 Think about it"
+              content: >-
+                Start the loop at index 1, not 0. Compare each element with the one before it.
+                What would happen if you started at 0 and tried to access <code>lines[-1]</code>?
+            - title: "\U0001F4A1 Hint"
+              content: >-
+                <code>for i := 1; i &lt; len(lines); i++ { if lines[i] == lines[i-1] { ... } }</code>.
+                Starting at 1 guarantees <code>i-1</code> is always valid.
+          solution: |-
+            func adjacentDuplicates(lines []string) []string {
+                var result []string
+                for i := 1; i < len(lines); i++ {
+                    if lines[i] == lines[i-1] {
+                        result = append(result, lines[i])
+                    }
+                }
+                return result
+            }
+          annotations:
+            - type: gotcha
+              label: Off-By-One
+              text: >-
+                When comparing adjacent elements, start your loop at index 1 (not 0) to avoid
+                an out-of-bounds access on <code>lines[i-1]</code>. This is the most common
+                source of index panics in Go.
+
+        - id: v7
+          title: Safe Slice Access
+          description: >-
+            Write <code>func safeGet(items []string, index int) (string, bool)</code>. Return the
+            element at the given index and <code>true</code>, or <code>""</code> and <code>false</code>
+            if the index is out of bounds. Handle negative indices, zero-length slices, and indices
+            beyond the end.
+          functionSignature: func safeGet(items []string, index int) (string, bool)
+          difficulty: 2
+          testCases:
+            - input: "safeGet([]string{\"a\", \"b\", \"c\"}, 1)"
+              output: "\"b\", true"
+            - input: "safeGet([]string{\"a\", \"b\", \"c\"}, 5)"
+              output: "\"\", false"
+            - input: "safeGet([]string{\"a\", \"b\", \"c\"}, -1)"
+              output: "\"\", false"
+            - input: "safeGet([]string{}, 0)"
+              output: "\"\", false"
+          hints:
+            - title: "\U0001F914 Think about it"
+              content: >-
+                What are all the ways an index can be invalid? It could be negative, or it could be
+                >= the length of the slice. Check both before accessing.
+            - title: "\U0001F4A1 Hint"
+              content: >-
+                <code>if index &lt; 0 || index >= len(items) { return "", false }</code>
+          solution: |-
+            func safeGet(items []string, index int) (string, bool) {
+                if index < 0 || index >= len(items) {
+                    return "", false
+                }
+                return items[index], true
+            }
+          annotations:
+            - type: pattern
+              label: Bounds Checking
+              text: >-
+                Go panics on out-of-bounds access — there's no fallback like Python's negative indexing.
+                Always validate indices with <code>index &lt; 0 || index >= len(s)</code> before accessing.
+                This is especially important when indices come from user input or calculations.
+
+        - id: v8
+          title: Window Over Log Lines
+          description: >-
+            Write <code>func windows(lines []string, size int) [][]string</code>. Return all
+            contiguous sub-slices of the given size. For example, with size 3 and 5 lines, return
+            3 windows: lines[0:3], lines[1:4], lines[2:5]. Return an empty slice if the input is
+            shorter than the window size.
+          functionSignature: func windows(lines []string, size int) [][]string
+          difficulty: 3
+          testCases:
+            - input: "windows([]string{\"a\", \"b\", \"c\", \"d\", \"e\"}, 3)"
+              output: "[[\"a\",\"b\",\"c\"], [\"b\",\"c\",\"d\"], [\"c\",\"d\",\"e\"]]"
+            - input: "windows([]string{\"a\", \"b\"}, 3)"
+              output: "[]"
+          hints:
+            - title: "\U0001F914 Think about it"
+              content: >-
+                How many windows of size <code>k</code> fit in a slice of length <code>n</code>?
+                The answer is <code>n - k + 1</code>. Your loop runs from <code>i = 0</code> to
+                <code>i &lt;= len(lines) - size</code>.
+            - title: "\U0001F4A1 Hint"
+              content: >-
+                <code>for i := 0; i &lt;= len(lines)-size; i++ { result = append(result, lines[i:i+size]) }</code>.
+                If <code>len(lines) &lt; size</code>, the loop body never executes.
+          solution: |-
+            func windows(lines []string, size int) [][]string {
+                var result [][]string
+                for i := 0; i <= len(lines)-size; i++ {
+                    result = append(result, lines[i:i+size])
+                }
+                return result
+            }
+          annotations:
+            - type: pattern
+              label: Sliding Window
+              text: >-
+                The sliding window pattern — <code>lines[i:i+size]</code> for <code>i</code> from
+                0 to <code>len-size</code> — is fundamental for analyzing sequential data. The
+                bounds math (<code>len - size + 1</code> iterations) comes up constantly.
+
     # ── challenge_6: Maps & Aggregation (Log Parser) ────────────────────
     - id: challenge_6
       block: 2
