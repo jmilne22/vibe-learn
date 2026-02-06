@@ -66,24 +66,30 @@ modules:
 projects:
   - id: p1
     num: P1
+    title: Log Parser
+    file: project-logparser
+    afterModule: 1
+    description: "Build a log parser that filters, aggregates, and reports on server log data. Applies all Module 1 concepts."
+  - id: p2
+    num: P2
     title: Task Runner
     file: project-taskrunner
     afterModule: 7
     description: "Build a simple task runner that reads YAML configs and executes commands. Applies concepts from Module 7."
-  - id: p2
-    num: P2
+  - id: p3
+    num: P3
     title: File Browser
     file: project-filebrowser
     afterModule: 8
     description: "Build an interactive terminal file browser using Bubble Tea. Applies concepts from Module 8."
-  - id: p3
-    num: P3
+  - id: p4
+    num: P4
     title: GitHub CLI
     file: project-githubcli
     afterModule: 11
     description: "Build a CLI tool that interacts with the GitHub API. Applies concepts from Module 11."
-  - id: p4
-    num: P4
+  - id: p5
+    num: P5
     title: Parallel Downloader
     file: project-downloader
     afterModule: 12
