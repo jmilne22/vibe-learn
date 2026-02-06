@@ -918,7 +918,7 @@ variants:
             Write <code>func safeLookup(m map[string]string, key string) (string, bool)</code>.
             Look up the key in the map using the comma-ok pattern and return both values.
           functionSignature: func safeLookup(m map[string]string, key string) (string, bool)
-          difficulty: 3
+          difficulty: 1
           testCases:
             - input: "safeLookup(map[string]string{\"host\": \"localhost\"}, \"host\")"
               output: "\"localhost\", true"
@@ -1561,7 +1561,8 @@ variants:
           difficulty: 3
           testCases:
             - input: "logReport([]string{\"2024-01-15 10:30:45 ERROR timeout\", \"2024-01-15 10:30:46 INFO ok\", \"2024-01-15 10:30:47 WARN slow\", \"2024-01-15 10:30:48 INFO started\", \"2024-01-15 10:30:49 ERROR retry\"})"
-              output: "\"Total: 5\\nINFO: 2\\nWARN: 1\\nERROR: 2\\nMost common: INFO\" (or ERROR — either tied level is acceptable)"
+              output: "\"Total: 5\\nINFO: 2\\nWARN: 1\\nERROR: 2\\nMost common: INFO\""
+              note: "If INFO and ERROR tie, either is acceptable"
           hints:
             - title: "\U0001F914 Think about it"
               content: >-

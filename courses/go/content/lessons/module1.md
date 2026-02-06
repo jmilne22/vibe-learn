@@ -420,7 +420,7 @@ Apply Go fundamentals with hands-on coding challenges. Each challenge has multip
 
 > **Learning Path:** **Warmups** → master basic syntax with quick drills (5 concepts, 19 variants)
 >
-> **Challenges** → 7 exercises with 28 variants across easy/medium/hard difficulties
+> **Challenges** → 7 exercises with 34 variants across easy/medium/hard difficulties
 >
 > **Log parser theme** — challenges 3-7 build toward a real log parser, composing functions progressively
 >
