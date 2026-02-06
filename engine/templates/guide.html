@@ -616,8 +616,8 @@ $ npm run build</div>
                     a checklist of common mistakes (wrong file names, missing exercise divs, unquoted flashcard keys).
                     Run through it before deploying.</li>
                 <li><strong>Bulk-edit exercises with the patch script.</strong> When replacing many exercise variants at once
-                    (e.g., swapping math drills for practical exercises), have your AI tool generate a JSON replacement spec
-                    and run <span class="fp">node scripts/patch-exercises.js spec.json</span>. The script does targeted YAML
+                    (e.g., swapping math drills for practical exercises), have your AI tool generate a YAML replacement spec
+                    and run <span class="fp">node scripts/patch-exercises.js spec.yaml</span>. The script does targeted YAML
                     surgery &mdash; only patched variants are rewritten, everything else stays untouched. Much faster and
                     cheaper than editing variants one by one.</li>
             </ul>

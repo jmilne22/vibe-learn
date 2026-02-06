@@ -48,11 +48,11 @@ cd dist && python3 -m http.server 8000
 To replace multiple exercise variants at once (e.g., swapping out math drills for practical exercises), use the patch script instead of editing YAML by hand:
 
 ```bash
-node scripts/patch-exercises.js spec.json    # apply replacements
+node scripts/patch-exercises.js spec.yaml    # apply replacements
 node build.js go                              # verify
 ```
 
-Your AI tool generates a JSON spec with just the replacement content — the script handles YAML surgery. Only patched variants are rewritten; everything else stays untouched. See `scripts/patch-exercises.js` for the spec format.
+Your AI tool generates a YAML spec with just the replacement content — the script handles the surgery. Only patched variants are rewritten; everything else stays untouched. See `scripts/patch-exercises.js` for the spec format.
 
 See the [Platform Guide](https://jmilne22.github.io/vibe-learn/guide.html) for detailed documentation on every content type, YAML schema, and tool-specific workflow.
 

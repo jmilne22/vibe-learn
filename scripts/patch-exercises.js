@@ -1,36 +1,34 @@
 #!/usr/bin/env node
 /**
- * Patch exercise variants from a JSON replacement spec.
+ * Patch exercise variants from a YAML replacement spec.
  *
  * Works with any AI tool — Claude Code, Cursor, Copilot, Augment, etc.
  * The AI generates the spec, this script does the YAML surgery.
  *
  * Usage:
- *   node scripts/patch-exercises.js <spec.json>
+ *   node scripts/patch-exercises.js <spec.yaml>
  *
  * Spec format:
- *   {
- *     "file": "courses/go/content/exercises/module1-variants.yaml",
- *     "replacements": [
- *       {
- *         "section": "warmup_1",
- *         "variantId": "v5",
- *         "patch": {
- *           "title": "New Title",
- *           "description": "New description...",
- *           "hints": ["hint1", "hint2"],
- *           "solution": "fmt.Println(\"hello\")"
- *         }
- *       }
- *     ]
- *   }
+ *
+ *   file: courses/go/content/exercises/module1-variants.yaml
+ *   replacements:
+ *     - section: warmup_1
+ *       variantId: v5
+ *       patch:
+ *         title: New Title
+ *         description: New description...
+ *         hints:
+ *           - "hint1"
+ *           - "hint2"
+ *         solution: |-
+ *           fmt.Println("hello")
  *
  * For challenge variants, patch can also include:
  *   functionSignature, testCases, difficulty
  *
  * Hint formats (auto-detected from context):
- *   - Warmups:    ["hint1", "hint2"]
- *   - Challenges: [{ title: "🤔 Think", content: "..." }, ...]
+ *   - Warmups:    string arrays
+ *   - Challenges: objects with title + content
  *
  * Only fields present in "patch" are overwritten; others are preserved.
  * Unchanged variants keep their original formatting (no reformatting noise).
@@ -45,11 +43,11 @@ const ROOT = path.resolve(__dirname, '..');
 // --- Load spec ---
 const specPath = process.argv[2];
 if (!specPath) {
-  console.error('Usage: node scripts/patch-exercises.js <spec.json>');
+  console.error('Usage: node scripts/patch-exercises.js <spec.yaml>');
   process.exit(1);
 }
 
-const spec = JSON.parse(fs.readFileSync(path.resolve(specPath), 'utf8'));
+const spec = yaml.load(fs.readFileSync(path.resolve(specPath), 'utf8'));
 const yamlPath = path.join(ROOT, spec.file);
 
 if (!fs.existsSync(yamlPath)) {

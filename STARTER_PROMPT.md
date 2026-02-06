@@ -720,34 +720,31 @@ challenges:
 
 ## Bulk-Editing Existing Exercises
 
-When replacing multiple exercise variants in an existing course (e.g., swapping out math drills for practical exercises), use the patch script instead of editing the YAML file by hand. Write a JSON spec and run:
+When replacing multiple exercise variants in an existing course (e.g., swapping out math drills for practical exercises), use the patch script instead of editing the YAML file by hand. Write a YAML spec and run:
 
 ```bash
-node scripts/patch-exercises.js spec.json
+node scripts/patch-exercises.js spec.yaml
 node build.js <slug>    # verify
 ```
 
 Spec format — only fields in `patch` are overwritten, everything else is preserved:
 
-```json
-{
-  "file": "courses/<slug>/content/exercises/module1-variants.yaml",
-  "replacements": [
-    {
-      "section": "warmup_1",
-      "variantId": "v5",
-      "patch": {
-        "title": "New Title",
-        "description": "New description...",
-        "hints": ["hint1", "hint2"],
-        "solution": "fmt.Println(\"hello\")"
-      }
-    }
-  ]
-}
+```yaml
+file: courses/<slug>/content/exercises/module1-variants.yaml
+replacements:
+  - section: warmup_1
+    variantId: v5
+    patch:
+      title: New Title
+      description: New description...
+      hints:
+        - "hint1"
+        - "hint2"
+      solution: |-
+        fmt.Println("hello")
 ```
 
-For challenge variants, `patch` can also include `functionSignature`, `testCases`, and `difficulty`. Use challenge-style hints (`[{title, content}]`) for challenges and string arrays for warmups.
+For challenge variants, `patch` can also include `functionSignature`, `testCases`, and `difficulty`. Use challenge-style hints (objects with `title` + `content`) for challenges and string arrays for warmups.
 
 ---
 
