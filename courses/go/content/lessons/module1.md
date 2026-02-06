@@ -418,9 +418,11 @@ Apply Go fundamentals with hands-on coding challenges. Each challenge has multip
             <noscript><p class="js-required">JavaScript is required for the interactive exercises.</p></noscript>
             </div>
 
-> **Learning Path:** **Warmups** → master basic syntax with quick drills (6 concepts, ~79 variants)
+> **Learning Path:** **Warmups** → master basic syntax with quick drills (5 concepts, 19 variants)
 >
-> **Challenges** → 14 exercises with 182 variants across easy/medium/hard difficulties
+> **Challenges** → 7 exercises with 34 variants across easy/medium/hard difficulties
+>
+> **Log parser theme** — challenges 3-7 build toward a real log parser, composing functions progressively
 >
 > **Progressive difficulty:**
 >
