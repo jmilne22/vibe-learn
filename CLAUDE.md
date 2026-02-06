@@ -9,6 +9,7 @@ to static HTML by `node build.js`. No framework, no backend.
 - `node build.js <slug>` — build a single course
 - `npm run new-course -- <slug>` — scaffold an empty course
 - `npm run builder` — launch web-based course editor at http://localhost:3456
+- `node scripts/patch-exercises.js <spec.json>` — bulk-patch exercise variants from a JSON spec
 
 ## Creating a Course
 Read STARTER_PROMPT.md — it contains the complete generation prompt
@@ -26,6 +27,36 @@ the prompt's instructions.
 - Exercise files: `content/exercises/module{id}-variants.yaml`
 - Lesson files: `content/lessons/module{id}.md`
 - Flashcards: `content/flashcards/flashcards.yaml` (keys are module IDs as strings)
+
+## Bulk Exercise Editing
+When replacing multiple exercise variants at once, use the patch script
+instead of editing the YAML by hand. Write a JSON spec and run:
+
+```
+node scripts/patch-exercises.js spec.json
+```
+
+Spec format — only patched fields are overwritten, everything else preserved:
+```json
+{
+  "file": "courses/<slug>/content/exercises/module1-variants.yaml",
+  "replacements": [
+    {
+      "section": "warmup_1",
+      "variantId": "v5",
+      "patch": {
+        "title": "New Title",
+        "description": "New description...",
+        "hints": ["hint1", "hint2"],
+        "solution": "fmt.Println(\"hello\")"
+      }
+    }
+  ]
+}
+```
+
+This avoids burning tokens on repetitive YAML edits. Generate the spec,
+run the script, then `node build.js <slug>` to verify.
 
 ## Don't
 - Modify `engine/` to add course content
