@@ -134,8 +134,9 @@
             return null; // no data yet
         }
 
-        // 3. Group SRS entries by module
-        var moduleMap = {}; // moduleNum -> { totalEase, count, mastered, entries[] }
+        // 3. Group SRS entries by module (recency-weighted averages)
+        var now = new Date();
+        var moduleMap = {}; // moduleNum -> { weightedEase, totalWeight, count, mastered, entries[] }
 
         for (var i = 0; i < srsKeys.length; i++) {
             var key = srsKeys[i];
@@ -144,11 +145,22 @@
             if (modNum === null) continue;
 
             if (!moduleMap[modNum]) {
-                moduleMap[modNum] = { totalEase: 0, count: 0, mastered: 0, entries: [] };
+                moduleMap[modNum] = { weightedEase: 0, totalWeight: 0, count: 0, mastered: 0, entries: [] };
             }
-            moduleMap[modNum].totalEase += entry.easeFactor;
+
+            // Recency weight: 1 / (1 + daysSinceLastReview / 30)
+            var weight = 1;
+            if (entry.nextReview && entry.interval) {
+                var lastReview = new Date(entry.nextReview);
+                lastReview.setDate(lastReview.getDate() - entry.interval);
+                var daysSince = Math.max(0, (now - lastReview) / (1000 * 60 * 60 * 24));
+                weight = 1 / (1 + daysSince / 30);
+            }
+
+            moduleMap[modNum].weightedEase += entry.easeFactor * weight;
+            moduleMap[modNum].totalWeight += weight;
             moduleMap[modNum].count++;
-            if (entry.easeFactor > 2.5) {
+            if (entry.easeFactor >= 2.5) {
                 moduleMap[modNum].mastered++;
             }
             moduleMap[modNum].entries.push({ key: key, easeFactor: entry.easeFactor, nextReview: entry.nextReview, label: entry.label });
@@ -160,7 +172,7 @@
         for (var j = 0; j < moduleNums.length; j++) {
             var num = moduleNums[j] === 'algo' ? 'algo' : parseInt(moduleNums[j], 10);
             var data = moduleMap[moduleNums[j]];
-            var avgEase = data.totalEase / data.count;
+            var avgEase = data.totalWeight > 0 ? data.weightedEase / data.totalWeight : data.weightedEase / data.count;
             var label = strengthLabel(avgEase, data.count);
             modules.push({
                 num: num,
@@ -216,12 +228,12 @@
         for (var t = 0; t < srsKeys.length; t++) {
             var srsEntry = srsData[srsKeys[t]];
             // Only count items with enough reviews to be meaningful
-            if (srsEntry.repetitions >= 2 && srsEntry.easeFactor > 2.5) masteredCount++;
+            if (srsEntry.repetitions >= 2 && srsEntry.easeFactor >= 2.5) masteredCount++;
             if (srsEntry.repetitions >= 2 && srsEntry.easeFactor < 1.7) weakCount++;
         }
 
-        // 8. Concept strength breakdown
-        var conceptMap = {}; // "moduleNum|concept" -> { totalEase, count }
+        // 8. Concept strength breakdown (recency-weighted)
+        var conceptMap = {}; // "moduleNum|concept" -> { weightedEase, totalWeight, count }
         var conceptIndex = window.ConceptIndex || {};
 
         for (var ci = 0; ci < srsKeys.length; ci++) {
@@ -235,11 +247,21 @@
             var conceptName = conceptIndex[baseKey];
             if (!conceptName) continue;
 
+            // Recency weight: 1 / (1 + daysSinceLastReview / 30)
+            var cWeight = 1;
+            if (cEntry.nextReview && cEntry.interval) {
+                var cLastReview = new Date(cEntry.nextReview);
+                cLastReview.setDate(cLastReview.getDate() - cEntry.interval);
+                var cDaysSince = Math.max(0, (now - cLastReview) / (1000 * 60 * 60 * 24));
+                cWeight = 1 / (1 + cDaysSince / 30);
+            }
+
             var conceptGroupKey = cModNum + '|' + conceptName;
             if (!conceptMap[conceptGroupKey]) {
-                conceptMap[conceptGroupKey] = { moduleNum: cModNum, concept: conceptName, totalEase: 0, count: 0 };
+                conceptMap[conceptGroupKey] = { moduleNum: cModNum, concept: conceptName, weightedEase: 0, totalWeight: 0, count: 0 };
             }
-            conceptMap[conceptGroupKey].totalEase += cEntry.easeFactor;
+            conceptMap[conceptGroupKey].weightedEase += cEntry.easeFactor * cWeight;
+            conceptMap[conceptGroupKey].totalWeight += cWeight;
             conceptMap[conceptGroupKey].count++;
         }
 
@@ -247,7 +269,7 @@
         var conceptGroupKeys = Object.keys(conceptMap);
         for (var cg = 0; cg < conceptGroupKeys.length; cg++) {
             var cData = conceptMap[conceptGroupKeys[cg]];
-            var cAvgEase = cData.totalEase / cData.count;
+            var cAvgEase = cData.totalWeight > 0 ? cData.weightedEase / cData.totalWeight : cData.weightedEase / cData.count;
             var cLabel = strengthLabel(cAvgEase, cData.count, MIN_CONCEPT_REVIEWS);
             concepts.push({
                 moduleNum: cData.moduleNum,

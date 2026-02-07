@@ -8,11 +8,10 @@
  * Schema: { "m2_warmup_1": { easeFactor, interval, repetitions, nextReview, lastQuality } }
  *
  * Quality scale (0-5):
- *   5 = solved independently, self-rated "got it"
- *   4 = solved independently, self-rated "struggled"
- *   3 = used hints but not solution
- *   2 = viewed solution
- *   1 = viewed solution, self-rated "needed solution"
+ *   5 = self-rated "got it", no hints
+ *   4 = self-rated "got it", used hints
+ *   3 = self-rated "struggled" (SM-2 minimum correct)
+ *   1 = self-rated "needed solution" (reset)
  *   0 = not engaged
  */
 (function() {
@@ -72,31 +71,25 @@
         };
     }
 
-    // Derive quality score from exercise progress interaction data
+    // Derive quality score from exercise progress interaction data.
+    // The UI flow is: attempt → open solution to check → self-rate.
+    // Self-rating is the primary signal; solutionViewed is the normal
+    // "check your answer" step, not a penalty. Hints provide nuance.
     function deriveQuality(progressData) {
         if (!progressData) return 0;
 
         const { hintsUsed, solutionViewed, selfRating } = progressData;
 
-        if (!solutionViewed && !hintsUsed) {
-            // Solved independently
-            if (selfRating === 1) return 5;      // got it
-            if (selfRating === 2) return 4;      // struggled
-            return 4;                             // default if no rating
+        // Primary path: self-rating provided (normal flow — solution is always viewed)
+        if (selfRating) {
+            if (selfRating === 1) return hintsUsed ? 4 : 5;  // got it
+            if (selfRating === 2) return 3;                    // struggled (SM-2 minimum correct)
+            if (selfRating === 3) return 1;                    // needed solution (reset)
         }
 
-        if (!solutionViewed && hintsUsed) {
-            // Used hints but not solution
-            return 3;
-        }
-
-        if (solutionViewed) {
-            // Viewed solution
-            if (selfRating === 3) return 1;      // needed solution
-            if (selfRating === 2) return 2;      // struggled
-            return 2;                             // default
-        }
-
+        // Fallback: no self-rating yet (edge case / future UI changes)
+        if (!solutionViewed && !hintsUsed) return 4;
+        if (!solutionViewed && hintsUsed) return 3;
         return 2;
     }
 

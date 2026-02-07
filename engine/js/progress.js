@@ -217,13 +217,16 @@
         setTimeout(init, 100);
     });
 
-    // SRS integration: when an exercise is rated, record the review
+    // SRS integration: when an exercise is rated, record the review.
+    // Strip variant suffix so all variants of the same exercise feed
+    // into a single SRS entry (e.g. m1_challenge_1_v3 -> m1_challenge_1).
     window.addEventListener('exerciseRated', (e) => {
         if (!window.SRS) return;
         const { key, rating } = e.detail;
         const progress = getExerciseProgress(key);
         if (!progress) return;
         const quality = window.SRS.deriveQuality(progress);
-        window.SRS.recordReview(key, quality);
+        const srsKey = key.replace(/_v\d+$/, '');
+        window.SRS.recordReview(srsKey, quality);
     });
 })();
