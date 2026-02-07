@@ -13,6 +13,15 @@
  *   3 = self-rated "struggled" (SM-2 minimum correct)
  *   1 = self-rated "needed solution" (reset)
  *   0 = not engaged
+ *
+ * @typedef {Object} SRSEntry
+ * @property {number} easeFactor - SM-2 ease factor (minimum 1.3, default 2.5)
+ * @property {number} interval - Days until next review
+ * @property {number} repetitions - Consecutive correct responses
+ * @property {string} nextReview - ISO 8601 date of next scheduled review
+ * @property {number} lastQuality - Most recent quality score (0-5)
+ * @property {number} reviewCount - Total number of reviews recorded
+ * @property {string} [label] - Human-readable exercise label for display
  */
 (function() {
     'use strict';
@@ -71,10 +80,14 @@
         };
     }
 
-    // Derive quality score from exercise progress interaction data.
-    // The UI flow is: attempt → open solution to check → self-rate.
-    // Self-rating is the primary signal; solutionViewed is the normal
-    // "check your answer" step, not a penalty. Hints provide nuance.
+    /**
+     * Derive quality score from exercise progress interaction data.
+     * The UI flow is: attempt -> open solution to check -> self-rate.
+     * Self-rating is the primary signal; solutionViewed is the normal
+     * "check your answer" step, not a penalty. Hints provide nuance.
+     * @param {ExerciseProgressEntry} progressData
+     * @returns {number} Quality score (0-5)
+     */
     function deriveQuality(progressData) {
         if (!progressData) return 0;
 
@@ -93,7 +106,13 @@
         return 2;
     }
 
-    // Record a review result for an exercise
+    /**
+     * Record a review result for an exercise.
+     * @param {string} exerciseKey - Exercise identifier (e.g. "m2_warmup_1")
+     * @param {number} quality - Quality score (0-5)
+     * @param {string} [label] - Human-readable label for display
+     * @returns {SRSEntry} Updated SRS entry
+     */
     function recordReview(exerciseKey, quality, label) {
         const srsData = loadSRS();
         const current = srsData[exerciseKey] || {
@@ -115,7 +134,10 @@
         return srsData[exerciseKey];
     }
 
-    // Get exercises that are due for review (past their nextReview date)
+    /**
+     * Get exercises that are due for review (past their nextReview date).
+     * @returns {Array<SRSEntry & {key: string}>} Due exercises, most overdue first
+     */
     function getDueExercises() {
         const srsData = loadSRS();
         const now = new Date();
@@ -137,9 +159,12 @@
         return due;
     }
 
-    // Get the exercises the user struggles with most (lowest ease factor)
-    // Only returns items reviewed at least twice with ease below the "Good" threshold (2.5).
-    // A single review doesn't establish a pattern — don't flag those as weak.
+    /**
+     * Get the exercises the user struggles with most (lowest ease factor).
+     * Only returns items reviewed at least twice with ease below the "Good" threshold (2.5).
+     * @param {number} [count=10] - Maximum number of results
+     * @returns {Array<SRSEntry & {key: string}>} Weakest exercises, lowest ease first
+     */
     function getWeakestExercises(count) {
         count = count || 10;
         const srsData = loadSRS();
@@ -152,12 +177,18 @@
         return items.slice(0, count);
     }
 
-    // Get count of due exercises (for dashboard badges)
+    /**
+     * Get count of due exercises (for dashboard badges).
+     * @returns {number}
+     */
     function getDueCount() {
         return getDueExercises().length;
     }
 
-    // Get all SRS data (for analytics/debugging)
+    /**
+     * Get all SRS data (for analytics/debugging).
+     * @returns {Object<string, SRSEntry>}
+     */
     function getAll() {
         return loadSRS();
     }

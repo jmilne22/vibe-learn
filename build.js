@@ -23,6 +23,7 @@ const { marked } = require('marked');
 const { markedHighlight } = require('marked-highlight');
 const hljs = require('highlight.js');
 const yaml = require('js-yaml');
+const { validateCourse } = require('./validate.js');
 
 // ---------------------------------------------------------------------------
 // Paths
@@ -277,6 +278,9 @@ const moduleTemplate = loadTemplate('module.html');
 const projectTemplate = loadTemplate('project.html');
 const indexTemplate = loadTemplate('index.html');
 
+// Track storage prefixes across all courses for uniqueness validation
+const storagePrefixes = new Set();
+
 // Discover all plugins once at startup
 const allPlugins = discoverPlugins();
 const allPartials = loadPartials();
@@ -304,6 +308,17 @@ function buildCourse(slug) {
 
     if (!course || !course.name || !course.slug) {
         console.error('Error: course.json must have course.name and course.slug');
+        process.exit(1);
+    }
+
+    // 1b. Run build-time validation
+    const validation = validateCourse(courseJson, COURSE_DIR, storagePrefixes);
+    if (validation.warnings.length > 0) {
+        validation.warnings.forEach(w => console.warn(w));
+    }
+    if (validation.errors.length > 0) {
+        validation.errors.forEach(e => console.error(e));
+        console.error(`\nValidation failed for "${slug}" with ${validation.errors.length} error(s). Fix the above and rebuild.`);
         process.exit(1);
     }
 

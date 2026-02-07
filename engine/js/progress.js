@@ -6,6 +6,13 @@
  *
  * localStorage key: 'go-course-exercise-progress'
  * Schema: { "m2_warmup_1": { status, hintsUsed, solutionViewed, selfRating, lastAttempted } }
+ *
+ * @typedef {Object} ExerciseProgressEntry
+ * @property {'attempted'|'completed'} status - Current completion status
+ * @property {boolean} hintsUsed - Whether any hints were opened
+ * @property {boolean} solutionViewed - Whether the solution was revealed
+ * @property {number} selfRating - Self-assessment (0=none, 1=got it, 2=struggled, 3=needed solution)
+ * @property {string|null} lastAttempted - ISO 8601 timestamp of last interaction
  */
 (function() {
     'use strict';
@@ -17,6 +24,7 @@
                window.location.pathname.match(/module(\d+)/)?.[1] || null;
     }
 
+    /** @returns {Object<string, ExerciseProgressEntry>} All exercise progress entries */
     function loadAllProgress() {
         try {
             return JSON.parse(localStorage.getItem(PROGRESS_KEY) || '{}');
@@ -33,11 +41,20 @@
         }
     }
 
+    /**
+     * @param {string} key - Exercise key (e.g. "m2_warmup_1")
+     * @returns {ExerciseProgressEntry|null}
+     */
     function getExerciseProgress(key) {
         const all = loadAllProgress();
         return all[key] || null;
     }
 
+    /**
+     * @param {string} key - Exercise key
+     * @param {Partial<ExerciseProgressEntry>} updates - Fields to merge
+     * @returns {ExerciseProgressEntry} Updated entry
+     */
     function updateExerciseProgress(key, updates) {
         const all = loadAllProgress();
         const existing = all[key] || {

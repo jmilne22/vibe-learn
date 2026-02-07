@@ -4,6 +4,32 @@
  * Reads SRS and exercise-progress data from localStorage,
  * groups by module, computes strength rankings, and renders
  * a visual report of the weakest concepts.
+ *
+ * @typedef {Object} AnalyticsReport
+ * @property {number} totalTracked - Total items in SRS
+ * @property {number} masteredCount - Items with 2+ reviews and ease >= 2.5
+ * @property {number} weakCount - Items with 2+ reviews and ease < 1.8
+ * @property {ModuleSummary[]} modules - Per-module strength summaries (weakest first)
+ * @property {ConceptSummary[]} concepts - Per-concept strength summaries
+ * @property {Array<{key: string, easeFactor: number, nextReview: string, label: string}>} weakest - Top 10 weakest exercises
+ * @property {{gotIt: number, struggled: number, peeked: number}} ratings - Self-rating breakdown
+ *
+ * @typedef {Object} ModuleSummary
+ * @property {number|string} num - Module number or "algo"
+ * @property {string} name - Module display name
+ * @property {number} avgEase - Recency-weighted average ease factor
+ * @property {number} count - Number of tracked items in this module
+ * @property {number} mastered - Items with ease >= 2.5
+ * @property {string} label - Strength label: "Strong", "Good", "Moderate", "Weak", or "Too early"
+ * @property {string} color - CSS color variable for the strength label
+ *
+ * @typedef {Object} ConceptSummary
+ * @property {number|string} moduleNum - Module number or "algo"
+ * @property {string} concept - Concept name
+ * @property {number} avgEase - Recency-weighted average ease factor
+ * @property {number} count - Total review count across exercises for this concept
+ * @property {string} label - Strength label
+ * @property {string} color - CSS color variable
  */
 (function() {
     'use strict';

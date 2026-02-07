@@ -1,3 +1,11 @@
+/**
+ * Dashboard — module progress tracking and UI wiring
+ *
+ * @typedef {Object} ModuleProgress
+ * @property {boolean} completed - Whether the module is marked complete
+ * @property {string|null} lastStudied - ISO 8601 timestamp of last visit
+ */
+
 // Progress tracking with localStorage
 var STORAGE_KEY = window.CourseConfigHelper ? window.CourseConfigHelper.storageKey('progress') : 'go-course-progress';
 var LAST_MODULE_KEY = window.CourseConfigHelper ? window.CourseConfigHelper.storageKey('last-module') : 'go-course-last-module';
@@ -29,9 +37,8 @@ function updateStats() {
     document.getElementById('completed-count').textContent = completed;
     document.getElementById('progress-percent').textContent = percent + '%';
 
-    // Exercise-level progress from progress.js data
-    var exerciseProgressKey = window.CourseConfigHelper ? window.CourseConfigHelper.storageKey('exercise-progress') : 'go-course-exercise-progress';
-    const exerciseProgress = JSON.parse(localStorage.getItem(exerciseProgressKey) || '{}');
+    // Exercise-level progress from progress.js API
+    const exerciseProgress = window.ExerciseProgress ? window.ExerciseProgress.loadAll() : {};
     const exercisesByModule = {};
     let totalExercises = 0;
 
