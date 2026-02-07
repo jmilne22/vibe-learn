@@ -241,21 +241,23 @@ func main() {
 
 Things you'll reach for instinctively and need the Go equivalent:
 
-| Python | Go | Notes |
-|--------|-----|-------|
-| `if x in list` | Loop + compare, or use a `map[T]bool` | No `in` keyword |
-| `list.append(x)` | `s = append(s, x)` | Must reassign! |
-| `list[-1]` | `s[len(s)-1]` | No negative indexing |
-| `", ".join(list)` | `strings.Join(s, ", ")` | `import "strings"` |
-| `s.split(",")` | `strings.Split(s, ",")` | |
-| `s.strip()` | `strings.TrimSpace(s)` | |
-| `f"hello {name}"` | `fmt.Sprintf("hello %s", name)` | |
-| `try/except` | `if err != nil` | Errors are values, not exceptions |
-| `dict.get(k, default)` | `v, ok := m[k]; if !ok { v = default }` | Comma-ok pattern |
-| `len(x)` | `len(x)` | Same! |
-| `for i, v in enumerate(x)` | `for i, v := range x` | |
-| `sorted(x, key=...)` | `sort.Slice(x, func(i,j int) bool {...})` | |
-| `[x for x in items if ...]` | Loop + append + if | No comprehensions |
-| `None` | `nil` (for pointers, interfaces, maps, slices, channels) | |
-| `@dataclass` | `type X struct { ... }` | Write your own constructor |
-| `isinstance(x, T)` | `v, ok := x.(T)` | Type assertion |
+```
+Python                          Go
+─────────────────────────────── ───────────────────────────────────────────
+if x in list                    Loop + compare, or use map[T]bool
+list.append(x)                  s = append(s, x)          ← must reassign!
+list[-1]                        s[len(s)-1]                ← no negative indexing
+", ".join(list)                 strings.Join(s, ", ")
+s.split(",")                    strings.Split(s, ",")
+s.strip()                       strings.TrimSpace(s)
+f"hello {name}"                 fmt.Sprintf("hello %s", name)
+try/except                      if err != nil              ← errors are values
+dict.get(k, default)            v, ok := m[k]              ← comma-ok pattern
+len(x)                          len(x)                     ← same!
+for i, v in enumerate(x)       for i, v := range x
+sorted(x, key=...)             sort.Slice(x, func(i,j int) bool {...})
+[x for x in items if ...]      Loop + append + if         ← no comprehensions
+None                            nil                        ← pointers, interfaces, maps, slices
+@dataclass                      type X struct { ... }      ← write your own constructor
+isinstance(x, T)                v, ok := x.(T)             ← type assertion
+```
