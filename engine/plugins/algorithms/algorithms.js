@@ -495,7 +495,8 @@
         if (window.SRS) {
             // SRS quality: 1=got it -> 5, 2=struggled -> 3, 3=needed solution -> 1
             var quality = rating === 1 ? 5 : rating === 2 ? 3 : 1;
-            window.SRS.recordReview(item.key, quality, (item.variant.title || item.problem.name));
+            var srsKey = item.key.replace(/_v\d+$/, '');
+            window.SRS.recordReview(srsKey, quality, (item.variant.title || item.problem.name));
         }
 
         // Disable rating buttons
