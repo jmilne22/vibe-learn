@@ -227,6 +227,9 @@
         if (!progress) return;
         const quality = window.SRS.deriveQuality(progress);
         const srsKey = key.replace(/_v\d+$/, '');
-        window.SRS.recordReview(srsKey, quality);
+        const exerciseEl = document.querySelector('[data-exercise-key="' + key + '"]');
+        const h4 = exerciseEl && exerciseEl.querySelector('h4');
+        const label = h4 ? h4.textContent.trim() : null;
+        window.SRS.recordReview(srsKey, quality, label);
     });
 })();
