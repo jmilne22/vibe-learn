@@ -415,6 +415,27 @@ pre {
     margin-bottom: 1rem;
 }
 
+.expected {
+    margin-top: 1.5rem;
+}
+
+.expected-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-main);
+    margin-bottom: 0.5rem;
+}
+
+.expected pre {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: var(--text-main);
+}
+
 .hint, .solution {
     margin-top: 1rem;
 }

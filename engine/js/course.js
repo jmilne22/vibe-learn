@@ -12,6 +12,7 @@
     'use strict';
 
     var EC = window.ExerciseCore;
+    function ER() { return window.ExerciseRenderer; }
 
     // Thinking timer configuration (seconds) - set to 0 to disable
     // Can be overridden per-page with: window.THINKING_TIME_SECONDS = 30;
@@ -26,60 +27,8 @@
     var conceptFilterSelection = [];
 
     // Personal notes storage
-    var NOTES_STORAGE_KEY = window.CourseConfigHelper ? window.CourseConfigHelper.storageKey('personal-notes') : 'go-course-personal-notes';
-    var saveNotesTimer = null;
-
     // Unified difficulty mode
     var difficultyMode = 'balanced';
-
-    function getNotesKey(exerciseId, variantId) {
-        return exerciseId + '_' + variantId;
-    }
-
-    function loadNote(exerciseId, variantId) {
-        var allNotes = JSON.parse(localStorage.getItem(NOTES_STORAGE_KEY) || '{}');
-        return allNotes[getNotesKey(exerciseId, variantId)] || '';
-    }
-
-    function saveNote(exerciseId, variantId, text) {
-        var allNotes = JSON.parse(localStorage.getItem(NOTES_STORAGE_KEY) || '{}');
-        var key = getNotesKey(exerciseId, variantId);
-        if (text.trim() === '') {
-            delete allNotes[key];
-        } else {
-            allNotes[key] = text;
-        }
-        localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(allNotes));
-    }
-
-    function renderPersonalNotes(exerciseId, variantId) {
-        var savedNote = loadNote(exerciseId, variantId);
-        var textareaId = 'notes-' + exerciseId + '_' + variantId;
-        return '<details class="personal-notes">' +
-            '<summary>\uD83D\uDCDD Personal Notes</summary>' +
-            '<div class="hint-content">' +
-                '<textarea class="personal-notes-textarea" id="' + textareaId + '"' +
-                    ' placeholder="Write your notes about this exercise...&#10;&#10;\u2022 What did you learn?&#10;\u2022 Edge cases to remember&#10;\u2022 Patterns you discovered"' +
-                '>' + EC.escapeHtml(savedNote) + '</textarea>' +
-                '<div class="personal-notes-hint">Auto-saves to browser storage</div>' +
-            '</div></details>';
-    }
-
-    function initPersonalNotes(container) {
-        container.querySelectorAll('.personal-notes-textarea').forEach(function(textarea) {
-            var id = textarea.id;
-            var match = id.match(/notes-(.+?)_(.+)/);
-            if (!match) return;
-            var exerciseId = match[1];
-            var variantId = match[2];
-            textarea.addEventListener('input', function() {
-                clearTimeout(saveNotesTimer);
-                saveNotesTimer = setTimeout(function() {
-                    saveNote(exerciseId, variantId, textarea.value);
-                }, 500);
-            });
-        });
-    }
 
     function getModuleNum() {
         return document.body?.dataset?.module ||
@@ -293,36 +242,21 @@
                     ? '<a href="' + conceptLink + '" class="concept-link" style="color: var(--green-dim); opacity: 0.8;">(' + item.warmup.concept + ' \u2197)</a>'
                     : '<span style="font-size: 0.75rem; opacity: 0.6; color: var(--text-dim);">(' + item.warmup.concept + ')</span>';
 
-                var wKey = 'm' + getModuleNum() + '_' + item.warmup.id + '_' + item.variant.id;
-                var wProgress = window.ExerciseProgress?.get(wKey);
-                var wCompleted = wProgress?.status === 'completed' ? ' exercise-completed' : '';
-
-                html += '<div class="exercise' + wCompleted + '" data-exercise-key="' + wKey + '">' +
-                    '<h4>Warmup ' + (idx + 1) + ': ' + item.variant.title + ' ' + conceptHtml + '</h4>' +
-                    '<p>' + item.variant.description + '</p>';
-
-                if (item.variant.hints) {
-                    item.variant.hints.forEach(function(hint) {
-                        var title = typeof hint === 'object' ? hint.title : '\uD83D\uDCA1 Hint';
-                        var content = typeof hint === 'object' ? hint.content : hint;
-                        html += '<details><summary>' + title + '</summary><div class="hint-content">' + content + '</div></details>';
-                    });
-                }
-
-                html += '<details><summary>\u2705 Solution</summary><div class="hint-content"><pre>' + EC.escapeHtml(item.variant.solution) + '</pre></div></details>';
-                html += renderPersonalNotes(item.warmup.id, item.variant.id);
-
-                if (item.variant.expected) {
-                    html += '<div class="expected"><div class="expected-title">Expected Output</div><pre>' + EC.escapeHtml(item.variant.expected) + '</pre></div>';
-                }
-
-                html += '</div>';
+                item.variant.warmupId = item.warmup.id;
+                html += ER().renderExerciseCard({
+                    num: idx + 1,
+                    variant: item.variant,
+                    challenge: null,
+                    type: 'warmup',
+                    exerciseKey: 'm' + getModuleNum() + '_' + item.warmup.id + '_' + item.variant.id,
+                    conceptHtml: conceptHtml
+                });
             });
 
             container.innerHTML = html;
             container.querySelectorAll('.exercise').forEach(function(ex) {
                 EC.initThinkingTimer(ex, { seconds: THINKING_TIME_SECONDS });
-                initPersonalNotes(ex);
+                ER().initPersonalNotes(ex);
             });
             if (window.initExerciseProgress) window.initExerciseProgress();
             return;
@@ -331,110 +265,65 @@
         // No filter active - show one variant per warmup
         warmups.forEach(function(warmup, idx) {
             var variant = currentWarmupVariants[warmup.id];
-            var num = idx + 1;
 
             var conceptLink = window.conceptLinks[warmup.concept];
             var conceptHtml = conceptLink
                 ? '<a href="' + conceptLink + '" class="concept-link" style="color: var(--green-dim); opacity: 0.8;">(' + warmup.concept + ' \u2197)</a>'
                 : '<span style="font-size: 0.75rem; opacity: 0.6; color: var(--text-dim);">(' + warmup.concept + ')</span>';
 
-            var wuKey = 'm' + getModuleNum() + '_' + warmup.id + '_' + variant.id;
-            var wuProgress = window.ExerciseProgress?.get(wuKey);
-            var wuCompleted = wuProgress?.status === 'completed' ? ' exercise-completed' : '';
-
-            html += '<div class="exercise' + wuCompleted + '" data-exercise-key="' + wuKey + '">' +
-                '<h4>Warmup ' + num + ': ' + variant.title + ' ' + conceptHtml + '</h4>' +
-                '<p>' + variant.description + '</p>';
-
-            if (variant.hints) {
-                variant.hints.forEach(function(hint) {
-                    var title = typeof hint === 'object' ? hint.title : '\uD83D\uDCA1 Hint';
-                    var content = typeof hint === 'object' ? hint.content : hint;
-                    html += '<details><summary>' + title + '</summary><div class="hint-content">' + content + '</div></details>';
-                });
-            }
-
-            html += '<details><summary>\u2705 Solution</summary><div class="hint-content"><pre>' + EC.escapeHtml(variant.solution) + '</pre></div></details>';
-            html += renderPersonalNotes(warmup.id, variant.id);
-
-            if (variant.expected) {
-                html += '<div class="expected"><div class="expected-title">Expected Output</div><pre>' + EC.escapeHtml(variant.expected) + '</pre></div>';
-            }
-
-            html += '</div>';
+            variant.warmupId = warmup.id;
+            html += ER().renderExerciseCard({
+                num: idx + 1,
+                variant: variant,
+                challenge: null,
+                type: 'warmup',
+                exerciseKey: 'm' + getModuleNum() + '_' + warmup.id + '_' + variant.id,
+                conceptHtml: conceptHtml
+            });
         });
 
         container.innerHTML = html;
         container.querySelectorAll('.exercise').forEach(function(ex) {
             EC.initThinkingTimer(ex, { seconds: THINKING_TIME_SECONDS });
-            initPersonalNotes(ex);
+            ER().initPersonalNotes(ex);
         });
         if (window.initExerciseProgress) window.initExerciseProgress();
     }
 
     function renderSingleChallenge(num, variant, challenge, difficulty) {
         var variantDiff = EC.getVariantDifficulty(variant, challenge);
-        var variantStars = EC.getDifficultyStars(variantDiff);
 
-        var exerciseKey = 'm' + getModuleNum() + '_' + challenge.id + '_' + variant.id;
-        var progress = window.ExerciseProgress?.get(exerciseKey);
-        var completedClass = progress?.status === 'completed' ? ' exercise-completed' : '';
-
-        var html = '<div class="exercise' + completedClass + '" data-challenge-id="' + challenge.id + '" data-exercise-key="' + exerciseKey + '">' +
-            '<h4>Challenge ' + num + ': ' + variant.title +
-                ' <span class="variant-difficulty" title="Variant difficulty: ' + variantDiff + ' stars">' + variantStars + '</span>' +
-            '</h4>';
-
+        // Build difficulty navigation buttons (module page only)
+        var difficultyNav = '';
         var hasEasierVariants = challenge.variants.some(function(v) { return EC.getVariantDifficulty(v, challenge) < variantDiff; });
         var hasHarderVariants = challenge.variants.some(function(v) { return EC.getVariantDifficulty(v, challenge) > variantDiff; });
 
         if (hasEasierVariants || hasHarderVariants) {
-            html += '<div class="variant-btn-container">';
+            difficultyNav += '<div class="variant-btn-container">';
 
             if (hasEasierVariants) {
-                html += '<button class="easier-variant-btn" data-challenge-id="' + challenge.id + '">\uD83D\uDCC9 Get Easier Version</button>';
+                difficultyNav += '<button class="easier-variant-btn" data-challenge-id="' + challenge.id + '">\uD83D\uDCC9 Get Easier Version</button>';
             } else if (variantDiff === 1) {
-                html += '<button class="easier-variant-btn" disabled title="This is already the easiest variant">\u2713 Already Easiest</button>';
+                difficultyNav += '<button class="easier-variant-btn" disabled title="This is already the easiest variant">\u2713 Already Easiest</button>';
             }
 
             if (hasHarderVariants) {
-                html += '<button class="harder-variant-btn" data-challenge-id="' + challenge.id + '">\uD83D\uDCC8 Get Harder Version</button>';
+                difficultyNav += '<button class="harder-variant-btn" data-challenge-id="' + challenge.id + '">\uD83D\uDCC8 Get Harder Version</button>';
             } else if (variantDiff === 3) {
-                html += '<button class="harder-variant-btn" disabled title="This is already the hardest variant">\u2713 Already Hardest</button>';
+                difficultyNav += '<button class="harder-variant-btn" disabled title="This is already the hardest variant">\u2713 Already Hardest</button>';
             }
 
-            html += '</div>';
+            difficultyNav += '</div>';
         }
 
-        html += '<p>' + variant.description + '</p>';
-
-        if (variant.hints) {
-            variant.hints.forEach(function(hint) {
-                var title = typeof hint === 'object' ? hint.title : '\uD83D\uDCA1 Hint';
-                var content = typeof hint === 'object' ? hint.content : hint;
-                html += '<details><summary>' + title + '</summary><div class="hint-content">' + content + '</div></details>';
-            });
-        }
-
-        html += '<details><summary>\u2705 Solution</summary><div class="hint-content"><pre>' + EC.escapeHtml(variant.solution) + '</pre></div></details>';
-        html += renderPersonalNotes(challenge.id, variant.id);
-
-        if (challenge.docLinks && challenge.docLinks.length > 0) {
-            html += '<details><summary>\uD83D\uDCDA Documentation</summary><div class="hint-content">' +
-                '<p style="margin-bottom: 0.5rem; color: var(--text-dim);">Relevant Go docs:</p>' +
-                '<ul style="margin: 0; padding-left: 1.5rem;">' +
-                challenge.docLinks.map(function(link) {
-                    return '<li><a href="' + link.url + '" target="_blank" rel="noopener" style="color: var(--cyan);">' + link.title + '</a>' +
-                        (link.note ? ' <span style="color: var(--text-dim);">\u2014 ' + link.note + '</span>' : '') + '</li>';
-                }).join('\n                        ') +
-                '</ul></div></details>';
-        }
-
-        html += '<div class="expected"><div class="expected-title">Expected Output</div><pre>' +
-            variant.testCases.map(function(tc) { return tc.input + ' \u2192 ' + tc.output; }).join('\n') +
-            '</pre></div></div>';
-
-        return html;
+        return ER().renderExerciseCard({
+            num: num,
+            variant: variant,
+            challenge: challenge,
+            type: 'challenge',
+            exerciseKey: 'm' + getModuleNum() + '_' + challenge.id + '_' + variant.id,
+            difficultyNav: difficultyNav
+        });
     }
 
     function renderChallenges() {
@@ -562,7 +451,7 @@
         container.innerHTML = html;
         container.querySelectorAll('.exercise').forEach(function(ex) {
             EC.initThinkingTimer(ex, { seconds: THINKING_TIME_SECONDS });
-            initPersonalNotes(ex);
+            ER().initPersonalNotes(ex);
             EC.initVariantButtons(ex, { onEasier: handleEasierVariant, onHarder: handleHarderVariant });
         });
         if (window.initExerciseProgress) window.initExerciseProgress();

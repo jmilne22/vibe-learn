@@ -96,13 +96,37 @@
         return html;
     }
 
+    // Break long slice/map literals in test inputs onto multiple lines
+    function formatTestInput(input) {
+        if (input.length < 70) return input;
+        // Match []type{...} patterns and break elements onto lines
+        return input.replace(/(\[\]\w+\{)(.*?)(\})/g, function(match, open, inner, close) {
+            var items = [];
+            var current = '';
+            var inStr = false;
+            for (var i = 0; i < inner.length; i++) {
+                var ch = inner[i];
+                if (ch === '\\' && inStr) { current += ch + (inner[++i] || ''); continue; }
+                if (ch === '"') inStr = !inStr;
+                if (ch === ',' && !inStr) { items.push(current.trim()); current = ''; continue; }
+                current += ch;
+            }
+            if (current.trim()) items.push(current.trim());
+            if (items.length <= 2) return match;
+            return open + '\n  ' + items.join(',\n  ') + ',\n' + close;
+        });
+    }
+
     // Render expected output / test cases
     function renderExpected(variant) {
         if (variant.testCases) {
             if (Array.isArray(variant.testCases) && variant.testCases.length > 0) {
+                var blocks = variant.testCases.map(function(tc) {
+                    return formatTestInput(tc.input) + '\n\u2192 ' + tc.output;
+                });
                 return `<div class="expected">
                     <div class="expected-title">Expected Output</div>
-                    <pre>${variant.testCases.map(tc => `${tc.input} \u2192 ${tc.output}`).join('\n')}</pre>
+                    <pre>${blocks.join('\n\n')}</pre>
                 </div>`;
             }
             if (typeof variant.testCases === 'string' && variant.testCases.trim()) {
@@ -130,7 +154,7 @@
             savedNote = allNotes[`${exerciseId}_${variantId}`] || '';
         } catch { /* ignore */ }
 
-        const textareaId = `notes-${exerciseId}-${variantId}`;
+        const textareaId = `notes-${exerciseId}_${variantId}`;
         return `<details class="personal-notes">
             <summary>\uD83D\uDCDD Personal Notes</summary>
             <div class="hint-content">
@@ -142,8 +166,8 @@
         </details>`;
     }
 
-    // Render a single exercise card (for daily practice or standalone use)
-    // Returns HTML string. Does not handle difficulty navigation buttons (that's course.js only).
+    // Render a single exercise card.
+    // Used by daily-practice.js, course.js (module pages), and anywhere exercises appear.
     function renderExerciseCard(opts) {
         const {
             num,
@@ -151,7 +175,9 @@
             challenge,      // parent challenge (may be null for warmups)
             type,           // 'warmup' or 'challenge'
             exerciseKey,    // e.g., "m2_challenge_1_v2"
-            moduleLabel     // e.g., "Module 2: Pointers"
+            moduleLabel,    // e.g., "M2" (daily practice badge)
+            conceptHtml,    // e.g., "(loops ↗)" link (module pages)
+            difficultyNav   // e.g., easier/harder buttons HTML (module pages)
         } = opts;
 
         const progress = window.ExerciseProgress?.get(exerciseKey);
@@ -165,11 +191,18 @@
             ? `<span style="font-size: 0.7rem; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; margin-left: 0.5rem;">[${moduleLabel}]</span>`
             : '';
 
+        const conceptSuffix = conceptHtml ? ' ' + conceptHtml : '';
+
         const typeLabel = type === 'warmup' ? 'Warmup' : 'Challenge';
 
-        let html = `<div class="exercise${completedClass}" data-exercise-key="${exerciseKey}">
-            <h4>${typeLabel} ${num}: ${escapeHtml(variant.title)}${difficultyHtml}${moduleBadge}</h4>
-            <p>${variant.description}</p>`;
+        const challengeAttr = challenge ? ` data-challenge-id="${challenge.id}"` : '';
+
+        let html = `<div class="exercise${completedClass}" data-exercise-key="${exerciseKey}"${challengeAttr}>
+            <h4>${typeLabel} ${num}: ${escapeHtml(variant.title)}${difficultyHtml}${conceptSuffix}${moduleBadge}</h4>`;
+
+        if (difficultyNav) html += difficultyNav;
+
+        html += `<p>${variant.description}</p>`;
 
         // Hints
         html += renderHints(variant.hints);
@@ -200,7 +233,7 @@
 
         container.querySelectorAll('.personal-notes-textarea').forEach(textarea => {
             const id = textarea.id;
-            const match = id.match(/notes-(.+?)-(.+)/);
+            const match = id.match(/notes-(.+?)_(.+)/);
             if (!match) return;
 
             const [, exerciseId, variantId] = match;

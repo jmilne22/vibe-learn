@@ -121,18 +121,18 @@ variants:
             }
 
         - id: v3
-          title: Valid Log Level
+          title: Valid Card Suit
           description: >-
-            Write <code>func isValidLevel(level string) bool</code> that returns
-            <code>true</code> if level is one of <code>"INFO"</code>, <code>"WARN"</code>,
-            <code>"ERROR"</code>, or <code>"DEBUG"</code>. Use compound conditions with
+            Write <code>func isValidSuit(suit string) bool</code> that returns
+            <code>true</code> if suit is one of <code>"hearts"</code>, <code>"diamonds"</code>,
+            <code>"clubs"</code>, or <code>"spades"</code>. Use compound conditions with
             <code>||</code>.
           hints:
-            - "Use <code>if level == \"INFO\" || level == \"WARN\" || ...</code>"
+            - "Use <code>if suit == \"hearts\" || suit == \"diamonds\" || ...</code>"
             - "Return <code>true</code> inside the if, <code>false</code> at the end"
           solution: |-
-            func isValidLevel(level string) bool {
-                if level == "INFO" || level == "WARN" || level == "ERROR" || level == "DEBUG" {
+            func isValidSuit(suit string) bool {
+                if suit == "hearts" || suit == "diamonds" || suit == "clubs" || suit == "spades" {
                     return true
                 }
                 return false
@@ -179,55 +179,100 @@ variants:
           note: specification details
       variants:
         - id: v1
-          title: Declare and Return Integer
-          description: Write <code>func declareInt() int</code> that uses <code>:=</code> to declare <code>x</code> as 42 and return it.
-          functionSignature: func declareInt() int
-          difficulty: 1
+          title: Constant Enum with iota
+          description: >-
+            Define a <code>Day</code> type (based on <code>int</code>) and constants for each day of the week
+            using <code>iota</code>, starting with <code>Monday = 1</code> (use <code>iota + 1</code>)
+            through <code>Sunday = 7</code>. Then write <code>func isWorkday(d Day) bool</code> that returns
+            <code>true</code> for Monday through Friday and <code>false</code> for Saturday and Sunday.
+          functionSignature: func isWorkday(d Day) bool
+          difficulty: 2
           testCases:
-            - input: "declareInt()"
-              output: "42"
+            - input: "isWorkday(Monday)"
+              output: "true"
+            - input: "isWorkday(Wednesday)"
+              output: "true"
+            - input: "isWorkday(Saturday)"
+              output: "false"
+            - input: "isWorkday(Sunday)"
+              output: "false"
           hints:
             - title: "\U0001F914 Think about it"
               content: >-
-                The := operator declares a new variable and infers its type from the value on the right side. What value do you need to assign?
+                Use <code>type Day int</code> to define a new type. In a <code>const</code> block,
+                <code>iota</code> starts at 0 and increments by 1 for each constant. How do you
+                make it start at 1?
             - title: "\U0001F4A1 Hint"
               content: >-
-                Use <code>x := 42</code> to declare and initialize x, then return it.
+                Define <code>Monday Day = iota + 1</code> as the first constant.
+                The remaining days auto-increment. Saturday is 6, Sunday is 7.
           solution: |-
-            func declareInt() int {
-                x := 42
-                return x
+            type Day int
+
+            const (
+                Monday Day = iota + 1
+                Tuesday
+                Wednesday
+                Thursday
+                Friday
+                Saturday
+                Sunday
+            )
+
+            func isWorkday(d Day) bool {
+                return d >= Monday && d <= Friday
             }
           annotations:
             - type: idiom
-              label: Short Declaration
+              label: iota Enums
               text: >-
-                The <code>:=</code> operator is Go's most common way to declare variables inside functions.
-                The compiler infers the type from the value on the right.
+                Go uses <code>iota</code> in <code>const</code> blocks to create enumerated constants.
+                Each constant in the block gets the next value. Use <code>iota + 1</code> to start
+                from 1 instead of 0.
 
         - id: v2
-          title: Declare and Concatenate
+          title: Shadowing Trap
           description: >-
-            Write <code>func fullGreeting() string</code> that declares <code>greeting := "Hello"</code> and
-            <code>target := "Gopher"</code> on separate lines, then returns them joined with a space.
-          functionSignature: func fullGreeting() string
-          difficulty: 1
+            Read the code below carefully. What does <code>func shadowTrap() int</code> return?
+            Implement it exactly as shown and return the final value of <code>x</code>.<br><br>
+            <code>x := 10</code><br>
+            <code>if true {</code><br>
+            <code>&nbsp;&nbsp;&nbsp;&nbsp;x := x + 5  // note: := not =</code><br>
+            <code>&nbsp;&nbsp;&nbsp;&nbsp;x = x + 3</code><br>
+            <code>}</code><br>
+            <code>return x</code>
+          functionSignature: func shadowTrap() int
+          difficulty: 2
           testCases:
-            - input: "fullGreeting()"
-              output: "\"Hello Gopher\""
+            - input: "shadowTrap()"
+              output: "10"
           hints:
             - title: "\U0001F914 Think about it"
               content: >-
-                You can use := multiple times in the same function. How do you join two strings with a space between them?
+                The <code>:=</code> inside the if block creates a <em>new</em> variable <code>x</code>
+                that shadows the outer one. Changes to the inner <code>x</code> don't affect the outer
+                <code>x</code>.
             - title: "\U0001F4A1 Hint"
               content: >-
-                Declare both variables, then <code>return greeting + " " + target</code>.
+                The inner <code>x</code> becomes 18 (10+5+3), but it goes out of scope when the
+                if block ends. The outer <code>x</code> is still 10.
           solution: |-
-            func fullGreeting() string {
-                greeting := "Hello"
-                target := "Gopher"
-                return greeting + " " + target
+            func shadowTrap() int {
+                x := 10
+                if true {
+                    x := x + 5
+                    x = x + 3
+                    _ = x // 18, but scoped to this block
+                }
+                return x // 10 — outer x was never modified
             }
+          annotations:
+            - type: gotcha
+              label: Variable Shadowing
+              text: >-
+                Using <code>:=</code> inside a nested scope creates a new variable that shadows the
+                outer one. This is a common source of bugs in Go — the outer variable is never modified.
+                Use <code>=</code> (not <code>:=</code>) when you intend to reassign an existing variable.
 
         - id: v3
           title: Zero Values
@@ -430,7 +475,7 @@ variants:
                 A common pattern: parse input → process → format output. Always handle the parse error
                 before proceeding to the processing step.
 
-    # ── challenge_3: Function Basics (Log Parser Begins) ────────────────
+    # ── challenge_3: Function Basics ──────────────────────────────────────
     - id: challenge_3
       block: 1
       difficulty: 1
@@ -444,28 +489,28 @@ variants:
           note: string manipulation functions
       variants:
         - id: v1
-          title: Format Log Entry
+          title: Format Price Tag
           description: >-
-            Write <code>func formatLogEntry(level, message string) string</code> that returns a
-            formatted log string like <code>"[ERROR] connection timeout"</code>. Wrap the level
-            in square brackets, followed by a space and the message.
-          functionSignature: func formatLogEntry(level, message string) string
+            Write <code>func formatPrice(item string, cents int) string</code> that returns a
+            formatted price tag like <code>"Coffee Beans - $12.99"</code>. Convert cents to
+            dollars and cents using integer division and modulo.
+          functionSignature: func formatPrice(item string, cents int) string
           difficulty: 1
           testCases:
-            - input: "formatLogEntry(\"ERROR\", \"connection timeout\")"
-              output: "\"[ERROR] connection timeout\""
-            - input: "formatLogEntry(\"INFO\", \"server started\")"
-              output: "\"[INFO] server started\""
+            - input: "formatPrice(\"Coffee Beans\", 1299)"
+              output: "\"Coffee Beans - $12.99\""
+            - input: "formatPrice(\"Sticker\", 50)"
+              output: "\"Sticker - $0.50\""
           hints:
             - title: "\U0001F914 Think about it"
               content: >-
-                You need to build a string with brackets around the level. How do you concatenate strings in Go?
+                Dollars is <code>cents / 100</code>, remaining cents is <code>cents % 100</code>. How do you format with zero-padding for the cents?
             - title: "\U0001F4A1 Hint"
               content: >-
-                Use <code>fmt.Sprintf("[%s] %s", level, message)</code> or string concatenation.
+                Use <code>fmt.Sprintf("%s - $%d.%02d", item, cents/100, cents%100)</code>. The <code>%02d</code> pads with a leading zero.
           solution: |-
-            func formatLogEntry(level, message string) string {
-                return fmt.Sprintf("[%s] %s", level, message)
+            func formatPrice(item string, cents int) string {
+                return fmt.Sprintf("%s - $%d.%02d", item, cents/100, cents%100)
             }
           annotations:
             - type: idiom
@@ -475,86 +520,107 @@ variants:
                 but returns a string instead of printing. It's the idiomatic way to build formatted strings.
 
         - id: v2
-          title: Is Error Level
+          title: Day Type (Switch)
           description: >-
-            Write <code>func isError(level string) bool</code> that returns <code>true</code>
-            if the level is <code>"ERROR"</code> or <code>"FATAL"</code>, and <code>false</code> otherwise.
-          functionSignature: func isError(level string) bool
+            Write <code>func dayType(day string) string</code> using a <code>switch</code> statement.
+            Return <code>"weekend"</code> for <code>"Saturday"</code> or <code>"Sunday"</code>,
+            <code>"weekday"</code> for <code>"Monday"</code> through <code>"Friday"</code>,
+            or <code>"unknown"</code> for any other input.
+          functionSignature: func dayType(day string) string
           difficulty: 1
           testCases:
-            - input: "isError(\"ERROR\")"
-              output: "true"
-            - input: "isError(\"FATAL\")"
-              output: "true"
-            - input: "isError(\"INFO\")"
-              output: "false"
+            - input: "dayType(\"Monday\")"
+              output: "\"weekday\""
+            - input: "dayType(\"Saturday\")"
+              output: "\"weekend\""
+            - input: "dayType(\"Sunday\")"
+              output: "\"weekend\""
+            - input: "dayType(\"Funday\")"
+              output: "\"unknown\""
           hints:
             - title: "\U0001F914 Think about it"
               content: >-
-                You need to check if the level matches either of two values. Use <code>||</code> to combine conditions.
+                A <code>switch</code> on a string value can match multiple values per case
+                using commas: <code>case "a", "b":</code>.
             - title: "\U0001F4A1 Hint"
               content: >-
-                <code>return level == "ERROR" || level == "FATAL"</code>
+                Use <code>case "Saturday", "Sunday":</code> for the weekend case and list all five
+                weekdays in the weekday case. Use <code>default:</code> for unknown.
           solution: |-
-            func isError(level string) bool {
-                return level == "ERROR" || level == "FATAL"
+            func dayType(day string) string {
+                switch day {
+                case "Monday", "Tuesday", "Wednesday", "Thursday", "Friday":
+                    return "weekday"
+                case "Saturday", "Sunday":
+                    return "weekend"
+                default:
+                    return "unknown"
+                }
             }
+          annotations:
+            - type: idiom
+              label: Switch with Multi-Value Cases
+              text: >-
+                Go's <code>switch</code> cases can match multiple values: <code>case "a", "b":</code>.
+                Unlike C/Java, Go cases don't fall through by default — no <code>break</code> needed.
 
         - id: v3
-          title: Truncate Message
+          title: Truncate Bio
           description: >-
-            Write <code>func truncateMessage(msg string, maxLen int) string</code>. If the message
+            Write <code>func truncateBio(bio string, maxLen int) string</code>. If the bio
             is longer than <code>maxLen</code>, return the first <code>maxLen</code> characters followed
-            by <code>"..."</code>. Otherwise return the message unchanged.
-          functionSignature: func truncateMessage(msg string, maxLen int) string
+            by <code>"..."</code>. Otherwise return the bio unchanged. Think social media profile limits.
+          functionSignature: func truncateBio(bio string, maxLen int) string
           difficulty: 2
           testCases:
-            - input: "truncateMessage(\"connection timeout after 30s\", 10)"
-              output: "\"connection...\""
-            - input: "truncateMessage(\"ok\", 10)"
-              output: "\"ok\""
+            - input: "truncateBio(\"Software engineer who loves Go and coffee\", 15)"
+              output: "\"Software engine...\""
+            - input: "truncateBio(\"Hi!\", 15)"
+              output: "\"Hi!\""
           hints:
             - title: "\U0001F914 Think about it"
               content: >-
-                Use <code>len(msg)</code> to check the length. Slice the string with <code>msg[:maxLen]</code> to get the first N characters.
+                Use <code>len(bio)</code> to check the length. Slice the string with <code>bio[:maxLen]</code> to get the first N characters.
             - title: "\U0001F4A1 Hint"
               content: >-
-                <code>if len(msg) > maxLen { return msg[:maxLen] + "..." }</code>
+                <code>if len(bio) > maxLen { return bio[:maxLen] + "..." }</code>
           solution: |-
-            func truncateMessage(msg string, maxLen int) string {
-                if len(msg) > maxLen {
-                    return msg[:maxLen] + "..."
+            func truncateBio(bio string, maxLen int) string {
+                if len(bio) > maxLen {
+                    return bio[:maxLen] + "..."
                 }
-                return msg
+                return bio
             }
 
         - id: v4
-          title: Extract Timestamp
+          title: Extract Area Code
           description: >-
-            Write <code>func extractTimestamp(line string) string</code>. Log lines start with a
-            timestamp in the format <code>"2024-01-15 10:30:45"</code> (19 characters). Return the
-            first 19 characters of the line. If the line is shorter than 19 characters, return the
-            entire line.
-          functionSignature: func extractTimestamp(line string) string
+            Write <code>func extractAreaCode(phone string) string</code>. Phone numbers are
+            formatted as <code>"(555) 123-4567"</code>. Extract and return the 3-digit area code
+            between the parentheses (characters 1-3). If the string is shorter than 4 characters,
+            return the entire string.
+          functionSignature: func extractAreaCode(phone string) string
           difficulty: 2
           testCases:
-            - input: "extractTimestamp(\"2024-01-15 10:30:45 ERROR connection timeout\")"
-              output: "\"2024-01-15 10:30:45\""
-            - input: "extractTimestamp(\"short\")"
-              output: "\"short\""
+            - input: "extractAreaCode(\"(415) 555-0123\")"
+              output: "\"415\""
+            - input: "extractAreaCode(\"(212) 867-5309\")"
+              output: "\"212\""
+            - input: "extractAreaCode(\"hi\")"
+              output: "\"hi\""
           hints:
             - title: "\U0001F914 Think about it"
               content: >-
-                You need to safely slice the string. What happens if you try <code>line[:19]</code> on a string shorter than 19 characters?
+                The area code starts at index 1 and is 3 characters long. What happens if you try <code>phone[1:4]</code> on a short string?
             - title: "\U0001F4A1 Hint"
               content: >-
-                Check <code>len(line) &lt; 19</code> first to avoid a slice bounds panic.
+                Check <code>len(phone) &lt; 4</code> first, then return <code>phone[1:4]</code>.
           solution: |-
-            func extractTimestamp(line string) string {
-                if len(line) < 19 {
-                    return line
+            func extractAreaCode(phone string) string {
+                if len(phone) < 4 {
+                    return phone
                 }
-                return line[:19]
+                return phone[1:4]
             }
           annotations:
             - type: gotcha
@@ -563,7 +629,7 @@ variants:
                 Slicing beyond a string's length causes a runtime panic. Always check
                 <code>len(s)</code> before slicing with a fixed index.
 
-    # ── challenge_4: Multiple Returns & Error Handling (Log Parser) ─────
+    # ── challenge_4: Multiple Returns & Error Handling ───────────────────
     - id: challenge_4
       block: 2
       difficulty: 2
@@ -577,75 +643,76 @@ variants:
           note: idiomatic error handling
       variants:
         - id: v1
-          title: Parse Log Level
+          title: Parse Score Line
           description: >-
-            Write <code>func parseLogLevel(line string) (string, error)</code>. A log line has the
-            format <code>"2024-01-15 10:30:45 ERROR connection timeout"</code>. Extract the log level
-            (the word after the timestamp, at index 20). Return an error if the line has fewer than
-            21 characters. Use <code>strings.Fields</code> to split or slice at known positions.
-          functionSignature: func parseLogLevel(line string) (string, error)
+            Write <code>func parseScore(line string) (string, int, error)</code>. A score line has the
+            format <code>"Alice:95"</code>. Split on <code>":"</code>, return the name and score as an int.
+            Return an error if the format is wrong (no colon) or the score isn't a valid integer.
+          functionSignature: func parseScore(line string) (string, int, error)
           difficulty: 1
           testCases:
-            - input: "parseLogLevel(\"2024-01-15 10:30:45 ERROR connection timeout\")"
-              output: "\"ERROR\", nil"
-            - input: "parseLogLevel(\"short\")"
-              output: "\"\", error"
+            - input: "parseScore(\"Alice:95\")"
+              output: "\"Alice\", 95, nil"
+            - input: "parseScore(\"Bob:abc\")"
+              output: "\"\", 0, error"
+            - input: "parseScore(\"nocolon\")"
+              output: "\"\", 0, error"
           hints:
             - title: "\U0001F914 Think about it"
               content: >-
-                The timestamp is 19 characters, then a space, then the level. Use <code>strings.Fields</code> to split or
-                index from position 20.
+                Use <code>strings.Cut(line, ":")</code> to split on the first colon. It returns the parts
+                and a bool indicating if the separator was found. Then parse the score with <code>strconv.Atoi</code>.
             - title: "\U0001F4A1 Hint"
               content: >-
-                Split with <code>fields := strings.Fields(line)</code> and check <code>len(fields) >= 3</code>.
-                The level is <code>fields[2]</code> (index 0 = date, 1 = time, 2 = level).
+                <code>name, scoreStr, ok := strings.Cut(line, ":")</code> — check <code>ok</code>, then parse <code>scoreStr</code>.
           solution: |-
-            func parseLogLevel(line string) (string, error) {
-                fields := strings.Fields(line)
-                if len(fields) < 3 {
-                    return "", fmt.Errorf("malformed log line: too short")
+            func parseScore(line string) (string, int, error) {
+                name, scoreStr, ok := strings.Cut(line, ":")
+                if !ok {
+                    return "", 0, fmt.Errorf("missing colon in %q", line)
                 }
-                return fields[2], nil
+                score, err := strconv.Atoi(scoreStr)
+                if err != nil {
+                    return "", 0, fmt.Errorf("invalid score %q: %w", scoreStr, err)
+                }
+                return name, score, nil
             }
           annotations:
             - type: idiom
-              label: Error Returns
+              label: strings.Cut
               text: >-
-                Go functions signal failure by returning an <code>error</code> as the last value.
-                Callers check <code>if err != nil</code> before using the result.
+                <code>strings.Cut(s, sep)</code> (added in Go 1.18) splits a string around the first
+                occurrence of a separator. It's cleaner than <code>strings.SplitN</code> for two-part splits.
 
         - id: v2
-          title: Split Log Line
+          title: Split Full Name
           description: >-
-            Write <code>func splitLogLine(line string) (string, string, string, error)</code>.
-            Split a log line into its three parts: timestamp (first two fields joined with a space),
-            level (third field), and message (everything else). Return an error if the line has
-            fewer than 4 fields.
-          functionSignature: func splitLogLine(line string) (string, string, string, error)
+            Write <code>func splitName(full string) (string, string, string, error)</code>.
+            Split a full name like <code>"John Michael Smith"</code> into first, middle, and last names.
+            Return an error if the name has fewer than 3 parts. Use <code>strings.Fields</code> to split.
+          functionSignature: func splitName(full string) (string, string, string, error)
           difficulty: 2
           testCases:
-            - input: "splitLogLine(\"2024-01-15 10:30:45 ERROR connection timeout\")"
-              output: "\"2024-01-15 10:30:45\", \"ERROR\", \"connection timeout\", nil"
-            - input: "splitLogLine(\"bad line\")"
+            - input: "splitName(\"John Michael Smith\")"
+              output: "\"John\", \"Michael\", \"Smith\", nil"
+            - input: "splitName(\"Alice\")"
               output: "\"\", \"\", \"\", error"
           hints:
             - title: "\U0001F914 Think about it"
               content: >-
-                Use <code>strings.Fields</code> to split the line, then reassemble the parts.
-                The timestamp is fields[0] + " " + fields[1], level is fields[2], message is the rest joined.
+                Use <code>strings.Fields</code> to split on whitespace. Check you have at least 3 parts
+                before accessing indices.
             - title: "\U0001F4A1 Hint"
               content: >-
-                Use <code>strings.Join(fields[3:], " ")</code> to reconstruct the message from the remaining fields.
+                <code>parts := strings.Fields(full)</code>, check <code>len(parts) &lt; 3</code>, then return
+                <code>parts[0], parts[1], parts[2]</code>.
           solution: |-
-            func splitLogLine(line string) (string, string, string, error) {
-                fields := strings.Fields(line)
-                if len(fields) < 4 {
-                    return "", "", "", fmt.Errorf("malformed log line: need at least 4 fields, got %d", len(fields))
+            func splitName(full string) (string, string, string, error) {
+                parts := strings.Fields(full)
+                if len(parts) < 3 {
+                    return "", "", "", fmt.Errorf("need first, middle, and last name, got %d parts", len(parts))
                 }
-                timestamp := fields[0] + " " + fields[1]
-                level := fields[2]
-                message := strings.Join(fields[3:], " ")
-                return timestamp, level, message, nil
+                return parts[0], parts[1], parts[2], nil
             }
           annotations:
             - type: pattern

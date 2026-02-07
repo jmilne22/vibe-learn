@@ -15,18 +15,18 @@ variants:
       concept: Building Slices
       variants:
         - id: v1
-          title: Print Log Levels
+          title: Print Planet Names
           description: >-
-            Declare a slice literal containing the strings <code>"INFO"</code>,
-            <code>"WARN"</code>, <code>"ERROR"</code>, <code>"DEBUG"</code>.
-            Iterate over it with <code>range</code> and print each level.
+            Declare a slice literal containing the strings <code>"Mercury"</code>,
+            <code>"Venus"</code>, <code>"Earth"</code>, <code>"Mars"</code>.
+            Iterate over it with <code>range</code> and print each planet.
           hints:
-            - "Use <code>levels := []string{\"INFO\", \"WARN\", \"ERROR\", \"DEBUG\"}</code>"
-            - "Use <code>for _, level := range levels</code> to iterate"
+            - "Use <code>planets := []string{\"Mercury\", \"Venus\", \"Earth\", \"Mars\"}</code>"
+            - "Use <code>for _, p := range planets</code> to iterate"
           solution: |-
-            levels := []string{"INFO", "WARN", "ERROR", "DEBUG"}
-            for _, level := range levels {
-                fmt.Println(level)
+            planets := []string{"Mercury", "Venus", "Earth", "Mars"}
+            for _, p := range planets {
+                fmt.Println(p)
             }
 
         - id: v2
@@ -222,7 +222,7 @@ variants:
             fmt.Println(count)  // 3 (世, 界, 🌍)
 
   challenges:
-    # ── challenge_1: Slice Operations (Log Parser) ────────────────────────
+    # ── challenge_1: Slice Operations ─────────────────────────────────────
     - id: challenge_1
       block: 2
       difficulty: 2
@@ -236,30 +236,29 @@ variants:
           note: check if a string contains a substring
       variants:
         - id: v1
-          title: Count Errors
+          title: Count Passing Grades
           description: >-
-            Write <code>func countErrors(lines []string) int</code>. Loop through the log lines
-            and count how many contain the substring <code>"ERROR"</code>. Use
-            <code>strings.Contains</code>.
-          functionSignature: func countErrors(lines []string) int
+            Write <code>func countPassing(scores []int) int</code>. Loop through the scores
+            and count how many are 60 or above (a passing grade).
+          functionSignature: func countPassing(scores []int) int
           difficulty: 1
           testCases:
-            - input: "countErrors([]string{\"2024-01-15 10:30:45 ERROR timeout\", \"2024-01-15 10:30:46 INFO ok\", \"2024-01-15 10:30:47 ERROR disk full\"})"
-              output: "2"
-            - input: "countErrors([]string{\"2024-01-15 10:30:45 INFO ok\"})"
+            - input: "countPassing([]int{85, 42, 91, 55, 73, 38})"
+              output: "3"
+            - input: "countPassing([]int{10, 20, 30})"
               output: "0"
           hints:
             - title: "\U0001F914 Think about it"
               content: >-
-                Initialize a counter to 0. Loop through lines with range. For each line, check if it contains "ERROR" and increment the counter.
+                Initialize a counter to 0. Loop through scores with range. For each score, check if it's >= 60 and increment the counter.
             - title: "\U0001F4A1 Hint"
               content: >-
-                Use <code>strings.Contains(line, "ERROR")</code> inside the loop.
+                Use <code>if score >= 60 { count++ }</code> inside the loop.
           solution: |-
-            func countErrors(lines []string) int {
+            func countPassing(scores []int) int {
                 count := 0
-                for _, line := range lines {
-                    if strings.Contains(line, "ERROR") {
+                for _, score := range scores {
+                    if score >= 60 {
                         count++
                     }
                 }
@@ -267,16 +266,16 @@ variants:
             }
 
         - id: v2
-          title: Filter by Level
+          title: Filter Long Words
           description: >-
-            Write <code>func filterByLevel(lines []string, level string) []string</code>. Return
-            only the log lines that contain the given level string. Use <code>strings.Contains</code>.
-          functionSignature: func filterByLevel(lines []string, level string) []string
+            Write <code>func filterLongWords(words []string, minLen int) []string</code>. Return
+            only the words that are at least <code>minLen</code> characters long.
+          functionSignature: func filterLongWords(words []string, minLen int) []string
           difficulty: 2
           testCases:
-            - input: "filterByLevel([]string{\"2024-01-15 10:30:45 ERROR timeout\", \"2024-01-15 10:30:46 INFO ok\", \"2024-01-15 10:30:47 ERROR disk full\"}, \"ERROR\")"
-              output: "[\"2024-01-15 10:30:45 ERROR timeout\", \"2024-01-15 10:30:47 ERROR disk full\"]"
-            - input: "filterByLevel([]string{\"2024-01-15 10:30:45 INFO ok\"}, \"ERROR\")"
+            - input: "filterLongWords([]string{\"go\", \"python\", \"c\", \"javascript\", \"rust\"}, 4)"
+              output: "[\"python\", \"javascript\", \"rust\"]"
+            - input: "filterLongWords([]string{\"a\", \"bb\"}, 5)"
               output: "[]"
           hints:
             - title: "\U0001F914 Think about it"
@@ -284,13 +283,13 @@ variants:
                 This is the filter-and-collect pattern: create an empty result slice, loop, and append matching items.
             - title: "\U0001F4A1 Hint"
               content: >-
-                <code>var result []string</code>, then in the loop: <code>if strings.Contains(line, level) { result = append(result, line) }</code>
+                <code>var result []string</code>, then in the loop: <code>if len(word) >= minLen { result = append(result, word) }</code>
           solution: |-
-            func filterByLevel(lines []string, level string) []string {
+            func filterLongWords(words []string, minLen int) []string {
                 var result []string
-                for _, line := range lines {
-                    if strings.Contains(line, level) {
-                        result = append(result, line)
+                for _, word := range words {
+                    if len(word) >= minLen {
+                        result = append(result, word)
                     }
                 }
                 return result
@@ -338,39 +337,34 @@ variants:
                 <code>n > len(lines)</code>. A simple bounds check prevents runtime panics.
 
         - id: v4
-          title: Unique Levels
+          title: Unique Words
           description: >-
-            Write <code>func uniqueLevels(lines []string) []string</code>. Extract the log level
-            from each line (third field via <code>strings.Fields</code>) and return a deduplicated
-            slice of all levels found.
-          functionSignature: func uniqueLevels(lines []string) []string
+            Write <code>func uniqueWords(words []string) []string</code>. Return a deduplicated
+            slice — each word should appear only once, even if it appeared multiple times in the input.
+          functionSignature: func uniqueWords(words []string) []string
           difficulty: 3
           testCases:
-            - input: "uniqueLevels([]string{\"2024-01-15 10:30:45 ERROR timeout\", \"2024-01-15 10:30:46 INFO ok\", \"2024-01-15 10:30:47 ERROR disk full\"})"
-              output: "[\"ERROR\", \"INFO\"] (order may vary)"
+            - input: "uniqueWords([]string{\"apple\", \"banana\", \"apple\", \"cherry\", \"banana\"})"
+              output: "[\"apple\", \"banana\", \"cherry\"] (order may vary)"
           hints:
             - title: "\U0001F914 Think about it"
               content: >-
-                Use a <code>map[string]bool</code> as a set to track which levels you've already seen.
-                Then collect the map keys into a slice.
+                Use a <code>map[string]bool</code> as a set to track which words you've already seen.
+                Only append to the result when you see a word for the first time.
             - title: "\U0001F4A1 Hint"
               content: >-
-                For each line, split with <code>strings.Fields</code>, take the third field as the level,
-                add it to a <code>seen</code> map. After the loop, collect the keys.
+                Check <code>if !seen[word]</code> before appending — this preserves first-occurrence order.
           solution: |-
-            func uniqueLevels(lines []string) []string {
+            func uniqueWords(words []string) []string {
                 seen := make(map[string]bool)
-                for _, line := range lines {
-                    fields := strings.Fields(line)
-                    if len(fields) >= 3 {
-                        seen[fields[2]] = true
+                var result []string
+                for _, word := range words {
+                    if !seen[word] {
+                        seen[word] = true
+                        result = append(result, word)
                     }
                 }
-                var levels []string
-                for level := range seen {
-                    levels = append(levels, level)
-                }
-                return levels
+                return result
             }
           annotations:
             - type: pattern
@@ -419,36 +413,49 @@ variants:
                 <code>len-1</code> on an empty slice panics.
 
         - id: v6
-          title: Second to Last
+          title: Remove Adjacent Duplicates
           description: >-
-            Write <code>func secondToLast(items []string) (string, bool)</code>. Return the
-            second-to-last element and <code>true</code>. If the slice has fewer than 2 elements,
-            return <code>""</code> and <code>false</code>.
-          functionSignature: func secondToLast(items []string) (string, bool)
-          difficulty: 1
+            Write <code>func compact(items []string) []string</code>. Remove adjacent duplicate
+            elements, like the Unix <code>uniq</code> command. For example,
+            <code>["a","a","b","b","b","a"]</code> becomes <code>["a","b","a"]</code> — only
+            consecutive duplicates are removed, not all duplicates.
+          functionSignature: func compact(items []string) []string
+          difficulty: 2
           testCases:
-            - input: "secondToLast([]string{\"a\", \"b\", \"c\", \"d\"})"
-              output: "\"c\", true"
-            - input: "secondToLast([]string{\"only\"})"
-              output: "\"\", false"
-            - input: "secondToLast([]string{})"
-              output: "\"\", false"
+            - input: "compact([]string{\"a\", \"a\", \"b\", \"b\", \"b\", \"a\"})"
+              output: "[\"a\", \"b\", \"a\"]"
+            - input: "compact([]string{\"x\", \"y\", \"z\"})"
+              output: "[\"x\", \"y\", \"z\"]"
+            - input: "compact([]string{})"
+              output: "[]"
+            - input: "compact([]string{\"solo\"})"
+              output: "[\"solo\"]"
           hints:
             - title: "\U0001F914 Think about it"
               content: >-
-                The second-to-last element is at index <code>len(items)-2</code>. When is that
-                index invalid?
+                Start with the first element, then only append subsequent elements if they differ
+                from the last element you appended.
             - title: "\U0001F4A1 Hint"
               content: >-
-                Check <code>if len(items) &lt; 2</code> first. Then return
-                <code>items[len(items)-2], true</code>.
+                Build a result slice. For each element, check if it equals the last element in the
+                result: <code>if len(result) == 0 || items[i] != result[len(result)-1]</code>.
           solution: |-
-            func secondToLast(items []string) (string, bool) {
-                if len(items) < 2 {
-                    return "", false
+            func compact(items []string) []string {
+                var result []string
+                for _, item := range items {
+                    if len(result) == 0 || item != result[len(result)-1] {
+                        result = append(result, item)
+                    }
                 }
-                return items[len(items)-2], true
+                return result
             }
+          annotations:
+            - type: pattern
+              label: Compact / Uniq
+              text: >-
+                The compact pattern — skip if equal to previous — is a building block for many
+                algorithms. Compare with the result's last element rather than the input's previous
+                element to handle the first-element edge case cleanly.
 
         - id: v7
           title: Reverse a Slice
@@ -492,14 +499,14 @@ variants:
         - id: v8
           title: Find Adjacent Duplicates
           description: >-
-            Write <code>func adjacentDuplicates(lines []string) []string</code>. Return lines that
-            are identical to the line immediately before them. Use a classic index loop starting
-            at <code>i=1</code> and compare <code>lines[i]</code> with <code>lines[i-1]</code>.
-          functionSignature: func adjacentDuplicates(lines []string) []string
+            Write <code>func adjacentDuplicates(items []string) []string</code>. Return items that
+            are identical to the item immediately before them. Use a classic index loop starting
+            at <code>i=1</code> and compare <code>items[i]</code> with <code>items[i-1]</code>.
+          functionSignature: func adjacentDuplicates(items []string) []string
           difficulty: 2
           testCases:
-            - input: "adjacentDuplicates([]string{\"ERROR timeout\", \"ERROR timeout\", \"INFO ok\", \"INFO ok\", \"INFO ok\", \"ERROR disk full\"})"
-              output: "[\"ERROR timeout\", \"INFO ok\", \"INFO ok\"]"
+            - input: "adjacentDuplicates([]string{\"red\", \"red\", \"blue\", \"blue\", \"blue\", \"green\"})"
+              output: "[\"red\", \"blue\", \"blue\"]"
             - input: "adjacentDuplicates([]string{\"a\", \"b\", \"c\"})"
               output: "[]"
             - input: "adjacentDuplicates([]string{})"
@@ -514,11 +521,11 @@ variants:
                 <code>for i := 1; i &lt; len(lines); i++ { if lines[i] == lines[i-1] { ... } }</code>.
                 Starting at 1 guarantees <code>i-1</code> is always valid.
           solution: |-
-            func adjacentDuplicates(lines []string) []string {
+            func adjacentDuplicates(items []string) []string {
                 var result []string
-                for i := 1; i < len(lines); i++ {
-                    if lines[i] == lines[i-1] {
-                        result = append(result, lines[i])
+                for i := 1; i < len(items); i++ {
+                    if items[i] == items[i-1] {
+                        result = append(result, items[i])
                     }
                 }
                 return result
@@ -532,52 +539,55 @@ variants:
                 source of index panics in Go.
 
         - id: v9
-          title: Safe Slice Access
+          title: Insert At Index
           description: >-
-            Write <code>func safeGet(items []string, index int) (string, bool)</code>. Return the
-            element at the given index and <code>true</code>, or <code>""</code> and <code>false</code>
-            if the index is out of bounds. Handle negative indices, zero-length slices, and indices
-            beyond the end.
-          functionSignature: func safeGet(items []string, index int) (string, bool)
+            Write <code>func insertAt(items []string, index int, value string) []string</code>.
+            Insert <code>value</code> at the given <code>index</code>, shifting existing elements
+            to the right. If the index is out of range (negative or greater than <code>len(items)</code>),
+            return the original slice unchanged. Inserting at <code>len(items)</code> appends to the end.
+          functionSignature: func insertAt(items []string, index int, value string) []string
           difficulty: 2
           testCases:
-            - input: "safeGet([]string{\"a\", \"b\", \"c\"}, 1)"
-              output: "\"b\", true"
-            - input: "safeGet([]string{\"a\", \"b\", \"c\"}, 5)"
-              output: "\"\", false"
-            - input: "safeGet([]string{\"a\", \"b\", \"c\"}, -1)"
-              output: "\"\", false"
-            - input: "safeGet([]string{}, 0)"
-              output: "\"\", false"
+            - input: "insertAt([]string{\"a\", \"b\", \"c\"}, 1, \"x\")"
+              output: "[\"a\", \"x\", \"b\", \"c\"]"
+            - input: "insertAt([]string{\"a\", \"b\"}, 0, \"x\")"
+              output: "[\"x\", \"a\", \"b\"]"
+            - input: "insertAt([]string{\"a\", \"b\"}, 2, \"x\")"
+              output: "[\"a\", \"b\", \"x\"]"
+            - input: "insertAt([]string{\"a\"}, -1, \"x\")"
+              output: "[\"a\"]"
+            - input: "insertAt([]string{\"a\"}, 5, \"x\")"
+              output: "[\"a\"]"
           hints:
             - title: "\U0001F914 Think about it"
               content: >-
-                What are all the ways an index can be invalid? It could be negative, or it could be
-                >= the length of the slice. Check both before accessing.
+                You can insert by splitting the slice into two parts at the index, then joining
+                them back with the new element in between using <code>append</code> and the
+                spread operator <code>...</code>.
             - title: "\U0001F4A1 Hint"
               content: >-
-                <code>if index &lt; 0 || index >= len(items) { return "", false }</code>
+                Use <code>append(items[:index], append([]string{value}, items[index:]...)...)</code>.
+                Don't forget to bounds-check the index first.
           solution: |-
-            func safeGet(items []string, index int) (string, bool) {
-                if index < 0 || index >= len(items) {
-                    return "", false
+            func insertAt(items []string, index int, value string) []string {
+                if index < 0 || index > len(items) {
+                    return items
                 }
-                return items[index], true
+                return append(items[:index], append([]string{value}, items[index:]...)...)
             }
           annotations:
-            - type: pattern
-              label: Bounds Checking
+            - type: idiom
+              label: Slice Insert
               text: >-
-                Go panics on out-of-bounds access — there's no fallback like Python's negative indexing.
-                Always validate indices with <code>index &lt; 0 || index >= len(s)</code> before accessing.
-                This is especially important when indices come from user input or calculations.
+                The <code>append(s[:i], append([]T{val}, s[i:]...)...)</code> pattern is Go's idiom
+                for inserting into a slice. It's a common FAQ because there's no built-in insert function.
 
         - id: v10
-          title: Window Over Log Lines
+          title: Sliding Window
           description: >-
-            Write <code>func windows(lines []string, size int) [][]string</code>. Return all
-            contiguous sub-slices of the given size. For example, with size 3 and 5 lines, return
-            3 windows: lines[0:3], lines[1:4], lines[2:5]. Return an empty slice if the input is
+            Write <code>func windows(items []string, size int) [][]string</code>. Return all
+            contiguous sub-slices of the given size. For example, with size 3 and 5 items, return
+            3 windows: items[0:3], items[1:4], items[2:5]. Return an empty slice if the input is
             shorter than the window size.
           functionSignature: func windows(lines []string, size int) [][]string
           difficulty: 3
@@ -612,7 +622,7 @@ variants:
                 0 to <code>len-size</code> — is fundamental for analyzing sequential data. The
                 bounds math (<code>len - size + 1</code> iterations) comes up constantly.
 
-    # ── challenge_2: Maps & Aggregation (Log Parser) ────────────────────
+    # ── challenge_2: Maps & Aggregation ──────────────────────────────────
     - id: challenge_2
       block: 2
       difficulty: 2
@@ -626,152 +636,160 @@ variants:
           note: map basics
       variants:
         - id: v1
-          title: Count by Level
+          title: Case-Insensitive Word Frequency
           description: >-
-            Write <code>func countByLevel(lines []string) map[string]int</code>. Extract the log
-            level from each line (third field) and return a map counting occurrences of each level.
-          functionSignature: func countByLevel(lines []string) map[string]int
-          difficulty: 1
+            Write <code>func wordFrequency(sentence string) map[string]int</code>. Split the sentence
+            into words using <code>strings.Fields</code>, lowercase each word with
+            <code>strings.ToLower</code>, and count the frequency of each lowercased word.
+          functionSignature: func wordFrequency(sentence string) map[string]int
+          difficulty: 2
           testCases:
-            - input: "countByLevel([]string{\"2024-01-15 10:30:45 ERROR timeout\", \"2024-01-15 10:30:46 INFO ok\", \"2024-01-15 10:30:47 ERROR disk full\"})"
-              output: "map[ERROR:2 INFO:1]"
+            - input: "wordFrequency(\"Go is fun go is GREAT go\")"
+              output: "map[go:3 is:2 fun:1 great:1]"
+            - input: "wordFrequency(\"Hello hello HELLO\")"
+              output: "map[hello:3]"
+            - input: "wordFrequency(\"\")"
+              output: "map[]"
           hints:
             - title: "\U0001F914 Think about it"
               content: >-
-                Create a <code>map[string]int</code>. For each line, extract the level and increment:
-                <code>counts[level]++</code>. The zero value of int makes this work without initialization.
+                <code>strings.Fields</code> splits on any whitespace and handles multiple spaces.
+                <code>strings.ToLower</code> normalizes case. Then count with the frequency map pattern.
             - title: "\U0001F4A1 Hint"
               content: >-
-                Split each line with <code>strings.Fields</code>, take <code>fields[2]</code> as the level,
-                and <code>counts[level]++</code>.
+                <code>words := strings.Fields(sentence)</code>, then loop: <code>counts[strings.ToLower(word)]++</code>.
           solution: |-
-            func countByLevel(lines []string) map[string]int {
+            func wordFrequency(sentence string) map[string]int {
                 counts := make(map[string]int)
-                for _, line := range lines {
-                    fields := strings.Fields(line)
-                    if len(fields) >= 3 {
-                        counts[fields[2]]++
-                    }
+                for _, word := range strings.Fields(sentence) {
+                    counts[strings.ToLower(word)]++
                 }
                 return counts
             }
           annotations:
-            - type: idiom
-              label: Frequency Map
+            - type: pattern
+              label: Normalize Then Count
               text: >-
-                <code>m[key]++</code> works because Go map values default to their zero value.
-                For <code>int</code>, that's 0 — so the first increment gives 1. No need to check if the key exists.
+                When counting text, normalize first (lowercase, trim, etc.) to avoid counting
+                <code>"Go"</code> and <code>"go"</code> as different items. <code>strings.Fields</code>
+                is preferred over <code>strings.Split(s, " ")</code> because it handles multiple spaces
+                and leading/trailing whitespace.
 
         - id: v2
-          title: Most Common Level
+          title: Most Popular Item
           description: >-
-            Write <code>func mostCommonLevel(lines []string) string</code>. Find and return the log
-            level that appears most frequently. If there are no lines, return an empty string.
-          functionSignature: func mostCommonLevel(lines []string) string
+            Write <code>func mostPopular(items []string) string</code>. Find and return the item
+            that appears most frequently. If the slice is empty, return an empty string.
+          functionSignature: func mostPopular(items []string) string
           difficulty: 2
           testCases:
-            - input: "mostCommonLevel([]string{\"2024-01-15 10:30:45 ERROR timeout\", \"2024-01-15 10:30:46 INFO ok\", \"2024-01-15 10:30:47 ERROR disk full\", \"2024-01-15 10:30:48 INFO started\", \"2024-01-15 10:30:49 ERROR retry\"})"
-              output: "\"ERROR\""
-            - input: "mostCommonLevel([]string{})"
+            - input: "mostPopular([]string{\"pizza\", \"sushi\", \"pizza\", \"tacos\", \"sushi\", \"pizza\"})"
+              output: "\"pizza\""
+            - input: "mostPopular([]string{})"
               output: "\"\""
           hints:
             - title: "\U0001F914 Think about it"
               content: >-
-                First build a frequency map (like challenge_6 v1), then iterate the map to find the key with the highest count.
+                First build a frequency map, then iterate the map to find the key with the highest count.
             - title: "\U0001F4A1 Hint"
               content: >-
-                Track <code>maxCount</code> and <code>maxLevel</code> while iterating the frequency map.
+                Track <code>maxCount</code> and <code>maxItem</code> while iterating the frequency map.
                 Update them when you find a count larger than the current max.
           solution: |-
-            func mostCommonLevel(lines []string) string {
+            func mostPopular(items []string) string {
                 counts := make(map[string]int)
-                for _, line := range lines {
-                    fields := strings.Fields(line)
-                    if len(fields) >= 3 {
-                        counts[fields[2]]++
-                    }
+                for _, item := range items {
+                    counts[item]++
                 }
-                maxLevel := ""
+                maxItem := ""
                 maxCount := 0
-                for level, count := range counts {
+                for item, count := range counts {
                     if count > maxCount {
                         maxCount = count
-                        maxLevel = level
+                        maxItem = item
                     }
                 }
-                return maxLevel
+                return maxItem
             }
 
         - id: v3
-          title: Error Message Counts
+          title: Group by Category
           description: >-
-            Write <code>func errorMessages(lines []string) map[string]int</code>. For lines with
-            level <code>"ERROR"</code>, extract the message (everything after the level) and count
-            how many times each unique error message appears.
-          functionSignature: func errorMessages(lines []string) map[string]int
+            Write <code>func groupByCategory(items []string) map[string]int</code>. Each item is
+            formatted as <code>"category:name"</code> (e.g. <code>"fruit:apple"</code>). Count how
+            many items belong to each category. Use <code>strings.Cut</code> to split on <code>":"</code>.
+          functionSignature: func groupByCategory(items []string) map[string]int
           difficulty: 2
           testCases:
-            - input: "errorMessages([]string{\"2024-01-15 10:30:45 ERROR timeout\", \"2024-01-15 10:30:46 INFO ok\", \"2024-01-15 10:30:47 ERROR timeout\", \"2024-01-15 10:30:48 ERROR disk full\"})"
-              output: "map[timeout:2 disk full:1]"
+            - input: "groupByCategory([]string{\"fruit:apple\", \"dairy:milk\", \"fruit:banana\", \"fruit:cherry\", \"dairy:cheese\"})"
+              output: "map[fruit:3 dairy:2]"
           hints:
             - title: "\U0001F914 Think about it"
               content: >-
-                Split each line into fields. Check if <code>fields[2] == "ERROR"</code>. If so, reconstruct the message
-                from <code>fields[3:]</code> and count it.
+                Split each item on <code>":"</code> to get the category. Then count categories the same way as word frequency.
             - title: "\U0001F4A1 Hint"
               content: >-
-                Use <code>strings.Join(fields[3:], " ")</code> to get the message, then <code>counts[msg]++</code>.
+                Use <code>category, _, ok := strings.Cut(item, ":")</code>, check <code>ok</code>, then <code>counts[category]++</code>.
           solution: |-
-            func errorMessages(lines []string) map[string]int {
+            func groupByCategory(items []string) map[string]int {
                 counts := make(map[string]int)
-                for _, line := range lines {
-                    fields := strings.Fields(line)
-                    if len(fields) >= 4 && fields[2] == "ERROR" {
-                        msg := strings.Join(fields[3:], " ")
-                        counts[msg]++
+                for _, item := range items {
+                    category, _, ok := strings.Cut(item, ":")
+                    if ok {
+                        counts[category]++
                     }
                 }
                 return counts
             }
 
         - id: v4
-          title: Hourly Breakdown
+          title: Grade Distribution
           description: >-
-            Write <code>func hourlyBreakdown(lines []string) map[string]int</code>. Extract the
-            hour from each log line's timestamp (characters 11-12, e.g., <code>"10"</code> from
-            <code>"2024-01-15 10:30:45"</code>) and return a map counting entries per hour.
-          functionSignature: func hourlyBreakdown(lines []string) map[string]int
+            Write <code>func gradeDistribution(scores []int) map[string]int</code>. Classify each
+            score into a letter grade: A (90-100), B (80-89), C (70-79), D (60-69), F (below 60).
+            Return a map counting how many scores fall into each grade.
+          functionSignature: func gradeDistribution(scores []int) map[string]int
           difficulty: 3
           testCases:
-            - input: "hourlyBreakdown([]string{\"2024-01-15 10:30:45 ERROR timeout\", \"2024-01-15 10:45:00 INFO ok\", \"2024-01-15 14:00:00 WARN slow\"})"
-              output: "map[10:2 14:1]"
+            - input: "gradeDistribution([]int{95, 82, 67, 45, 91, 73, 88})"
+              output: "map[A:2 B:2 C:1 D:1 F:1]"
           hints:
             - title: "\U0001F914 Think about it"
               content: >-
-                The timestamp starts at position 0 and the hour is at positions 11-12 (inclusive).
-                Use <code>line[11:13]</code> to extract the two-digit hour.
+                Use <code>if/else if</code> or <code>switch</code> to classify each score into a grade string,
+                then count with the frequency map pattern.
             - title: "\U0001F4A1 Hint"
               content: >-
-                Check <code>len(line) >= 13</code> first, then <code>hour := line[11:13]</code> and <code>counts[hour]++</code>.
+                Write a helper or use inline logic: <code>if score >= 90 { grade = "A" } else if score >= 80 { grade = "B" } ...</code>
           solution: |-
-            func hourlyBreakdown(lines []string) map[string]int {
+            func gradeDistribution(scores []int) map[string]int {
                 counts := make(map[string]int)
-                for _, line := range lines {
-                    if len(line) >= 13 {
-                        hour := line[11:13]
-                        counts[hour]++
+                for _, score := range scores {
+                    var grade string
+                    switch {
+                    case score >= 90:
+                        grade = "A"
+                    case score >= 80:
+                        grade = "B"
+                    case score >= 70:
+                        grade = "C"
+                    case score >= 60:
+                        grade = "D"
+                    default:
+                        grade = "F"
                     }
+                    counts[grade]++
                 }
                 return counts
             }
           annotations:
-            - type: gotcha
-              label: String Indexing
+            - type: idiom
+              label: Expressionless Switch
               text: >-
-                <code>line[11:13]</code> gives bytes, not characters. This works for ASCII digits but would
-                break with multi-byte UTF-8 characters. For timestamps with ASCII digits, byte indexing is fine.
+                <code>switch { case condition: ... }</code> (no expression after switch) is Go's clean
+                alternative to long if/else if chains. Each case is evaluated in order.
 
-    # ── challenge_3: Go Fundamentals Combined (Log Parser Capstone) ─────
+    # ── challenge_3: Go Fundamentals Combined ────────────────────────────
     - id: challenge_3
       block: 3
       difficulty: 3
@@ -785,137 +803,151 @@ variants:
           note: string formatting
       variants:
         - id: v1
-          title: Log Summary Counts
+          title: Summarize Runs
           description: >-
-            Write <code>func logSummary(lines []string) (int, int, int)</code>. Return the count of
-            <code>INFO</code>, <code>WARN</code>, and <code>ERROR</code> entries (in that order).
-            Extract the level from the third field of each log line.
-          functionSignature: func logSummary(lines []string) (int, int, int)
-          difficulty: 2
+            Write <code>func summarizeRuns(items []string) string</code>. Count consecutive runs of
+            each element and return a summary string. For example,
+            <code>["a","a","b","b","b","c"]</code> returns <code>"a×2, b×3, c×1"</code>.
+            Use <code>fmt.Sprintf</code> for formatting and <code>strings.Join</code> to combine parts.
+            The × character is the Unicode multiplication sign (U+00D7).
+          functionSignature: func summarizeRuns(items []string) string
+          difficulty: 3
           testCases:
-            - input: "logSummary([]string{\"2024-01-15 10:30:45 ERROR timeout\", \"2024-01-15 10:30:46 INFO ok\", \"2024-01-15 10:30:47 WARN slow\", \"2024-01-15 10:30:48 INFO started\", \"2024-01-15 10:30:49 ERROR retry\"})"
-              output: "2, 1, 2"
+            - input: "summarizeRuns([]string{\"a\", \"a\", \"b\", \"b\", \"b\", \"c\"})"
+              output: "\"a×2, b×3, c×1\""
+            - input: "summarizeRuns([]string{\"x\"})"
+              output: "\"x×1\""
+            - input: "summarizeRuns([]string{})"
+              output: "\"\""
+            - input: "summarizeRuns([]string{\"a\", \"b\", \"a\"})"
+              output: "\"a×1, b×1, a×1\""
           hints:
             - title: "\U0001F914 Think about it"
               content: >-
-                Declare three counters. Loop through lines, extract the level, and increment the appropriate counter.
+                Track the current item and its count. When the item changes (or you reach the end),
+                emit the run summary and reset. Don't forget to emit the final run.
             - title: "\U0001F4A1 Hint"
               content: >-
-                Use a switch or if/else chain on <code>fields[2]</code> to increment the right counter.
+                Build a <code>[]string</code> of parts like <code>"a×2"</code> using
+                <code>fmt.Sprintf("%s×%d", current, count)</code>, then join with
+                <code>strings.Join(parts, ", ")</code>.
           solution: |-
-            func logSummary(lines []string) (int, int, int) {
-                infoCount, warnCount, errorCount := 0, 0, 0
-                for _, line := range lines {
-                    fields := strings.Fields(line)
-                    if len(fields) < 3 {
-                        continue
-                    }
-                    switch fields[2] {
-                    case "INFO":
-                        infoCount++
-                    case "WARN":
-                        warnCount++
-                    case "ERROR":
-                        errorCount++
+            func summarizeRuns(items []string) string {
+                if len(items) == 0 {
+                    return ""
+                }
+                var parts []string
+                current := items[0]
+                count := 1
+                for i := 1; i < len(items); i++ {
+                    if items[i] == current {
+                        count++
+                    } else {
+                        parts = append(parts, fmt.Sprintf("%s×%d", current, count))
+                        current = items[i]
+                        count = 1
                     }
                 }
-                return infoCount, warnCount, errorCount
+                parts = append(parts, fmt.Sprintf("%s×%d", current, count))
+                return strings.Join(parts, ", ")
             }
           annotations:
-            - type: idiom
-              label: Switch Statement
+            - type: pattern
+              label: Run-Length Encoding
               text: >-
-                Go's <code>switch</code> doesn't need <code>break</code> — each case automatically breaks.
-                Use switch for clean multi-way branching on a single value.
+                Tracking runs of consecutive values is a fundamental pattern. The key insight is to
+                emit the accumulated run when the value changes and handle the final run after the loop.
+                This combines loops, string building, and <code>strings.Join</code>.
 
         - id: v2
-          title: Log Report
+          title: Inventory Report
           description: >-
-            Write <code>func logReport(lines []string) string</code>. Build a formatted report
-            string containing: the total number of entries, the count per level, and the most common level.
-            Format:<br><code>Total: 5<br>INFO: 2<br>WARN: 1<br>ERROR: 2<br>Most common: ERROR</code><br>
-            If multiple levels tie, return any one of them.
-          functionSignature: func logReport(lines []string) string
+            Write <code>func inventoryReport(items []string) string</code>. Given a slice of item names
+            (with possible repeats), build a formatted report showing total items, count per unique item,
+            and the most stocked item.
+            Format:<br><code>Total: 6<br>apple: 3<br>banana: 2<br>cherry: 1<br>Most stocked: apple</code><br>
+            List items in alphabetical order. If items tie, return any one.
+          functionSignature: func inventoryReport(items []string) string
           difficulty: 3
           testCases:
-            - input: "logReport([]string{\"2024-01-15 10:30:45 ERROR timeout\", \"2024-01-15 10:30:46 INFO ok\", \"2024-01-15 10:30:47 WARN slow\", \"2024-01-15 10:30:48 INFO started\", \"2024-01-15 10:30:49 ERROR retry\"})"
-              output: "\"Total: 5\\nINFO: 2\\nWARN: 1\\nERROR: 2\\nMost common: INFO\""
-              note: "If INFO and ERROR tie, either is acceptable"
+            - input: "inventoryReport([]string{\"apple\", \"banana\", \"apple\", \"cherry\", \"banana\", \"apple\"})"
+              output: "\"Total: 6\\napple: 3\\nbanana: 2\\ncherry: 1\\nMost stocked: apple\""
           hints:
             - title: "\U0001F914 Think about it"
               content: >-
                 Build a frequency map first, then find the max, then format the output string.
-                This combines maps, loops, and string formatting.
+                For alphabetical order, collect the keys into a sorted slice.
             - title: "\U0001F4A1 Hint"
               content: >-
-                Use <code>fmt.Sprintf</code> to build each line of the report and concatenate with <code>\n</code>.
+                Use <code>sort.Strings(keys)</code> to sort the keys, then iterate in that order
+                with <code>fmt.Sprintf</code> to build the report.
           solution: |-
-            func logReport(lines []string) string {
+            func inventoryReport(items []string) string {
                 counts := make(map[string]int)
-                for _, line := range lines {
-                    fields := strings.Fields(line)
-                    if len(fields) >= 3 {
-                        counts[fields[2]]++
-                    }
+                for _, item := range items {
+                    counts[item]++
                 }
-                maxLevel := ""
+                var keys []string
+                for k := range counts {
+                    keys = append(keys, k)
+                }
+                sort.Strings(keys)
+                maxItem := ""
                 maxCount := 0
-                for level, count := range counts {
+                for item, count := range counts {
                     if count > maxCount {
                         maxCount = count
-                        maxLevel = level
+                        maxItem = item
                     }
                 }
-                report := fmt.Sprintf("Total: %d", len(lines))
-                for _, level := range []string{"INFO", "WARN", "ERROR"} {
-                    report += fmt.Sprintf("\n%s: %d", level, counts[level])
+                report := fmt.Sprintf("Total: %d", len(items))
+                for _, item := range keys {
+                    report += fmt.Sprintf("\n%s: %d", item, counts[item])
                 }
-                report += fmt.Sprintf("\nMost common: %s", maxLevel)
+                report += fmt.Sprintf("\nMost stocked: %s", maxItem)
                 return report
             }
           annotations:
             - type: pattern
-              label: Ordered Iteration
+              label: Ordered Map Iteration
               text: >-
-                Map iteration order is random in Go. When you need a specific order (like INFO, WARN, ERROR),
-                iterate over a predefined slice of keys instead of ranging over the map directly.
+                Map iteration order is random in Go. When you need a specific order, collect the keys
+                into a slice, sort it, then iterate the sorted keys.
 
         - id: v3
-          title: Find Anomalies
+          title: Find Bestsellers
           description: >-
-            Write <code>func findAnomalies(lines []string, threshold int) []string</code>. Find
-            error messages that appear more than <code>threshold</code> times. Return a slice of
-            those messages (just the message text, not the full log line).
-          functionSignature: func findAnomalies(lines []string, threshold int) []string
+            Write <code>func findBestsellers(sales []string, threshold int) []string</code>. Count
+            how many times each product name appears in the sales list. Return a slice of product names
+            that were sold more than <code>threshold</code> times.
+          functionSignature: func findBestsellers(sales []string, threshold int) []string
           difficulty: 3
           testCases:
-            - input: "findAnomalies([]string{\"2024-01-15 10:30:45 ERROR timeout\", \"2024-01-15 10:30:46 ERROR timeout\", \"2024-01-15 10:30:47 ERROR timeout\", \"2024-01-15 10:30:48 ERROR disk full\", \"2024-01-15 10:30:49 INFO ok\"}, 2)"
-              output: "[\"timeout\"]"
+            - input: "findBestsellers([]string{\"widget\", \"gadget\", \"widget\", \"widget\", \"gizmo\", \"gadget\"}, 2)"
+              output: "[\"widget\"]"
+            - input: "findBestsellers([]string{\"a\", \"b\", \"c\"}, 1)"
+              output: "[]"
           hints:
             - title: "\U0001F914 Think about it"
               content: >-
-                First build a frequency map of error messages (like challenge_6 v3). Then filter the map
-                for entries exceeding the threshold.
+                First build a frequency map. Then filter the map for entries exceeding the threshold.
+                This is the classic two-pass pattern.
             - title: "\U0001F4A1 Hint"
               content: >-
-                Two passes: (1) count error messages, (2) collect messages where <code>count > threshold</code>.
+                Two passes: (1) count product sales, (2) collect products where <code>count > threshold</code>.
           solution: |-
-            func findAnomalies(lines []string, threshold int) []string {
+            func findBestsellers(sales []string, threshold int) []string {
                 counts := make(map[string]int)
-                for _, line := range lines {
-                    fields := strings.Fields(line)
-                    if len(fields) >= 4 && fields[2] == "ERROR" {
-                        msg := strings.Join(fields[3:], " ")
-                        counts[msg]++
-                    }
+                for _, product := range sales {
+                    counts[product]++
                 }
-                var anomalies []string
-                for msg, count := range counts {
+                var bestsellers []string
+                for product, count := range counts {
                     if count > threshold {
-                        anomalies = append(anomalies, msg)
+                        bestsellers = append(bestsellers, product)
                     }
                 }
-                return anomalies
+                return bestsellers
             }
           annotations:
             - type: pattern
@@ -925,42 +957,42 @@ variants:
                 This is cleaner than trying to do everything in a single loop.
 
         - id: v4
-          title: Parse and Filter
+          title: Search Contacts
           description: >-
-            Write <code>func parseAndFilter(lines []string, level string, keyword string) []string</code>.
-            Filter log lines that match both the given level AND contain the keyword in the message.
-            Return the matching lines formatted as <code>"[LEVEL] message"</code> (without the timestamp).
-          functionSignature: func parseAndFilter(lines []string, level string, keyword string) []string
+            Write <code>func searchContacts(contacts []string, city string, keyword string) []string</code>.
+            Each contact is formatted as <code>"name,city,email"</code>. Return contacts that match
+            the given city AND whose name contains the keyword. Format results as
+            <code>"name &lt;email&gt;"</code>.
+          functionSignature: func searchContacts(contacts []string, city string, keyword string) []string
           difficulty: 3
           testCases:
-            - input: "parseAndFilter([]string{\"2024-01-15 10:30:45 ERROR connection timeout\", \"2024-01-15 10:30:46 ERROR disk full\", \"2024-01-15 10:30:47 INFO connection ok\", \"2024-01-15 10:30:48 ERROR connection refused\"}, \"ERROR\", \"connection\")"
-              output: "[\"[ERROR] connection timeout\", \"[ERROR] connection refused\"]"
+            - input: "searchContacts([]string{\"Alice Smith,NYC,alice@mail.com\", \"Bob Jones,LA,bob@mail.com\", \"Alice Wong,NYC,awong@mail.com\", \"Charlie Smith,NYC,charlie@mail.com\"}, \"NYC\", \"Smith\")"
+              output: "[\"Alice Smith <alice@mail.com>\", \"Charlie Smith <charlie@mail.com>\"]"
           hints:
             - title: "\U0001F914 Think about it"
               content: >-
-                Split each line, check the level matches, reconstruct the message, check for the keyword,
-                then format the output. This combines parsing, filtering, and formatting.
+                Split each contact on <code>","</code>, check the city matches, check the name contains
+                the keyword, then format the output. Use <code>strings.Split</code> and <code>strings.Contains</code>.
             - title: "\U0001F4A1 Hint"
               content: >-
-                Use <code>strings.Fields</code> to split, check <code>fields[2] == level</code>,
-                join <code>fields[3:]</code> for the message, check <code>strings.Contains(msg, keyword)</code>,
-                then format with <code>fmt.Sprintf("[%s] %s", level, msg)</code>.
+                <code>parts := strings.Split(contact, ",")</code>, check <code>parts[1] == city</code>,
+                check <code>strings.Contains(parts[0], keyword)</code>, format with
+                <code>fmt.Sprintf("%s <%s>", parts[0], parts[2])</code>.
           solution: |-
-            func parseAndFilter(lines []string, level string, keyword string) []string {
+            func searchContacts(contacts []string, city string, keyword string) []string {
                 var result []string
-                for _, line := range lines {
-                    fields := strings.Fields(line)
-                    if len(fields) < 4 {
+                for _, contact := range contacts {
+                    parts := strings.Split(contact, ",")
+                    if len(parts) < 3 {
                         continue
                     }
-                    if fields[2] != level {
+                    if parts[1] != city {
                         continue
                     }
-                    msg := strings.Join(fields[3:], " ")
-                    if !strings.Contains(msg, keyword) {
+                    if !strings.Contains(parts[0], keyword) {
                         continue
                     }
-                    result = append(result, fmt.Sprintf("[%s] %s", level, msg))
+                    result = append(result, fmt.Sprintf("%s <%s>", parts[0], parts[2]))
                 }
                 return result
             }
