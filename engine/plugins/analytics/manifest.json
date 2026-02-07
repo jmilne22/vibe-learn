@@ -1,7 +1,7 @@
 {
   "name": "analytics",
-  "label": "Weak Concepts",
-  "shortLabel": "WC",
+  "label": "Analytics",
+  "shortLabel": "AN",
   "sidebarColor": "var(--orange)",
   "sidebarOrder": 3,
   "template": "analytics.html",

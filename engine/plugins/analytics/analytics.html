@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Weak Concept Report — {{COURSE_NAME}}</title>
+    <title>Analytics — {{COURSE_NAME}}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
@@ -11,7 +11,8 @@
     <link rel="stylesheet" href="style.css">
 {{THEME_LINKS}}
     <style>
-        .progress-stats {
+        /* ── Row 1: Health Cards ── */
+        .health-row {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 1rem;
@@ -27,35 +28,150 @@
         .stat-value {
             font-size: 2rem;
             font-weight: 700;
-            color: var(--orange);
             font-family: 'JetBrains Mono', monospace;
+        }
+        .stat-sub {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin-top: 0.15rem;
         }
         .stat-label {
             font-size: 0.85rem;
             color: var(--text-dim);
             margin-top: 0.25rem;
         }
-        .lesson {
+        .sparkline-wrap { margin-top: 0.5rem; display: flex; justify-content: center; }
+
+        /* ── Row 2: Module Health Grid ── */
+        .module-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+            gap: 0.5rem;
+            margin: 1.5rem 0;
+        }
+        .mgrid-cell {
+            aspect-ratio: 1;
+            border-radius: 6px;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.1s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            font-size: 0.8rem;
+            text-decoration: none;
+        }
+        .mgrid-cell:hover { transform: scale(1.12); z-index: 2; }
+        .mgrid-label {
+            background: rgba(0,0,0,0.35);
+            color: #fff;
+            padding: 0.1rem 0.35rem;
+            border-radius: 3px;
+            font-size: 0.7rem;
+            line-height: 1;
+        }
+        .mgrid-tooltip {
+            display: none;
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-dark);
+            color: var(--text-main);
+            border: 1px solid var(--bg-lighter);
+            border-radius: 6px;
+            padding: 0.5rem 0.75rem;
+            white-space: nowrap;
+            font-size: 0.75rem;
+            font-weight: 400;
+            pointer-events: none;
+            z-index: 10;
+        }
+        .mgrid-tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: var(--bg-lighter);
+        }
+        .mgrid-cell:hover .mgrid-tooltip { display: block; }
+
+        /* ── Row 3: Action Items ── */
+        .action-row { margin: 1.5rem 0; }
+        .action-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
             background: var(--bg-card);
             border: 1px solid var(--bg-lighter);
             border-radius: 8px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
-        .lesson h2 {
-            margin-top: 0;
             margin-bottom: 0.5rem;
+            font-size: 0.9rem;
         }
-        @media (max-width: 720px) {
-            .progress-stats {
-                grid-template-columns: repeat(2, 1fr);
-            }
+        .action-icon {
+            font-size: 1.1rem;
+            min-width: 1.5rem;
+            text-align: center;
         }
-        @media (max-width: 480px) {
-            .progress-stats {
-                grid-template-columns: 1fr;
-            }
+        .action-text { flex: 1; }
+        .action-link {
+            color: var(--cyan);
+            text-decoration: none;
+            font-weight: 500;
+            white-space: nowrap;
         }
+        .action-link:hover { text-decoration: underline; }
+
+        /* ── Row 4: Detail Panels ── */
+        .detail-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--bg-lighter);
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+        .detail-panel summary {
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1.05rem;
+            list-style: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .detail-panel summary::-webkit-details-marker { display: none; }
+        .detail-panel summary::before {
+            content: '\25B6';
+            font-size: 0.7rem;
+            transition: transform 0.15s;
+            color: var(--text-dim);
+        }
+        .detail-panel[open] summary::before { transform: rotate(90deg); }
+        .detail-panel .detail-body { padding: 0 1.5rem 1.25rem; }
+        .detail-panel .detail-desc {
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            margin-bottom: 1rem;
+        }
+
+        .too-early-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin-bottom: 0.75rem;
+            cursor: pointer;
+        }
+        .too-early-toggle input { cursor: pointer; }
+        .too-early-item { display: none; }
+        .show-too-early .too-early-item { display: flex; }
+
         .strength-badge {
             display: inline-block;
             padding: 0.2rem 0.55rem;
@@ -65,6 +181,33 @@
             text-transform: uppercase;
             letter-spacing: 0.05em;
             white-space: nowrap;
+            font-size: 0.7rem;
+        }
+
+        .practice-link {
+            color: var(--cyan);
+            text-decoration: none;
+            font-size: 0.8rem;
+            white-space: nowrap;
+        }
+        .practice-link:hover { text-decoration: underline; }
+
+        .section-heading {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-dim);
+            margin-bottom: 0.75rem;
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 720px) {
+            .health-row { grid-template-columns: repeat(2, 1fr); }
+            .module-grid { grid-template-columns: repeat(auto-fill, minmax(48px, 1fr)); }
+        }
+        @media (max-width: 480px) {
+            .health-row { grid-template-columns: 1fr; }
+            .module-grid { grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); }
         }
     </style>
 </head>
@@ -75,51 +218,34 @@
         </nav>
 
         <div class="module-header">
-            <div class="module-tag">// WEAK CONCEPTS</div>
-            <h1>Weak Concept Report</h1>
-            <p class="module-desc">See which modules and exercises need the most work, based on your SRS data.</p>
+            <div class="module-tag">// ANALYTICS</div>
+            <h1>Analytics</h1>
+            <p class="module-desc">Your learning dashboard — progress, patterns, and what needs attention.</p>
         </div>
 
         <!-- Empty state -->
-        <div id="analytics-empty" class="lesson" style="text-align: center; padding: 3rem;">
-            <h2>No Data Yet</h2>
+        <div id="analytics-empty" class="detail-panel" style="text-align: center; padding: 3rem;">
+            <h2 style="margin-top: 0;">No Data Yet</h2>
             <p>Complete some exercises and rate yourself to see analytics here.</p>
             <a href="module1.html" class="quick-btn primary" style="display: inline-block; margin-top: 1rem;">Start with Module 1</a>
         </div>
 
-        <!-- Report sections (hidden until data exists) -->
+        <!-- Dashboard (hidden until data exists) -->
         <div id="analytics-report" style="display: none;">
 
-            <!-- Summary stats -->
-            <div class="progress-stats" id="analytics-stats"></div>
+            <!-- Row 1: Health at a Glance -->
+            <div class="section-heading">Health at a Glance</div>
+            <div class="health-row" id="health-row"></div>
 
-            <!-- Module Rankings -->
-            <div class="lesson">
-                <h2>Module Strength</h2>
-                <p style="color: var(--text-dim); margin-bottom: 1rem;">Needs 5+ reviews per module to rate strength. Weakest first.</p>
-                <div id="module-rankings"></div>
-            </div>
+            <!-- Row 2: Module Health Grid -->
+            <div class="section-heading">Module Health</div>
+            <div class="module-grid" id="module-grid"></div>
 
-            <!-- Concept Strength -->
-            <div class="lesson">
-                <h2>Concept Strength</h2>
-                <p style="color: var(--text-dim); margin-bottom: 1rem;">Per-concept breakdown. Needs 3+ review sessions to rate. Weakest first.</p>
-                <div id="concept-strength"></div>
-            </div>
+            <!-- Row 3: Action Items -->
+            <div class="action-row" id="action-row"></div>
 
-            <!-- Weakest Exercises -->
-            <div class="lesson">
-                <h2>Weakest Exercises</h2>
-                <p style="color: var(--text-dim); margin-bottom: 1rem;">Top 10 exercises with the lowest ease factors.</p>
-                <div id="weakest-exercises"></div>
-            </div>
-
-            <!-- Rating Breakdown -->
-            <div class="lesson">
-                <h2>Rating Breakdown</h2>
-                <p style="color: var(--text-dim); margin-bottom: 1rem;">How you've rated yourself across all exercise attempts (including variant re-rolls).</p>
-                <div id="rating-breakdown"></div>
-            </div>
+            <!-- Row 4: Detail Panels -->
+            <div id="detail-panels"></div>
         </div>
 
         <div class="nav-buttons" style="margin-top: 2rem;">

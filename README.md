@@ -67,7 +67,7 @@ See the [Platform Guide](https://jmilne22.github.io/vibe-learn/guide.html) for d
 
 ### Tracking and analytics
 
-- **Analytics dashboard** — weak concept report, module strength rankings, per-concept breakdown, top 10 weakest exercises
+- **Analytics dashboard** — mastery overview, module health grid, action items, per-concept breakdown, weakest exercises
 - **Streak tracking** and GitHub-style activity heatmap
 - **Personal notes** on any exercise, exportable as markdown
 - **Data export/import** — all progress stored in localStorage, downloadable as JSON
@@ -429,7 +429,7 @@ vibe-learn/
  │  │            │                                          │  │
  │  │  sidebar.js       navigation + plugin links           │  │
  │  │  dashboard.js     stats, resume, module progress      │  │
- │  │  analytics.js     weak concepts, strength rankings    │  │
+ │  │  analytics.js     analytics dashboard, health grid     │  │
  │  │  theme.js         10 themes + pomodoro timer          │  │
  │  │  streaks.js       streak tracking + activity heatmap  │  │
  │  │  progress.js      per-exercise state tracking         │  │
@@ -568,7 +568,7 @@ All JavaScript runs in the browser with no framework. Scripts communicate throug
 | `flashcard-engine.js` | Flashcard session manager. Builds decks filtered by module, supports random and SRS-due ordering, handles flip animation and rate interaction |
 | `daily-practice.js` | Builds exercise queues from SRS data across all modules. Four modes: review (due items), discover (random new), weak (lowest ease factor), mixed (due + weak). Dynamically loads module variant data as needed. Delegates session lifecycle to `session-engine.js` |
 | `algorithms.js` | Session-based algorithm practice. Builds queues from AlgorithmData across 10 categories with discover/review/weakest/mixed modes. SRS key format: `algo_{categoryId}_{problemId}_{variantId}`. Three differentiating features: **structured progression** (category cards with mastery bars, per-tier unlock gating at 70% thresholds), **blind mode** (hides hints/solutions, self-grade then reveal), and **pattern recognition drills** (multiple-choice concept identification with distractor generation and accuracy tracking). Delegates session lifecycle to `session-engine.js` |
-| `analytics.js` | Weak concept report. Groups SRS data by module (including algorithm categories as pseudo-module "Algorithms"), computes average ease factor, classifies strength (strong/good/moderate/weak/too early), shows per-concept breakdown with algorithm concepts from ConceptIndex, lists weakest individual exercises. Formats `algo_` keys for display and links to `algorithms.html` |
+| `analytics.js` | Analytics dashboard. Four-row layout: health-at-a-glance cards (mastery %, due count, streak, 30-day sparkline), module health grid (colored cells per module), auto-generated action items (due reviews, weakest concept, decaying modules), and collapsible detail panels (module detail, concept detail, weakest exercises, rating breakdown). Groups SRS data by module (including algorithm categories as pseudo-module "Algorithms"), computes recency-weighted ease factors, classifies strength (strong/good/moderate/weak/too early). "Too early" items hidden by default with toggle |
 | `real-world-challenges.js` | Renders challenge cards with difficulty, company/concept tags, source attribution, collapsible requirements/hints/acceptance criteria (interactive checkboxes), and status tracking (not-started / in-progress / completed) |
 
 ### Exercise flow
