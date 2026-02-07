@@ -263,21 +263,132 @@ func main() {
 
 ## Go vs Python Quick Reference
 
-Things you'll reach for instinctively and need the Go equivalent:
+Things you'll reach for instinctively and need the Go equivalent.
 
-- **Check if item is in a list** — Loop + compare, or use `map[T]bool`. There's no `in` keyword.
-- **Append to a list** — `s = append(s, x)`. You must reassign — `append` may allocate a new array.
-- **Last element** — `s[len(s)-1]`. No negative indexing.
-- **Join strings** — `strings.Join(s, ", ")`
-- **Split a string** — `strings.Split(s, ",")`
-- **Trim whitespace** — `strings.TrimSpace(s)`
-- **String formatting** — `fmt.Sprintf("hello %s", name)`. No f-strings.
-- **Error handling** — `if err != nil { ... }`. No try/except — errors are values.
-- **Dict get with default** — `v, ok := m[k]` (comma-ok pattern). Check `ok` yourself.
-- **Length** — `len(x)`. Same as Python.
-- **Enumerate** — `for i, v := range x`
-- **Sort with key** — `sort.Slice(x, func(i, j int) bool { ... })`
-- **List comprehension** — Loop + append + if. No comprehensions in Go.
-- **None** — `nil`. Works for pointers, interfaces, maps, slices, channels.
-- **Dataclass** — `type X struct { ... }`. Write your own constructor function.
-- **isinstance** — `v, ok := x.(T)` (type assertion).
+### Check membership
+
+*Python*
+
+```python
+if x in my_list:
+    print("found")
+```
+
+*Go — no `in` keyword. Loop or use a map.*
+
+```go
+// Option 1: loop
+for _, v := range mySlice {
+    if v == x {
+        fmt.Println("found")
+        break
+    }
+}
+
+// Option 2: use a set
+seen := map[string]bool{"a": true, "b": true}
+if seen["a"] { fmt.Println("found") }
+```
+
+### Append, last element, negative indexing
+
+*Python*
+
+```python
+nums.append(99)
+last = nums[-1]
+```
+
+*Go — must reassign append, no negative indexing.*
+
+```go
+nums = append(nums, 99)    // must reassign!
+last := nums[len(nums)-1]  // no negative indexing
+```
+
+### String operations
+
+*Python*
+
+```python
+", ".join(items)
+s.split(",")
+s.strip()
+f"hello {name}"
+```
+
+*Go*
+
+```go
+strings.Join(items, ", ")
+strings.Split(s, ",")
+strings.TrimSpace(s)
+fmt.Sprintf("hello %s", name)
+```
+
+### Error handling
+
+*Python*
+
+```python
+try:
+    f = open("config.yaml")
+except FileNotFoundError:
+    print("missing")
+```
+
+*Go — errors are values, not exceptions.*
+
+```go
+f, err := os.Open("config.yaml")
+if err != nil {
+    fmt.Println("missing")
+}
+```
+
+### Dict access
+
+*Python*
+
+```python
+val = ages.get("dave", 0)
+```
+
+*Go — comma-ok pattern.*
+
+```go
+val, ok := ages["dave"]
+if !ok {
+    val = 0 // handle missing key yourself
+}
+```
+
+### Loops and sorting
+
+*Python*
+
+```python
+for i, v in enumerate(items):
+    print(i, v)
+
+sorted(items, key=lambda x: x.age)
+```
+
+*Go*
+
+```go
+for i, v := range items {
+    fmt.Println(i, v)
+}
+
+sort.Slice(items, func(i, j int) bool {
+    return items[i].Age < items[j].Age
+})
+```
+
+### Things that don't exist in Go
+
+- **List comprehensions** — use a loop with append and if
+- **None** — `nil` (works for pointers, interfaces, maps, slices, channels)
+- **@dataclass** — `type X struct { ... }` and write your own constructor
+- **isinstance** — `v, ok := x.(T)` (type assertion)
