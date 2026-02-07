@@ -201,7 +201,7 @@ Combine concepts and learn patterns. Each challenge has multiple variants at dif
             <noscript><p class="js-required">JavaScript is required for the interactive exercises.</p></noscript>
             </div>
 
-## Module 8 Summary
+## Module 7 Summary
 
 - **os.ReadFile / WriteFile** — simple file I/O
 - **yaml.Unmarshal** — parse YAML into structs

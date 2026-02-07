@@ -257,7 +257,7 @@ Combine concepts and learn patterns. Each challenge has multiple variants at dif
             <noscript><p class="js-required">JavaScript is required for the interactive exercises.</p></noscript>
             </div>
 
-## Module 17 Summary
+## Module 15 Summary
 
 - **Set = map[T]struct{}** — O(1) membership test
 - **Difference(A, B)** — in A but not B

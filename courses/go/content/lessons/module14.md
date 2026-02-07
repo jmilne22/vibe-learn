@@ -226,7 +226,7 @@ Combine concepts and learn patterns. Each challenge has multiple variants at dif
             <noscript><p class="js-required">JavaScript is required for the interactive exercises.</p></noscript>
             </div>
 
-## Module 14 Summary
+## Module 12 Summary
 
 - **go func()** — spawn goroutine
 - **chan T** — create channel

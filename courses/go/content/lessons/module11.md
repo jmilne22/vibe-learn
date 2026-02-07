@@ -224,7 +224,7 @@ Combine concepts and learn patterns. Each challenge has multiple variants at dif
             <noscript><p class="js-required">JavaScript is required for the interactive exercises.</p></noscript>
             </div>
 
-## Module 11 Summary
+## Module 8 Summary
 
 - **Bubble Tea** = Elm Architecture for terminals
 - **Model** = your state

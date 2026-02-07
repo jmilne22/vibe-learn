@@ -237,7 +237,7 @@ Combine concepts and learn patterns. Each challenge has multiple variants at dif
             <noscript><p class="js-required">JavaScript is required for the interactive exercises.</p></noscript>
             </div>
 
-## Module 15 Summary
+## Module 13 Summary
 
 - **Same package, multiple files** — share everything, no imports needed
 - **Package = directory** — import path is module + directory

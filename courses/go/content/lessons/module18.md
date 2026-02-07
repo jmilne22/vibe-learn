@@ -433,7 +433,7 @@ Combine concepts and learn patterns. Each challenge has multiple variants at dif
             <noscript><p class="js-required">JavaScript is required for the interactive exercises.</p></noscript>
             </div>
 
-## Module 18 Summary
+## Module 16 Summary
 
 - **_test.go files** — tests live alongside code
 - **TestXxx(t *testing.T)** — test function signature
