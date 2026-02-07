@@ -441,7 +441,7 @@
                         '<div style="width: ' + pct + '%; height: 100%; background: ' + mod.color + '; border-radius: 4px;"></div>' +
                     '</div>' +
                     easeDisplay +
-                    '<span class="module-tag" style="background: ' + mod.color + '; font-size: 0.75rem;">' + mod.label + '</span>' +
+                    '<span class="strength-badge" style="background: ' + mod.color + '; font-size: 0.75rem;">' + mod.label + '</span>' +
                 '</div>';
         }
         rankingsEl.innerHTML = rankingsHTML;
@@ -474,7 +474,7 @@
                             '<div style="width: ' + cPct + '%; height: 100%; background: ' + cBarColor + '; border-radius: 3px;' + cBarOpacity + '"></div>' +
                         '</div>' +
                         cEaseDisplay +
-                        '<span class="module-tag" style="background: ' + con.color + '; font-size: 0.7rem;">' + con.label + '</span>' +
+                        '<span class="strength-badge" style="background: ' + con.color + '; font-size: 0.7rem;">' + con.label + '</span>' +
                     '</div>';
             }
         }
