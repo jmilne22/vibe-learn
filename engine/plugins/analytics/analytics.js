@@ -90,14 +90,86 @@
     function strengthLabel(avgEase, count, minReviews) {
         if (count < (minReviews || MIN_REVIEWS)) return 'Too early';
         if (avgEase >= 2.5) return 'Strong';
-        if (avgEase >= 2.0) return 'Good';
-        if (avgEase >= 1.7) return 'Moderate';
+        if (avgEase >= 2.3) return 'Good';
+        if (avgEase >= 1.8) return 'Moderate';
         return 'Weak';
     }
 
     /** Strip variant suffix from SRS key: m1_challenge_4_v9 -> m1_challenge_4 */
     function stripVariantSuffix(key) {
         return key.replace(/_v\d+$/, '');
+    }
+
+    // ---------------------------------------------------------------------------
+    // Trend Snapshots
+    // ---------------------------------------------------------------------------
+
+    var SNAPSHOT_KEY = window.CourseConfigHelper ? window.CourseConfigHelper.storageKey('analytics-snapshots') : 'go-course-analytics-snapshots';
+    var MAX_SNAPSHOT_DAYS = 30;
+
+    function todayStr() {
+        return new Date().toISOString().slice(0, 10);
+    }
+
+    function loadSnapshots() {
+        try {
+            return JSON.parse(localStorage.getItem(SNAPSHOT_KEY) || '{}');
+        } catch (e) {
+            return {};
+        }
+    }
+
+    function saveSnapshot(report) {
+        var snapshots = loadSnapshots();
+        snapshots[todayStr()] = {
+            totalTracked: report.totalTracked,
+            mastered: report.masteredCount,
+            weak: report.weakCount
+        };
+        // Prune entries older than MAX_SNAPSHOT_DAYS
+        var cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - MAX_SNAPSHOT_DAYS);
+        var cutoffStr = cutoff.toISOString().slice(0, 10);
+        var keys = Object.keys(snapshots);
+        for (var i = 0; i < keys.length; i++) {
+            if (keys[i] < cutoffStr) delete snapshots[keys[i]];
+        }
+        try {
+            localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snapshots));
+        } catch (e) { /* quota exceeded — ignore */ }
+    }
+
+    /** Find the snapshot closest to `daysAgo` days in the past (window: 5–10 days) */
+    function findComparisonSnapshot() {
+        var snapshots = loadSnapshots();
+        var dates = Object.keys(snapshots).sort();
+        var today = new Date();
+        var bestDate = null;
+        var bestDist = Infinity;
+        for (var i = 0; i < dates.length; i++) {
+            var d = new Date(dates[i] + 'T00:00:00');
+            var daysAgo = Math.round((today - d) / (1000 * 60 * 60 * 24));
+            if (daysAgo >= 5 && daysAgo <= 10) {
+                var dist = Math.abs(daysAgo - 7);
+                if (dist < bestDist) {
+                    bestDist = dist;
+                    bestDate = dates[i];
+                }
+            }
+        }
+        return bestDate ? snapshots[bestDate] : null;
+    }
+
+    /** Return a trend arrow span comparing current to previous value (higher = better for mastered, lower = better for weak) */
+    function trendArrow(current, previous, higherIsBetter) {
+        if (previous === null || previous === undefined) return '';
+        var diff = current - previous;
+        if (diff === 0) return ' <span title="No change from last week" style="font-size: 0.7rem; color: var(--text-dim);">\u2192</span>';
+        var good = higherIsBetter ? diff > 0 : diff < 0;
+        var arrow = diff > 0 ? '\u2191' : '\u2193';
+        var color = good ? 'var(--green-bright)' : 'var(--red)';
+        var label = (diff > 0 ? '+' : '') + diff + ' from last week';
+        return ' <span title="' + label + '" style="font-size: 0.7rem; color: ' + color + ';">' + arrow + '</span>';
     }
 
     // ---------------------------------------------------------------------------
@@ -229,7 +301,7 @@
             var srsEntry = srsData[srsKeys[t]];
             // Only count items with enough reviews to be meaningful
             if (srsEntry.repetitions >= 2 && srsEntry.easeFactor >= 2.5) masteredCount++;
-            if (srsEntry.repetitions >= 2 && srsEntry.easeFactor < 1.7) weakCount++;
+            if (srsEntry.repetitions >= 2 && srsEntry.easeFactor < 1.8) weakCount++;
         }
 
         // 8. Concept strength breakdown (recency-weighted)
@@ -262,7 +334,7 @@
             }
             conceptMap[conceptGroupKey].weightedEase += cEntry.easeFactor * cWeight;
             conceptMap[conceptGroupKey].totalWeight += cWeight;
-            conceptMap[conceptGroupKey].count++;
+            conceptMap[conceptGroupKey].count += (cEntry.reviewCount || Math.max(cEntry.repetitions, 1));
         }
 
         var concepts = [];
@@ -321,6 +393,10 @@
         emptyEl.style.display = 'none';
         reportEl.style.display = '';
 
+        // Save today's snapshot for trend tracking
+        saveSnapshot(report);
+        var prev = findComparisonSnapshot();
+
         // ------ Summary stats ------
         var statsEl = document.getElementById('analytics-stats');
         var modulesRated = 0;
@@ -329,20 +405,20 @@
         }
 
         statsEl.innerHTML =
-            '<div class="stat-card">' +
-                '<div class="stat-value">' + report.totalTracked + '</div>' +
-                '<div class="stat-label">Items Reviewed</div>' +
+            '<div class="stat-card" title="Unique exercises and flashcards tracked in SRS">' +
+                '<div class="stat-value">' + report.totalTracked + trendArrow(report.totalTracked, prev && prev.totalTracked, true) + '</div>' +
+                '<div class="stat-label">Items Tracked</div>' +
             '</div>' +
             '<div class="stat-card">' +
                 '<div class="stat-value">' + modulesRated + ' / ' + report.modules.length + '</div>' +
                 '<div class="stat-label">Modules Rated</div>' +
             '</div>' +
-            '<div class="stat-card">' +
-                '<div class="stat-value" style="color: var(--green-bright);">' + report.masteredCount + '</div>' +
+            '<div class="stat-card" title="Reviewed 2+ times with ease \u2265 2.5">' +
+                '<div class="stat-value" style="color: var(--green-bright);">' + report.masteredCount + trendArrow(report.masteredCount, prev && prev.mastered, true) + '</div>' +
                 '<div class="stat-label">Mastered</div>' +
             '</div>' +
-            '<div class="stat-card">' +
-                '<div class="stat-value" style="color: var(--red);">' + report.weakCount + '</div>' +
+            '<div class="stat-card" title="Reviewed 2+ times with ease < 1.8">' +
+                '<div class="stat-value" style="color: var(--red);">' + report.weakCount + trendArrow(report.weakCount, prev && prev.weak, false) + '</div>' +
                 '<div class="stat-label">Weak</div>' +
             '</div>';
 
@@ -372,6 +448,7 @@
 
         // ------ Concept Strength ------
         var conceptEl = document.getElementById('concept-strength');
+        var conceptLinksMap = window.ConceptLinks || {};
         var conceptHTML = '';
         if (report.concepts.length === 0) {
             conceptHTML = '<div style="padding: 1.5rem; text-align: center; color: var(--text-dim);">No concept data available. Complete some exercises to see per-concept breakdown.</div>';
@@ -379,17 +456,22 @@
             for (var c = 0; c < report.concepts.length; c++) {
                 var con = report.concepts[c];
                 var cIsTooEarly = con.label === 'Too early';
-                var cPct = cIsTooEarly ? 0 : Math.min(100, Math.round((con.avgEase / 3.0) * 100));
-                var cEaseDisplay = cIsTooEarly ? '' : '<span style="color: var(--text-dim); font-size: 0.8rem; min-width: 3.5rem;">' + con.avgEase + '</span>';
-                var conLink = con.moduleNum === 'algo' ? 'algorithms.html' : 'module' + con.moduleNum + '.html';
+                var cPct = Math.min(100, Math.round((con.avgEase / 3.0) * 100));
+                var cBarColor = cIsTooEarly ? 'var(--text-dim)' : con.color;
+                var cBarOpacity = cIsTooEarly ? 'opacity: 0.35;' : '';
+                var cEaseDisplay = '<span style="color: var(--text-dim); font-size: 0.8rem; min-width: 3.5rem;' + (cIsTooEarly ? ' opacity: 0.5;' : '') + '">' + con.avgEase + '</span>';
+                var modLinks = conceptLinksMap[con.moduleNum] || {};
+                var anchor = modLinks[con.concept] || '';
+                var conLink = (con.moduleNum === 'algo' ? 'algorithms.html' : 'module' + con.moduleNum + '.html') + anchor;
                 var conLabel = con.moduleNum === 'algo' ? 'AL' : 'M' + con.moduleNum;
+                var reviewWord = con.count === 1 ? ' review' : ' reviews';
                 conceptHTML +=
                     '<div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.75rem; background: var(--bg-card); border-radius: 5px; margin-bottom: 0.4rem; border-left: 3px solid ' + con.color + '; font-size: 0.9rem;">' +
                         '<a href="' + conLink + '" style="color: var(--text-dim); min-width: 2rem; text-decoration: none;">' + conLabel + '</a>' +
-                        '<span style="flex: 1;">' + con.concept + '</span>' +
-                        '<span style="color: var(--text-dim); font-size: 0.75rem;">' + con.count + ' reviews</span>' +
+                        '<a href="' + conLink + '" style="flex: 1; color: inherit; text-decoration: none;">' + con.concept + '</a>' +
+                        '<span style="color: var(--text-dim); font-size: 0.75rem;">' + con.count + reviewWord + '</span>' +
                         '<div style="width: 100px; height: 6px; background: var(--bg-lighter); border-radius: 3px; overflow: hidden;">' +
-                            '<div style="width: ' + cPct + '%; height: 100%; background: ' + con.color + '; border-radius: 3px;"></div>' +
+                            '<div style="width: ' + cPct + '%; height: 100%; background: ' + cBarColor + '; border-radius: 3px;' + cBarOpacity + '"></div>' +
                         '</div>' +
                         cEaseDisplay +
                         '<span class="module-tag" style="background: ' + con.color + '; font-size: 0.7rem;">' + con.label + '</span>' +
@@ -414,7 +496,7 @@
                 '</div>';
         }
         if (report.weakest.length === 0) {
-            weakestHTML = '<div style="padding: 1.5rem; text-align: center; color: var(--text-dim);">No weak exercises yet. Keep reviewing and exercises you struggle with will appear here.</div>';
+            weakestHTML = '<div style="padding: 1.5rem; text-align: center; color: var(--text-dim);">No weak exercises yet. Exercises need 2+ reviews with an ease factor below 2.5 to appear here. Keep practising and struggling exercises will surface.</div>';
         }
         weakestEl.innerHTML = weakestHTML;
 

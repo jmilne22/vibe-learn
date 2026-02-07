@@ -5,7 +5,7 @@
  * Tracks ease factor, interval, and repetition count per exercise.
  *
  * localStorage key: 'go-course-srs'
- * Schema: { "m2_warmup_1": { easeFactor, interval, repetitions, nextReview, lastQuality } }
+ * Schema: { "m2_warmup_1": { easeFactor, interval, repetitions, nextReview, lastQuality, reviewCount } }
  *
  * Quality scale (0-5):
  *   5 = self-rated "got it", no hints
@@ -105,6 +105,7 @@
         };
 
         srsData[exerciseKey] = calculateNext(current, quality);
+        srsData[exerciseKey].reviewCount = (current.reviewCount || 0) + 1;
         if (label) {
             srsData[exerciseKey].label = label;
         } else if (current.label) {
