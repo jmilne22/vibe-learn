@@ -7,6 +7,8 @@
 (function() {
     'use strict';
 
+    var MIN_SESSION_SIZE = 5;
+
     // --- Helpers ---
 
     function shuffle(arr) {
@@ -124,11 +126,11 @@
 
         var due = window.SRS.getDueExercises().filter(function(e) { return filterFn(e.key); });
         var weak = window.SRS.getWeakestExercises(10).filter(function(e) {
-            return e.easeFactor < 2.0 && filterFn(e.key);
+            return filterFn(e.key);
         });
 
-        if (due.length >= 5) return 'review';
-        if (weak.length >= 3) return 'weakest';
+        if (due.length >= MIN_SESSION_SIZE) return 'review';
+        if (weak.length >= MIN_SESSION_SIZE) return 'weakest';
         if (due.length > 0 || weak.length > 0) return 'mixed';
         return 'discover';
     }
@@ -283,7 +285,7 @@
 
         var due = window.SRS.getDueExercises().filter(function(e) { return filterFn(e.key); });
         var weak = window.SRS.getWeakestExercises(50).filter(function(e) {
-            return e.easeFactor < 2.0 && filterFn(e.key);
+            return filterFn(e.key);
         });
         var all = window.SRS.getAll();
         var total = Object.keys(all).filter(filterFn).length;
@@ -305,8 +307,8 @@
     function buildDiscoverQueue(items, count) {
         var srsData = window.SRS ? window.SRS.getAll() : {};
 
-        var unseen = items.filter(function(item) { return !srsData[item.key]; });
-        var seen = items.filter(function(item) { return !!srsData[item.key]; });
+        var unseen = items.filter(function(item) { return !srsData[item.key.replace(/_v\d+$/, '')]; });
+        var seen = items.filter(function(item) { return !!srsData[item.key.replace(/_v\d+$/, '')]; });
 
         shuffle(unseen);
         shuffle(seen);
@@ -325,7 +327,7 @@
      */
     function buildPaddedSRSQueue(mode, count, filterFn, opts) {
         opts = opts || {};
-        var minThreshold = opts.minThreshold !== undefined ? opts.minThreshold : 5;
+        var minThreshold = opts.minThreshold !== undefined ? opts.minThreshold : MIN_SESSION_SIZE;
         var pad = opts.pad !== undefined ? opts.pad : true;
 
         var candidates = buildSRSQueue(mode, count, filterFn);
