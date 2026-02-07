@@ -152,6 +152,7 @@
         set: setFocusMode
     };
 
+
     function createFocusToggle(target) {
         if (!target || document.querySelector('.focus-toggle')) {
             return;
