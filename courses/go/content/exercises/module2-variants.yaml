@@ -692,7 +692,8 @@ variants:
           hints:
             - title: "\U0001F914 Think about it"
               content: >-
-                First build a frequency map, then iterate the map to find the key with the highest count.
+                You need to know how many times each item appears before you can pick the winner.
+                How would you find the most common one once you have counts?
             - title: "\U0001F4A1 Hint"
               content: >-
                 Track <code>maxCount</code> and <code>maxItem</code> while iterating the frequency map.
@@ -933,8 +934,8 @@ variants:
           hints:
             - title: "\U0001F914 Think about it"
               content: >-
-                First build a frequency map. Then filter the map for entries exceeding the threshold.
-                This is the classic two-pass pattern.
+                You can't tell if something is a bestseller until you know how many times it sold.
+                What do you need to compute first before you can filter?
             - title: "\U0001F4A1 Hint"
               content: >-
                 Two passes: (1) count product sales, (2) collect products where <code>count > threshold</code>.
