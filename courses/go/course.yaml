@@ -1,49 +1,51 @@
 course:
   name: "Go Course"
   slug: go-course
-  description: "Interactive Go programming course with 18 modules covering fundamentals, CLI tools, concurrency, testing, algorithms, and capstone projects."
+  description: "Interactive Go programming course with 22 modules covering fundamentals, CLI tools, concurrency, testing, algorithms, and capstone projects."
   storagePrefix: go-course
 
 tracks:
   - title: Foundation
     modules: [0]
   - title: Fundamentals
-    modules: [1, 2, 3, 4, 5]
+    modules: [1, 2, 3, 4, 5, 6]
   - title: CLI & Tools
-    modules: [6, 7, 8]
+    modules: [7, 8, 11]
   - title: Production Code
-    modules: [9, 10, 11]
+    modules: [9, 10, 12, 13]
   - title: Advanced
-    modules: [12]
-  - title: Real-World
-    modules: [13, 14, 15]
+    modules: [14, 15, 16]
   - title: Testing
-    modules: [16, 17]
+    modules: [17, 18, 19]
   - title: Algorithms
-    modules: [18]
+    modules: [20, 21]
 
 modules:
   - title: Go Quick Reference
     description: "Commands, links, and common errors for quick lookup"
     hasExercises: false
-  - title: Go Fundamentals
-    description: "Variables, types, functions, and control flow. Every concept mapped from Python."
-  - title: Pointers & Memory
-    description: "Pointers demystified. They're not scary — they're just addresses. Let's make them click."
-  - title: Structs Deep Dive
-    description: "Go's alternative to classes. Composition over inheritance, methods, and struct tags."
+  - title: Syntax & Control Flow
+    description: "Variables, types, functions, if/else, and for loops. The building blocks of every Go program."
+  - title: Slices, Maps & Strings
+    description: "Collections, the comma-ok pattern, and working with runes. The data types you'll use every day."
+  - title: Pointers, Structs & Methods
+    description: "Pointers, structs, composition, methods, and struct tags. Go's approach to data and behavior."
   - title: Interfaces & Polymorphism
     description: "Implicit interfaces, type assertions, and thinking in behaviors. This is Go's secret weapon."
-  - title: Data Structures
-    description: "Slices deep dive, maps, and building your own data structures with generics."
+  - title: Collections Deep Dive
+    description: "Map-as-set patterns, deduplication, and cache implementations with structs and methods."
+  - title: Generics
+    description: "Generic functions, type constraints, and building reusable data structures."
   - title: CLI Foundations
     description: "Arguments, flags, stdin/stdout, and building tools that feel native to the terminal."
   - title: "Files, YAML & Shell"
     description: "Read files, parse configs, run shell commands. Build a task runner from scratch."
+  - title: Error Handling
+    description: "Custom errors, error wrapping, sentinel errors, and errors.Is/As. Go's explicit error philosophy."
+  - title: Testing Fundamentals
+    description: "Table-driven tests, test coverage, and mocking. Writing tests that actually catch bugs."
   - title: Building TUIs
     description: "Terminal User Interfaces with Bubble Tea. Build interactive CLI apps that look amazing."
-  - title: Error Handling & Testing
-    description: "Go's explicit error handling and how to write tests that actually catch bugs."
   - title: Design Patterns
     description: "Patterns that actually matter. Factory, options, strategy, and builder."
   - title: HTTP & API Design
@@ -60,40 +62,42 @@ modules:
     description: "Testing individual functions and components in isolation. Go's testing is simple but powerful."
   - title: Integration Testing
     description: "Testing real components working together: HTTP servers, databases, file systems, external services."
-  - title: Algorithms & Problem Solving
-    description: "Big O notation, algorithm patterns, and fundamental data structure implementations in Go."
+  - title: Algorithm Patterns
+    description: "Stacks, binary search, hash maps, and linked lists. Fundamental algorithm building blocks in Go."
+  - title: Trees, Graphs & Advanced
+    description: "Trees, graphs, sorting algorithms, heaps, and tries. Advanced data structures and algorithms."
 
 projects:
   - id: p1
     num: P1
     title: Log Parser
     file: project-logparser
-    afterModule: 1
-    description: "Build a log parser that filters, aggregates, and reports on server log data. Applies all Module 1 concepts."
+    afterModule: 2
+    description: "Build a log parser that filters, aggregates, and reports on server log data. Applies Modules 1-2 concepts."
   - id: p2
     num: P2
     title: Task Runner
     file: project-taskrunner
-    afterModule: 7
-    description: "Build a simple task runner that reads YAML configs and executes commands. Applies concepts from Module 7."
+    afterModule: 8
+    description: "Build a simple task runner that reads YAML configs and executes commands. Applies concepts from Module 8."
   - id: p3
     num: P3
     title: File Browser
     file: project-filebrowser
-    afterModule: 8
-    description: "Build an interactive terminal file browser using Bubble Tea. Applies concepts from Module 8."
+    afterModule: 11
+    description: "Build an interactive terminal file browser using Bubble Tea. Applies concepts from Module 11."
   - id: p4
     num: P4
     title: GitHub CLI
     file: project-githubcli
-    afterModule: 11
-    description: "Build a CLI tool that interacts with the GitHub API. Applies concepts from Module 11."
+    afterModule: 13
+    description: "Build a CLI tool that interacts with the GitHub API. Applies concepts from Module 13."
   - id: p5
     num: P5
     title: Parallel Downloader
     file: project-downloader
-    afterModule: 12
-    description: "Build a concurrent file downloader with progress tracking. Applies concepts from Module 12."
+    afterModule: 14
+    description: "Build a concurrent file downloader with progress tracking. Applies concepts from Module 14."
 
 annotationTypes:
   idiom: { icon: "Go", cssClass: ann-idiom }

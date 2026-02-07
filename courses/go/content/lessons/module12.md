@@ -1,212 +1,192 @@
-## Goroutines: Lightweight Threads
+## The Functional Options Pattern
 
-A goroutine is like a lightweight thread. Spawning millions is fine.
+The most "Go" pattern. Flexible configuration without breaking APIs.
 
-*Basic goroutine*
+*Functional options*
 
 ```go
-func main() {
-    // Start a goroutine with 'go'
-    go func() {
-        fmt.Println("Hello from goroutine!")
-    }()
-    
-    // Or call a named function
-    go doWork("task1")
-    go doWork("task2")
-    
-    // Main must wait, or it exits and kills goroutines
-    time.Sleep(100 * time.Millisecond)
+type Server struct {
+    host    string
+    port    int
+    timeout time.Duration
+    maxConn int
 }
 
-func doWork(name string) {
-    fmt.Printf("Starting %s\n", name)
-    time.Sleep(50 * time.Millisecond)
-    fmt.Printf("Finished %s\n", name)
-}
-```
+// Option is a function that configures Server
+type Option func(*Server)
 
-> **Don't use time.Sleep!:** Use proper synchronization (channels, WaitGroup). Sleep is just for demos.
-
-## Channels: Goroutine Communication
-
-// Channel is a pipe between goroutines
-
-Goroutine A  ──[value]──>  Channel  ──[value]──>  Goroutine B
-
-*Basic channels*
-
-```go
-// Create a channel
-ch := make(chan string)
-
-// Send to channel (blocks until received)
-go func() {
-    ch <- "hello"  // Send
-}()
-
-// Receive from channel (blocks until sent)
-msg := <-ch  // Receive
-fmt.Println(msg)
-
-// Buffered channel (non-blocking until full)
-buffered := make(chan int, 3)  // Buffer size 3
-buffered <- 1
-buffered <- 2
-buffered <- 3
-// buffered <- 4  // Would block!
-```
-
-## WaitGroup: Waiting for Goroutines
-
-*sync.WaitGroup*
-
-```go
-import "sync"
-
-func main() {
-    var wg sync.WaitGroup
-    
-    urls := []string{
-        "https://google.com",
-        "https://github.com",
-        "https://golang.org",
-    }
-    
-    for _, url := range urls {
-        wg.Add(1)  // Increment counter
-        go func(u string) {
-            defer wg.Done()  // Decrement when done
-            fetch(u)
-        }(url)
-    }
-    
-    wg.Wait()  // Block until counter is 0
-    fmt.Println("All done!")
-}
-```
-
-## Select: Multiplexing Channels
-
-*Select statement*
-
-```go
-func main() {
-    ch1 := make(chan string)
-    ch2 := make(chan string)
-    
-    go func() {
-        time.Sleep(100 * time.Millisecond)
-        ch1 <- "from ch1"
-    }()
-    
-    go func() {
-        time.Sleep(200 * time.Millisecond)
-        ch2 <- "from ch2"
-    }()
-    
-    // Select waits on multiple channels
-    for i := 0; i < 2; i++ {
-        select {
-        case msg := <-ch1:
-            fmt.Println(msg)
-        case msg := <-ch2:
-            fmt.Println(msg)
-        }
+// Option functions
+func WithPort(port int) Option {
+    return func(s *Server) {
+        s.port = port
     }
 }
 
-// Select with timeout
-select {
-case result := <-ch:
-    fmt.Println(result)
-case <-time.After(5 * time.Second):
-    fmt.Println("Timeout!")
+func WithTimeout(d time.Duration) Option {
+    return func(s *Server) {
+        s.timeout = d
+    }
 }
+
+func WithMaxConnections(n int) Option {
+    return func(s *Server) {
+        s.maxConn = n
+    }
+}
+
+// Constructor with variadic options
+func NewServer(host string, opts ...Option) *Server {
+    s := &Server{
+        host:    host,
+        port:    8080,          // defaults
+        timeout: 30 * time.Second,
+        maxConn: 100,
+    }
+    
+    for _, opt := range opts {
+        opt(s)
+    }
+    
+    return s
+}
+
+// Usage — clean and extensible!
+server := NewServer("localhost")
+server := NewServer("localhost", WithPort(9000))
+server := NewServer("localhost",
+    WithPort(9000),
+    WithTimeout(60*time.Second),
+    WithMaxConnections(500),
+)
 ```
 
-## Context: Cancellation & Timeouts
+> **Why This Rules:** Add new options without breaking existing code. Clear defaults. Self-documenting API.
 
-*Context usage*
+## Factory Pattern
+
+*Factory functions*
 
 ```go
-import "context"
+// Interface
+type Storage interface {
+    Save(key string, data []byte) error
+    Load(key string) ([]byte, error)
+}
 
-// With timeout
-ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-defer cancel()
+// Implementations
+type FileStorage struct { dir string }
+type S3Storage struct { bucket string }
+type MemoryStorage struct { data map[string][]byte }
 
-// Pass context to functions
-result, err := fetchWithContext(ctx, "https://api.example.com")
+// Factory function
+func NewStorage(storageType string, config map[string]string) (Storage, error) {
+    switch storageType {
+    case "file":
+        return &FileStorage{dir: config["dir"]}, nil
+    case "s3":
+        return &S3Storage{bucket: config["bucket"]}, nil
+    case "memory":
+        return &MemoryStorage{data: make(map[string][]byte)}, nil
+    default:
+        return nil, fmt.Errorf("unknown storage type: %s", storageType)
+    }
+}
 
-func fetchWithContext(ctx context.Context, url string) ([]byte, error) {
-    req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
-    
-    resp, err := http.DefaultClient.Do(req)
+// Usage
+storage, err := NewStorage("s3", map[string]string{"bucket": "my-bucket"})
+```
+
+## Strategy Pattern
+
+Swap algorithms at runtime using interfaces.
+
+*Strategy pattern*
+
+```go
+// Strategy interface
+type Compressor interface {
+    Compress(data []byte) ([]byte, error)
+    Decompress(data []byte) ([]byte, error)
+}
+
+// Strategies
+type GzipCompressor struct{}
+type ZstdCompressor struct{}
+type NoCompressor struct{}
+
+// Context that uses strategy
+type FileProcessor struct {
+    compressor Compressor
+}
+
+func (p *FileProcessor) SaveFile(path string, data []byte) error {
+    compressed, err := p.compressor.Compress(data)
     if err != nil {
-        return nil, err
+        return err
     }
-    defer resp.Body.Close()
-    
-    return io.ReadAll(resp.Body)
+    return os.WriteFile(path, compressed, 0644)
 }
 
-// Check if cancelled in long-running work
-func doWork(ctx context.Context) error {
-    for {
-        select {
-        case <-ctx.Done():
-            return ctx.Err()  // Cancelled or deadline exceeded
-        default:
-            // Do work...
-        }
-    }
-}
+// Swap strategy at runtime
+processor := &FileProcessor{compressor: &GzipCompressor{}}
+processor.compressor = &ZstdCompressor{}  // Change strategy
 ```
 
-## Worker Pool Pattern
+## Builder Pattern
 
-*Worker pool*
+*Builder pattern*
 
 ```go
-func worker(id int, jobs <-chan int, results chan<- int) {
-    for job := range jobs {
-        fmt.Printf("Worker %d processing job %d\n", id, job)
-        time.Sleep(100 * time.Millisecond)  // Simulate work
-        results <- job * 2
-    }
+type Query struct {
+    table   string
+    columns []string
+    where   []string
+    orderBy string
+    limit   int
 }
 
-func main() {
-    numJobs := 10
-    numWorkers := 3
-    
-    jobs := make(chan int, numJobs)
-    results := make(chan int, numJobs)
-    
-    // Start workers
-    for w := 1; w <= numWorkers; w++ {
-        go worker(w, jobs, results)
-    }
-    
-    // Send jobs
-    for j := 1; j <= numJobs; j++ {
-        jobs <- j
-    }
-    close(jobs)
-    
-    // Collect results
-    for r := 1; r <= numJobs; r++ {
-        <-results
-    }
+type QueryBuilder struct {
+    query Query
 }
+
+func NewQueryBuilder(table string) *QueryBuilder {
+    return &QueryBuilder{query: Query{table: table}}
+}
+
+func (b *QueryBuilder) Select(cols ...string) *QueryBuilder {
+    b.query.columns = cols
+    return b
+}
+
+func (b *QueryBuilder) Where(condition string) *QueryBuilder {
+    b.query.where = append(b.query.where, condition)
+    return b
+}
+
+func (b *QueryBuilder) OrderBy(col string) *QueryBuilder {
+    b.query.orderBy = col
+    return b
+}
+
+func (b *QueryBuilder) Limit(n int) *QueryBuilder {
+    b.query.limit = n
+    return b
+}
+
+func (b *QueryBuilder) Build() string {
+    // Build SQL string from query struct
+    return "..."
+}
+
+// Usage — fluent API
+sql := NewQueryBuilder("users").
+    Select("id", "name", "email").
+    Where("active = true").
+    Where("age > 18").
+    OrderBy("created_at DESC").
+    Limit(10).
+    Build()
 ```
-
-### 🔨 Project: Parallel Downloader
-
-Put your skills to work! Build a concurrent file downloader with worker pools and progress tracking.
-
-Start Project →
 
 ## Exercises
 
@@ -226,14 +206,9 @@ Combine concepts and learn patterns. Each challenge has multiple variants at dif
             <noscript><p class="js-required">JavaScript is required for the interactive exercises.</p></noscript>
             </div>
 
-## Module 12 Summary
+## Module 10 Summary
 
-- **go func()** — spawn goroutine
-- **chan T** — create channel
-- **ch <- / <-ch** — send / receive
-- **sync.WaitGroup** — wait for goroutines
-- **select** — multiplex channels
-- **context** — cancellation and timeouts
-- **Worker pool** — bounded parallelism
-
-> **The Go Proverb:** "Don't communicate by sharing memory; share memory by communicating." -- Use channels, not mutexes.
+- **Functional Options** — flexible config with defaults
+- **Factory** — create objects without specifying concrete types
+- **Strategy** — swap algorithms via interfaces
+- **Builder** — fluent API for complex object construction

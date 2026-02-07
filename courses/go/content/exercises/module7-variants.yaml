@@ -1,544 +1,898 @@
 conceptLinks:
-  os.ReadFile: "#lesson-reading-files"
-  os.WriteFile: "#lesson-writing-files"
-  YAML Parsing: "#lesson-yaml"
-  exec.Command: "#lesson-shell-commands"
-  Environment Variables: "#lesson-env-vars"
+  os.Args: "#lesson-os-args"
+  flag Package: "#lesson-flags"
+  bufio.Scanner: "#lesson-scanner"
+  os.Stdin: "#lesson-stdin"
+  fmt.Fprintf: "#lesson-fprintf"
+  os.Exit: "#lesson-exit"
+  strconv: "#lesson-strconv"
+  strings Package: "#lesson-strings"
+  os.Environ: "#lesson-environ"
 sharedContent: {}
 variants:
   warmups:
     - id: warmup_1
-      concept: os.ReadFile
+      concept: flag Package
       variants:
         - id: v1
-          title: Read and Print File
+          title: Echo Clone
           description: >-
-            Use <code>os.ReadFile</code> to read a file called <code>"message.txt"</code> and print its contents. Handle
-            the error by printing it and returning early.
+            Build an <code>echo</code> command that prints all arguments joined by spaces. Add a <code>-n</code> flag to
+            suppress the trailing newline.
           hints:
-            - <code>os.ReadFile</code> returns <code>([]byte, error)</code>.
-            - Convert the byte slice to a string with <code>string(data)</code>.
-            - Check <code>err != nil</code> before using the data.
+            - Use <code>flag.Bool("n", false, "no trailing newline")</code> to define the flag.
+            - After <code>flag.Parse()</code>, remaining arguments are in <code>flag.Args()</code>.
+            - Use <code>strings.Join()</code> to combine arguments with spaces.
           solution: |-
-            data, err := os.ReadFile("message.txt")
-            if err != nil {
-                fmt.Println("Error:", err)
-                return
+            func main() {
+                noNewline := flag.Bool("n", false, "no trailing newline")
+                flag.Parse()
+
+                output := strings.Join(flag.Args(), " ")
+                if *noNewline {
+                    fmt.Print(output)
+                } else {
+                    fmt.Println(output)
+                }
             }
-            fmt.Println(string(data))
           annotations:
             - type: idiom
-              label: ReadFile
+              label: Flag Pointers
               text: >-
-                <code>os.ReadFile</code> reads the entire file into memory. For small config files this is the simplest
-                approach.
-            - type: gotcha
-              label: Byte Slice
+                The <code>flag</code> package returns pointers. You must dereference with <code>*noNewline</code> to get
+                the actual boolean value.
+            - type: stdlib
+              label: strings.Join
               text: >-
-                <code>os.ReadFile</code> returns <code>[]byte</code>, not <code>string</code>. You must convert with
-                <code>string(data)</code> to print it as text.
+                <code>strings.Join(slice, sep)</code> is the idiomatic way to concatenate a slice of strings with a
+                separator.
         - id: v2
-          title: Count Lines in File
+          title: Greeting CLI
           description: >-
-            Read a file with <code>os.ReadFile</code> and count the number of lines. Print the count. (Hint: split on
-            newline.)
+            Build a <code>greet</code> command that takes a <code>-name</code> flag (default "World") and prints
+            <code>Hello, &lt;name&gt;!</code>. Add a <code>-loud</code> flag that uppercases the output.
           hints:
-            - Use <code>strings.Split(string(data), "\n")</code> to split into lines.
-            - The last element may be empty if the file ends with a newline — consider trimming.
-            - Use <code>len(lines)</code> to get the count.
+            - Use <code>flag.String("name", "World", "...")</code> for the name flag.
+            - Use <code>strings.ToUpper()</code> for the loud option.
           solution: |-
-            data, err := os.ReadFile("input.txt")
-            if err != nil {
-                fmt.Println("Error:", err)
-                return
+            func main() {
+                name := flag.String("name", "World", "name to greet")
+                loud := flag.Bool("loud", false, "uppercase output")
+                flag.Parse()
+
+                msg := fmt.Sprintf("Hello, %s!", *name)
+                if *loud {
+                    msg = strings.ToUpper(msg)
+                }
+                fmt.Println(msg)
             }
-            lines := strings.Split(strings.TrimRight(string(data), "\n"), "\n")
-            fmt.Println("Lines:", len(lines))
           annotations:
             - type: idiom
-              label: TrimRight
+              label: Flag Defaults
               text: >-
-                Files often end with a trailing newline. <code>strings.TrimRight</code> removes it before splitting to
-                avoid an extra empty element.
+                The second argument to <code>flag.String()</code> is the default value, used when the flag is not
+                provided on the command line.
+            - type: stdlib
+              label: fmt.Sprintf
+              text: >-
+                <code>fmt.Sprintf</code> formats a string without printing it, useful when you need to transform the
+                output before displaying.
         - id: v3
-          title: Check File Exists
+          title: Repeat CLI
           description: >-
-            Write a function <code>fileExists(path string) bool</code> that returns true if the file exists, false
-            otherwise. Use <code>os.Stat</code>.
+            Build a <code>repeat</code> command that takes a <code>-count</code> flag (default 1) and a
+            <code>-sep</code> flag (default newline). It repeats the given text argument the specified number of times.
           hints:
-            - <code>os.Stat</code> returns <code>(os.FileInfo, error)</code>.
-            - Use <code>os.IsNotExist(err)</code> to check if the error means the file doesn't exist.
-            - If <code>err == nil</code>, the file exists.
+            - Use <code>flag.Int("count", 1, "...")</code> for the count flag.
+            - Use <code>flag.String("sep", "\n", "...")</code> for the separator.
+            - Use <code>strings.Repeat()</code> or a loop to produce the output.
           solution: |-
-            func fileExists(path string) bool {
-                _, err := os.Stat(path)
-                return !os.IsNotExist(err)
+            func main() {
+                count := flag.Int("count", 1, "number of repetitions")
+                sep := flag.String("sep", "\n", "separator between repetitions")
+                flag.Parse()
+
+                text := strings.Join(flag.Args(), " ")
+                parts := make([]string, *count)
+                for i := range parts {
+                    parts[i] = text
+                }
+                fmt.Println(strings.Join(parts, *sep))
             }
           annotations:
             - type: idiom
-              label: os.Stat
+              label: Flag Types
               text: >-
-                <code>os.Stat</code> is Go's way to check file existence and metadata. It returns an error if the file
-                can't be accessed.
+                The <code>flag</code> package supports <code>String</code>, <code>Int</code>, <code>Bool</code>,
+                <code>Float64</code>, and <code>Duration</code> out of the box.
+            - type: alternative
+              label: strings.Repeat
+              text: >-
+                For simple repetition without a custom separator, <code>strings.Repeat(s, n)</code> repeats a string n
+                times.
+        - id: v4
+          title: Reverse Args
+          description: >-
+            Build a command that prints its arguments in reverse order, one per line. Add a <code>-inline</code> flag to
+            print them on a single line separated by spaces.
+          hints:
+            - Get arguments from <code>flag.Args()</code> after <code>flag.Parse()</code>.
+            - Reverse by iterating from <code>len(args)-1</code> down to <code>0</code>.
+          solution: |-
+            func main() {
+                inline := flag.Bool("inline", false, "print on one line")
+                flag.Parse()
+
+                args := flag.Args()
+                reversed := make([]string, len(args))
+                for i, arg := range args {
+                    reversed[len(args)-1-i] = arg
+                }
+
+                if *inline {
+                    fmt.Println(strings.Join(reversed, " "))
+                } else {
+                    for _, arg := range reversed {
+                        fmt.Println(arg)
+                    }
+                }
+            }
+          annotations:
+            - type: idiom
+              label: Reverse Pattern
+              text: >-
+                Go has no built-in reverse function for slices (prior to Go 1.21's <code>slices.Reverse</code>). The
+                index-swap pattern <code>reversed[len-1-i] = args[i]</code> is common.
             - type: gotcha
-              label: Other Errors
+              label: flag.Parse Order
               text: >-
-                <code>os.IsNotExist</code> only checks for "file not found" errors. Permission errors will also make
-                <code>Stat</code> fail but <code>IsNotExist</code> returns false.
+                You must call <code>flag.Parse()</code> before accessing <code>flag.Args()</code>. Arguments before
+                parsing are raw <code>os.Args</code>.
     - id: warmup_2
-      concept: os.WriteFile
+      concept: bufio.Scanner
       variants:
         - id: v1
-          title: Write String to File
+          title: Line Counter
           description: >-
-            Use <code>os.WriteFile</code> to write the string <code>"Hello, Go!"</code> to a file called
-            <code>"output.txt"</code> with permission <code>0644</code>.
+            Build a <code>lc</code> tool that reads from stdin and counts lines. Add <code>-w</code> for word count and
+            <code>-c</code> for character count.
           hints:
-            - <code>os.WriteFile</code> takes <code>(name string, data []byte, perm os.FileMode)</code>.
-            - Convert the string with <code>[]byte("Hello, Go!")</code>.
-            - <code>0644</code> means owner read/write, others read-only.
+            - Use <code>bufio.NewScanner(os.Stdin)</code> to read line by line.
+            - For words, use <code>strings.Fields(line)</code> which splits on whitespace.
+            - For characters, use <code>len([]rune(line))</code> to count Unicode characters.
           solution: |-
-            err := os.WriteFile("output.txt", []byte("Hello, Go!"), 0644)
-            if err != nil {
-                fmt.Println("Error:", err)
+            func main() {
+                words := flag.Bool("w", false, "count words")
+                chars := flag.Bool("c", false, "count chars")
+                flag.Parse()
+
+                var lines, wordCount, charCount int
+                scanner := bufio.NewScanner(os.Stdin)
+                for scanner.Scan() {
+                    line := scanner.Text()
+                    lines++
+                    wordCount += len(strings.Fields(line))
+                    charCount += len([]rune(line))
+                }
+
+                switch {
+                case *words:
+                    fmt.Println(wordCount)
+                case *chars:
+                    fmt.Println(charCount)
+                default:
+                    fmt.Println(lines)
+                }
             }
           annotations:
             - type: idiom
-              label: File Permissions
+              label: Scanner Loop
+              text: The <code>for scanner.Scan()</code> pattern is idiomatic Go for reading input line by line until EOF.
+            - type: stdlib
+              label: strings.Fields
               text: >-
-                <code>0644</code> is the standard permission for config/data files: owner can read and write, everyone
-                else can only read.
+                <code>strings.Fields()</code> splits on any whitespace and ignores leading/trailing whitespace, unlike
+                <code>strings.Split()</code>.
         - id: v2
-          title: Copy File Contents
+          title: Longest Line
           description: >-
-            Read the contents of <code>"source.txt"</code> and write them to <code>"dest.txt"</code>. Use
-            <code>os.ReadFile</code> and <code>os.WriteFile</code>.
+            Build a tool that reads from stdin and prints the longest line. Add a <code>-len</code> flag to print only
+            the length instead of the full line.
           hints:
-            - Read first with <code>os.ReadFile("source.txt")</code>.
-            - Pass the same <code>[]byte</code> data directly to <code>os.WriteFile</code>.
-            - No need to convert between string and bytes — it's already <code>[]byte</code>.
+            - Track the longest line seen so far while scanning.
+            - Compare lengths using <code>len([]rune(line))</code> for Unicode correctness.
           solution: |-
-            data, err := os.ReadFile("source.txt")
-            if err != nil {
-                fmt.Println("Error reading:", err)
-                return
-            }
-            err = os.WriteFile("dest.txt", data, 0644)
-            if err != nil {
-                fmt.Println("Error writing:", err)
-            }
-          annotations:
-            - type: idiom
-              label: Simple Copy
-              text: >-
-                For small files, ReadFile + WriteFile is the simplest copy pattern. For large files, use
-                <code>io.Copy</code> with open file handles.
-        - id: v3
-          title: Write Lines to File
-          description: >-
-            Write a function <code>writeLines(path string, lines []string) error</code> that joins the lines with
-            newlines and writes them to the file.
-          hints:
-            - Use <code>strings.Join(lines, "\n")</code> to combine the lines.
-            - "Add a trailing newline: <code>content + \"\\n\"</code>."
-            - Return the error from <code>os.WriteFile</code> directly.
-          solution: |-
-            func writeLines(path string, lines []string) error {
-                content := strings.Join(lines, "\n") + "\n"
-                return os.WriteFile(path, []byte(content), 0644)
-            }
-          annotations:
-            - type: idiom
-              label: Trailing Newline
-              text: Text files should end with a trailing newline. It's a POSIX convention and many tools expect it.
-    - id: warmup_3
-      concept: YAML Parsing
-      variants:
-        - id: v1
-          title: Parse Simple YAML Config
-          description: >-
-            Define a <code>Config</code> struct with <code>Name string</code> and <code>Port int</code> fields. Read
-            <code>"config.yaml"</code> and unmarshal it into the struct. Print the values.
-          hints:
-            - "Use YAML struct tags: <code>`yaml:\"name\"`</code>."
-            - Call <code>yaml.Unmarshal(data, &config)</code> to parse.
-            - Import <code>gopkg.in/yaml.v3</code>.
-          solution: |-
-            type Config struct {
-                Name string `yaml:"name"`
-                Port int    `yaml:"port"`
-            }
+            func main() {
+                showLen := flag.Bool("len", false, "print length only")
+                flag.Parse()
 
-            data, err := os.ReadFile("config.yaml")
-            if err != nil {
-                panic(err)
-            }
+                var longest string
+                scanner := bufio.NewScanner(os.Stdin)
+                for scanner.Scan() {
+                    line := scanner.Text()
+                    if len([]rune(line)) > len([]rune(longest)) {
+                        longest = line
+                    }
+                }
 
-            var config Config
-            if err := yaml.Unmarshal(data, &config); err != nil {
-                panic(err)
+                if *showLen {
+                    fmt.Println(len([]rune(longest)))
+                } else {
+                    fmt.Println(longest)
+                }
             }
-            fmt.Printf("Name: %s, Port: %d\n", config.Name, config.Port)
           annotations:
-            - type: idiom
-              label: Struct Tags
-              text: >-
-                YAML struct tags map Go field names to YAML keys. By convention, YAML keys are lowercase/snake_case
-                while Go fields are uppercase CamelCase.
             - type: gotcha
-              label: Exported Fields
+              label: len(string) vs len([]rune)
               text: >-
-                Only exported (uppercase) struct fields are visible to <code>yaml.Unmarshal</code>. Lowercase fields
-                will be silently ignored.
-        - id: v2
-          title: Parse YAML with Nested Map
-          description: >-
-            Define a <code>Config</code> struct with a <code>Tasks map[string]string</code> field. Parse YAML like
-            <code>tasks:\n  build: "go build"\n  test: "go test"</code>. Iterate and print each task.
-          hints:
-            - Maps in YAML become <code>map[string]string</code> in Go.
-            - Use the struct tag <code>`yaml:"tasks"`</code>.
-            - Iterate with <code>for name, cmd := range config.Tasks</code>.
-          solution: |-
-            type Config struct {
-                Tasks map[string]string `yaml:"tasks"`
-            }
-
-            data, err := os.ReadFile("tasks.yaml")
-            if err != nil {
-                panic(err)
-            }
-
-            var config Config
-            if err := yaml.Unmarshal(data, &config); err != nil {
-                panic(err)
-            }
-
-            for name, cmd := range config.Tasks {
-                fmt.Printf("%s: %s\n", name, cmd)
-            }
-          annotations:
-            - type: idiom
-              label: Map Fields
-              text: >-
-                YAML mappings naturally map to Go's <code>map[string]T</code>. Use this when keys are dynamic rather
-                than a fixed set of fields.
-        - id: v3
-          title: Parse YAML with Slice Field
-          description: >-
-            Define a struct with a <code>Tags []string</code> field. Parse YAML like <code>tags:\n  - go\n  - cli\n  -
-            tools</code>. Print each tag.
-          hints:
-            - YAML lists become Go slices.
-            - Use <code>`yaml:"tags"`</code> as the struct tag.
-            - Iterate with <code>for _, tag := range config.Tags</code>.
-          solution: |-
-            type Config struct {
-                Tags []string `yaml:"tags"`
-            }
-
-            data, _ := os.ReadFile("config.yaml")
-            var config Config
-            yaml.Unmarshal(data, &config)
-
-            for _, tag := range config.Tags {
-                fmt.Println(tag)
-            }
-          annotations:
-            - type: idiom
-              label: YAML Lists
-              text: >-
-                YAML sequences (lines starting with <code>-</code>) deserialize into Go slices. The element type must
-                match the YAML values.
-    - id: warmup_4
-      concept: exec.Command
-      variants:
-        - id: v1
-          title: Run a Command and Capture Output
-          description: Use <code>exec.Command</code> to run <code>echo "hello"</code> and print the output. Handle the error.
-          hints:
-            - Use <code>exec.Command("echo", "hello")</code> — the args are separate strings.
-            - Call <code>.Output()</code> to get the stdout as <code>[]byte</code>.
-            - "Convert to string and print: <code>string(out)</code>."
-          solution: |-
-            out, err := exec.Command("echo", "hello").Output()
-            if err != nil {
-                fmt.Println("Error:", err)
-                return
-            }
-            fmt.Print(string(out))
-          annotations:
-            - type: idiom
-              label: Separate Args
-              text: >-
-                <code>exec.Command</code> takes the program and arguments as separate strings. Do NOT pass <code>"echo
-                hello"</code> as one string.
-            - type: gotcha
-              label: No Shell
-              text: >-
-                <code>exec.Command</code> runs the program directly — no shell features like pipes or globbing. Use
-                <code>bash -c</code> for shell features.
-        - id: v2
-          title: Run Shell Command with Pipe
-          description: >-
-            Run <code>echo hello world | wc -w</code> through a shell using <code>exec.Command("bash", "-c",
-            ...)</code>. Print the word count.
-          hints:
-            - Wrap the full command in <code>exec.Command("bash", "-c", "echo hello world | wc -w")</code>.
-            - The pipe <code>|</code> is a shell feature, so you must use <code>bash -c</code>.
-            - Trim whitespace from the output with <code>strings.TrimSpace</code>.
-          solution: |-
-            out, err := exec.Command("bash", "-c", "echo hello world | wc -w").Output()
-            if err != nil {
-                fmt.Println("Error:", err)
-                return
-            }
-            fmt.Println(strings.TrimSpace(string(out)))
-          annotations:
-            - type: idiom
-              label: bash -c
-              text: When you need shell features (pipes, redirects, globs), wrap the command in <code>bash -c "..."</code>.
-        - id: v3
-          title: Stream Command Output
-          description: >-
-            Run <code>go version</code> and stream its output directly to stdout. Use <code>cmd.Stdout =
-            os.Stdout</code>.
-          hints:
-            - "Create the command: <code>cmd := exec.Command(\"go\", \"version\")</code>."
-            - Set <code>cmd.Stdout = os.Stdout</code> and <code>cmd.Stderr = os.Stderr</code>.
-            - Call <code>cmd.Run()</code> instead of <code>.Output()</code>.
-          solution: |-
-            cmd := exec.Command("go", "version")
-            cmd.Stdout = os.Stdout
-            cmd.Stderr = os.Stderr
-            if err := cmd.Run(); err != nil {
-                fmt.Println("Error:", err)
-            }
-          annotations:
-            - type: idiom
-              label: Stream Output
-              text: >-
-                Setting <code>cmd.Stdout = os.Stdout</code> connects the subprocess output directly to the terminal. No
-                buffering, no conversion needed.
+                <code>len(s)</code> returns byte count, not character count. Use <code>len([]rune(s))</code> for the
+                actual character count with Unicode.
             - type: pattern
-              label: Run vs Output
+              label: Best So Far
               text: >-
-                <code>cmd.Run()</code> streams to connected writers. <code>cmd.Output()</code> captures stdout into a
-                byte slice. Use <code>Run</code> when you want real-time output.
+                Tracking the 'best so far' while scanning is a single-pass O(n) pattern that avoids loading all input
+                into memory.
+        - id: v3
+          title: Line Numberer
+          description: >-
+            Build a tool that reads from stdin and prints each line with its line number prefixed. Add a
+            <code>-start</code> flag (default 1) to control the starting number.
+          hints:
+            - Use <code>flag.Int("start", 1, "...")</code> for the starting line number.
+            - Use <code>fmt.Printf("%d\t%s\n", num, line)</code> for formatted output.
+          solution: |-
+            func main() {
+                start := flag.Int("start", 1, "starting line number")
+                flag.Parse()
+
+                num := *start
+                scanner := bufio.NewScanner(os.Stdin)
+                for scanner.Scan() {
+                    fmt.Printf("%d\t%s\n", num, scanner.Text())
+                    num++
+                }
+            }
+          annotations:
+            - type: stdlib
+              label: fmt.Printf
+              text: >-
+                <code>fmt.Printf</code> supports format verbs like <code>%d</code> (integer) and <code>%s</code>
+                (string), similar to C's printf.
+            - type: idiom
+              label: Tab Separation
+              text: >-
+                Using <code>\t</code> (tab) between the number and content is the Unix convention, matching tools like
+                <code>cat -n</code> and <code>nl</code>.
+        - id: v4
+          title: Unique Lines
+          description: >-
+            Build a tool that reads from stdin and prints only unique lines (removing consecutive duplicates, like
+            <code>uniq</code>). Add a <code>-count</code> flag to prefix each line with the number of consecutive
+            occurrences.
+          hints:
+            - Track the previous line. Only output when the current line differs from the previous.
+            - For the count flag, count consecutive duplicates before printing.
+          solution: |-
+            func main() {
+                showCount := flag.Bool("count", false, "prefix with occurrence count")
+                flag.Parse()
+
+                scanner := bufio.NewScanner(os.Stdin)
+                var prev string
+                count := 0
+                first := true
+
+                for scanner.Scan() {
+                    line := scanner.Text()
+                    if first {
+                        prev = line
+                        count = 1
+                        first = false
+                        continue
+                    }
+                    if line == prev {
+                        count++
+                    } else {
+                        if *showCount {
+                            fmt.Printf("%d\t%s\n", count, prev)
+                        } else {
+                            fmt.Println(prev)
+                        }
+                        prev = line
+                        count = 1
+                    }
+                }
+                if !first {
+                    if *showCount {
+                        fmt.Printf("%d\t%s\n", count, prev)
+                    } else {
+                        fmt.Println(prev)
+                    }
+                }
+            }
+          annotations:
+            - type: pattern
+              label: Previous Element Tracking
+              text: >-
+                Comparing each element to the previous one is a classic streaming pattern. It requires handling the
+                first and last elements as special cases.
+            - type: gotcha
+              label: Last Line Flush
+              text: >-
+                When scanning line by line, do not forget to output the last group after the loop ends. This is a common
+                off-by-one error.
   challenges:
     - id: challenge_1
-      concept: YAML Config Runner
+      block: 1
+      difficulty: 2
+      concept: os.Environ
       docLinks:
-        - url: https://pkg.go.dev/os#ReadFile
-          title: Package os.ReadFile
-          note: reading file contents
-        - url: https://pkg.go.dev/os/exec#Command
-          title: Package exec.Command
-          note: running external commands
-        - url: https://pkg.go.dev/gopkg.in/yaml.v3
-          title: Package yaml.v3
-          note: YAML parsing into structs
+        - url: https://pkg.go.dev/os#Environ
+          title: Package os.Environ
+          note: reading environment variables
+        - url: https://pkg.go.dev/strings#Split
+          title: Package strings.Split
+          note: parsing KEY=VALUE pairs
       variants:
         - id: v1
-          title: YAML Task Executor
+          title: Env Printer
           description: >-
-            Read a YAML file with tasks (each has a <code>command</code> string). Execute each task's command using
-            <code>exec.Command</code> through <code>bash -c</code>. Print the task name before running it.
+            Print environment variables. With no arguments, print all. With arguments, print only variables whose key
+            matches one of the arguments. Add an <code>-export</code> flag that formats output as <code>export
+            KEY="value"</code>.
+          functionSignature: func main()
+          testCases:
+            - input: ./envprint HOME
+              output: HOME=/home/user
+            - input: ./envprint -export HOME
+              output: export HOME="/home/user"
           hints:
-            - "Define a struct: <code>type Config struct { Tasks map[string]Task }</code> where Task has a Command field."
-            - Iterate tasks with <code>for name, task := range config.Tasks</code>.
-            - Run each with <code>exec.Command("bash", "-c", task.Command)</code>.
+            - title: 🤔 Think about it
+              content: >-
+                How does <code>os.Environ()</code> return environment variables? What format are they in, and how do you
+                extract the key and value?
+            - title: 💡 Hint
+              content: >-
+                <code>os.Environ()</code> returns <code>[]string</code> in <code>KEY=value</code> format. Use
+                <code>strings.SplitN(env, "=", 2)</code> to separate key and value (SplitN limits splits in case value
+                contains '=').
+            - title: 🔧 Pattern
+              content: |-
+                <pre>1. Parse -export flag
+                2. Get filter args from flag.Args()
+                3. For each env var:
+                   - Split into key and value
+                   - If filters exist, skip non-matching keys
+                   - Print in plain or export format</pre>
           solution: |-
-            type Task struct {
-                Command string `yaml:"command"`
-            }
+            func main() {
+                export := flag.Bool("export", false, "export format")
+                flag.Parse()
+                filters := flag.Args()
 
-            type Config struct {
-                Tasks map[string]Task `yaml:"tasks"`
-            }
+                for _, env := range os.Environ() {
+                    parts := strings.SplitN(env, "=", 2)
+                    key, val := parts[0], parts[1]
 
-            data, err := os.ReadFile("tasks.yaml")
-            if err != nil {
-                panic(err)
-            }
-
-            var config Config
-            if err := yaml.Unmarshal(data, &config); err != nil {
-                panic(err)
-            }
-
-            for name, task := range config.Tasks {
-                fmt.Printf("Running: %s\n", name)
-                cmd := exec.Command("bash", "-c", task.Command)
-                cmd.Stdout = os.Stdout
-                cmd.Stderr = os.Stderr
-                if err := cmd.Run(); err != nil {
-                    fmt.Printf("  Error: %v\n", err)
-                }
-            }
-          annotations:
-            - type: pattern
-              label: Config-Driven Execution
-              text: >-
-                Reading commands from config files and executing them is a common pattern in task runners, CI systems,
-                and deployment tools.
-            - type: gotcha
-              label: Map Iteration Order
-              text: Go maps iterate in random order. If task execution order matters, use a slice instead of a map.
-        - id: v2
-          title: Config File Loader with Defaults
-          description: >-
-            Write a function <code>loadConfig(path string) (*Config, error)</code> that reads a YAML config file. If the
-            file doesn't exist, return a default config with <code>Port: 8080</code> and <code>Name: "app"</code>.
-          hints:
-            - >-
-              Check for file existence: if <code>os.ReadFile</code> returns an error, check with
-              <code>os.IsNotExist</code>.
-            - Return the default config when the file is missing.
-            - Return the actual error for other failures (e.g., permission denied).
-          solution: |-
-            type Config struct {
-                Name string `yaml:"name"`
-                Port int    `yaml:"port"`
-            }
-
-            func loadConfig(path string) (*Config, error) {
-                data, err := os.ReadFile(path)
-                if err != nil {
-                    if os.IsNotExist(err) {
-                        return &Config{Name: "app", Port: 8080}, nil
+                    if len(filters) > 0 {
+                        found := false
+                        for _, f := range filters {
+                            if f == key {
+                                found = true
+                                break
+                            }
+                        }
+                        if !found {
+                            continue
+                        }
                     }
-                    return nil, err
-                }
 
-                var config Config
-                if err := yaml.Unmarshal(data, &config); err != nil {
-                    return nil, err
-                }
-                return &config, nil
-            }
-          annotations:
-            - type: pattern
-              label: Defaults Pattern
-              text: >-
-                Loading config with fallback defaults is a common production pattern. Check for "not found" specifically
-                and return defaults; propagate all other errors.
-        - id: v3
-          title: Directory Lister
-          description: >-
-            Write a function <code>listGoFiles(dir string) ([]string, error)</code> that reads a directory and returns
-            only the <code>.go</code> file names (not directories).
-          hints:
-            - Use <code>os.ReadDir(dir)</code> to list entries.
-            - Check <code>!entry.IsDir()</code> and <code>strings.HasSuffix(entry.Name(), ".go")</code>.
-            - Collect matching names into a <code>[]string</code> slice.
-          solution: |-
-            func listGoFiles(dir string) ([]string, error) {
-                entries, err := os.ReadDir(dir)
-                if err != nil {
-                    return nil, err
-                }
-
-                var files []string
-                for _, entry := range entries {
-                    if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".go") {
-                        files = append(files, entry.Name())
+                    if *export {
+                        fmt.Printf("export %s=%q\n", key, val)
+                    } else {
+                        fmt.Println(env)
                     }
                 }
-                return files, nil
             }
+          difficulty: 2
           annotations:
+            - type: stdlib
+              label: os.Environ
+              text: >-
+                <code>os.Environ()</code> returns a copy of all environment variables as a string slice in
+                <code>KEY=value</code> format.
             - type: idiom
-              label: ReadDir
+              label: "%q Verb"
               text: >-
-                <code>os.ReadDir</code> returns entries sorted by name. Each entry has <code>Name()</code>,
-                <code>IsDir()</code>, and <code>Type()</code> methods.
+                The <code>%q</code> format verb wraps a string in double quotes and escapes special characters, perfect
+                for shell-safe output.
+        - id: v2
+          title: Env Grep
+          description: >-
+            Build an <code>envgrep</code> tool that searches environment variable values (not just keys) using substring
+            matching. Add a <code>-i</code> flag for case-insensitive search and a <code>-keys</code> flag to only print
+            matching keys (not values).
+          functionSignature: func main()
+          testCases:
+            - input: ./envgrep /usr
+              output: |-
+                PATH=/usr/local/bin:/usr/bin
+                ...
+            - input: ./envgrep -i -keys home
+              output: HOME
+          hints:
+            - title: 🤔 Think about it
+              content: How do you search within both the key and value? How do you implement case-insensitive matching?
+            - title: 💡 Hint
+              content: >-
+                Use <code>strings.Contains()</code> for substring matching. For case-insensitive search, convert both
+                the search term and the env var to lowercase with <code>strings.ToLower()</code>.
+            - title: 🔧 Pattern
+              content: |-
+                <pre>1. Parse flags (-i, -keys) and get search pattern
+                2. For each env var:
+                   - Apply case folding if -i is set
+                   - Check if pattern is a substring of the full env var
+                   - Print key only or full var based on -keys flag</pre>
+          solution: |-
+            func main() {
+                insensitive := flag.Bool("i", false, "case insensitive")
+                keysOnly := flag.Bool("keys", false, "print keys only")
+                flag.Parse()
+
+                if len(flag.Args()) == 0 {
+                    fmt.Fprintln(os.Stderr, "usage: envgrep [-i] [-keys] pattern")
+                    os.Exit(1)
+                }
+                pattern := flag.Args()[0]
+
+                for _, env := range os.Environ() {
+                    search := env
+                    pat := pattern
+                    if *insensitive {
+                        search = strings.ToLower(search)
+                        pat = strings.ToLower(pat)
+                    }
+                    if strings.Contains(search, pat) {
+                        if *keysOnly {
+                            parts := strings.SplitN(env, "=", 2)
+                            fmt.Println(parts[0])
+                        } else {
+                            fmt.Println(env)
+                        }
+                    }
+                }
+            }
+          difficulty: 2
+          annotations:
+            - type: stdlib
+              label: strings.Contains
+              text: >-
+                <code>strings.Contains(s, substr)</code> checks if <code>substr</code> is within <code>s</code>. It is
+                the idiomatic Go approach for substring search.
+            - type: idiom
+              label: Stderr for Errors
+              text: >-
+                Use <code>fmt.Fprintln(os.Stderr, ...)</code> for error messages so they do not mix with normal output
+                that might be piped.
+        - id: v3
+          title: Env Diff
+          description: >-
+            Build an <code>envdiff</code> tool that compares specified environment variables against expected values
+            from arguments in <code>KEY=expected</code> format. Print <code>OK</code> or <code>MISMATCH</code> for each.
+          functionSignature: func main()
+          testCases:
+            - input: ./envdiff HOME=/home/user
+              output: "HOME: OK"
+            - input: ./envdiff LANG=fake
+              output: "LANG: MISMATCH (got \"en_US.UTF-8\", want \"fake\")"
+          hints:
+            - title: 🤔 Think about it
+              content: >-
+                How do you get the value of a specific environment variable? How do you parse the expected value from
+                the command-line argument?
+            - title: 💡 Hint
+              content: >-
+                Use <code>os.Getenv(key)</code> to get a single env var. Split each argument with
+                <code>strings.SplitN(arg, "=", 2)</code> to extract the key and expected value.
+            - title: 🔧 Pattern
+              content: |-
+                <pre>1. For each argument:
+                   - Split into key and expected value
+                   - Get actual value with os.Getenv(key)
+                   - Compare and print OK or MISMATCH</pre>
+          solution: |-
+            func main() {
+                for _, arg := range os.Args[1:] {
+                    parts := strings.SplitN(arg, "=", 2)
+                    if len(parts) != 2 {
+                        fmt.Fprintf(os.Stderr, "invalid format: %s (use KEY=value)\n", arg)
+                        continue
+                    }
+                    key, expected := parts[0], parts[1]
+                    actual := os.Getenv(key)
+                    if actual == expected {
+                        fmt.Printf("%s: OK\n", key)
+                    } else {
+                        fmt.Printf("%s: MISMATCH (got %q, want %q)\n", key, actual, expected)
+                    }
+                }
+            }
+          difficulty: 2
+          annotations:
+            - type: stdlib
+              label: os.Getenv
+              text: >-
+                <code>os.Getenv(key)</code> returns the value of an env var, or empty string if unset. Use
+                <code>os.LookupEnv()</code> to distinguish unset from empty.
+            - type: gotcha
+              label: Empty vs Unset
+              text: >-
+                <code>os.Getenv()</code> returns <code>""</code> for both unset and empty variables. Use
+                <code>os.LookupEnv()</code> if you need to tell them apart.
+        - id: v4
+          title: Env JSON
+          description: >-
+            Build an <code>envjson</code> tool that outputs environment variables as JSON. With no arguments, output all
+            as a JSON object. With arguments, output only matching keys. Add a <code>-pretty</code> flag for indented
+            output.
+          functionSignature: func main()
+          testCases:
+            - input: ./envjson HOME USER
+              output: "{\"HOME\":\"/home/user\",\"USER\":\"user\"}"
+            - input: ./envjson -pretty HOME
+              output: |-
+                {
+                  "HOME": "/home/user"
+                }
+          hints:
+            - title: 🤔 Think about it
+              content: How do you build a JSON object from a map in Go? What standard library package handles JSON encoding?
+            - title: 💡 Hint
+              content: >-
+                Build a <code>map[string]string</code> of the desired env vars. Use <code>json.Marshal()</code> or
+                <code>json.MarshalIndent()</code> for pretty printing.
+            - title: 🔧 Pattern
+              content: |-
+                <pre>1. Collect env vars into a map
+                2. Filter by arguments if any
+                3. Marshal to JSON (indent if -pretty)
+                4. Print the result</pre>
+          solution: |-
+            func main() {
+                pretty := flag.Bool("pretty", false, "indented output")
+                flag.Parse()
+                filters := flag.Args()
+
+                envMap := make(map[string]string)
+                for _, env := range os.Environ() {
+                    parts := strings.SplitN(env, "=", 2)
+                    key, val := parts[0], parts[1]
+                    if len(filters) > 0 {
+                        found := false
+                        for _, f := range filters {
+                            if f == key {
+                                found = true
+                                break
+                            }
+                        }
+                        if !found {
+                            continue
+                        }
+                    }
+                    envMap[key] = val
+                }
+
+                var data []byte
+                var err error
+                if *pretty {
+                    data, err = json.MarshalIndent(envMap, "", "  ")
+                } else {
+                    data, err = json.Marshal(envMap)
+                }
+                if err != nil {
+                    fmt.Fprintln(os.Stderr, err)
+                    os.Exit(1)
+                }
+                fmt.Println(string(data))
+            }
+          difficulty: 3
+          annotations:
+            - type: stdlib
+              label: encoding/json
+              text: >-
+                <code>json.Marshal()</code> serializes Go values to JSON. <code>json.MarshalIndent()</code> adds
+                formatting for human readability.
+            - type: idiom
+              label: Error to Stderr
+              text: >-
+                CLI tools should write error messages to stderr and structured output to stdout so piping works
+                correctly.
     - id: challenge_2
-      concept: Environment Variables
+      block: 1
+      difficulty: 2
+      concept: strconv
       docLinks:
-        - url: https://pkg.go.dev/os#LookupEnv
-          title: Package os.LookupEnv
-          note: checking if env var exists
-        - url: https://pkg.go.dev/os#Setenv
-          title: Package os.Setenv
-          note: setting environment variables
+        - url: https://pkg.go.dev/strconv
+          title: Package strconv
+          note: string-to-number conversions
+        - url: https://pkg.go.dev/os#Args
+          title: Package os.Args
+          note: command-line argument access
       variants:
         - id: v1
-          title: Required Env Vars
+          title: Simple Calculator
           description: >-
-            Write a function <code>requireEnv(key string) (string, error)</code> that returns the value of an
-            environment variable, or an error if it's not set.
+            Build a <code>calc</code> command that takes <code>num op num</code> as arguments, supporting
+            <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>. Exit with code 1 on division by zero or
+            invalid input.
+          functionSignature: func main()
+          testCases:
+            - input: ./calc 10 + 5
+              output: "15"
+            - input: ./calc 10 / 0
+              output: division by zero (exit 1)
+            - input: ./calc 7 * 3
+              output: "21"
           hints:
-            - Use <code>os.LookupEnv(key)</code> which returns <code>(value, exists)</code>.
-            - If <code>!exists</code>, return an error with <code>fmt.Errorf</code>.
-            - Return the value and nil on success.
+            - title: 🤔 Think about it
+              content: How do you convert string arguments to numbers? How do you handle the different operators?
+            - title: 💡 Hint
+              content: >-
+                Use <code>strconv.ParseFloat(s, 64)</code> to convert strings to numbers. A <code>switch</code> on the
+                operator string handles the four cases. Check for division by zero before dividing.
+            - title: 🔧 Pattern
+              content: |-
+                <pre>1. Validate: exactly 3 arguments needed
+                2. Parse first and third args as float64
+                3. Switch on operator (second arg)
+                4. Handle division by zero specially
+                5. Print result or error + os.Exit(1)</pre>
           solution: |-
-            func requireEnv(key string) (string, error) {
-                val, exists := os.LookupEnv(key)
-                if !exists {
-                    return "", fmt.Errorf("required env var %s is not set", key)
+            func main() {
+                if len(os.Args) != 4 {
+                    fmt.Fprintln(os.Stderr, "usage: calc num op num")
+                    os.Exit(1)
                 }
-                return val, nil
-            }
-          annotations:
-            - type: idiom
-              label: LookupEnv
-              text: >-
-                <code>os.LookupEnv</code> distinguishes between "not set" and "set to empty string".
-                <code>os.Getenv</code> returns empty string for both.
-            - type: pattern
-              label: Required Config
-              text: Failing fast on missing required configuration prevents confusing runtime errors later.
-        - id: v2
-          title: Env with Default
-          description: >-
-            Write a function <code>envOrDefault(key, fallback string) string</code> that returns the environment
-            variable value, or the fallback if not set.
-          hints:
-            - Use <code>os.Getenv(key)</code> — it returns empty string if not set.
-            - Check if the result is empty, return fallback if so.
-            - Or use <code>os.LookupEnv</code> for a more precise check.
-          solution: |-
-            func envOrDefault(key, fallback string) string {
-                val, exists := os.LookupEnv(key)
-                if !exists {
-                    return fallback
-                }
-                return val
-            }
-          annotations:
-            - type: idiom
-              label: Default Pattern
-              text: >-
-                Using <code>LookupEnv</code> + fallback preserves intentionally empty values. With <code>Getenv</code>,
-                you can't tell if the var was set to empty or not set at all.
-        - id: v3
-          title: Run Command with Custom Env
-          description: >-
-            Write a function that runs a command with an extra environment variable <code>APP_MODE=production</code>
-            added to the current environment. Return the command output.
-          hints:
-            - Use <code>os.Environ()</code> to get the current environment as a <code>[]string</code>.
-            - "Append your extra var: <code>append(os.Environ(), \"APP_MODE=production\")</code>."
-            - Set <code>cmd.Env</code> before calling <code>cmd.Output()</code>.
-          solution: |-
-            func runWithEnv(program string, args ...string) (string, error) {
-                cmd := exec.Command(program, args...)
-                cmd.Env = append(os.Environ(), "APP_MODE=production")
-                out, err := cmd.Output()
+                a, err := strconv.ParseFloat(os.Args[1], 64)
                 if err != nil {
-                    return "", err
+                    fmt.Fprintln(os.Stderr, "invalid number:", os.Args[1])
+                    os.Exit(1)
                 }
-                return string(out), nil
+                op := os.Args[2]
+                b, err := strconv.ParseFloat(os.Args[3], 64)
+                if err != nil {
+                    fmt.Fprintln(os.Stderr, "invalid number:", os.Args[3])
+                    os.Exit(1)
+                }
+
+                var result float64
+                switch op {
+                case "+":
+                    result = a + b
+                case "-":
+                    result = a - b
+                case "*":
+                    result = a * b
+                case "/":
+                    if b == 0 {
+                        fmt.Fprintln(os.Stderr, "division by zero")
+                        os.Exit(1)
+                    }
+                    result = a / b
+                default:
+                    fmt.Fprintln(os.Stderr, "unknown operator:", op)
+                    os.Exit(1)
+                }
+                fmt.Println(result)
             }
+          difficulty: 2
+          annotations:
+            - type: stdlib
+              label: strconv.ParseFloat
+              text: >-
+                <code>strconv.ParseFloat(s, 64)</code> parses a string into a float64. The second argument is the bit
+                size (32 or 64).
+            - type: idiom
+              label: os.Exit Codes
+              text: >-
+                Convention: exit code 0 means success, 1 means general error, 2 means usage error. Go's
+                <code>os.Exit()</code> sets the process exit code.
+        - id: v2
+          title: Temperature Converter
+          description: >-
+            Build a <code>tempconv</code> command: <code>tempconv 100 C</code> converts 100 Celsius to Fahrenheit,
+            <code>tempconv 212 F</code> converts to Celsius. Exit with code 1 for invalid unit.
+          functionSignature: func main()
+          testCases:
+            - input: ./tempconv 100 C
+              output: 212.00 F
+            - input: ./tempconv 32 F
+              output: 0.00 C
+            - input: ./tempconv 50 X
+              output: "unknown unit: X (exit 1)"
+          hints:
+            - title: 🤔 Think about it
+              content: What are the formulas for C-to-F and F-to-C conversion? How do you validate the unit argument?
+            - title: 💡 Hint
+              content: >-
+                C to F: <code>value*9/5 + 32</code>. F to C: <code>(value - 32) * 5/9</code>. Use
+                <code>strings.ToUpper()</code> to normalize the unit.
+            - title: 🔧 Pattern
+              content: |-
+                <pre>1. Parse value and unit from args
+                2. Switch on unit:
+                   - "C": apply C->F formula
+                   - "F": apply F->C formula
+                   - else: error + exit(1)
+                3. Print formatted result</pre>
+          solution: |-
+            func main() {
+                if len(os.Args) != 3 {
+                    fmt.Fprintln(os.Stderr, "usage: tempconv value unit")
+                    os.Exit(1)
+                }
+                val, err := strconv.ParseFloat(os.Args[1], 64)
+                if err != nil {
+                    fmt.Fprintln(os.Stderr, "invalid number:", os.Args[1])
+                    os.Exit(1)
+                }
+                unit := strings.ToUpper(os.Args[2])
+
+                switch unit {
+                case "C":
+                    fmt.Printf("%.2f F\n", val*9.0/5.0+32)
+                case "F":
+                    fmt.Printf("%.2f C\n", (val-32)*5.0/9.0)
+                default:
+                    fmt.Fprintln(os.Stderr, "unknown unit:", os.Args[2])
+                    os.Exit(1)
+                }
+            }
+          difficulty: 2
           annotations:
             - type: idiom
-              label: Custom Env
+              label: Input Normalization
               text: >-
-                Setting <code>cmd.Env</code> replaces the entire environment. Always start with
-                <code>os.Environ()</code> and append to preserve the existing environment.
+                Converting user input to a canonical form (e.g., uppercase) before comparison is a common CLI pattern
+                that improves usability.
+            - type: stdlib
+              label: fmt.Printf %.2f
+              text: The <code>%.2f</code> format verb prints a float with exactly 2 decimal places.
+        - id: v3
+          title: Base Converter
+          description: >-
+            Build a <code>baseconv</code> command: <code>baseconv 255 hex</code> outputs <code>ff</code>, <code>baseconv
+            255 bin</code> outputs <code>11111111</code>, <code>baseconv 255 oct</code> outputs <code>377</code>. Exit
+            with code 1 for invalid input.
+          functionSignature: func main()
+          testCases:
+            - input: ./baseconv 255 hex
+              output: ff
+            - input: ./baseconv 10 bin
+              output: "1010"
+            - input: ./baseconv 255 oct
+              output: "377"
+          hints:
+            - title: 🤔 Think about it
+              content: How do you convert an integer to different bases in Go? Is there a formatting verb or function for this?
+            - title: 💡 Hint
+              content: >-
+                Use <code>strconv.FormatInt(n, base)</code> where base is 2, 8, or 16. Alternatively, use
+                <code>fmt.Sprintf</code> with <code>%x</code>, <code>%o</code>, or <code>%b</code>.
+            - title: 🔧 Pattern
+              content: |-
+                <pre>1. Parse integer from first argument
+                2. Switch on base name:
+                   - "hex" -> base 16
+                   - "bin" -> base 2
+                   - "oct" -> base 8
+                3. Format and print</pre>
+          solution: |-
+            func main() {
+                if len(os.Args) != 3 {
+                    fmt.Fprintln(os.Stderr, "usage: baseconv number base")
+                    os.Exit(1)
+                }
+                n, err := strconv.ParseInt(os.Args[1], 10, 64)
+                if err != nil {
+                    fmt.Fprintln(os.Stderr, "invalid number:", os.Args[1])
+                    os.Exit(1)
+                }
+
+                switch strings.ToLower(os.Args[2]) {
+                case "hex":
+                    fmt.Println(strconv.FormatInt(n, 16))
+                case "bin":
+                    fmt.Println(strconv.FormatInt(n, 2))
+                case "oct":
+                    fmt.Println(strconv.FormatInt(n, 8))
+                default:
+                    fmt.Fprintln(os.Stderr, "unknown base:", os.Args[2])
+                    os.Exit(1)
+                }
+            }
+          difficulty: 2
+          annotations:
+            - type: stdlib
+              label: strconv.FormatInt
+              text: >-
+                <code>strconv.FormatInt(n, base)</code> converts an int64 to its string representation in the given base
+                (2-36).
+            - type: alternative
+              label: fmt Verbs
+              text: >-
+                You can also use <code>fmt.Sprintf("%x", n)</code> for hex, <code>"%b"</code> for binary, and
+                <code>"%o"</code> for octal.
+        - id: v4
+          title: Unit Calculator
+          description: >-
+            Build a <code>unitcalc</code> tool that converts between units: <code>unitcalc 1000 m km</code> converts
+            1000 meters to kilometers. Support m/km, g/kg, and s/min.
+          functionSignature: func main()
+          testCases:
+            - input: ./unitcalc 1000 m km
+              output: "1.000"
+            - input: ./unitcalc 2.5 kg g
+              output: "2500.000"
+            - input: ./unitcalc 120 s min
+              output: "2.000"
+          hints:
+            - title: 🤔 Think about it
+              content: >-
+                How do you structure conversion between related units? What data structure maps a unit to its base
+                value?
+            - title: 💡 Hint
+              content: >-
+                Define conversion factors to a base unit. For distance: m=1, km=1000. Convert to base unit first, then
+                to target: <code>value * fromFactor / toFactor</code>.
+            - title: 🔧 Pattern
+              content: |-
+                <pre>1. Define unit groups with factors:
+                   distance: m=1, km=1000
+                   mass: g=1, kg=1000
+                   time: s=1, min=60
+                2. Find which group both units belong to
+                3. Convert: value * fromFactor / toFactor</pre>
+          solution: |-
+            func main() {
+                if len(os.Args) != 4 {
+                    fmt.Fprintln(os.Stderr, "usage: unitcalc value from_unit to_unit")
+                    os.Exit(1)
+                }
+                val, err := strconv.ParseFloat(os.Args[1], 64)
+                if err != nil {
+                    fmt.Fprintln(os.Stderr, "invalid number:", os.Args[1])
+                    os.Exit(1)
+                }
+                from := os.Args[2]
+                to := os.Args[3]
+
+                units := map[string]float64{
+                    "m": 1, "km": 1000,
+                    "g": 1, "kg": 1000,
+                    "s": 1, "min": 60,
+                }
+
+                fromFactor, okF := units[from]
+                toFactor, okT := units[to]
+                if !okF || !okT {
+                    fmt.Fprintln(os.Stderr, "unknown unit")
+                    os.Exit(1)
+                }
+
+                result := val * fromFactor / toFactor
+                fmt.Printf("%.3f\n", result)
+            }
+          difficulty: 3
+          annotations:
+            - type: pattern
+              label: Factor-Based Conversion
+              text: >-
+                Converting to a base unit then to the target is a scalable pattern. Adding new units only requires
+                adding entries to the factor map.
             - type: gotcha
-              label: Env Replacement
+              label: Cross-Group Conversion
               text: >-
-                If you set <code>cmd.Env</code> to just your custom vars without <code>os.Environ()</code>, the
-                subprocess won't have PATH, HOME, or any other standard variables.
+                This simplified version does not prevent converting meters to kilograms. A production version would
+                group units and validate compatibility.

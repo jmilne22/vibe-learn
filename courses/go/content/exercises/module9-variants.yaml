@@ -3,12 +3,9 @@ conceptLinks:
   errors.As: "#lesson-errors-as"
   errors.Is: "#lesson-errors-is"
   Error Interface: "#lesson-error-interface"
-  Table-Driven Tests: "#lesson-table-tests"
-  t.Run: "#lesson-subtests"
-  Test Coverage: "#lesson-coverage"
-  Interfaces: "#lesson-interfaces"
-  Mock Testing: "#lesson-mocks"
   fmt.Errorf: "#lesson-errorf"
+  Error Wrapping: "#lesson-error-wrapping"
+  Sentinel Errors: "#lesson-sentinel-errors"
 sharedContent: {}
 variants:
   warmups:
@@ -196,923 +193,474 @@ variants:
               text: >-
                 Return <code>nil</code> (not an empty slice) for no errors. An empty non-nil slice assigned to an
                 <code>error</code> interface is non-nil, which would incorrectly indicate an error.
-    - id: warmup_2
-      concept: Table-Driven Tests
-      variants:
-        - id: v1
-          title: Table-Driven Test for Reverse
-          description: >-
-            Write a table-driven test for a <code>reverse(s string) string</code> function. Include test cases for:
-            empty string, single character, regular string, and Unicode string.
-          hints:
-            - Define a struct with <code>input</code> and <code>want</code> fields.
-            - Use <code>t.Run(tt.input, func(t *testing.T) { ... })</code> for subtests.
-            - Use <code>t.Errorf</code> to report mismatches with both expected and actual values.
-          solution: |-
-            func TestReverse(t *testing.T) {
-                tests := []struct {
-                    input, want string
-                }{
-                    {"", ""},
-                    {"a", "a"},
-                    {"hello", "olleh"},
-                    {"\u4e16\u754c", "\u754c\u4e16"},
-                }
-                for _, tt := range tests {
-                    t.Run(tt.input, func(t *testing.T) {
-                        if got := reverse(tt.input); got != tt.want {
-                            t.Errorf("reverse(%q) = %q, want %q", tt.input, got, tt.want)
-                        }
-                    })
-                }
-            }
-          annotations:
-            - type: idiom
-              label: Table-Driven Tests
-              text: >-
-                Table-driven tests are the canonical Go testing pattern. Define test cases as a slice of structs, then
-                loop and run each with <code>t.Run()</code>.
-            - type: idiom
-              label: tt Convention
-              text: >-
-                The variable name <code>tt</code> (for 'test table') is a widely used convention in Go table-driven
-                tests.
-        - id: v2
-          title: Table-Driven Test for FizzBuzz
-          description: >-
-            Write a table-driven test for a <code>fizzBuzz(n int) string</code> function that returns "Fizz" for
-            multiples of 3, "Buzz" for 5, "FizzBuzz" for both, or the number as a string.
-          hints:
-            - "Include test cases for: regular numbers, multiples of 3, multiples of 5, and multiples of 15."
-            - Use <code>fmt.Sprintf("%d", tt.input)</code> as the subtest name for clarity.
-            - Test edge cases like 0 and 1.
-          solution: |-
-            func TestFizzBuzz(t *testing.T) {
-                tests := []struct {
-                    input int
-                    want  string
-                }{
-                    {1, "1"},
-                    {3, "Fizz"},
-                    {5, "Buzz"},
-                    {15, "FizzBuzz"},
-                    {7, "7"},
-                    {30, "FizzBuzz"},
-                }
-                for _, tt := range tests {
-                    t.Run(fmt.Sprintf("%d", tt.input), func(t *testing.T) {
-                        if got := fizzBuzz(tt.input); got != tt.want {
-                            t.Errorf("fizzBuzz(%d) = %q, want %q", tt.input, got, tt.want)
-                        }
-                    })
-                }
-            }
-          annotations:
-            - type: idiom
-              label: Subtest Names
-              text: >-
-                Use <code>t.Run(name, ...)</code> so that each test case can be run independently with <code>go test
-                -run TestFizzBuzz/15</code>.
-            - type: gotcha
-              label: Order Matters in FizzBuzz
-              text: >-
-                Check divisibility by 15 first (or check 3 and 5 separately). A common bug is checking 3 and 5
-                independently without handling the 15 case.
-        - id: v3
-          title: Table-Driven Test with Errors
-          description: >-
-            Write a table-driven test for a <code>divide(a, b float64) (float64, error)</code> function. Include cases
-            for normal division and division by zero.
-          hints:
-            - Add a <code>wantErr bool</code> field to your test struct.
-            - >-
-              When <code>wantErr</code> is true, check that error is non-nil. When false, check that error is nil and
-              the value is correct.
-            - Use a small epsilon for float comparison or compare formatted strings.
-          solution: |-
-            func TestDivide(t *testing.T) {
-                tests := []struct {
-                    name    string
-                    a, b    float64
-                    want    float64
-                    wantErr bool
-                }{
-                    {"normal", 10, 2, 5, false},
-                    {"decimal result", 7, 2, 3.5, false},
-                    {"divide by zero", 10, 0, 0, true},
-                    {"zero numerator", 0, 5, 0, false},
-                }
-                for _, tt := range tests {
-                    t.Run(tt.name, func(t *testing.T) {
-                        got, err := divide(tt.a, tt.b)
-                        if tt.wantErr {
-                            if err == nil {
-                                t.Error("expected error, got nil")
-                            }
-                            return
-                        }
-                        if err != nil {
-                            t.Fatalf("unexpected error: %v", err)
-                        }
-                        if got != tt.want {
-                            t.Errorf("divide(%v, %v) = %v, want %v", tt.a, tt.b, got, tt.want)
-                        }
-                    })
-                }
-            }
-          annotations:
-            - type: idiom
-              label: wantErr Pattern
-              text: >-
-                Adding a <code>wantErr bool</code> field to test structs is the standard Go pattern for testing
-                functions that return errors.
-            - type: gotcha
-              label: Float Comparison
-              text: >-
-                Floating point comparison with <code>==</code> can fail due to rounding. For precise work, compare with
-                an epsilon: <code>math.Abs(got - want) < 1e-9</code>.
-        - id: v4
-          title: Table-Driven Test for Word Count
-          description: >-
-            Write a table-driven test for a <code>wordCount(s string) map[string]int</code> function. Include cases for
-            empty strings, single words, multiple words, and repeated words.
-          hints:
-            - Use <code>reflect.DeepEqual</code> to compare maps.
-            - "Include edge cases: empty string, extra whitespace, mixed case (if your function is case-sensitive)."
-            - Give each test case a descriptive name.
-          solution: |-
-            func TestWordCount(t *testing.T) {
-                tests := []struct {
-                    name  string
-                    input string
-                    want  map[string]int
-                }{
-                    {
-                        name:  "empty string",
-                        input: "",
-                        want:  map[string]int{},
-                    },
-                    {
-                        name:  "single word",
-                        input: "hello",
-                        want:  map[string]int{"hello": 1},
-                    },
-                    {
-                        name:  "multiple words",
-                        input: "go is fun",
-                        want:  map[string]int{"go": 1, "is": 1, "fun": 1},
-                    },
-                    {
-                        name:  "repeated words",
-                        input: "go go go",
-                        want:  map[string]int{"go": 3},
-                    },
-                }
-                for _, tt := range tests {
-                    t.Run(tt.name, func(t *testing.T) {
-                        got := wordCount(tt.input)
-                        if !reflect.DeepEqual(got, tt.want) {
-                            t.Errorf("wordCount(%q) = %v, want %v", tt.input, got, tt.want)
-                        }
-                    })
-                }
-            }
-          annotations:
-            - type: stdlib
-              label: reflect.DeepEqual
-              text: >-
-                <code>reflect.DeepEqual</code> compares maps, slices, and nested structures by value. It is the standard
-                way to compare complex types in tests.
-            - type: gotcha
-              label: Nil vs Empty Map
-              text: >-
-                <code>reflect.DeepEqual(nil, map[string]int{})</code> is false. Make sure your function and test agree
-                on whether to return nil or an empty map for no input.
   challenges:
     - id: challenge_1
-      block: 1
+      concept: Error Wrapping
       difficulty: 2
-      concept: Test Coverage
+      block: 1
       docLinks:
-        - url: https://pkg.go.dev/testing
-          title: Package testing
-          note: Go testing framework
-        - url: https://go.dev/blog/cover
-          title: "Go Blog: The cover story"
-          note: test coverage analysis
+        - label: fmt.Errorf
+          url: https://pkg.go.dev/fmt#Errorf
+        - label: errors package
+          url: https://pkg.go.dev/errors
       variants:
         - id: v1
-          title: Full Coverage for Absolute Value
+          title: Wrap a Database Error
           description: >-
-            Write a function <code>func abs(n int) int</code> that returns the absolute value. Then write tests to
-            achieve 100% coverage. Use <code>go test -cover</code> to verify.
-          functionSignature: func abs(n int) int
+            Write a <code>queryUser</code> function that simulates a database lookup. Define a sentinel
+            <code>ErrConnRefused</code> using <code>errors.New</code>. When the lookup fails, wrap the sentinel with
+            context using <code>fmt.Errorf("queryUser %s: %w", id, ErrConnRefused)</code>. Then demonstrate that
+            <code>errors.Is</code> can detect the original sentinel through the wrapping.
+          functionSignature: "func queryUser(id string) (string, error)"
           testCases:
-            - input: abs(5)
-              output: "5"
-            - input: abs(-3)
-              output: "3"
-            - input: abs(0)
-              output: "0"
+            - input: "\"42\""
+              expected: "errors.Is(err, ErrConnRefused) == true"
+            - input: "\"1\""
+              expected: "\"Alice\", nil"
           hints:
-            - title: 🤔 Think about it
-              content: How many code paths does an if/else have? What inputs trigger each path?
-            - title: 💡 Hint
-              content: >-
-                The function has two branches: <code>n < 0</code> (return <code>-n</code>) and the else case (return
-                <code>n</code>). Test both a positive and negative number to cover both branches.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>1. Write the function with an if/else
-                2. Test with a positive number (covers else branch)
-                3. Test with a negative number (covers if branch)
-                4. Test with zero (edge case)
-                5. Run: go test -cover</pre>
+            - Define <code>var ErrConnRefused = errors.New("connection refused")</code> at package level.
+            - >-
+              Use <code>fmt.Errorf("queryUser %s: %w", id, ErrConnRefused)</code> to wrap the sentinel with context.
+              The <code>%w</code> verb is what creates the wrapping chain.
+            - >-
+              Use <code>errors.Is(err, ErrConnRefused)</code> to check if the wrapped error contains the sentinel
+              anywhere in its chain. This works regardless of how many layers of wrapping exist.
           solution: |-
-            func abs(n int) int {
-                if n < 0 {
-                    return -n
+            var ErrConnRefused = errors.New("connection refused")
+
+            func queryUser(id string) (string, error) {
+                users := map[string]string{"1": "Alice", "2": "Bob"}
+                if name, ok := users[id]; ok {
+                    return name, nil
                 }
-                return n
+                return "", fmt.Errorf("queryUser %s: %w", id, ErrConnRefused)
             }
 
-            func TestAbs(t *testing.T) {
-                tests := []struct {
-                    input, want int
-                }{
-                    {5, 5},
-                    {-3, 3},
-                    {0, 0},
-                }
-                for _, tt := range tests {
-                    t.Run(fmt.Sprintf("%d", tt.input), func(t *testing.T) {
-                        if got := abs(tt.input); got != tt.want {
-                            t.Errorf("abs(%d) = %d, want %d", tt.input, got, tt.want)
-                        }
-                    })
-                }
+            // Usage:
+            _, err := queryUser("42")
+            if errors.Is(err, ErrConnRefused) {
+                fmt.Println("database is down")
             }
           difficulty: 2
-          annotations:
-            - type: idiom
-              label: go test -cover
-              text: >-
-                Run <code>go test -cover</code> to see the coverage percentage. Use <code>-coverprofile=c.out</code> and
-                <code>go tool cover -html=c.out</code> for a visual report.
-            - type: pattern
-              label: Branch Coverage
-              text: >-
-                To achieve 100% coverage, you need at least one test input that triggers each branch in your code (if,
-                else, switch cases).
-        - id: v2
-          title: Coverage for Grade Calculator
-          description: >-
-            Write <code>func grade(score int) (string, error)</code> that returns a letter grade: A (90-100), B (80-89),
-            C (70-79), D (60-69), F (0-59), or error for out-of-range. Achieve 100% coverage.
-          functionSignature: func grade(score int) (string, error)
-          testCases:
-            - input: grade(95)
-              output: "\"A\", nil"
-            - input: grade(85)
-              output: "\"B\", nil"
-            - input: grade(42)
-              output: "\"F\", nil"
-            - input: grade(-1)
-              output: "\"\", error"
-            - input: grade(101)
-              output: "\"\", error"
-          hints:
-            - title: 🤔 Think about it
-              content: >-
-                How many distinct code paths does this function have? Each grade range plus the error case is a separate
-                path.
-            - title: 💡 Hint
-              content: >-
-                Use a switch with range checks or cascading if/else. You need at least one test for each grade letter
-                plus both error conditions (negative and over 100).
-            - title: 🔧 Pattern
-              content: |-
-                <pre>1. Validate range (0-100), return error if invalid
-                2. Use switch/case for grade ranges
-                3. Test one value per grade: 95, 85, 75, 65, 42
-                4. Test both boundaries: -1 and 101
-                5. Run: go test -cover</pre>
-          solution: |-
-            func grade(score int) (string, error) {
-                if score < 0 || score > 100 {
-                    return "", fmt.Errorf("score %d out of range 0-100", score)
-                }
-                switch {
-                case score >= 90:
-                    return "A", nil
-                case score >= 80:
-                    return "B", nil
-                case score >= 70:
-                    return "C", nil
-                case score >= 60:
-                    return "D", nil
-                default:
-                    return "F", nil
-                }
-            }
-
-            func TestGrade(t *testing.T) {
-                tests := []struct {
-                    name    string
-                    score   int
-                    want    string
-                    wantErr bool
-                }{
-                    {"A grade", 95, "A", false},
-                    {"B grade", 85, "B", false},
-                    {"C grade", 75, "C", false},
-                    {"D grade", 65, "D", false},
-                    {"F grade", 42, "F", false},
-                    {"too low", -1, "", true},
-                    {"too high", 101, "", true},
-                }
-                for _, tt := range tests {
-                    t.Run(tt.name, func(t *testing.T) {
-                        got, err := grade(tt.score)
-                        if tt.wantErr {
-                            if err == nil {
-                                t.Error("expected error")
-                            }
-                            return
-                        }
-                        if err != nil {
-                            t.Fatalf("unexpected error: %v", err)
-                        }
-                        if got != tt.want {
-                            t.Errorf("grade(%d) = %q, want %q", tt.score, got, tt.want)
-                        }
-                    })
-                }
-            }
-          difficulty: 2
-          annotations:
-            - type: idiom
-              label: Tagless Switch
-              text: >-
-                A <code>switch</code> without a tag expression (just <code>switch {</code>) evaluates each case as a
-                boolean, acting like cascading if/else. Idiomatic for range checks.
-            - type: complexity
-              label: O(1)
-              text: A fixed number of comparisons regardless of input. The function has constant time complexity.
-        - id: v3
-          title: Coverage for Password Validator
-          description: >-
-            Write <code>func validatePassword(pw string) []string</code> that returns a list of validation failures.
-            Check: minimum 8 characters, at least one uppercase, one lowercase, and one digit. Achieve 100% coverage.
-          functionSignature: func validatePassword(pw string) []string
-          testCases:
-            - input: validatePassword("Abc12345")
-              output: "[]string{} (empty)"
-            - input: validatePassword("short")
-              output: "[\"at least 8 characters\", \"one uppercase\", \"one digit\"]"
-            - input: validatePassword("alllowercase1")
-              output: "[\"one uppercase\"]"
-          hints:
-            - title: 🤔 Think about it
-              content: Each validation rule is a separate code path. How do you test each rule independently?
-            - title: 💡 Hint
-              content: >-
-                Use <code>unicode.IsUpper</code>, <code>unicode.IsLower</code>, <code>unicode.IsDigit</code> to check
-                character classes. Each check is independent, so test passwords that fail each rule individually.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>1. Check length >= 8
-                2. Loop through runes, track hasUpper, hasLower, hasDigit
-                3. Collect failure messages in a slice
-                4. Test: valid password, too short, missing uppercase,
-                   missing lowercase, missing digit</pre>
-          solution: |-
-            func validatePassword(pw string) []string {
-                var errors []string
-                if len(pw) < 8 {
-                    errors = append(errors, "at least 8 characters")
-                }
-                var hasUpper, hasLower, hasDigit bool
-                for _, ch := range pw {
-                    if unicode.IsUpper(ch) {
-                        hasUpper = true
-                    }
-                    if unicode.IsLower(ch) {
-                        hasLower = true
-                    }
-                    if unicode.IsDigit(ch) {
-                        hasDigit = true
-                    }
-                }
-                if !hasUpper {
-                    errors = append(errors, "one uppercase")
-                }
-                if !hasLower {
-                    errors = append(errors, "one lowercase")
-                }
-                if !hasDigit {
-                    errors = append(errors, "one digit")
-                }
-                return errors
-            }
-
-            func TestValidatePassword(t *testing.T) {
-                tests := []struct {
-                    name string
-                    pw   string
-                    want int
-                }{
-                    {"valid", "Abc12345", 0},
-                    {"too short", "Ab1", 1},
-                    {"no upper", "abcdefg1", 1},
-                    {"no lower", "ABCDEFG1", 1},
-                    {"no digit", "Abcdefgh", 1},
-                    {"all fail", "", 4},
-                }
-                for _, tt := range tests {
-                    t.Run(tt.name, func(t *testing.T) {
-                        got := validatePassword(tt.pw)
-                        if len(got) != tt.want {
-                            t.Errorf("validatePassword(%q) returned %d errors, want %d: %v",
-                                tt.pw, len(got), tt.want, got)
-                        }
-                    })
-                }
-            }
-          difficulty: 3
-          annotations:
-            - type: stdlib
-              label: unicode Package
-              text: >-
-                The <code>unicode</code> package provides character classification functions: <code>IsUpper</code>,
-                <code>IsLower</code>, <code>IsDigit</code>, <code>IsLetter</code>, and more.
-            - type: pattern
-              label: Error Accumulation
-              text: >-
-                Collecting all validation errors instead of returning on the first failure gives users a complete
-                picture of what needs fixing.
-        - id: v4
-          title: Coverage for Clamp Function
-          description: >-
-            Write <code>func clamp(val, min, max int) (int, error)</code> that clamps a value to the range [min, max].
-            Return an error if min > max. Achieve 100% coverage.
-          functionSignature: func clamp(val, min, max int) (int, error)
-          testCases:
-            - input: clamp(5, 0, 10)
-              output: 5, nil
-            - input: clamp(-1, 0, 10)
-              output: 0, nil
-            - input: clamp(15, 0, 10)
-              output: 10, nil
-            - input: clamp(5, 10, 0)
-              output: 0, error
-          hints:
-            - title: 🤔 Think about it
-              content: >-
-                There are four paths: error (invalid range), below min, above max, and within range. Each needs a test
-                case.
-            - title: 💡 Hint
-              content: >-
-                First validate that min <= max. Then check: if val < min, return min. If val > max, return max.
-                Otherwise return val.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>1. Check min <= max (error if not)
-                2. If val < min, return min
-                3. If val > max, return max
-                4. Otherwise return val
-                5. Tests: in range, below, above, invalid range</pre>
-          solution: |-
-            func clamp(val, min, max int) (int, error) {
-                if min > max {
-                    return 0, fmt.Errorf("min (%d) must not exceed max (%d)", min, max)
-                }
-                if val < min {
-                    return min, nil
-                }
-                if val > max {
-                    return max, nil
-                }
-                return val, nil
-            }
-
-            func TestClamp(t *testing.T) {
-                tests := []struct {
-                    name        string
-                    val, min, max int
-                    want        int
-                    wantErr     bool
-                }{
-                    {"in range", 5, 0, 10, 5, false},
-                    {"below min", -1, 0, 10, 0, false},
-                    {"above max", 15, 0, 10, 10, false},
-                    {"at min", 0, 0, 10, 0, false},
-                    {"at max", 10, 0, 10, 10, false},
-                    {"invalid range", 5, 10, 0, 0, true},
-                }
-                for _, tt := range tests {
-                    t.Run(tt.name, func(t *testing.T) {
-                        got, err := clamp(tt.val, tt.min, tt.max)
-                        if tt.wantErr {
-                            if err == nil {
-                                t.Error("expected error")
-                            }
-                            return
-                        }
-                        if err != nil {
-                            t.Fatalf("unexpected error: %v", err)
-                        }
-                        if got != tt.want {
-                            t.Errorf("clamp(%d, %d, %d) = %d, want %d",
-                                tt.val, tt.min, tt.max, got, tt.want)
-                        }
-                    })
-                }
-            }
-          difficulty: 2
-          annotations:
-            - type: idiom
-              label: Validate Then Process
-              text: >-
-                Validate inputs at the top of the function and return errors early. This 'guard clause' pattern keeps
-                the happy path unindented.
-            - type: complexity
-              label: O(1)
-              text: Simple comparisons with constant time. The clamp operation is O(1) regardless of input values.
-    - id: challenge_2
-      block: 2
-      difficulty: 3
-      concept: Interfaces
-      docLinks:
-        - url: https://go.dev/doc/effective_go#interfaces
-          title: "Effective Go: Interfaces"
-          note: designing testable interfaces
-        - url: https://pkg.go.dev/errors
-          title: Package errors
-          note: error wrapping and inspection
-      variants:
-        - id: v1
-          title: Mock a Fetcher Interface
-          description: >-
-            Define a <code>Fetcher</code> interface with <code>Fetch(url string) ([]byte, error)</code>. Write
-            <code>func GetTitle(f Fetcher, url string) (string, error)</code> that fetches a URL and extracts a title.
-            Test with a mock that returns canned data.
-          functionSignature: func GetTitle(f Fetcher, url string) (string, error)
-          testCases:
-            - input: mock returns []byte("<title>Go</title>"); GetTitle(mock, "http://x")
-              output: "\"Go\", nil"
-            - input: mock returns error; GetTitle(mock, "http://x")
-              output: "\"\", error"
-          hints:
-            - title: 🤔 Think about it
-              content: How do you define a mock struct that satisfies an interface? How do you control what the mock returns?
-            - title: 💡 Hint
-              content: >-
-                Define a <code>mockFetcher</code> struct with <code>data []byte</code> and <code>err error</code>
-                fields. Its <code>Fetch</code> method just returns those fields. Create different mock instances for
-                success and failure tests.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>1. Define Fetcher interface
-                2. Write GetTitle using only the interface
-                3. Create mockFetcher with configurable data/err
-                4. Test success: mock returns valid data
-                5. Test failure: mock returns an error</pre>
-          solution: |-
-            type Fetcher interface {
-                Fetch(url string) ([]byte, error)
-            }
-
-            func GetTitle(f Fetcher, url string) (string, error) {
-                data, err := f.Fetch(url)
-                if err != nil {
-                    return "", err
-                }
-                s := string(data)
-                start := strings.Index(s, "<title>")
-                end := strings.Index(s, "</title>")
-                if start == -1 || end == -1 {
-                    return "", fmt.Errorf("no title found")
-                }
-                return s[start+7 : end], nil
-            }
-
-            type mockFetcher struct {
-                data []byte
-                err  error
-            }
-
-            func (m *mockFetcher) Fetch(url string) ([]byte, error) {
-                return m.data, m.err
-            }
-
-            func TestGetTitle(t *testing.T) {
-                t.Run("success", func(t *testing.T) {
-                    mock := &mockFetcher{data: []byte("<title>Go</title>")}
-                    got, err := GetTitle(mock, "http://example.com")
-                    if err != nil {
-                        t.Fatalf("unexpected error: %v", err)
-                    }
-                    if got != "Go" {
-                        t.Errorf("got %q, want %q", got, "Go")
-                    }
-                })
-                t.Run("fetch error", func(t *testing.T) {
-                    mock := &mockFetcher{err: fmt.Errorf("network error")}
-                    _, err := GetTitle(mock, "http://example.com")
-                    if err == nil {
-                        t.Error("expected error")
-                    }
-                })
-            }
-          difficulty: 3
-          annotations:
-            - type: idiom
-              label: Implicit Interfaces
-              text: >-
-                Go interfaces are satisfied implicitly. A <code>mockFetcher</code> satisfies <code>Fetcher</code> just
-                by having the right method, no 'implements' keyword needed.
-            - type: pattern
-              label: Dependency Injection
-              text: >-
-                Accepting an interface parameter instead of a concrete type lets you swap implementations for testing.
-                This is Go's primary approach to testability.
-        - id: v2
-          title: Mock a Store Interface
-          description: >-
-            Define a <code>Store</code> interface with <code>Save(key, value string) error</code> and <code>Load(key
-            string) (string, error)</code>. Write <code>func CopyValue(s Store, from, to string) error</code>. Test with
-            a mock.
-          functionSignature: func CopyValue(s Store, from, to string) error
-          testCases:
-            - input: mock has key "a"="hello"; CopyValue(mock, "a", "b")
-              output: nil ("b" now has "hello")
-            - input: mock has no key "a"; CopyValue(mock, "a", "b")
-              output: error
-          hints:
-            - title: 🤔 Think about it
-              content: CopyValue loads a value from one key and saves it to another. What can go wrong at each step?
-            - title: 💡 Hint
-              content: >-
-                Use a <code>map[string]string</code> inside your mock. <code>Load</code> returns an error if the key is
-                missing. <code>Save</code> writes to the map. Test both the happy path and the 'key not found' path.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>1. Define Store interface with Save and Load
-                2. CopyValue: Load from source, Save to destination
-                3. Mock uses an internal map for storage
-                4. Test success: source key exists
-                5. Test failure: source key missing</pre>
-          solution: |-
-            type Store interface {
-                Save(key, value string) error
-                Load(key string) (string, error)
-            }
-
-            func CopyValue(s Store, from, to string) error {
-                val, err := s.Load(from)
-                if err != nil {
-                    return fmt.Errorf("load %s: %w", from, err)
-                }
-                if err := s.Save(to, val); err != nil {
-                    return fmt.Errorf("save %s: %w", to, err)
-                }
-                return nil
-            }
-
-            type mockStore struct {
-                data map[string]string
-            }
-
-            func (m *mockStore) Save(key, value string) error {
-                m.data[key] = value
-                return nil
-            }
-
-            func (m *mockStore) Load(key string) (string, error) {
-                val, ok := m.data[key]
-                if !ok {
-                    return "", fmt.Errorf("key %q not found", key)
-                }
-                return val, nil
-            }
-
-            func TestCopyValue(t *testing.T) {
-                t.Run("success", func(t *testing.T) {
-                    s := &mockStore{data: map[string]string{"a": "hello"}}
-                    err := CopyValue(s, "a", "b")
-                    if err != nil {
-                        t.Fatalf("unexpected error: %v", err)
-                    }
-                    if s.data["b"] != "hello" {
-                        t.Errorf("expected b=hello, got b=%s", s.data["b"])
-                    }
-                })
-                t.Run("source missing", func(t *testing.T) {
-                    s := &mockStore{data: map[string]string{}}
-                    err := CopyValue(s, "a", "b")
-                    if err == nil {
-                        t.Error("expected error")
-                    }
-                })
-            }
-          difficulty: 3
           annotations:
             - type: idiom
               label: Error Wrapping
               text: >-
-                Use <code>fmt.Errorf("context: %w", err)</code> to wrap errors with context while preserving the
-                original error for <code>errors.Is</code> and <code>errors.As</code>.
+                The <code>%w</code> verb in <code>fmt.Errorf</code> wraps an error, preserving the chain so
+                <code>errors.Is</code> and <code>errors.As</code> can still find the original cause.
             - type: pattern
-              label: In-Memory Mock
+              label: Context Wrapping
               text: >-
-                Using a map inside a mock struct simulates real storage behavior. This lets tests verify state changes
-                (e.g., checking that Save actually stored the value).
+                Always add context when wrapping: <code>fmt.Errorf("queryUser %s: %w", id, err)</code>. This
+                produces messages like <code>"queryUser 42: connection refused"</code> which are easy to trace.
+        - id: v2
+          title: Wrap a File Error
+          description: >-
+            Write a <code>readConfig</code> function that attempts to open a file. If the file does not exist, wrap
+            the error with context using <code>fmt.Errorf</code> and the <code>%w</code> verb. Then use
+            <code>errors.Is(err, os.ErrNotExist)</code> to check whether the underlying cause is a missing file.
+          functionSignature: "func readConfig(path string) ([]byte, error)"
+          testCases:
+            - input: "\"/no/such/file.yaml\""
+              expected: "errors.Is(err, os.ErrNotExist) == true"
+            - input: "valid path"
+              expected: "file contents, nil"
+          hints:
+            - >-
+              Use <code>os.ReadFile(path)</code> to attempt reading. It returns <code>*os.PathError</code> which
+              wraps <code>os.ErrNotExist</code> when the file is missing.
+            - >-
+              Wrap the returned error: <code>fmt.Errorf("readConfig %s: %w", path, err)</code>. This adds your
+              context while preserving the original error chain.
+            - >-
+              <code>errors.Is(err, os.ErrNotExist)</code> traverses the full chain&mdash;your wrapper, then
+              <code>*os.PathError</code>, then the sentinel&mdash;and finds the match.
+          solution: |-
+            func readConfig(path string) ([]byte, error) {
+                data, err := os.ReadFile(path)
+                if err != nil {
+                    return nil, fmt.Errorf("readConfig %s: %w", path, err)
+                }
+                return data, nil
+            }
+
+            // Usage:
+            _, err := readConfig("/no/such/file.yaml")
+            if errors.Is(err, os.ErrNotExist) {
+                fmt.Println("config file missing, using defaults")
+            }
+          difficulty: 2
+          annotations:
+            - type: stdlib
+              label: os.ErrNotExist
+              text: >-
+                <code>os.ErrNotExist</code> is the standard sentinel for missing files. The <code>os</code> package
+                wraps it inside <code>*os.PathError</code>, so <code>errors.Is</code> is the correct way to check.
+            - type: idiom
+              label: Wrap Then Check
+              text: >-
+                Even after wrapping with <code>fmt.Errorf("...: %w", err)</code>, callers can still use
+                <code>errors.Is</code> to match sentinels deep in the chain. This is the key benefit of <code>%w</code>.
         - id: v3
-          title: Mock a Logger Interface
+          title: Unwrap a Custom Typed Error
           description: >-
-            Define a <code>Logger</code> interface with <code>Log(level, message string)</code>. Write <code>func
-            ProcessOrder(log Logger, orderID string) error</code> that logs its progress. Test that the correct log
-            messages are emitted using a mock that records calls.
-          functionSignature: func ProcessOrder(log Logger, orderID string) error
+            Define a <code>DBError</code> struct with <code>Code int</code> and <code>Message string</code> fields.
+            Write a <code>runQuery</code> function that returns a <code>*DBError</code> wrapped with context via
+            <code>fmt.Errorf</code>. Then use <code>errors.As</code> to extract the <code>*DBError</code> from the
+            wrapped chain and inspect its <code>Code</code> field.
+          functionSignature: "func runQuery(sql string) error"
           testCases:
-            - input: ProcessOrder(mockLog, "order-1")
-              output: "nil; mock recorded [\"INFO: processing order-1\", \"INFO: order-1 complete\"]"
-            - input: ProcessOrder(mockLog, "")
-              output: "error; mock recorded [\"ERROR: empty order ID\"]"
+            - input: "\"DROP TABLE\""
+              expected: "errors.As(err, &dbe) == true && dbe.Code == 1045"
+            - input: "\"SELECT 1\""
+              expected: "nil"
           hints:
-            - title: 🤔 Think about it
-              content: >-
-                How do you verify that certain methods were called with certain arguments? What kind of mock records
-                calls?
-            - title: 💡 Hint
-              content: >-
-                Create a <code>mockLogger</code> with a <code>calls []string</code> field. Each call to <code>Log</code>
-                appends a formatted string. After the test, inspect <code>mock.calls</code> to verify behavior.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>1. Define Logger interface with Log(level, message)
-                2. ProcessOrder logs progress at key steps
-                3. Mock records all calls in a slice
-                4. Test: run function, then assert mock.calls
-                   contains expected messages</pre>
+            - >-
+              Define <code>DBError</code> with an <code>Error() string</code> method on the pointer receiver.
+              Return <code>&amp;DBError{Code: 1045, Message: "access denied"}</code>.
+            - >-
+              Wrap it: <code>fmt.Errorf("runQuery: %w", &amp;DBError{Code: 1045, Message: "access denied"})</code>.
+            - >-
+              Extract with <code>var dbe *DBError; errors.As(err, &amp;dbe)</code>. This searches the chain for
+              any error matching <code>*DBError</code> and populates <code>dbe</code> with it.
           solution: |-
-            type Logger interface {
-                Log(level, message string)
+            type DBError struct {
+                Code    int
+                Message string
             }
 
-            func ProcessOrder(log Logger, orderID string) error {
-                if orderID == "" {
-                    log.Log("ERROR", "empty order ID")
-                    return fmt.Errorf("order ID required")
+            func (e *DBError) Error() string {
+                return fmt.Sprintf("db error %d: %s", e.Code, e.Message)
+            }
+
+            func runQuery(sql string) error {
+                if sql == "SELECT 1" {
+                    return nil
                 }
-                log.Log("INFO", "processing "+orderID)
-                log.Log("INFO", orderID+" complete")
-                return nil
+                return fmt.Errorf("runQuery: %w", &DBError{Code: 1045, Message: "access denied"})
             }
 
-            type mockLogger struct {
-                calls []string
+            // Usage:
+            err := runQuery("DROP TABLE")
+            var dbe *DBError
+            if errors.As(err, &dbe) {
+                fmt.Println("DB error code:", dbe.Code)
             }
-
-            func (m *mockLogger) Log(level, message string) {
-                m.calls = append(m.calls, level+": "+message)
-            }
-
-            func TestProcessOrder(t *testing.T) {
-                t.Run("success", func(t *testing.T) {
-                    mock := &mockLogger{}
-                    err := ProcessOrder(mock, "order-1")
-                    if err != nil {
-                        t.Fatalf("unexpected error: %v", err)
-                    }
-                    if len(mock.calls) != 2 {
-                        t.Fatalf("expected 2 log calls, got %d", len(mock.calls))
-                    }
-                    if mock.calls[0] != "INFO: processing order-1" {
-                        t.Errorf("unexpected first log: %s", mock.calls[0])
-                    }
-                })
-                t.Run("empty ID", func(t *testing.T) {
-                    mock := &mockLogger{}
-                    err := ProcessOrder(mock, "")
-                    if err == nil {
-                        t.Error("expected error")
-                    }
-                    if len(mock.calls) != 1 || mock.calls[0] != "ERROR: empty order ID" {
-                        t.Errorf("unexpected logs: %v", mock.calls)
-                    }
-                })
-            }
-          difficulty: 3
+          difficulty: 2
           annotations:
             - type: pattern
-              label: Recording Mock
+              label: errors.As Extraction
               text: >-
-                A recording mock captures method calls for later assertion. This is more flexible than a stub because
-                you can verify behavior (what was called) not just state.
-            - type: idiom
-              label: Small Interfaces
+                <code>errors.As</code> searches the error chain for a matching type and populates the target.
+                Use it when you need to inspect fields of a custom error type, not just check identity.
+            - type: gotcha
+              label: Pointer to Pointer
               text: >-
-                Go favors small interfaces (1-2 methods). The <code>Logger</code> interface with a single
-                <code>Log</code> method is easy to mock and easy to implement.
+                <code>errors.As</code> requires a <code>**DBError</code> (pointer to the pointer target):
+                <code>var dbe *DBError; errors.As(err, &amp;dbe)</code>. Passing <code>&amp;DBError{}</code>
+                directly will not compile.
         - id: v4
-          title: Mock a Notifier Interface
+          title: Multi-Layer Wrapping
           description: >-
-            Define a <code>Notifier</code> interface with <code>Send(to, subject, body string) error</code>. Write
-            <code>func NotifyUsers(n Notifier, users []string, subject, body string) (int, error)</code> that sends to
-            all users and returns the count of successful sends. Test with mocks that simulate both success and partial
-            failure.
-          functionSignature: func NotifyUsers(n Notifier, users []string, subject, body string) (int, error)
+            Define a sentinel <code>ErrTimeout</code>. Write three functions that form a call chain:
+            <code>handler</code> calls <code>service</code> calls <code>repository</code>. Each wraps the error
+            from the layer below with its own context using <code>fmt.Errorf("...: %w", err)</code>. Verify that
+            <code>errors.Is(err, ErrTimeout)</code> still finds the root sentinel through three layers of wrapping.
+          functionSignature: "func handler() error"
           testCases:
-            - input: all succeed; NotifyUsers(mock, ["a","b","c"], "hi", "body")
-              output: 3, nil
-            - input: mock fails for "b"; NotifyUsers(mock, ["a","b","c"], "hi", "body")
-              output: 2, error
+            - input: "(call handler)"
+              expected: "errors.Is(err, ErrTimeout) == true"
+            - input: "(call handler)"
+              expected: "err.Error() contains all three layers of context"
           hints:
-            - title: 🤔 Think about it
-              content: >-
-                Should the function stop on the first error or continue and report all errors? How do you count
-                successes?
-            - title: 💡 Hint
-              content: >-
-                Loop through users, call <code>Send</code> for each. Count successes. Collect errors. A mock can fail
-                for specific recipients by checking the <code>to</code> parameter.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>1. For each user, call n.Send()
-                2. Count successes, collect errors
-                3. Return count and joined errors
-                4. Mock: use a failFor set to control which sends fail
-                5. Test: all succeed, some fail</pre>
+            - Define <code>var ErrTimeout = errors.New("operation timed out")</code> at package level.
+            - >-
+              <code>repository</code> returns <code>ErrTimeout</code>. <code>service</code> wraps it:
+              <code>fmt.Errorf("service: %w", err)</code>. <code>handler</code> wraps again:
+              <code>fmt.Errorf("handler: %w", err)</code>.
+            - >-
+              <code>errors.Is</code> walks the entire chain via successive <code>Unwrap()</code> calls. Three layers
+              deep is no problem&mdash;it will find <code>ErrTimeout</code> at the root.
           solution: |-
-            type Notifier interface {
-                Send(to, subject, body string) error
+            var ErrTimeout = errors.New("operation timed out")
+
+            func repository() error {
+                return ErrTimeout
             }
 
-            func NotifyUsers(n Notifier, users []string, subject, body string) (int, error) {
-                sent := 0
-                var errs []string
-                for _, user := range users {
-                    if err := n.Send(user, subject, body); err != nil {
-                        errs = append(errs, fmt.Sprintf("%s: %v", user, err))
-                    } else {
-                        sent++
-                    }
-                }
-                if len(errs) > 0 {
-                    return sent, fmt.Errorf("failed to notify: %s", strings.Join(errs, "; "))
-                }
-                return sent, nil
-            }
-
-            type mockNotifier struct {
-                failFor map[string]bool
-            }
-
-            func (m *mockNotifier) Send(to, subject, body string) error {
-                if m.failFor[to] {
-                    return fmt.Errorf("send failed")
+            func service() error {
+                err := repository()
+                if err != nil {
+                    return fmt.Errorf("service: %w", err)
                 }
                 return nil
             }
 
-            func TestNotifyUsers(t *testing.T) {
-                t.Run("all succeed", func(t *testing.T) {
-                    mock := &mockNotifier{failFor: map[string]bool{}}
-                    count, err := NotifyUsers(mock, []string{"a", "b", "c"}, "hi", "body")
-                    if err != nil {
-                        t.Fatalf("unexpected error: %v", err)
-                    }
-                    if count != 3 {
-                        t.Errorf("sent %d, want 3", count)
-                    }
-                })
-                t.Run("partial failure", func(t *testing.T) {
-                    mock := &mockNotifier{failFor: map[string]bool{"b": true}}
-                    count, err := NotifyUsers(mock, []string{"a", "b", "c"}, "hi", "body")
-                    if err == nil {
-                        t.Error("expected error")
-                    }
-                    if count != 2 {
-                        t.Errorf("sent %d, want 2", count)
-                    }
-                })
+            func handler() error {
+                err := service()
+                if err != nil {
+                    return fmt.Errorf("handler: %w", err)
+                }
+                return nil
             }
-          difficulty: 3
+
+            // Usage:
+            err := handler()
+            fmt.Println(err)
+            // Output: handler: service: operation timed out
+            fmt.Println(errors.Is(err, ErrTimeout))
+            // Output: true
+          difficulty: 2
+          annotations:
+            - type: idiom
+              label: Layered Wrapping
+              text: >-
+                Each layer adds context: <code>"handler: service: operation timed out"</code>. This produces a
+                readable breadcrumb trail without losing the ability to match the root cause.
+            - type: pattern
+              label: errors.Is Chain Walk
+              text: >-
+                <code>errors.Is</code> calls <code>Unwrap()</code> repeatedly until it finds a match or reaches
+                the end. This works through any number of <code>fmt.Errorf("...: %w")</code> layers.
+    - id: challenge_2
+      concept: Sentinel Errors
+      difficulty: 2
+      block: 1
+      docLinks:
+        - label: errors.New
+          url: https://pkg.go.dev/errors#New
+        - label: errors.Is
+          url: https://pkg.go.dev/errors#Is
+      variants:
+        - id: v1
+          title: HTTP Sentinel Errors
+          description: >-
+            Define two sentinel errors: <code>ErrNotFound</code> and <code>ErrUnauthorized</code> using
+            <code>errors.New</code>. Write a <code>getResource</code> function that returns
+            <code>ErrNotFound</code> for unknown IDs and <code>ErrUnauthorized</code> for ID <code>"secret"</code>.
+            Use <code>errors.Is</code> to distinguish between them.
+          functionSignature: "func getResource(id string) (string, error)"
+          testCases:
+            - input: "\"secret\""
+              expected: "errors.Is(err, ErrUnauthorized) == true"
+            - input: "\"unknown\""
+              expected: "errors.Is(err, ErrNotFound) == true"
+            - input: "\"1\""
+              expected: "\"resource-1\", nil"
+          hints:
+            - >-
+              Define sentinels at package level: <code>var ErrNotFound = errors.New("not found")</code> and
+              <code>var ErrUnauthorized = errors.New("unauthorized")</code>.
+            - >-
+              Use a switch or if-else chain on <code>id</code>. Return the appropriate sentinel for each case.
+            - >-
+              Callers use <code>errors.Is(err, ErrNotFound)</code> to check which sentinel was returned. Never
+              compare error strings&mdash;always use <code>errors.Is</code>.
+          solution: |-
+            var (
+                ErrNotFound     = errors.New("not found")
+                ErrUnauthorized = errors.New("unauthorized")
+            )
+
+            func getResource(id string) (string, error) {
+                if id == "secret" {
+                    return "", ErrUnauthorized
+                }
+                resources := map[string]string{"1": "resource-1", "2": "resource-2"}
+                if res, ok := resources[id]; ok {
+                    return res, nil
+                }
+                return "", ErrNotFound
+            }
+
+            // Usage:
+            _, err := getResource("unknown")
+            if errors.Is(err, ErrNotFound) {
+                fmt.Println("resource does not exist")
+            }
+          difficulty: 2
+          annotations:
+            - type: idiom
+              label: Sentinel Declaration
+              text: >-
+                Sentinels are package-level <code>var</code> values created with <code>errors.New</code>. By convention
+                they start with <code>Err</code>: <code>ErrNotFound</code>, <code>ErrUnauthorized</code>.
+            - type: gotcha
+              label: Never Compare Strings
+              text: >-
+                Never check <code>err.Error() == "not found"</code>. Error messages can change. Always use
+                <code>errors.Is(err, ErrNotFound)</code> for reliable sentinel comparison.
+        - id: v2
+          title: Stack with Sentinel
+          description: >-
+            Define a sentinel <code>ErrEmpty</code> using <code>errors.New</code>. Implement a simple integer
+            stack with a <code>Pop</code> method that returns <code>ErrEmpty</code> when the stack has no elements.
+            Use <code>errors.Is</code> to check for the empty condition.
+          functionSignature: "func (s *Stack) Pop() (int, error)"
+          testCases:
+            - input: "(pop from empty stack)"
+              expected: "errors.Is(err, ErrEmpty) == true"
+            - input: "(push 42 then pop)"
+              expected: "42, nil"
+          hints:
+            - Define <code>var ErrEmpty = errors.New("stack is empty")</code> at package level.
+            - >-
+              Define <code>type Stack struct { items []int }</code> with <code>Push(v int)</code> and
+              <code>Pop() (int, error)</code> methods.
+            - >-
+              In <code>Pop</code>, check <code>len(s.items) == 0</code> and return <code>0, ErrEmpty</code>.
+              Otherwise pop from the end of the slice.
+          solution: |-
+            var ErrEmpty = errors.New("stack is empty")
+
+            type Stack struct {
+                items []int
+            }
+
+            func (s *Stack) Push(v int) {
+                s.items = append(s.items, v)
+            }
+
+            func (s *Stack) Pop() (int, error) {
+                if len(s.items) == 0 {
+                    return 0, ErrEmpty
+                }
+                v := s.items[len(s.items)-1]
+                s.items = s.items[:len(s.items)-1]
+                return v, nil
+            }
+
+            // Usage:
+            var st Stack
+            _, err := st.Pop()
+            if errors.Is(err, ErrEmpty) {
+                fmt.Println("nothing to pop")
+            }
+          difficulty: 2
           annotations:
             - type: pattern
-              label: Configurable Mock
+              label: Data Structure Sentinels
               text: >-
-                A mock with a <code>failFor</code> map lets you control exactly which calls fail, enabling precise
-                testing of partial failure scenarios.
+                Sentinels signal expected boundary conditions. <code>ErrEmpty</code> tells the caller the operation
+                could not proceed because of state, not because of a bug.
             - type: idiom
-              label: Continue on Error
+              label: Slice as Stack
               text: >-
-                Continuing despite individual failures and returning a summary (count + aggregated errors) is common in
-                batch operations like notifications.
-            - type: alternative
-              label: errgroup
+                Use <code>append</code> to push and slice the last element to pop. This is the standard Go
+                pattern for a stack backed by a slice.
+        - id: v3
+          title: Sentinel With Wrapping
+          description: >-
+            Define a sentinel <code>ErrInvalidInput</code>. Write a <code>validateEmail</code> function that wraps
+            the sentinel with specific context using <code>fmt.Errorf("email %q: %w", email, ErrInvalidInput)</code>.
+            Verify that <code>errors.Is</code> still matches the sentinel even after wrapping.
+          functionSignature: "func validateEmail(email string) error"
+          testCases:
+            - input: "\"not-an-email\""
+              expected: "errors.Is(err, ErrInvalidInput) == true"
+            - input: "\"user@example.com\""
+              expected: "nil"
+            - input: "\"\""
+              expected: "errors.Is(err, ErrInvalidInput) == true"
+          hints:
+            - Define <code>var ErrInvalidInput = errors.New("invalid input")</code> at package level.
+            - >-
+              Check for a basic validity rule, such as whether the email contains <code>"@"</code>. If invalid,
+              return <code>fmt.Errorf("email %q: %w", email, ErrInvalidInput)</code>.
+            - >-
+              The wrapped error message will be <code>"email \"not-an-email\": invalid input"</code>, but
+              <code>errors.Is(err, ErrInvalidInput)</code> still returns true because <code>%w</code> preserves the chain.
+          solution: |-
+            var ErrInvalidInput = errors.New("invalid input")
+
+            func validateEmail(email string) error {
+                if email == "" || !strings.Contains(email, "@") {
+                    return fmt.Errorf("email %q: %w", email, ErrInvalidInput)
+                }
+                return nil
+            }
+
+            // Usage:
+            err := validateEmail("not-an-email")
+            if errors.Is(err, ErrInvalidInput) {
+                fmt.Println("bad input:", err)
+            }
+            // Output: bad input: email "not-an-email": invalid input
+          difficulty: 2
+          annotations:
+            - type: pattern
+              label: Sentinel + Context
               text: >-
-                For concurrent sends, consider <code>golang.org/x/sync/errgroup</code> which manages goroutines and
-                collects the first error.
+                Wrapping a sentinel with <code>%w</code> gives callers the best of both worlds: they can match the
+                sentinel with <code>errors.Is</code> and read the full context from <code>err.Error()</code>.
+            - type: idiom
+              label: Quoting with %q
+              text: >-
+                Use <code>%q</code> in error messages to quote user input. This makes values like empty strings
+                visible: <code>email "": invalid input</code> is clearer than <code>email : invalid input</code>.
+        - id: v4
+          title: File Processor Sentinels
+          description: >-
+            Define two sentinels for a file processor: <code>ErrTooLarge</code> and <code>ErrUnsupportedFormat</code>.
+            Write a <code>processFile</code> function that checks file size and extension, returning the appropriate
+            sentinel. Use <code>errors.Is</code> to handle each case differently.
+          functionSignature: "func processFile(name string, sizeBytes int) error"
+          testCases:
+            - input: "\"photo.bmp\", 100"
+              expected: "errors.Is(err, ErrUnsupportedFormat) == true"
+            - input: "\"photo.png\", 20_000_000"
+              expected: "errors.Is(err, ErrTooLarge) == true"
+            - input: "\"photo.png\", 100"
+              expected: "nil"
+          hints:
+            - >-
+              Define both sentinels in a <code>var ( ... )</code> block:
+              <code>ErrTooLarge = errors.New("file too large")</code> and
+              <code>ErrUnsupportedFormat = errors.New("unsupported format")</code>.
+            - >-
+              Check the extension with <code>filepath.Ext(name)</code> or a simple suffix check. Allow
+              <code>.png</code>, <code>.jpg</code>, and <code>.jpeg</code>. Reject everything else.
+            - >-
+              Check size first (e.g., over 10 MB), then format. Return the matching sentinel. Callers use
+              <code>errors.Is</code> to decide whether to show "file too big" or "wrong format" messages.
+          solution: |-
+            var (
+                ErrTooLarge          = errors.New("file too large")
+                ErrUnsupportedFormat = errors.New("unsupported format")
+            )
+
+            func processFile(name string, sizeBytes int) error {
+                const maxSize = 10_000_000 // 10 MB
+                if sizeBytes > maxSize {
+                    return ErrTooLarge
+                }
+                ext := filepath.Ext(name)
+                switch ext {
+                case ".png", ".jpg", ".jpeg":
+                    // supported
+                default:
+                    return ErrUnsupportedFormat
+                }
+                return nil
+            }
+
+            // Usage:
+            err := processFile("photo.bmp", 100)
+            switch {
+            case errors.Is(err, ErrUnsupportedFormat):
+                fmt.Println("try png or jpg")
+            case errors.Is(err, ErrTooLarge):
+                fmt.Println("file must be under 10 MB")
+            }
+          difficulty: 2
+          annotations:
+            - type: pattern
+              label: Multiple Sentinels
+              text: >-
+                Group related sentinels in a <code>var ( ... )</code> block. This signals to callers exactly which
+                error conditions the function can produce, like a mini error contract.
+            - type: idiom
+              label: Switch on Sentinels
+              text: >-
+                Use <code>switch</code> with <code>errors.Is</code> cases to handle each sentinel differently. This
+                is cleaner than nested if-else chains and makes the error handling exhaustive.

@@ -1,619 +1,655 @@
 conceptLinks:
-  Multiple Files: "#lesson-multiple-files"
-  Packages: "#lesson-packages"
-  Exported/Unexported: "#lesson-exported"
-  internal/ Directory: "#lesson-internal"
-  Project Layout: "#lesson-layout"
-  Circular Imports: "#lesson-circular"
+  HTTP GET: "#lesson-http-get"
+  JSON Decoding: "#lesson-json-decode"
+  Custom Requests: "#lesson-custom-request"
+  API Client: "#lesson-api-client"
+  HTTP Server: "#lesson-http-server"
+  Middleware: "#lesson-middleware"
 sharedContent: {}
 variants:
   warmups:
     - id: warmup_1
-      concept: Multiple Files
+      concept: HTTP GET
       variants:
         - id: v1
-          title: Split Code Across Files
+          title: Simple GET Request
           description: >-
-            You have a program with a <code>Config</code> struct and a <code>Process</code> function. Show how to split
-            them into <code>config.go</code> and <code>process.go</code> in the same package. Write the code for both
-            files.
+            Make an HTTP GET request to <code>"https://api.example.com/health"</code>. Print the status code and read
+            the response body as a string.
           hints:
-            - Both files must have <code>package main</code> at the top.
-            - No imports are needed between files in the same package.
-            - <code>config.go</code> defines the struct, <code>process.go</code> uses it directly.
+            - Use <code>http.Get(url)</code> — returns <code>(*http.Response, error)</code>.
+            - Always <code>defer resp.Body.Close()</code>.
+            - Read body with <code>io.ReadAll(resp.Body)</code>.
           solution: |-
-            // config.go
-            package main
-
-            type Config struct {
-                Name string
-                Port int
+            resp, err := http.Get("https://api.example.com/health")
+            if err != nil {
+                fmt.Println("Error:", err)
+                return
             }
+            defer resp.Body.Close()
 
-            func LoadConfig() *Config {
-                return &Config{Name: "app", Port: 8080}
-            }
-
-            // process.go
-            package main
-
-            import "fmt"
-
-            func Process(cfg *Config) {
-                fmt.Printf("Processing %s on port %d\n", cfg.Name, cfg.Port)
-            }
+            body, _ := io.ReadAll(resp.Body)
+            fmt.Println("Status:", resp.StatusCode)
+            fmt.Println("Body:", string(body))
           annotations:
             - type: idiom
-              label: Same Package
+              label: Defer Close
               text: >-
-                Files in the same directory with the same <code>package</code> declaration share everything
-                automatically. No imports needed.
+                Always <code>defer resp.Body.Close()</code> immediately after checking the error. Forgetting this leaks
+                connections.
             - type: gotcha
-              label: go run .
-              text: >-
-                Use <code>go run .</code> to compile all files in the directory. <code>go run main.go</code> alone won't
-                include other files.
+              label: Body Close
+              text: The response body must be closed even if you don't read it. An unclosed body prevents connection reuse.
         - id: v2
-          title: When to Split Files
+          title: GET with Status Check
           description: >-
-            You have a <code>main.go</code> file with 400 lines containing a <code>Server</code> struct, an
-            <code>App</code> struct, and their methods. Describe how you'd split this and write the package declaration
-            for each file.
+            Make a GET request and check if the status code is <code>200 OK</code>. If not, print an error with the
+            status. If it is, print the body.
           hints:
-            - "Split by type: <code>server.go</code> for Server, <code>app.go</code> for App."
-            - Keep <code>main()</code> in <code>main.go</code> — it's the entry point.
-            - All files use <code>package main</code>.
+            - Compare <code>resp.StatusCode != http.StatusOK</code>.
+            - <code>resp.Status</code> gives you a human-readable status like <code>"200 OK"</code>.
+            - Read body only if the status is OK.
           solution: |-
-            // main.go — entry point only
-            package main
+            resp, err := http.Get("https://api.example.com/data")
+            if err != nil {
+                fmt.Println("Error:", err)
+                return
+            }
+            defer resp.Body.Close()
 
-            func main() {
-                app := NewApp()
-                srv := NewServer(app)
-                srv.Start()
+            if resp.StatusCode != http.StatusOK {
+                fmt.Printf("API error: %s\n", resp.Status)
+                return
             }
 
-            // app.go — App type and its methods
-            package main
-
-            type App struct { /* fields */ }
-            func NewApp() *App { return &App{} }
-
-            // server.go — Server type and its methods
-            package main
-
-            type Server struct { app *App }
-            func NewServer(app *App) *Server { return &Server{app: app} }
-            func (s *Server) Start() { /* ... */ }
+            body, _ := io.ReadAll(resp.Body)
+            fmt.Println(string(body))
           annotations:
             - type: idiom
-              label: One Type Per File
+              label: Status Constants
               text: >-
-                A common Go convention: one major type and its methods per file, named after the type
-                (<code>server.go</code>, <code>app.go</code>).
-            - type: pattern
-              label: Thin main()
-              text: >-
-                Keep <code>main()</code> thin — just create objects and wire them together. Business logic belongs in
-                other files.
-        - id: v3
-          title: Run Multi-File Program
-          description: >-
-            You have <code>main.go</code>, <code>config.go</code>, and <code>helpers.go</code> in the same directory,
-            all with <code>package main</code>. Write the command to compile and run all of them.
-          hints:
-            - <code>go run .</code> compiles all <code>.go</code> files in the current directory.
-            - "Alternatively: <code>go run main.go config.go helpers.go</code>."
-            - <code>go build .</code> to compile into a binary.
-          solution: |-
-            // Run all files in current directory:
-            // $ go run .
-
-            // Or explicitly list files:
-            // $ go run main.go config.go helpers.go
-
-            // Build a binary:
-            // $ go build -o myapp .
-            // $ ./myapp
-          annotations:
-            - type: idiom
-              label: go run .
-              text: >-
-                The dot <code>.</code> tells Go to compile all Go files in the current directory. This is the standard
-                way to run multi-file programs.
+                Use <code>http.StatusOK</code>, <code>http.StatusNotFound</code>, etc. instead of raw numbers. They're
+                self-documenting.
             - type: gotcha
-              label: go run main.go
+              label: Error vs Bad Status
               text: >-
-                Running just <code>go run main.go</code> won't include other files. You'll get "undefined" errors for
-                types and functions in other files.
+                <code>http.Get</code> only returns an error for network failures. A 404 or 500 response is NOT an error
+                — you must check <code>resp.StatusCode</code>.
+        - id: v3
+          title: GET with Timeout
+          description: >-
+            Create an <code>http.Client</code> with a 10-second timeout. Use it to make a GET request instead of the
+            default client.
+          hints:
+            - "Create: <code>&http.Client{Timeout: 10 * time.Second}</code>."
+            - Use <code>client.Get(url)</code> instead of <code>http.Get(url)</code>.
+            - Import <code>time</code> for <code>time.Second</code>.
+          solution: |-
+            client := &http.Client{Timeout: 10 * time.Second}
+
+            resp, err := client.Get("https://api.example.com/data")
+            if err != nil {
+                fmt.Println("Error:", err)
+                return
+            }
+            defer resp.Body.Close()
+
+            body, _ := io.ReadAll(resp.Body)
+            fmt.Println(string(body))
+          annotations:
+            - type: idiom
+              label: Custom Client
+              text: >-
+                Always use a custom <code>http.Client</code> with a timeout in production. The default client has no
+                timeout and can hang forever.
+            - type: gotcha
+              label: Default Client
+              text: >-
+                <code>http.Get()</code> uses the default client with zero timeout. A slow server will block your
+                goroutine indefinitely.
     - id: warmup_2
-      concept: Packages
+      concept: JSON Decoding
       variants:
         - id: v1
-          title: Create a Package
+          title: Decode JSON Response
           description: >-
-            Create a <code>utils</code> package in a <code>utils/</code> directory with a function <code>Greet(name
-            string) string</code>. Import and use it from <code>main.go</code>.
+            Define a <code>User</code> struct with <code>Login</code>, <code>Name</code>, and <code>Followers int</code>
+            fields (with JSON tags). Decode an HTTP response body into it.
           hints:
-            - File <code>utils/utils.go</code> with <code>package utils</code>.
-            - "Function must be uppercase to be exported: <code>func Greet</code>."
-            - "Import with the module path: <code>import \"myproject/utils\"</code>."
+            - "JSON tags: <code>`json:\"login\"`</code>."
+            - Use <code>json.NewDecoder(resp.Body).Decode(&user)</code>.
+            - This streams the JSON — no need to read the whole body first.
           solution: |-
-            // utils/utils.go
-            package utils
-
-            import "fmt"
-
-            func Greet(name string) string {
-                return fmt.Sprintf("Hello, %s!", name)
-            }
-
-            // main.go
-            package main
-
-            import (
-                "fmt"
-                "myproject/utils"
-            )
-
-            func main() {
-                msg := utils.Greet("Alice")
-                fmt.Println(msg)
-            }
-          annotations:
-            - type: idiom
-              label: Package = Directory
-              text: >-
-                In Go, each directory is one package. The package name is declared in the source file, not the directory
-                name (though they usually match).
-            - type: idiom
-              label: Import Path
-              text: >-
-                The import path is your module name (from <code>go.mod</code>) plus the directory path. Not the file
-                path.
-        - id: v2
-          title: Package with Multiple Functions
-          description: >-
-            Create a <code>math</code> package with two files: <code>add.go</code> with <code>Add(a, b int) int</code>
-            and <code>multiply.go</code> with <code>Multiply(a, b int) int</code>. Show the directory structure.
-          hints:
-            - Both files use <code>package math</code>.
-            - Both functions are uppercase (exported).
-            - "From main: <code>math.Add(1, 2)</code> and <code>math.Multiply(3, 4)</code>."
-          solution: |-
-            // Directory structure:
-            // myproject/
-            // ├── go.mod
-            // ├── main.go
-            // └── math/
-            //     ├── add.go
-            //     └── multiply.go
-
-            // math/add.go
-            package math
-
-            func Add(a, b int) int {
-                return a + b
-            }
-
-            // math/multiply.go
-            package math
-
-            func Multiply(a, b int) int {
-                return a * b
-            }
-
-            // main.go
-            package main
-
-            import (
-                "fmt"
-                "myproject/math"
-            )
-
-            func main() {
-                fmt.Println(math.Add(1, 2))
-                fmt.Println(math.Multiply(3, 4))
-            }
-          annotations:
-            - type: idiom
-              label: Multi-File Package
-              text: A package can span multiple files. The compiler merges all files in the same directory into one package.
-        - id: v3
-          title: Nested Packages
-          description: >-
-            Show the import path for a file at <code>internal/database/postgres.go</code> in a module named
-            <code>github.com/you/myapp</code>.
-          hints:
-            - The import path follows the directory structure from the module root.
-            - "Module name + directory: <code>github.com/you/myapp/internal/database</code>."
-            - The package declaration in the file would be <code>package database</code>.
-          solution: |-
-            // internal/database/postgres.go
-            package database
-
-            type DB struct { /* ... */ }
-
-            func Connect(dsn string) (*DB, error) {
-                // ...
-                return &DB{}, nil
-            }
-
-            // Import from within the module:
-            import "github.com/you/myapp/internal/database"
-
-            db, err := database.Connect("postgres://...")
-          annotations:
-            - type: idiom
-              label: Import = Module + Dir
-              text: >-
-                Import paths are always the module name from <code>go.mod</code> concatenated with the directory path
-                from the module root.
-            - type: gotcha
-              label: Package vs Directory Name
-              text: >-
-                The package name and directory name don't have to match, but by convention they should. The package
-                declaration in the file is what matters for code references.
-    - id: warmup_3
-      concept: Exported/Unexported
-      variants:
-        - id: v1
-          title: Identify Exported Names
-          description: >-
-            Given a package with <code>Config</code>, <code>loadDefaults</code>, <code>Port</code>, and
-            <code>httpClient</code>, identify which are exported (visible outside the package) and which are unexported.
-          hints:
-            - Uppercase first letter = exported.
-            - Lowercase first letter = unexported.
-            - This applies to types, functions, variables, and constants.
-          solution: |-
-            package server
-
-            // Exported — visible from other packages
-            type Config struct{}     // ✓ Uppercase C
-            var Port = 8080          // ✓ Uppercase P
-
-            // Unexported — only visible within this package
-            func loadDefaults() {}   // ✗ Lowercase l
-            var httpClient = &http.Client{} // ✗ Lowercase h
-          annotations:
-            - type: idiom
-              label: Visibility Rule
-              text: >-
-                Go's visibility is the simplest of any language: uppercase = public, lowercase = private. No keywords
-                needed.
-            - type: gotcha
-              label: Struct Fields Too
-              text: >-
-                The uppercase/lowercase rule applies to struct fields as well. Lowercase fields won't be visible in JSON
-                encoding or from other packages.
-        - id: v2
-          title: Exported Struct with Unexported Fields
-          description: >-
-            Create an exported <code>User</code> struct where <code>Name</code> is exported but <code>password</code> is
-            unexported. Write a constructor <code>NewUser</code> that sets both fields.
-          hints:
-            - "Exported type: <code>type User struct</code> (uppercase U)."
-            - "Unexported field: <code>password string</code> (lowercase p)."
-            - The constructor can set unexported fields because it's in the same package.
-          solution: |-
-            package auth
-
             type User struct {
-                Name     string  // Exported — other packages can read this
-                password string  // Unexported — only this package can access
+                Login     string `json:"login"`
+                Name      string `json:"name"`
+                Followers int    `json:"followers"`
             }
 
-            func NewUser(name, password string) *User {
-                return &User{
-                    Name:     name,
-                    password: password,
+            // After making the HTTP request:
+            var user User
+            if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
+                fmt.Println("Decode error:", err)
+                return
+            }
+            fmt.Printf("%s (%s) - %d followers\n", user.Name, user.Login, user.Followers)
+          annotations:
+            - type: idiom
+              label: Stream Decode
+              text: >-
+                <code>json.NewDecoder</code> reads from an <code>io.Reader</code> directly — no need to buffer the whole
+                body with <code>io.ReadAll</code> first.
+            - type: idiom
+              label: JSON Tags
+              text: >-
+                JSON tags map Go's uppercase field names to the API's lowercase/snake_case keys. Without tags, Go uses
+                the field name as-is.
+        - id: v2
+          title: Decode JSON Array
+          description: >-
+            Define a <code>Repo</code> struct with <code>Name string</code> and <code>Stars int</code> (JSON key:
+            <code>stargazers_count</code>). Decode an array of repos from a response body.
+          hints:
+            - "Decode into a slice: <code>var repos []Repo</code>."
+            - The JSON tag for stars is <code>`json:"stargazers_count"`</code>.
+            - Iterate and print each repo's name and star count.
+          solution: |-
+            type Repo struct {
+                Name  string `json:"name"`
+                Stars int    `json:"stargazers_count"`
+            }
+
+            var repos []Repo
+            if err := json.NewDecoder(resp.Body).Decode(&repos); err != nil {
+                fmt.Println("Decode error:", err)
+                return
+            }
+
+            for _, repo := range repos {
+                fmt.Printf("%s (%d stars)\n", repo.Name, repo.Stars)
+            }
+          annotations:
+            - type: idiom
+              label: Decode into Slice
+              text: >-
+                If the JSON response is an array, decode into a Go slice. The decoder handles the <code>[...]</code>
+                wrapping automatically.
+            - type: idiom
+              label: Field Mapping
+              text: >-
+                JSON tags let you map any JSON key to any Go field name. <code>stargazers_count</code> →
+                <code>Stars</code> keeps your Go code idiomatic.
+        - id: v3
+          title: Handle JSON Error Response
+          description: >-
+            When an API returns an error status, the body often contains JSON like <code>{"error": "not found", "code":
+            404}</code>. Decode this into an <code>APIError</code> struct when the status is not 200.
+          hints:
+            - Define <code>APIError</code> with <code>Error string</code> and <code>Code int</code> fields.
+            - Check status first. If not OK, decode into <code>APIError</code> instead.
+            - Return the structured error for the caller to handle.
+          solution: |-
+            type APIError struct {
+                Error string `json:"error"`
+                Code  int    `json:"code"`
+            }
+
+            if resp.StatusCode != http.StatusOK {
+                var apiErr APIError
+                json.NewDecoder(resp.Body).Decode(&apiErr)
+                fmt.Printf("API error %d: %s\n", apiErr.Code, apiErr.Error)
+                return
+            }
+          annotations:
+            - type: pattern
+              label: Error Response Parsing
+              text: >-
+                Many APIs return structured JSON errors. Parsing them gives callers actionable information instead of a
+                generic status code.
+    - id: warmup_3
+      concept: Custom Requests
+      variants:
+        - id: v1
+          title: GET with Authorization Header
+          description: >-
+            Create a custom HTTP request with an <code>Authorization: Bearer &lt;token&gt;</code> header. Execute it
+            with a custom client.
+          hints:
+            - Use <code>http.NewRequest("GET", url, nil)</code>.
+            - "Set header: <code>req.Header.Set(\"Authorization\", \"Bearer \"+token)</code>."
+            - "Execute: <code>client.Do(req)</code>."
+          solution: |-
+            req, err := http.NewRequest("GET", "https://api.example.com/user", nil)
+            if err != nil {
+                fmt.Println("Error:", err)
+                return
+            }
+            req.Header.Set("Authorization", "Bearer "+token)
+            req.Header.Set("Accept", "application/json")
+
+            client := &http.Client{Timeout: 10 * time.Second}
+            resp, err := client.Do(req)
+            if err != nil {
+                fmt.Println("Error:", err)
+                return
+            }
+            defer resp.Body.Close()
+          annotations:
+            - type: idiom
+              label: NewRequest
+              text: >-
+                <code>http.NewRequest</code> gives you a request object you can customize (headers, body, context)
+                before sending.
+            - type: idiom
+              label: Bearer Token
+              text: >-
+                The <code>Authorization: Bearer &lt;token&gt;</code> header is the standard way to authenticate API
+                requests.
+        - id: v2
+          title: POST with JSON Body
+          description: >-
+            Create a POST request with a JSON body. Marshal a struct to JSON, wrap it in a <code>bytes.NewReader</code>,
+            and set the <code>Content-Type</code> header.
+          hints:
+            - "Marshal: <code>data, _ := json.Marshal(payload)</code>."
+            - "Body: <code>bytes.NewReader(data)</code>."
+            - "Set header: <code>req.Header.Set(\"Content-Type\", \"application/json\")</code>."
+          solution: |-
+            type CreateRepoRequest struct {
+                Name        string `json:"name"`
+                Description string `json:"description"`
+                Private     bool   `json:"private"`
+            }
+
+            payload := CreateRepoRequest{
+                Name:        "my-repo",
+                Description: "A new repo",
+                Private:     false,
+            }
+
+            data, _ := json.Marshal(payload)
+            req, _ := http.NewRequest("POST", "https://api.example.com/repos", bytes.NewReader(data))
+            req.Header.Set("Content-Type", "application/json")
+            req.Header.Set("Authorization", "Bearer "+token)
+
+            client := &http.Client{Timeout: 10 * time.Second}
+            resp, err := client.Do(req)
+            if err != nil {
+                fmt.Println("Error:", err)
+                return
+            }
+            defer resp.Body.Close()
+          annotations:
+            - type: idiom
+              label: JSON Body
+              text: >-
+                For POST/PUT requests: marshal to JSON, wrap in <code>bytes.NewReader</code>, and set
+                <code>Content-Type: application/json</code>.
+            - type: gotcha
+              label: Content-Type Required
+              text: >-
+                Without <code>Content-Type: application/json</code>, many APIs will reject the request or misinterpret
+                the body.
+        - id: v3
+          title: DELETE Request
+          description: >-
+            Create and send an HTTP DELETE request to <code>/api/items/42</code>. Check that the response status is
+            <code>204 No Content</code>.
+          hints:
+            - Use <code>http.NewRequest("DELETE", url, nil)</code> — no body needed.
+            - Check <code>resp.StatusCode == http.StatusNoContent</code>.
+            - <code>204 No Content</code> means the delete was successful with no response body.
+          solution: |-
+            req, _ := http.NewRequest("DELETE", "https://api.example.com/items/42", nil)
+            req.Header.Set("Authorization", "Bearer "+token)
+
+            client := &http.Client{Timeout: 10 * time.Second}
+            resp, err := client.Do(req)
+            if err != nil {
+                fmt.Println("Error:", err)
+                return
+            }
+            defer resp.Body.Close()
+
+            if resp.StatusCode == http.StatusNoContent {
+                fmt.Println("Deleted successfully")
+            } else {
+                fmt.Printf("Unexpected status: %s\n", resp.Status)
+            }
+          annotations:
+            - type: idiom
+              label: DELETE Pattern
+              text: DELETE requests typically have no body and return 204 (No Content) on success.
+    - id: warmup_4
+      concept: HTTP Server
+      variants:
+        - id: v1
+          title: Health Check Endpoint
+          description: >-
+            Register an HTTP handler at <code>/health</code> that returns <code>200 OK</code> with body
+            <code>"OK"</code>.
+          hints:
+            - Use <code>http.HandleFunc("/health", handler)</code>.
+            - The handler signature is <code>func(w http.ResponseWriter, r *http.Request)</code>.
+            - "Write response: <code>w.Write([]byte(\"OK\"))</code>."
+          solution: |-
+            http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+                w.WriteHeader(http.StatusOK)
+                w.Write([]byte("OK"))
+            })
+
+            fmt.Println("Listening on :8080")
+            http.ListenAndServe(":8080", nil)
+          annotations:
+            - type: idiom
+              label: Health Endpoint
+              text: >-
+                A <code>/health</code> endpoint is standard in production services. Load balancers and monitoring tools
+                use it to check if the service is running.
+            - type: gotcha
+              label: WriteHeader Order
+              text: >-
+                Call <code>w.WriteHeader()</code> before <code>w.Write()</code>. Writing the body implicitly sends a 200
+                status if you haven't set one yet.
+        - id: v2
+          title: JSON API Endpoint
+          description: >-
+            Create an endpoint at <code>/api/greet</code> that reads a <code>name</code> query parameter and returns
+            JSON like <code>{"message": "Hello, Alice"}</code>.
+          hints:
+            - "Read query param: <code>r.URL.Query().Get(\"name\")</code>."
+            - "Set content type: <code>w.Header().Set(\"Content-Type\", \"application/json\")</code>."
+            - "Encode response: <code>json.NewEncoder(w).Encode(resp)</code>."
+          solution: |-
+            type Response struct {
+                Message string `json:"message"`
+            }
+
+            http.HandleFunc("/api/greet", func(w http.ResponseWriter, r *http.Request) {
+                name := r.URL.Query().Get("name")
+                if name == "" {
+                    name = "World"
+                }
+                w.Header().Set("Content-Type", "application/json")
+                json.NewEncoder(w).Encode(Response{Message: "Hello, " + name})
+            })
+          annotations:
+            - type: idiom
+              label: Stream Encode
+              text: >-
+                <code>json.NewEncoder(w).Encode()</code> writes JSON directly to the ResponseWriter — no intermediate
+                buffer needed.
+            - type: idiom
+              label: Content-Type
+              text: >-
+                Always set <code>Content-Type: application/json</code> for JSON responses. Clients rely on this header
+                to parse the response correctly.
+        - id: v3
+          title: Method-Aware Handler
+          description: >-
+            Create a handler at <code>/api/items</code> that returns items for GET requests and returns <code>405 Method
+            Not Allowed</code> for anything else.
+          hints:
+            - Check <code>r.Method</code> against <code>http.MethodGet</code>.
+            - Use <code>http.Error(w, message, http.StatusMethodNotAllowed)</code> for 405.
+            - Go's <code>http.HandleFunc</code> matches all methods — you must filter in the handler.
+          solution: |-
+            http.HandleFunc("/api/items", func(w http.ResponseWriter, r *http.Request) {
+                if r.Method != http.MethodGet {
+                    http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+                    return
+                }
+                w.Header().Set("Content-Type", "application/json")
+                json.NewEncoder(w).Encode([]string{"item1", "item2", "item3"})
+            })
+          annotations:
+            - type: gotcha
+              label: No Method Routing
+              text: >-
+                The standard library's <code>HandleFunc</code> matches ALL HTTP methods. You must check
+                <code>r.Method</code> yourself.
+            - type: idiom
+              label: http.Error
+              text: >-
+                <code>http.Error(w, msg, code)</code> sets the status code and writes a plain text error body. It also
+                sets Content-Type to text/plain.
+  challenges:
+    - id: challenge_1
+      concept: API Client
+      docLinks:
+        - url: https://pkg.go.dev/net/http#Client
+          title: Package http.Client
+          note: configuring HTTP clients
+        - url: https://pkg.go.dev/net/http#NewRequest
+          title: Package http.NewRequest
+          note: building custom requests
+        - url: https://pkg.go.dev/encoding/json#NewDecoder
+          title: Package json.NewDecoder
+          note: streaming JSON decoding
+      variants:
+        - id: v1
+          title: Reusable API Client Struct
+          description: >-
+            Build a reusable API client struct with <code>baseURL</code>, <code>token</code>, and
+            <code>httpClient</code> fields. Write a <code>NewClient</code> constructor and a private
+            <code>request</code> method that adds auth headers to every request.
+          hints:
+            - Store <code>*http.Client</code> in the struct with a timeout.
+            - >-
+              The <code>request</code> method should create a <code>http.NewRequest</code>, set headers, and call
+              <code>c.httpClient.Do(req)</code>.
+            - Make it lowercase (<code>request</code>) since it's an internal helper.
+          solution: |-
+            type APIClient struct {
+                baseURL    string
+                token      string
+                httpClient *http.Client
+            }
+
+            func NewClient(baseURL, token string) *APIClient {
+                return &APIClient{
+                    baseURL:    baseURL,
+                    token:      token,
+                    httpClient: &http.Client{Timeout: 30 * time.Second},
                 }
             }
 
-            func (u *User) CheckPassword(attempt string) bool {
-                return u.password == attempt
+            func (c *APIClient) request(method, path string, body io.Reader) (*http.Response, error) {
+                req, err := http.NewRequest(method, c.baseURL+path, body)
+                if err != nil {
+                    return nil, err
+                }
+                req.Header.Set("Authorization", "Bearer "+c.token)
+                req.Header.Set("Accept", "application/json")
+                if body != nil {
+                    req.Header.Set("Content-Type", "application/json")
+                }
+                return c.httpClient.Do(req)
             }
           annotations:
             - type: pattern
-              label: Encapsulation
+              label: API Client Pattern
               text: >-
-                Unexported fields + exported methods is Go's encapsulation pattern. External code can't access
-                <code>password</code> directly but can use <code>CheckPassword()</code>.
+                A client struct encapsulates base URL, auth, timeout, and common headers. Public methods like
+                <code>GetUser()</code> call the private <code>request()</code> helper.
             - type: idiom
-              label: Constructor Required
+              label: Constructor
               text: >-
-                If a struct has unexported fields, external code can't initialize them. A constructor like
-                <code>NewUser()</code> is the only way to create a complete instance.
-        - id: v3
-          title: Unexported Interface Implementation
-          description: >-
-            Create an unexported <code>storage</code> interface with a <code>Save(data []byte) error</code> method.
-            Create an exported <code>NewFileStorage</code> function that returns the interface.
-          hints:
-            - "Lowercase interface name: <code>type storage interface</code>."
-            - "The implementation struct can also be unexported: <code>type fileStorage struct</code>."
-            - The constructor returns the interface type, hiding the implementation.
-          solution: |-
-            package store
-
-            // Unexported interface — implementation detail
-            type storage interface {
-                Save(data []byte) error
-            }
-
-            // Unexported implementation
-            type fileStorage struct {
-                path string
-            }
-
-            func (f *fileStorage) Save(data []byte) error {
-                return os.WriteFile(f.path, data, 0644)
-            }
-
-            // Exported constructor — returns the unexported interface
-            func NewFileStorage(path string) storage {
-                return &fileStorage{path: path}
-            }
-          annotations:
-            - type: pattern
-              label: Hidden Implementation
-              text: >-
-                Returning an unexported interface from an exported constructor hides the implementation completely.
-                Callers only see the interface methods.
-            - type: gotcha
-              label: Unexported Return Type
-              text: >-
-                Go allows exported functions to return unexported types. The caller can use the value but can't name the
-                type in their own code.
-    - id: warmup_4
-      concept: internal/ Directory
-      variants:
-        - id: v1
-          title: internal/ Access Rules
-          description: >-
-            Given a module <code>github.com/you/myapp</code> with an <code>internal/auth</code> package, which of these
-            can import it: <code>main.go</code> (root), <code>cmd/server/main.go</code>, and an external package that
-            depends on your module?
-          hints:
-            - <code>internal/</code> is accessible to the parent directory tree.
-            - Both <code>main.go</code> and <code>cmd/server/main.go</code> are within the module.
-            - External packages CANNOT import anything under <code>internal/</code>.
-          solution: |-
-            // Directory structure:
-            // github.com/you/myapp/
-            // ├── main.go                  ✓ Can import internal/auth
-            // ├── cmd/server/main.go       ✓ Can import internal/auth
-            // └── internal/auth/auth.go    Package being imported
-
-            // External module:
-            // github.com/other/project/
-            // └── main.go                  ✗ CANNOT import internal/auth
-            //                              Compiler error: use of internal package not allowed
-          annotations:
-            - type: idiom
-              label: internal/ Convention
-              text: >-
-                <code>internal/</code> is the only magic directory name in Go. The compiler enforces that only code in
-                the parent tree can import from it.
-            - type: pattern
-              label: API Boundary
-              text: >-
-                Use <code>internal/</code> for implementation details you want to refactor freely. Your public API stays
-                stable while internals can change.
+                <code>NewClient()</code> is Go's convention for constructors. It returns a pointer to the initialized
+                struct.
         - id: v2
-          title: Move Code to internal/
+          title: Client GET Method
           description: >-
-            You have a <code>database</code> package that external users shouldn't depend on. Show the directory
-            structure before and after moving it to <code>internal/</code>, and update the import path.
+            Add a public <code>Get(path string, result any) error</code> method to the API client that makes a GET
+            request, checks the status, and decodes the JSON response into <code>result</code>.
           hints:
-            - "Before: <code>database/db.go</code> → import <code>myapp/database</code>."
-            - "After: <code>internal/database/db.go</code> → import <code>myapp/internal/database</code>."
-            - The package declaration stays <code>package database</code>.
+            - Call the private <code>c.request("GET", path, nil)</code>.
+            - Check <code>resp.StatusCode != http.StatusOK</code>.
+            - Use <code>json.NewDecoder(resp.Body).Decode(result)</code>.
           solution: |-
-            // BEFORE:
-            // myapp/
-            // ├── database/
-            // │   └── db.go          package database
-            // └── main.go            import "myapp/database"
+            func (c *APIClient) Get(path string, result any) error {
+                resp, err := c.request("GET", path, nil)
+                if err != nil {
+                    return err
+                }
+                defer resp.Body.Close()
 
-            // AFTER:
-            // myapp/
-            // ├── internal/
-            // │   └── database/
-            // │       └── db.go      package database (unchanged)
-            // └── main.go            import "myapp/internal/database"
+                if resp.StatusCode != http.StatusOK {
+                    return fmt.Errorf("API error: %s", resp.Status)
+                }
 
-            // The only change in code is the import path:
-            import "myapp/internal/database"  // was: "myapp/database"
+                return json.NewDecoder(resp.Body).Decode(result)
+            }
+
+            // Usage:
+            var user User
+            err := client.Get("/users/octocat", &user)
           annotations:
-            - type: idiom
-              label: Refactoring to internal/
+            - type: pattern
+              label: Generic Decode
               text: >-
-                Moving packages to <code>internal/</code> only changes import paths. The package declaration and code
-                remain the same.
+                Using <code>any</code> (or <code>interface{}</code>) for the result parameter lets one method decode
+                into any struct type.
         - id: v3
-          title: Nested internal/ Directories
+          title: Client POST Method
           description: >-
-            In a module with <code>pkg/server/internal/handler</code>, who can import the <code>handler</code> package?
-            Can <code>pkg/server/server.go</code>? Can <code>main.go</code> at the root?
+            Add a public <code>Post(path string, payload any, result any) error</code> method that marshals the payload
+            to JSON, sends a POST, and decodes the response.
           hints:
-            - <code>internal/</code> restricts access to its parent directory tree.
-            - The parent of <code>pkg/server/internal/</code> is <code>pkg/server/</code>.
-            - Code above <code>pkg/server/</code> cannot access it.
+            - Marshal with <code>json.Marshal(payload)</code>, wrap in <code>bytes.NewReader</code>.
+            - Call <code>c.request("POST", path, bodyReader)</code>.
+            - Check for <code>StatusCreated</code> (201) — the typical POST success code.
           solution: |-
-            // Directory structure:
-            // myapp/
-            // ├── main.go                          ✗ Cannot import handler
-            // ├── pkg/
-            // │   ├── client/client.go             ✗ Cannot import handler
-            // │   └── server/
-            // │       ├── server.go                ✓ CAN import handler
-            // │       └── internal/
-            // │           └── handler/handler.go   The restricted package
+            func (c *APIClient) Post(path string, payload any, result any) error {
+                data, err := json.Marshal(payload)
+                if err != nil {
+                    return err
+                }
 
-            // pkg/server/server.go:
-            import "myapp/pkg/server/internal/handler"  // ✓ Works
+                resp, err := c.request("POST", path, bytes.NewReader(data))
+                if err != nil {
+                    return err
+                }
+                defer resp.Body.Close()
 
-            // main.go:
-            import "myapp/pkg/server/internal/handler"  // ✗ Compiler error
+                if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
+                    body, _ := io.ReadAll(resp.Body)
+                    return fmt.Errorf("API error %s: %s", resp.Status, string(body))
+                }
+
+                if result != nil {
+                    return json.NewDecoder(resp.Body).Decode(result)
+                }
+                return nil
+            }
           annotations:
-            - type: idiom
-              label: Scoped internal/
+            - type: pattern
+              label: POST Response
               text: >-
-                <code>internal/</code> scopes to its parent. You can have multiple <code>internal/</code> directories at
-                different levels, each with different access scopes.
-  challenges:
-    - id: challenge_1
-      concept: Project Layout
+                POST endpoints typically return 201 (Created) with the created resource in the body, or 200 with a
+                result.
+            - type: idiom
+              label: Optional Result
+              text: Checking <code>result != nil</code> lets callers skip decoding when they don't need the response body.
+    - id: challenge_2
+      concept: Middleware
       docLinks:
-        - url: https://go.dev/doc/modules/layout
-          title: "Go Docs: Module layout"
-          note: organizing Go modules
-        - url: https://pkg.go.dev/cmd/go#hdr-Internal_Directories
-          title: "Go Command: internal directories"
-          note: access control via internal/
+        - url: https://pkg.go.dev/net/http#Handler
+          title: Package http.Handler
+          note: the Handler interface
+        - url: https://pkg.go.dev/net/http#HandlerFunc
+          title: Package http.HandlerFunc
+          note: adapter for functions as handlers
       variants:
         - id: v1
-          title: Design CLI Tool Layout
+          title: Logging Middleware
           description: >-
-            Design the directory structure for a CLI tool called <code>taskctl</code> that has: a main entry point,
-            command handlers (list, add, delete), a config loader, and a task storage layer. Show the files and their
-            package declarations.
+            Write a logging middleware that prints the HTTP method, path, and duration for every request. It should wrap
+            an <code>http.Handler</code> and return a new <code>http.Handler</code>.
           hints:
-            - Use <code>cmd/</code> for command definitions or keep it flat for small CLIs.
-            - Put storage in <code>internal/</code> to hide the implementation.
-            - Config can be in the main package for simple tools.
+            - Capture <code>start := time.Now()</code> before calling <code>next.ServeHTTP(w, r)</code>.
+            - After the call, compute duration with <code>time.Since(start)</code>.
+            - Use <code>http.HandlerFunc</code> to convert a function into an <code>http.Handler</code>.
           solution: |-
-            // taskctl/
-            // ├── go.mod              module github.com/you/taskctl
-            // ├── main.go             package main — entry point, wires everything
-            // ├── commands.go         package main — list, add, delete handlers
-            // ├── config.go           package main — config loading
-            // └── internal/
-            //     └── store/
-            //         └── store.go    package store — task persistence
-
-            // main.go
-            package main
-
-            func main() {
-                cfg := LoadConfig()
-                store := store.New(cfg.DBPath)
-                runCLI(store)
+            func LoggingMiddleware(next http.Handler) http.Handler {
+                return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+                    start := time.Now()
+                    next.ServeHTTP(w, r)
+                    fmt.Printf("%s %s %v\n", r.Method, r.URL.Path, time.Since(start))
+                })
             }
-
-            // internal/store/store.go
-            package store
-
-            type Store struct { path string }
-            func New(path string) *Store { return &Store{path: path} }
-            func (s *Store) List() ([]Task, error) { /* ... */ }
           annotations:
             - type: pattern
-              label: Flat Main Package
+              label: Middleware Signature
               text: >-
-                Small CLI tools can keep everything in <code>package main</code> with multiple files. Only extract
-                packages when complexity grows.
+                Go middleware is <code>func(http.Handler) http.Handler</code>. It wraps the next handler, does work
+                before/after, and calls <code>next.ServeHTTP</code>.
             - type: idiom
-              label: internal/ for Storage
+              label: HandlerFunc Adapter
               text: >-
-                Storage implementations are internal details. Users of your tool don't need to import your database
-                layer.
+                <code>http.HandlerFunc</code> converts a function with the right signature into an
+                <code>http.Handler</code> interface value.
         - id: v2
-          title: Design Library Layout
+          title: Auth Middleware
           description: >-
-            Design the directory structure for a reusable Go library called <code>httputil</code> that provides: public
-            middleware functions, a public client wrapper, and internal rate limiting logic.
+            Write an auth middleware that checks for an <code>Authorization</code> header. If missing, return <code>401
+            Unauthorized</code>. If present, call the next handler.
           hints:
-            - "The root package is the public API: <code>package httputil</code>."
-            - Rate limiting goes in <code>internal/</code>.
-            - Middleware and client can be in the root or separate public packages.
+            - "Read header: <code>r.Header.Get(\"Authorization\")</code>."
+            - If empty, use <code>http.Error(w, "Unauthorized", http.StatusUnauthorized)</code> and return.
+            - If present, call <code>next.ServeHTTP(w, r)</code> to continue.
           solution: |-
-            // httputil/
-            // ├── go.mod             module github.com/you/httputil
-            // ├── client.go          package httputil — public client wrapper
-            // ├── middleware.go       package httputil — public middleware
-            // └── internal/
-            //     └── ratelimit/
-            //         └── limiter.go  package ratelimit — hidden implementation
-
-            // client.go
-            package httputil
-
-            import "github.com/you/httputil/internal/ratelimit"
-
-            type Client struct {
-                limiter *ratelimit.Limiter
+            func AuthMiddleware(next http.Handler) http.Handler {
+                return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+                    token := r.Header.Get("Authorization")
+                    if token == "" {
+                        http.Error(w, "Unauthorized", http.StatusUnauthorized)
+                        return
+                    }
+                    next.ServeHTTP(w, r)
+                })
             }
-
-            // middleware.go
-            package httputil
-
-            func LoggingMiddleware(next http.Handler) http.Handler { /* ... */ }
-            func AuthMiddleware(next http.Handler) http.Handler { /* ... */ }
           annotations:
             - type: pattern
-              label: Library Root = API
+              label: Guard Middleware
               text: >-
-                For libraries, the root package IS the public API. Users import just <code>httputil</code> and access
-                all public functions.
-            - type: idiom
-              label: Hide Complexity
+                Auth middleware acts as a guard: it short-circuits the request if the check fails, preventing the
+                handler from running.
+            - type: gotcha
+              label: Return After Error
               text: >-
-                Internal packages keep implementation details private. The rate limiter can change freely without
-                breaking library users.
+                After calling <code>http.Error()</code>, you MUST return. Otherwise the next handler will still run and
+                may write conflicting headers.
         - id: v3
-          title: Resolve Circular Import
+          title: Middleware Chain
           description: >-
-            Package <code>user</code> imports <code>order</code> to get user's orders, and package <code>order</code>
-            imports <code>user</code> to get order's owner. This causes a circular import. Design a solution.
+            Write a <code>Chain</code> function that applies multiple middleware to a handler. The first middleware in
+            the list should be the outermost wrapper.
           hints:
-            - "Option 1: Extract shared types into a third package (e.g., <code>models</code>)."
-            - "Option 2: Use an interface to break the dependency."
-            - "Option 3: Merge the packages if they're tightly coupled."
+            - "Type: <code>func Chain(h http.Handler, mw ...func(http.Handler) http.Handler) http.Handler</code>."
+            - "Loop through middleware and wrap: <code>h = mw(h)</code>."
+            - The last middleware applied runs first (outermost).
           solution: |-
-            // PROBLEM: user ↔ order circular import
-
-            // SOLUTION: Extract shared types into a models package
-
-            // models/models.go
-            package models
-
-            type User struct {
-                ID   int
-                Name string
+            func Chain(h http.Handler, middlewares ...func(http.Handler) http.Handler) http.Handler {
+                for _, mw := range middlewares {
+                    h = mw(h)
+                }
+                return h
             }
 
-            type Order struct {
-                ID     int
-                UserID int
-                Amount float64
-            }
-
-            // user/user.go
-            package user
-
-            import "myapp/models"
-
-            func GetUser(id int) *models.User { /* ... */ }
-
-            // order/order.go
-            package order
-
-            import "myapp/models"
-
-            func GetOrders(userID int) []models.Order { /* ... */ }
-
-            // No circular import — both packages import models, not each other
+            // Usage:
+            handler := Chain(
+                myHandler,
+                LoggingMiddleware,
+                AuthMiddleware,
+            )
+            http.ListenAndServe(":8080", handler)
           annotations:
             - type: pattern
-              label: Third Package
+              label: Middleware Chain
+              text: Chaining middleware creates a pipeline. Each layer wraps the previous one, like layers of an onion.
+            - type: gotcha
+              label: Order Matters
               text: >-
-                The most common fix for circular imports: extract shared types into a neutral <code>models</code> or
-                <code>types</code> package that both can import.
-            - type: pattern
-              label: Interface Solution
-              text: >-
-                Alternatively, define an interface in one package and have the other implement it. This breaks the
-                compile-time dependency.
+                The last middleware applied wraps the outermost layer. If you want logging first, list it first — it
+                gets applied last and wraps everything.

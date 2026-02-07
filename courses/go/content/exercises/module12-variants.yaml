@@ -1,1267 +1,1131 @@
 conceptLinks:
-  Parallel Sum: "#lesson-goroutines"
-  Timeout Pattern: "#lesson-select"
-  Fan-Out Fan-In: "#lesson-fan-out-fan-in"
-  Rate Limiter: "#lesson-ticker"
-  Graceful Shutdown: "#lesson-signals"
+  Functional Options: "#lesson-functional-options"
+  Factory Pattern: "#lesson-factory-pattern"
+  Strategy Pattern: "#lesson-strategy-pattern"
+  Builder Pattern: "#lesson-builder-pattern"
 sharedContent: {}
 variants:
   warmups:
     - id: warmup_1
-      concept: Parallel Sum
+      concept: Functional Options
       variants:
         - id: v1
-          title: Parallel Sum
+          title: HTTP Client with Options
           description: >-
-            Write <code>func parallelSum(nums []int, workers int) int</code> that splits a slice into
-            <code>workers</code> chunks, sums each chunk in a separate goroutine, and combines the partial sums via a
-            channel. Return the total sum.
+            Create an <code>HTTPClient</code> struct with fields <code>timeout</code> (<code>time.Duration</code>),
+            <code>retries</code> (<code>int</code>), and <code>baseURL</code> (<code>string</code>). Implement the
+            functional options pattern with <code>WithTimeout</code>, <code>WithRetries</code>, and
+            <code>WithBaseURL</code>. Write a constructor <code>NewHTTPClient(opts ...Option) *HTTPClient</code> that
+            applies all options with a default timeout of 30 seconds.
           hints:
-            - Create a buffered channel <code>make(chan int, workers)</code> for partial sums.
-            - Calculate <code>chunkSize := len(nums) / workers</code> and handle the last chunk getting any remainder.
-            - Launch <code>workers</code> goroutines, then receive <code>workers</code> results.
+            - Define <code>type Option func(*HTTPClient)</code> as your option function type.
+            - Each <code>With</code> function returns a closure that modifies the client.
           solution: |-
-            func parallelSum(nums []int, workers int) int {
-                ch := make(chan int, workers)
-                chunkSize := len(nums) / workers
+            type HTTPClient struct {
+                timeout time.Duration
+                retries int
+                baseURL string
+            }
 
-                for i := 0; i < workers; i++ {
-                    start := i * chunkSize
-                    end := start + chunkSize
-                    if i == workers-1 {
-                        end = len(nums)
-                    }
-                    go func(chunk []int) {
-                        sum := 0
-                        for _, n := range chunk {
-                            sum += n
-                        }
-                        ch <- sum
-                    }(nums[start:end])
-                }
+            type Option func(*HTTPClient)
 
-                total := 0
-                for i := 0; i < workers; i++ {
-                    total += <-ch
+            func WithTimeout(d time.Duration) Option {
+                return func(c *HTTPClient) { c.timeout = d }
+            }
+
+            func WithRetries(n int) Option {
+                return func(c *HTTPClient) { c.retries = n }
+            }
+
+            func WithBaseURL(url string) Option {
+                return func(c *HTTPClient) { c.baseURL = url }
+            }
+
+            func NewHTTPClient(opts ...Option) *HTTPClient {
+                c := &HTTPClient{timeout: 30 * time.Second}
+                for _, opt := range opts {
+                    opt(c)
                 }
-                return total
+                return c
             }
           annotations:
             - type: idiom
-              label: Buffered Channel
+              label: Functional Options
               text: >-
-                Using a buffered channel sized to the number of workers prevents goroutines from blocking on send. Each
-                goroutine sends once and exits.
+                The functional options pattern uses variadic closures to configure structs. This is idiomatic Go and
+                avoids large config structs or multiple constructors.
             - type: gotcha
-              label: Slice Sharing
+              label: Default Values
               text: >-
-                Pass the sub-slice as a function argument to the goroutine closure. Capturing loop variables directly
-                causes a data race.
+                Always set sensible defaults before applying options. A zero-value timeout means no timeout, which can
+                cause hanging requests.
         - id: v2
-          title: Parallel Max
+          title: Database Connection with Options
           description: >-
-            Write <code>func parallelMax(nums []int, workers int) int</code> that splits a slice into
-            <code>workers</code> chunks, finds the maximum in each chunk using a goroutine, and returns the overall
-            maximum.
+            Create a <code>DBConn</code> struct with fields <code>host</code> (<code>string</code>), <code>port</code>
+            (<code>int</code>), and <code>maxConns</code> (<code>int</code>). Implement functional options
+            <code>WithHost</code>, <code>WithPort</code>, and <code>WithMaxConns</code>. Write <code>NewDBConn(opts
+            ...DBOption) *DBConn</code> with defaults: host <code>"localhost"</code>, port <code>5432</code>, maxConns
+            <code>10</code>.
           hints:
-            - Each goroutine finds the max of its chunk and sends it on a channel.
-            - The main goroutine receives all partial max values and finds the global max.
-            - Initialize your result with the first received value, then compare.
+            - Define <code>type DBOption func(*DBConn)</code>.
+            - Set defaults in the constructor before applying options.
           solution: |-
-            func parallelMax(nums []int, workers int) int {
-                ch := make(chan int, workers)
-                chunkSize := len(nums) / workers
+            type DBConn struct {
+                host     string
+                port     int
+                maxConns int
+            }
 
-                for i := 0; i < workers; i++ {
-                    start := i * chunkSize
-                    end := start + chunkSize
-                    if i == workers-1 {
-                        end = len(nums)
-                    }
-                    go func(chunk []int) {
-                        mx := chunk[0]
-                        for _, n := range chunk[1:] {
-                            if n > mx {
-                                mx = n
-                            }
-                        }
-                        ch <- mx
-                    }(nums[start:end])
-                }
+            type DBOption func(*DBConn)
 
-                result := <-ch
-                for i := 1; i < workers; i++ {
-                    if v := <-ch; v > result {
-                        result = v
-                    }
+            func WithHost(h string) DBOption {
+                return func(c *DBConn) { c.host = h }
+            }
+
+            func WithPort(p int) DBOption {
+                return func(c *DBConn) { c.port = p }
+            }
+
+            func WithMaxConns(n int) DBOption {
+                return func(c *DBConn) { c.maxConns = n }
+            }
+
+            func NewDBConn(opts ...DBOption) *DBConn {
+                c := &DBConn{host: "localhost", port: 5432, maxConns: 10}
+                for _, opt := range opts {
+                    opt(c)
                 }
-                return result
+                return c
             }
           annotations:
-            - type: complexity
-              label: O(n)
+            - type: idiom
+              label: Sensible Defaults
               text: >-
-                Each element is visited exactly once across all goroutines, plus O(workers) to combine results. Total is
-                O(n).
-            - type: gotcha
-              label: Empty Chunk
+                Idiomatic Go constructors provide zero-configuration usability. NewDBConn() with no arguments should
+                return a working connection to localhost.
+            - type: alternative
+              label: Config Struct
               text: >-
-                If len(nums) < workers, some chunks will be empty. Guard against indexing chunk[0] on an empty slice to
-                avoid a panic.
+                An alternative is passing a Config struct, but functional options scale better when adding new settings
+                without breaking existing callers.
         - id: v3
-          title: Parallel Word Count
+          title: Server with Options
           description: >-
-            Write <code>func parallelWordCount(texts []string, workers int) int</code> that splits a slice of text
-            strings into <code>workers</code> chunks, counts words in each chunk in a goroutine (using
-            <code>strings.Fields</code>), and returns the total word count.
+            Create a <code>Server</code> struct with fields <code>addr</code> (<code>string</code>),
+            <code>readTimeout</code> (<code>time.Duration</code>), and <code>maxBodySize</code> (<code>int64</code>).
+            Implement functional options <code>WithAddr</code>, <code>WithReadTimeout</code>, and
+            <code>WithMaxBodySize</code>. Write <code>NewServer(opts ...ServerOption) *Server</code> with defaults: addr
+            <code>":8080"</code>, readTimeout <code>5*time.Second</code>, maxBodySize <code>1 &lt;&lt; 20</code> (1MB).
           hints:
-            - Use <code>strings.Fields(text)</code> to split text into words.
-            - Each goroutine sums <code>len(strings.Fields(text))</code> for its chunk of texts.
-            - Combine partial counts the same way as parallel sum.
+            - Define <code>type ServerOption func(*Server)</code>.
+            - Use <code>1 &lt;&lt; 20</code> for 1MB in bytes.
           solution: |-
-            func parallelWordCount(texts []string, workers int) int {
-                ch := make(chan int, workers)
-                chunkSize := len(texts) / workers
+            type Server struct {
+                addr        string
+                readTimeout time.Duration
+                maxBodySize int64
+            }
 
-                for i := 0; i < workers; i++ {
-                    start := i * chunkSize
-                    end := start + chunkSize
-                    if i == workers-1 {
-                        end = len(texts)
-                    }
-                    go func(chunk []string) {
-                        count := 0
-                        for _, text := range chunk {
-                            count += len(strings.Fields(text))
-                        }
-                        ch <- count
-                    }(texts[start:end])
-                }
+            type ServerOption func(*Server)
 
-                total := 0
-                for i := 0; i < workers; i++ {
-                    total += <-ch
+            func WithAddr(a string) ServerOption {
+                return func(s *Server) { s.addr = a }
+            }
+
+            func WithReadTimeout(d time.Duration) ServerOption {
+                return func(s *Server) { s.readTimeout = d }
+            }
+
+            func WithMaxBodySize(n int64) ServerOption {
+                return func(s *Server) { s.maxBodySize = n }
+            }
+
+            func NewServer(opts ...ServerOption) *Server {
+                s := &Server{addr: ":8080", readTimeout: 5 * time.Second, maxBodySize: 1 << 20}
+                for _, opt := range opts {
+                    opt(s)
                 }
-                return total
+                return s
             }
           annotations:
-            - type: stdlib
-              label: strings.Fields
-              text: >-
-                strings.Fields splits a string around whitespace and is more robust than strings.Split(s, " ") because
-                it handles multiple spaces and leading/trailing whitespace.
             - type: idiom
-              label: Map-Reduce
+              label: Bit Shifting for Sizes
+              text: Using 1 << 20 for 1MB is idiomatic in Go. The standard library itself uses this pattern for byte sizes.
+            - type: pattern
+              label: Functional Options
               text: >-
-                This is a basic map-reduce: map each text to a word count in parallel, then reduce by summing. Go's
-                goroutines and channels make this pattern natural.
+                This pattern was popularized by Dave Cheney and Rob Pike. It allows API evolution without breaking
+                backward compatibility.
         - id: v4
-          title: Parallel Filter
+          title: Cache with Options
           description: >-
-            Write <code>func parallelFilter(nums []int, workers int) []int</code> that splits a slice into
-            <code>workers</code> chunks, filters for even numbers in each chunk using a goroutine, and merges the
-            results into a single slice.
+            Create a <code>Cache</code> struct with fields <code>maxSize</code> (<code>int</code>), <code>ttl</code>
+            (<code>time.Duration</code>), and <code>onEvict</code> (<code>func(string)</code>). Implement functional
+            options <code>WithMaxSize</code>, <code>WithTTL</code>, and <code>WithOnEvict</code>. Write
+            <code>NewCache(opts ...CacheOption) *Cache</code> with defaults: maxSize <code>100</code>, ttl
+            <code>5*time.Minute</code>, nil onEvict.
           hints:
-            - Each goroutine sends a <code>[]int</code> of even numbers (not individual ints).
-            - Use a buffered channel of type <code>chan []int</code>.
-            - Append each partial result to the final slice.
+            - Define <code>type CacheOption func(*Cache)</code>.
+            - The <code>onEvict</code> callback is a function value; it can be nil by default.
           solution: |-
-            func parallelFilter(nums []int, workers int) []int {
-                ch := make(chan []int, workers)
-                chunkSize := len(nums) / workers
+            type Cache struct {
+                maxSize int
+                ttl     time.Duration
+                onEvict func(string)
+            }
 
-                for i := 0; i < workers; i++ {
-                    start := i * chunkSize
-                    end := start + chunkSize
-                    if i == workers-1 {
-                        end = len(nums)
-                    }
-                    go func(chunk []int) {
-                        var evens []int
-                        for _, n := range chunk {
-                            if n%2 == 0 {
-                                evens = append(evens, n)
-                            }
-                        }
-                        ch <- evens
-                    }(nums[start:end])
-                }
+            type CacheOption func(*Cache)
 
-                var result []int
-                for i := 0; i < workers; i++ {
-                    result = append(result, <-ch...)
+            func WithMaxSize(n int) CacheOption {
+                return func(c *Cache) { c.maxSize = n }
+            }
+
+            func WithTTL(d time.Duration) CacheOption {
+                return func(c *Cache) { c.ttl = d }
+            }
+
+            func WithOnEvict(fn func(string)) CacheOption {
+                return func(c *Cache) { c.onEvict = fn }
+            }
+
+            func NewCache(opts ...CacheOption) *Cache {
+                c := &Cache{maxSize: 100, ttl: 5 * time.Minute}
+                for _, opt := range opts {
+                    opt(c)
                 }
-                return result
+                return c
             }
           annotations:
-            - type: gotcha
-              label: Order Not Guaranteed
-              text: >-
-                Goroutines may complete in any order. The result slice may not match the original order. If order
-                matters, use indexed results or sort afterward.
             - type: idiom
-              label: Slice of Slices
+              label: Callback Options
               text: >-
-                Sending []int per goroutine is more efficient than sending individual ints. It reduces channel
-                operations and contention.
+                Functional options can accept function values as callbacks. This is common in Go libraries for hooks
+                like eviction handlers, middleware, and error handlers.
+            - type: gotcha
+              label: Nil Function Check
+              text: >-
+                Always check if a callback is non-nil before calling it: <code>if c.onEvict != nil { c.onEvict(key)
+                }</code>. Calling a nil function panics.
     - id: warmup_2
-      concept: Timeout Pattern
+      concept: Factory Pattern
       variants:
         - id: v1
-          title: Timeout Pattern
+          title: Logger Factory
           description: >-
-            Write <code>func doWithTimeout(timeout time.Duration) (string, error)</code> that launches a slow operation
-            in a goroutine. Use <code>select</code> with <code>time.After</code> to return the result if it completes in
-            time, or an error if it times out.
+            Create a <code>Logger</code> interface with a <code>Log(msg string)</code> method. Implement
+            <code>ConsoleLogger</code> (prints to stdout), <code>FileLogger</code> (has a <code>file</code> field), and
+            <code>NullLogger</code> (discards). Write <code>NewLogger(logType string) Logger</code> that returns the
+            right implementation for <code>"console"</code>, <code>"file"</code>, or <code>"null"</code>.
           hints:
-            - Create a buffered channel <code>ch := make(chan string, 1)</code> so the goroutine does not leak.
-            - >-
-              Use <code>select</code> with two cases: <code>case result := &lt;-ch</code> and <code>case
-              &lt;-time.After(timeout)</code>.
-            - Return <code>fmt.Errorf("operation timed out")</code> in the timeout case.
+            - Use a <code>switch</code> statement on the <code>logType</code> string.
+            - Each struct must have a <code>Log(msg string)</code> method to satisfy the interface.
           solution: |-
-            func doWithTimeout(timeout time.Duration) (string, error) {
-                ch := make(chan string, 1)
-                go func() {
-                    result := slowOperation()
-                    ch <- result
-                }()
+            type Logger interface {
+                Log(msg string)
+            }
 
-                select {
-                case result := <-ch:
-                    return result, nil
-                case <-time.After(timeout):
-                    return "", fmt.Errorf("operation timed out")
+            type ConsoleLogger struct{}
+            func (l *ConsoleLogger) Log(msg string) { fmt.Println(msg) }
+
+            type FileLogger struct{ file string }
+            func (l *FileLogger) Log(msg string) { /* write to l.file */ }
+
+            type NullLogger struct{}
+            func (l *NullLogger) Log(msg string) {}
+
+            func NewLogger(logType string) Logger {
+                switch logType {
+                case "console":
+                    return &ConsoleLogger{}
+                case "file":
+                    return &FileLogger{file: "app.log"}
+                case "null":
+                    return &NullLogger{}
+                default:
+                    return &ConsoleLogger{}
                 }
             }
           annotations:
             - type: idiom
-              label: Select + time.After
+              label: Interface Return
               text: >-
-                The select statement with time.After is the standard Go timeout pattern. It cleanly handles the race
-                between completion and deadline.
-            - type: gotcha
-              label: Goroutine Leak
+                Factory functions in Go return interfaces, not concrete types. This allows callers to depend on
+                behavior, not implementation.
+            - type: pattern
+              label: Factory Method
               text: >-
-                Use a buffered channel (size 1) so the goroutine can send even after timeout. Otherwise it blocks
-                forever, leaking the goroutine.
+                The factory pattern centralizes object creation. Callers don't need to know about concrete types like
+                ConsoleLogger or FileLogger.
         - id: v2
-          title: Context Timeout
+          title: Storage Factory
           description: >-
-            Write <code>func fetchWithContext(ctx context.Context) (string, error)</code> that launches a slow operation
-            in a goroutine. Use <code>select</code> to return the result or return an error if the context is cancelled
-            or times out.
+            Create a <code>Storage</code> interface with <code>Save(key, value string) error</code> and <code>Load(key
+            string) (string, error)</code>. Implement <code>MemoryStorage</code> (uses a map), <code>FileStorage</code>
+            (has a <code>dir</code> field), and <code>NullStorage</code> (returns empty). Write
+            <code>NewStorage(storageType string) Storage</code>.
           hints:
-            - Use <code>ctx.Done()</code> in the select to detect cancellation.
-            - Use <code>ctx.Err()</code> to get the reason (deadline exceeded or cancelled).
             - >-
-              The caller creates the context: <code>ctx, cancel := context.WithTimeout(context.Background(),
-              2*time.Second)</code>.
+              The <code>MemoryStorage</code> needs a <code>map[string]string</code> field initialized with
+              <code>make</code>.
+            - Return a sensible default (like <code>MemoryStorage</code>) for unknown types.
           solution: |-
-            func fetchWithContext(ctx context.Context) (string, error) {
-                ch := make(chan string, 1)
-                go func() {
-                    result := slowOperation()
-                    ch <- result
-                }()
+            type Storage interface {
+                Save(key, value string) error
+                Load(key string) (string, error)
+            }
 
-                select {
-                case result := <-ch:
-                    return result, nil
-                case <-ctx.Done():
-                    return "", ctx.Err()
+            type MemoryStorage struct {
+                data map[string]string
+            }
+
+            func (s *MemoryStorage) Save(key, value string) error {
+                s.data[key] = value
+                return nil
+            }
+
+            func (s *MemoryStorage) Load(key string) (string, error) {
+                v, ok := s.data[key]
+                if !ok {
+                    return "", fmt.Errorf("key not found: %s", key)
+                }
+                return v, nil
+            }
+
+            type FileStorage struct{ dir string }
+            func (s *FileStorage) Save(key, value string) error { return nil }
+            func (s *FileStorage) Load(key string) (string, error) { return "", nil }
+
+            type NullStorage struct{}
+            func (s *NullStorage) Save(key, value string) error { return nil }
+            func (s *NullStorage) Load(key string) (string, error) { return "", nil }
+
+            func NewStorage(storageType string) Storage {
+                switch storageType {
+                case "memory":
+                    return &MemoryStorage{data: make(map[string]string)}
+                case "file":
+                    return &FileStorage{dir: "/tmp"}
+                case "null":
+                    return &NullStorage{}
+                default:
+                    return &MemoryStorage{data: make(map[string]string)}
                 }
             }
           annotations:
-            - type: idiom
-              label: Context for Cancellation
-              text: >-
-                Using context.Context is the preferred Go pattern for timeouts and cancellation. It propagates through
-                call chains and supports both deadlines and manual cancellation.
-            - type: stdlib
-              label: context Package
-              text: >-
-                context.WithTimeout and context.WithCancel create derived contexts. Always call the cancel function
-                (usually via defer) to release resources.
-        - id: v3
-          title: First Response Wins
-          description: >-
-            Write <code>func fetchFirst(urls []string, timeout time.Duration) (string, error)</code> that launches a
-            goroutine for each URL (simulated by sleeping a random duration and returning the URL). Return whichever
-            result arrives first, or an error if all timeout.
-          hints:
-            - Create a single channel and have all goroutines send to it.
-            - The first <code>select</code> case that fires is the fastest response.
-            - Use <code>time.After(timeout)</code> as the fallback.
-          solution: |-
-            func fetchFirst(urls []string, timeout time.Duration) (string, error) {
-                ch := make(chan string, len(urls))
-                for _, url := range urls {
-                    go func(u string) {
-                        // simulate variable latency
-                        time.Sleep(time.Duration(rand.Intn(100)) * time.Millisecond)
-                        ch <- u
-                    }(url)
-                }
-
-                select {
-                case result := <-ch:
-                    return result, nil
-                case <-time.After(timeout):
-                    return "", fmt.Errorf("all requests timed out")
-                }
-            }
-          annotations:
-            - type: pattern
-              label: First Response Wins
-              text: >-
-                Sending redundant requests to multiple backends and taking the first response is a latency optimization
-                pattern. Go's select makes this trivial.
             - type: gotcha
-              label: Goroutine Cleanup
+              label: Map Initialization
               text: >-
-                The losing goroutines still complete and send to the buffered channel. The buffer prevents them from
-                leaking, but they still consume resources until they finish.
-        - id: v4
-          title: Retry with Timeout
+                Always initialize maps with make() before use. A nil map will panic on write. The factory is the right
+                place to ensure proper initialization.
+            - type: idiom
+              label: Error Returns
+              text: >-
+                Go interfaces that do I/O should return errors. Even in-memory implementations return error to satisfy
+                the interface contract.
+        - id: v3
+          title: Notifier Factory
           description: >-
-            Write <code>func retryWithTimeout(maxRetries int, timeout time.Duration, fn func() (string, error)) (string,
-            error)</code> that retries <code>fn</code> up to <code>maxRetries</code> times. Each attempt has the given
-            timeout. Return the first successful result or the last error.
+            Create a <code>Notifier</code> interface with <code>Send(to, message string) error</code>. Implement
+            <code>EmailNotifier</code>, <code>SMSNotifier</code>, and <code>SlackNotifier</code>. Write
+            <code>NewNotifier(channel string) Notifier</code> that returns the correct implementation for
+            <code>"email"</code>, <code>"sms"</code>, or <code>"slack"</code>.
           hints:
-            - Loop up to <code>maxRetries</code>.
-            - For each attempt, run <code>fn</code> in a goroutine with a <code>select</code> timeout.
-            - If it succeeds, return immediately. If all retries fail, return the last error.
+            - Each notifier struct can have relevant fields (e.g., <code>apiKey</code> for Slack).
+            - Switch on the <code>channel</code> parameter.
           solution: |-
-            func retryWithTimeout(maxRetries int, timeout time.Duration, fn func() (string, error)) (string, error) {
-                var lastErr error
-                for i := 0; i < maxRetries; i++ {
-                    type result struct {
-                        val string
-                        err error
-                    }
-                    ch := make(chan result, 1)
-                    go func() {
-                        v, err := fn()
-                        ch <- result{v, err}
-                    }()
+            type Notifier interface {
+                Send(to, message string) error
+            }
 
-                    select {
-                    case r := <-ch:
-                        if r.err == nil {
-                            return r.val, nil
-                        }
-                        lastErr = r.err
-                    case <-time.After(timeout):
-                        lastErr = fmt.Errorf("attempt %d timed out", i+1)
-                    }
+            type EmailNotifier struct{}
+            func (n *EmailNotifier) Send(to, message string) error {
+                fmt.Printf("Email to %s: %s\n", to, message)
+                return nil
+            }
+
+            type SMSNotifier struct{}
+            func (n *SMSNotifier) Send(to, message string) error {
+                fmt.Printf("SMS to %s: %s\n", to, message)
+                return nil
+            }
+
+            type SlackNotifier struct{ webhook string }
+            func (n *SlackNotifier) Send(to, message string) error {
+                fmt.Printf("Slack to %s: %s\n", to, message)
+                return nil
+            }
+
+            func NewNotifier(channel string) Notifier {
+                switch channel {
+                case "email":
+                    return &EmailNotifier{}
+                case "sms":
+                    return &SMSNotifier{}
+                case "slack":
+                    return &SlackNotifier{webhook: "https://hooks.slack.com/..."}
+                default:
+                    return &EmailNotifier{}
                 }
-                return "", fmt.Errorf("all %d retries failed: %w", maxRetries, lastErr)
             }
           annotations:
             - type: pattern
-              label: Retry Pattern
+              label: Factory Method
               text: >-
-                Combining retry loops with per-attempt timeouts is a resilience pattern. Each attempt gets a fresh
-                timeout rather than sharing a global deadline.
+                Factories decouple creation from usage. The caller only needs to know the interface, making it easy to
+                add new notification channels later.
+            - type: alternative
+              label: Registry Pattern
+              text: >-
+                For extensibility, consider a map-based registry: <code>var factories = map[string]func()
+                Notifier{}</code> with a Register function.
+        - id: v4
+          title: Parser Factory
+          description: >-
+            Create a <code>Parser</code> interface with <code>Parse(data []byte) (map[string]any, error)</code>.
+            Implement <code>JSONParser</code>, <code>YAMLParser</code>, and <code>TOMLParser</code>. Write
+            <code>NewParser(format string) Parser</code> that returns the correct parser for <code>"json"</code>,
+            <code>"yaml"</code>, or <code>"toml"</code>.
+          hints:
+            - >-
+              For the <code>JSONParser</code>, use <code>encoding/json</code> to unmarshal into
+              <code>map[string]any</code>.
+            - Return an error for unknown formats instead of a default.
+          solution: |-
+            type Parser interface {
+                Parse(data []byte) (map[string]any, error)
+            }
+
+            type JSONParser struct{}
+            func (p *JSONParser) Parse(data []byte) (map[string]any, error) {
+                var result map[string]any
+                err := json.Unmarshal(data, &result)
+                return result, err
+            }
+
+            type YAMLParser struct{}
+            func (p *YAMLParser) Parse(data []byte) (map[string]any, error) {
+                return nil, fmt.Errorf("YAML parsing not implemented")
+            }
+
+            type TOMLParser struct{}
+            func (p *TOMLParser) Parse(data []byte) (map[string]any, error) {
+                return nil, fmt.Errorf("TOML parsing not implemented")
+            }
+
+            func NewParser(format string) (Parser, error) {
+                switch format {
+                case "json":
+                    return &JSONParser{}, nil
+                case "yaml":
+                    return &YAMLParser{}, nil
+                case "toml":
+                    return &TOMLParser{}, nil
+                default:
+                    return nil, fmt.Errorf("unsupported format: %s", format)
+                }
+            }
+          annotations:
             - type: idiom
-              label: Anonymous Struct
+              label: Error on Unknown
               text: >-
-                Using a local anonymous struct <code>type result struct{...}</code> inside the function is idiomatic Go
-                for grouping return values through a channel.
+                When a factory cannot create a valid object, return an error instead of a default. This follows Go's
+                explicit error handling philosophy.
+            - type: stdlib
+              label: encoding/json
+              text: >-
+                The standard library's json.Unmarshal can decode into map[string]any for dynamic JSON. This is useful
+                when the structure is not known at compile time.
   challenges:
     - id: challenge_1
       block: 1
-      difficulty: 3
-      concept: Fan-Out Fan-In
+      difficulty: 2
+      concept: Strategy Pattern
       docLinks:
-        - url: https://pkg.go.dev/sync#WaitGroup
-          title: Package sync.WaitGroup
-          note: coordinating goroutines
-        - url: https://go.dev/blog/pipelines
-          title: "Go Blog: Pipelines and cancellation"
-          note: fan-out fan-in pattern
+        - url: https://go.dev/doc/effective_go#interfaces
+          title: "Effective Go: Interfaces"
+          note: interfaces enable strategy swapping
+        - url: https://pkg.go.dev/sort#Interface
+          title: Package sort.Interface
+          note: stdlib strategy pattern example
       variants:
         - id: v1
-          title: Merge Channels
+          title: Sort Strategy
           description: >-
-            Write <code>func merge(channels ...&lt;-chan int) &lt;-chan int</code> that takes multiple input channels
-            and merges all their values into a single output channel. The output channel should close when all inputs
-            are exhausted. Use a <code>sync.WaitGroup</code> to track completion.
-          functionSignature: func merge(channels ...<-chan int) <-chan int
+            Define a <code>Sorter</code> interface with <code>Sort([]int) []int</code>. Implement
+            <code>BubbleSort</code> and <code>QuickSort</code>. Create a <code>DataProcessor</code> struct that accepts
+            any <code>Sorter</code> and has a <code>Process(data []int) []int</code> method that delegates to the
+            strategy.
+          functionSignature: func NewDataProcessor(s Sorter) *DataProcessor
           testCases:
-            - input: ch1 sends 1,2; ch2 sends 3,4; ch3 sends 5,6
-              output: merged channel produces all 6 values (order may vary)
-            - input: ch1 sends 10; ch2 sends 20
-              output: merged channel produces 10 and 20
+            - input: NewDataProcessor(&BubbleSort{}), []int{3, 1, 2}
+              output: "[]int{1, 2, 3}"
+            - input: NewDataProcessor(&QuickSort{}), []int{5, 3, 8, 1}
+              output: "[]int{1, 3, 5, 8}"
           hints:
             - title: 🤔 Think about it
-              content: >-
-                How do you know when all input channels are done? How do you safely close the output channel exactly
-                once?
+              content: How can you allow a struct to use different algorithms without knowing which one at compile time?
             - title: 💡 Hint
               content: >-
-                Use sync.WaitGroup: Add(1) for each input channel, Done() when a reader goroutine finishes. A separate
-                goroutine waits on wg.Wait() then closes the output.
+                Store the Sorter interface as a field on DataProcessor. The Process method just calls the sorter's Sort
+                method.
             - title: 🔧 Pattern
-              content: >-
-                <pre>1. Create output channel
-
-                2. For each input: wg.Add(1), launch goroutine that ranges over input and sends to output, defer
-                wg.Done()
-
-                3. Launch goroutine: wg.Wait(), close(output)
-
-                4. Return output</pre>
+              content: |-
+                <pre>1. Define Sorter interface with Sort([]int) []int
+                2. Implement BubbleSort and QuickSort
+                3. DataProcessor holds a Sorter field
+                4. Process() delegates to the stored strategy</pre>
           solution: |-
-            func merge(channels ...<-chan int) <-chan int {
-                out := make(chan int)
-                var wg sync.WaitGroup
-
-                for _, ch := range channels {
-                    wg.Add(1)
-                    go func(c <-chan int) {
-                        defer wg.Done()
-                        for n := range c {
-                            out <- n
-                        }
-                    }(ch)
-                }
-
-                go func() {
-                    wg.Wait()
-                    close(out)
-                }()
-
-                return out
+            type Sorter interface {
+                Sort([]int) []int
             }
-          difficulty: 3
+
+            type BubbleSort struct{}
+            func (b *BubbleSort) Sort(data []int) []int {
+                n := len(data)
+                result := make([]int, n)
+                copy(result, data)
+                for i := 0; i < n-1; i++ {
+                    for j := 0; j < n-i-1; j++ {
+                        if result[j] > result[j+1] {
+                            result[j], result[j+1] = result[j+1], result[j]
+                        }
+                    }
+                }
+                return result
+            }
+
+            type QuickSort struct{}
+            func (q *QuickSort) Sort(data []int) []int {
+                result := make([]int, len(data))
+                copy(result, data)
+                sort.Ints(result)
+                return result
+            }
+
+            type DataProcessor struct {
+                sorter Sorter
+            }
+
+            func NewDataProcessor(s Sorter) *DataProcessor {
+                return &DataProcessor{sorter: s}
+            }
+
+            func (dp *DataProcessor) Process(data []int) []int {
+                return dp.sorter.Sort(data)
+            }
+          difficulty: 2
           annotations:
             - type: pattern
-              label: Fan-In
+              label: Strategy Pattern
               text: >-
-                Fan-in merges multiple channels into one. This is a core Go concurrency pattern used in pipelines, event
-                systems, and multiplexing.
+                The strategy pattern encapsulates algorithms behind an interface, letting you swap them at runtime
+                without changing the client code.
             - type: idiom
-              label: WaitGroup + Close
+              label: Accept Interfaces
               text: >-
-                The WaitGroup/close pattern ensures the output channel closes exactly once after all inputs are drained.
-                Never close a channel from the receiver side.
-            - type: gotcha
-              label: Channel Direction
-              text: >-
-                Use <-chan int (receive-only) in the function signature to prevent the merge function from accidentally
-                sending to input channels.
-        - id: v2
-          title: Pipeline Stages
-          description: >-
-            Build a three-stage pipeline: <code>func generate(nums ...int) &lt;-chan int</code> sends numbers,
-            <code>func square(in &lt;-chan int) &lt;-chan int</code> squares each, <code>func filter(in &lt;-chan int,
-            min int) &lt;-chan int</code> keeps only values >= min. Each stage runs in its own goroutine and closes its
-            output when done.
-          functionSignature: func generate(nums ...int) <-chan int
-          testCases:
-            - input: generate(1,2,3,4,5) -> square -> filter(_, 10)
-              output: "channel produces: 16, 25"
-            - input: generate(2,3) -> square -> filter(_, 5)
-              output: "channel produces: 9"
-          hints:
-            - title: 🤔 Think about it
-              content: How does each stage know when to stop? What happens when you range over a closed channel?
-            - title: 💡 Hint
-              content: >-
-                Each stage reads from its input channel using range (which stops when the channel closes), processes the
-                value, and sends to its output channel. Close the output when the range loop ends.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>1. generate: send each num, close output
-                2. square: range over input, send n*n, close output
-                3. filter: range over input, send if >= min, close output
-                4. Wire: filter(square(generate(nums...)), min)</pre>
-          solution: |-
-            func generate(nums ...int) <-chan int {
-                out := make(chan int)
-                go func() {
-                    for _, n := range nums {
-                        out <- n
-                    }
-                    close(out)
-                }()
-                return out
-            }
-
-            func square(in <-chan int) <-chan int {
-                out := make(chan int)
-                go func() {
-                    for n := range in {
-                        out <- n * n
-                    }
-                    close(out)
-                }()
-                return out
-            }
-
-            func filter(in <-chan int, min int) <-chan int {
-                out := make(chan int)
-                go func() {
-                    for n := range in {
-                        if n >= min {
-                            out <- n
-                        }
-                    }
-                    close(out)
-                }()
-                return out
-            }
-          difficulty: 3
-          annotations:
-            - type: pattern
-              label: Pipeline Pattern
-              text: >-
-                Go pipelines connect stages via channels. Each stage is a goroutine that reads, processes, and writes.
-                Closing channels propagates completion through the pipeline.
-            - type: idiom
-              label: Range Over Channel
-              text: >-
-                Using for n := range ch reads until the channel is closed. This is the idiomatic way to consume a
-                channel and avoids infinite loops.
-        - id: v3
-          title: Worker Pool
-          description: >-
-            Write <code>func workerPool(jobs []int, numWorkers int) []int</code> that processes jobs through a pool of
-            workers. Each worker reads from a shared jobs channel, doubles the value, and sends the result to a results
-            channel. Return all results.
-          functionSignature: func workerPool(jobs []int, numWorkers int) []int
-          testCases:
-            - input: "[]int{1, 2, 3, 4, 5}, 3"
-              output: "[]int{2, 4, 6, 8, 10} (order may vary)"
-            - input: "[]int{10, 20}, 2"
-              output: "[]int{20, 40} (order may vary)"
-          hints:
-            - title: 🤔 Think about it
-              content: How do multiple workers share work? Who closes the jobs channel, and who closes the results channel?
-            - title: 💡 Hint
-              content: >-
-                Send all jobs to a jobs channel, then close it. Workers range over the jobs channel. Use a WaitGroup to
-                know when all workers are done, then close the results channel.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>1. Create jobs and results channels
-                2. Launch numWorkers goroutines that range over jobs
-                3. Send all jobs, close jobs channel
-                4. WaitGroup: wg.Wait() then close results
-                5. Collect results with range</pre>
-          solution: |-
-            func workerPool(jobs []int, numWorkers int) []int {
-                jobsCh := make(chan int, len(jobs))
-                resultsCh := make(chan int, len(jobs))
-
-                var wg sync.WaitGroup
-                for i := 0; i < numWorkers; i++ {
-                    wg.Add(1)
-                    go func() {
-                        defer wg.Done()
-                        for job := range jobsCh {
-                            resultsCh <- job * 2
-                        }
-                    }()
-                }
-
-                for _, job := range jobs {
-                    jobsCh <- job
-                }
-                close(jobsCh)
-
-                go func() {
-                    wg.Wait()
-                    close(resultsCh)
-                }()
-
-                var results []int
-                for r := range resultsCh {
-                    results = append(results, r)
-                }
-                return results
-            }
-          difficulty: 3
-          annotations:
-            - type: pattern
-              label: Worker Pool
-              text: >-
-                The worker pool pattern bounds concurrency. N workers share a jobs channel, limiting how many tasks run
-                simultaneously. This prevents resource exhaustion.
-            - type: gotcha
-              label: Channel Close Order
-              text: >-
-                Close the jobs channel after sending all jobs (so workers stop). Close the results channel after all
-                workers finish (so the collector stops). Wrong order causes deadlock or panic.
-        - id: v4
-          title: Fan-Out Map
-          description: >-
-            Write <code>func fanOutMap(inputs []string, workers int, fn func(string) string) []string</code> that
-            distributes strings to <code>workers</code> goroutines, applies <code>fn</code> to each, and collects
-            results preserving original order.
-          functionSignature: func fanOutMap(inputs []string, workers int, fn func(string) string) []string
-          testCases:
-            - input: "[]string{\"hello\", \"world\"}, 2, strings.ToUpper"
-              output: "[\"HELLO\", \"WORLD\"]"
-            - input: "[]string{\"a\", \"b\", \"c\"}, 2, func(s string) string { return s + \"!\" }"
-              output: "[\"a!\", \"b!\", \"c!\"]"
-          hints:
-            - title: 🤔 Think about it
-              content: >-
-                How do you preserve order when goroutines complete at different times? What extra information do you
-                need to send with each result?
-            - title: 💡 Hint
-              content: >-
-                Send indexed jobs (index + input) to workers. Workers return indexed results (index + output).
-                Pre-allocate the result slice and place each result at its original index.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>1. Create indexed job struct {index int, value string}
-                2. Workers read jobs, apply fn, send indexed results
-                3. Pre-allocate results := make([]string, len(inputs))
-                4. Place each result at results[index]</pre>
-          solution: |-
-            func fanOutMap(inputs []string, workers int, fn func(string) string) []string {
-                type job struct {
-                    index int
-                    value string
-                }
-                type result struct {
-                    index int
-                    value string
-                }
-
-                jobsCh := make(chan job, len(inputs))
-                resultsCh := make(chan result, len(inputs))
-
-                var wg sync.WaitGroup
-                for i := 0; i < workers; i++ {
-                    wg.Add(1)
-                    go func() {
-                        defer wg.Done()
-                        for j := range jobsCh {
-                            resultsCh <- result{index: j.index, value: fn(j.value)}
-                        }
-                    }()
-                }
-
-                for i, input := range inputs {
-                    jobsCh <- job{index: i, value: input}
-                }
-                close(jobsCh)
-
-                go func() {
-                    wg.Wait()
-                    close(resultsCh)
-                }()
-
-                results := make([]string, len(inputs))
-                for r := range resultsCh {
-                    results[r.index] = r.value
-                }
-                return results
-            }
-          difficulty: 3
-          annotations:
-            - type: pattern
-              label: Ordered Fan-Out
-              text: >-
-                By pairing each job with its index, you can reconstruct the original order despite concurrent
-                processing. This is essential when output order must match input order.
+                Go proverb: 'Accept interfaces, return structs.' DataProcessor accepts a Sorter interface, not a
+                concrete type.
             - type: complexity
-              label: O(n)
+              label: Varies
               text: >-
-                Each input is processed exactly once. The worker pool bounds parallelism to 'workers' goroutines while
-                still processing all n items.
+                BubbleSort is O(n^2), QuickSort is O(n log n) average. The strategy pattern lets you choose the right
+                algorithm for your data.
+        - id: v2
+          title: Compression Strategy
+          description: >-
+            Define a <code>Compressor</code> interface with <code>Compress(data []byte) []byte</code>. Implement
+            <code>GzipCompressor</code> and <code>NoopCompressor</code>. Create a <code>FileProcessor</code> struct that
+            accepts a <code>Compressor</code> and has <code>ProcessFile(data []byte) []byte</code>.
+          functionSignature: func NewFileProcessor(c Compressor) *FileProcessor
+          testCases:
+            - input: NewFileProcessor(&NoopCompressor{}), []byte("hello")
+              output: "[]byte(\"hello\")"
+            - input: NewFileProcessor(&GzipCompressor{}), []byte("hello")
+              output: compressed bytes (shorter or gzip header)
+          hints:
+            - title: 🤔 Think about it
+              content: What if you want to swap compression algorithms without changing the file processing logic?
+            - title: 💡 Hint
+              content: >-
+                The FileProcessor stores a Compressor interface. ProcessFile delegates to it. NoopCompressor just
+                returns data unchanged.
+            - title: 🔧 Pattern
+              content: |-
+                <pre>1. Define Compressor interface
+                2. Implement GzipCompressor using compress/gzip
+                3. Implement NoopCompressor returning input unchanged
+                4. FileProcessor holds Compressor and delegates</pre>
+          solution: |-
+            type Compressor interface {
+                Compress(data []byte) []byte
+            }
+
+            type GzipCompressor struct{}
+            func (g *GzipCompressor) Compress(data []byte) []byte {
+                var buf bytes.Buffer
+                w := gzip.NewWriter(&buf)
+                w.Write(data)
+                w.Close()
+                return buf.Bytes()
+            }
+
+            type NoopCompressor struct{}
+            func (n *NoopCompressor) Compress(data []byte) []byte {
+                return data
+            }
+
+            type FileProcessor struct {
+                compressor Compressor
+            }
+
+            func NewFileProcessor(c Compressor) *FileProcessor {
+                return &FileProcessor{compressor: c}
+            }
+
+            func (fp *FileProcessor) ProcessFile(data []byte) []byte {
+                return fp.compressor.Compress(data)
+            }
+          difficulty: 2
+          annotations:
+            - type: pattern
+              label: Strategy Pattern
+              text: >-
+                Swapping GzipCompressor for NoopCompressor changes behavior without touching FileProcessor. This is the
+                Open/Closed Principle in action.
+            - type: stdlib
+              label: compress/gzip
+              text: >-
+                Go's compress/gzip package provides gzip compression. Always call Close() on the writer to flush and
+                finalize the compressed data.
+        - id: v3
+          title: Pricing Strategy
+          description: >-
+            Define a <code>PricingStrategy</code> interface with <code>Calculate(basePrice float64) float64</code>.
+            Implement <code>RegularPricing</code> (no discount), <code>MemberPricing</code> (10% off), and
+            <code>VIPPricing</code> (25% off). Create an <code>Order</code> struct that uses a strategy for
+            <code>Total(basePrice float64) float64</code>.
+          functionSignature: func NewOrder(strategy PricingStrategy) *Order
+          testCases:
+            - input: NewOrder(&RegularPricing{}), 100.0
+              output: "100.0"
+            - input: NewOrder(&MemberPricing{}), 100.0
+              output: "90.0"
+            - input: NewOrder(&VIPPricing{}), 100.0
+              output: "75.0"
+          hints:
+            - title: 🤔 Think about it
+              content: How can the same Order type compute different totals depending on who is buying?
+            - title: 💡 Hint
+              content: Store the PricingStrategy in Order. The Total method calls strategy.Calculate(basePrice).
+            - title: 🔧 Pattern
+              content: |-
+                <pre>1. Define PricingStrategy interface
+                2. RegularPricing returns price unchanged
+                3. MemberPricing returns price * 0.9
+                4. VIPPricing returns price * 0.75
+                5. Order delegates to its strategy</pre>
+          solution: |-
+            type PricingStrategy interface {
+                Calculate(basePrice float64) float64
+            }
+
+            type RegularPricing struct{}
+            func (r *RegularPricing) Calculate(basePrice float64) float64 {
+                return basePrice
+            }
+
+            type MemberPricing struct{}
+            func (m *MemberPricing) Calculate(basePrice float64) float64 {
+                return basePrice * 0.9
+            }
+
+            type VIPPricing struct{}
+            func (v *VIPPricing) Calculate(basePrice float64) float64 {
+                return basePrice * 0.75
+            }
+
+            type Order struct {
+                strategy PricingStrategy
+            }
+
+            func NewOrder(strategy PricingStrategy) *Order {
+                return &Order{strategy: strategy}
+            }
+
+            func (o *Order) Total(basePrice float64) float64 {
+                return o.strategy.Calculate(basePrice)
+            }
+          difficulty: 2
+          annotations:
+            - type: pattern
+              label: Strategy Pattern
+              text: >-
+                The pricing strategy can be changed at runtime, e.g., when a user upgrades to VIP. No changes to Order
+                are needed.
+            - type: gotcha
+              label: Float Precision
+              text: >-
+                Floating-point math can produce unexpected results (e.g., 0.1 + 0.2 != 0.3). For real money
+                calculations, use integers (cents) or a decimal library.
+        - id: v4
+          title: Validation Strategy
+          description: >-
+            Define a <code>Validator</code> interface with <code>Validate(value string) error</code>. Implement
+            <code>EmailValidator</code> (checks for @), <code>PhoneValidator</code> (checks all digits, length 10), and
+            <code>NotEmptyValidator</code>. Create a <code>FormField</code> struct that accepts a <code>Validator</code>
+            and has <code>SetValue(v string) error</code>.
+          functionSignature: func NewFormField(name string, v Validator) *FormField
+          testCases:
+            - input: NewFormField("email", &EmailValidator{}), "user@test.com"
+              output: nil (valid)
+            - input: NewFormField("email", &EmailValidator{}), "invalid"
+              output: "error: invalid email"
+            - input: NewFormField("phone", &PhoneValidator{}), "1234567890"
+              output: nil (valid)
+          hints:
+            - title: 🤔 Think about it
+              content: How can the same form field type validate differently depending on what data it holds?
+            - title: 💡 Hint
+              content: >-
+                FormField stores a Validator. SetValue calls Validate first. If valid, store the value; if not, return
+                the error.
+            - title: 🔧 Pattern
+              content: |-
+                <pre>1. Define Validator interface with Validate(string) error
+                2. EmailValidator checks strings.Contains(value, "@")
+                3. PhoneValidator checks length and all digits
+                4. FormField delegates validation before storing</pre>
+          solution: |-
+            type Validator interface {
+                Validate(value string) error
+            }
+
+            type EmailValidator struct{}
+            func (e *EmailValidator) Validate(value string) error {
+                if !strings.Contains(value, "@") {
+                    return fmt.Errorf("invalid email: missing @")
+                }
+                return nil
+            }
+
+            type PhoneValidator struct{}
+            func (p *PhoneValidator) Validate(value string) error {
+                if len(value) != 10 {
+                    return fmt.Errorf("phone must be 10 digits")
+                }
+                for _, c := range value {
+                    if c < '0' || c > '9' {
+                        return fmt.Errorf("phone must contain only digits")
+                    }
+                }
+                return nil
+            }
+
+            type NotEmptyValidator struct{}
+            func (n *NotEmptyValidator) Validate(value string) error {
+                if strings.TrimSpace(value) == "" {
+                    return fmt.Errorf("value cannot be empty")
+                }
+                return nil
+            }
+
+            type FormField struct {
+                name      string
+                value     string
+                validator Validator
+            }
+
+            func NewFormField(name string, v Validator) *FormField {
+                return &FormField{name: name, validator: v}
+            }
+
+            func (f *FormField) SetValue(v string) error {
+                if err := f.validator.Validate(v); err != nil {
+                    return fmt.Errorf("field %s: %w", f.name, err)
+                }
+                f.value = v
+                return nil
+            }
+          difficulty: 2
+          annotations:
+            - type: pattern
+              label: Strategy Pattern
+              text: >-
+                Each form field can have a different validation strategy. You can even compose validators by creating a
+                CompositeValidator that runs multiple checks.
+            - type: idiom
+              label: Error Wrapping
+              text: >-
+                Using fmt.Errorf with %w wraps the inner error, preserving the error chain. Callers can use errors.Is or
+                errors.As to inspect wrapped errors.
     - id: challenge_2
       block: 2
       difficulty: 3
-      concept: Rate Limiter
+      concept: Builder Pattern
       docLinks:
-        - url: https://pkg.go.dev/time#Ticker
-          title: Package time.Ticker
-          note: periodic ticks for rate limiting
-        - url: https://pkg.go.dev/golang.org/x/time/rate
-          title: Package rate (x/time)
-          note: production-grade rate limiter
+        - url: https://go.dev/doc/effective_go#methods
+          title: "Effective Go: Methods"
+          note: method chaining on pointer receivers
+        - url: https://pkg.go.dev/strings#Builder
+          title: Package strings.Builder
+          note: stdlib builder pattern example
       variants:
         - id: v1
-          title: Ticker Rate Limiter
+          title: SQL Query Builder
           description: >-
-            Build a <code>RateLimiter</code> struct that uses <code>time.Ticker</code> to allow at most N operations per
-            second. Implement <code>NewRateLimiter(perSecond int) *RateLimiter</code>, <code>Wait()</code> (blocks until
-            allowed), and <code>Stop()</code>.
-          functionSignature: func NewRateLimiter(perSecond int) *RateLimiter
+            Build a fluent SQL query builder. <code>NewQuery(table)</code> creates a query. Chain
+            <code>.Select(cols...)</code>, <code>.Where(cond, args...)</code>, and <code>.Limit(n)</code>. Call
+            <code>.String()</code> to get the SQL string. Example: <code>NewQuery("users").Select("name",
+            "email").Where("active = %t", true).Limit(10).String()</code> returns <code>"SELECT name, email FROM users
+            WHERE active = true LIMIT 10"</code>.
+          functionSignature: func NewQuery(table string) *Query
           testCases:
-            - input: NewRateLimiter(5) // 5 ops/sec
-              output: Wait() blocks ~200ms between calls
-            - input: NewRateLimiter(10) // 10 ops/sec
-              output: Wait() blocks ~100ms between calls
+            - input: NewQuery("users").Select("name").Where("active = %t", true).Limit(5).String()
+              output: "\"SELECT name FROM users WHERE active = true LIMIT 5\""
+            - input: NewQuery("orders").Select("*").String()
+              output: "\"SELECT * FROM orders\""
+            - input: NewQuery("products").Select("name", "price").Where("price > %d", 100).Limit(20).String()
+              output: "\"SELECT name, price FROM products WHERE price > 100 LIMIT 20\""
           hints:
             - title: 🤔 Think about it
-              content: If you want N operations per second, what is the interval between each allowed operation?
+              content: How do you make methods chainable? What must each method return?
             - title: 💡 Hint
               content: >-
-                Interval is time.Second / time.Duration(perSecond). Create a time.Ticker with that interval. Wait()
-                reads from ticker.C.
+                Each method modifies the Query and returns *Query (pointer to self). This enables method chaining. Store
+                columns, where clauses, and limit as fields.
             - title: 🔧 Pattern
               content: |-
-                <pre>1. RateLimiter has a *time.Ticker field
-                2. NewRateLimiter calculates interval, creates ticker
-                3. Wait() blocks on <-ticker.C
-                4. Stop() calls ticker.Stop()</pre>
+                <pre>1. Query struct: table, cols []string, wheres []string, limit int
+                2. NewQuery sets table, default cols to ["*"]
+                3. Select/Where/Limit modify fields and return q
+                4. String() assembles the SQL from fields</pre>
           solution: |-
-            type RateLimiter struct {
-                ticker *time.Ticker
+            type Query struct {
+                table  string
+                cols   []string
+                wheres []string
+                limit  int
             }
 
-            func NewRateLimiter(perSecond int) *RateLimiter {
-                return &RateLimiter{
-                    ticker: time.NewTicker(time.Second / time.Duration(perSecond)),
+            func NewQuery(table string) *Query {
+                return &Query{table: table, cols: []string{"*"}}
+            }
+
+            func (q *Query) Select(cols ...string) *Query {
+                q.cols = cols
+                return q
+            }
+
+            func (q *Query) Where(cond string, args ...any) *Query {
+                q.wheres = append(q.wheres, fmt.Sprintf(cond, args...))
+                return q
+            }
+
+            func (q *Query) Limit(n int) *Query {
+                q.limit = n
+                return q
+            }
+
+            func (q *Query) String() string {
+                sql := fmt.Sprintf("SELECT %s FROM %s",
+                    strings.Join(q.cols, ", "), q.table)
+                if len(q.wheres) > 0 {
+                    sql += " WHERE " + strings.Join(q.wheres, " AND ")
                 }
-            }
-
-            func (r *RateLimiter) Wait() {
-                <-r.ticker.C
-            }
-
-            func (r *RateLimiter) Stop() {
-                r.ticker.Stop()
-            }
-          difficulty: 3
-          annotations:
-            - type: stdlib
-              label: time.Ticker
-              text: >-
-                time.NewTicker sends values on its channel at regular intervals. Always call Stop() when done to release
-                the ticker's resources.
-            - type: idiom
-              label: Blocking Channel Read
-              text: >-
-                <-ticker.C blocks the caller until the next tick. This naturally throttles the calling code without
-                busy-waiting.
-        - id: v2
-          title: Token Bucket Limiter
-          description: >-
-            Build a <code>TokenBucket</code> rate limiter. It starts with <code>capacity</code> tokens and refills at
-            <code>rate</code> tokens per second. <code>Allow()</code> returns true if a token is available (consuming
-            it), false otherwise. Use a goroutine for refilling.
-          functionSignature: func NewTokenBucket(capacity int, rate int) *TokenBucket
-          testCases:
-            - input: NewTokenBucket(3, 1) // 3 burst, 1/sec refill
-              output: First 3 Allow() return true, 4th returns false
-            - input: NewTokenBucket(1, 10) // 1 burst, 10/sec refill
-              output: Allow() returns true, then false, then true after 100ms
-          hints:
-            - title: 🤔 Think about it
-              content: How do you safely modify the token count from both the refill goroutine and the Allow method?
-            - title: 💡 Hint
-              content: >-
-                Use a mutex to protect the tokens field. A background goroutine adds tokens at the refill rate using a
-                ticker. Allow() locks, checks tokens > 0, decrements, and returns.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>1. TokenBucket: tokens, capacity int, mu sync.Mutex, stop chan
-                2. Background goroutine: ticker at rate, add token if below capacity
-                3. Allow(): lock, if tokens > 0 decrement and return true
-                4. Stop(): close stop channel, stop ticker</pre>
-          solution: |-
-            type TokenBucket struct {
-                tokens   int
-                capacity int
-                mu       sync.Mutex
-                stop     chan struct{}
-                ticker   *time.Ticker
-            }
-
-            func NewTokenBucket(capacity int, rate int) *TokenBucket {
-                tb := &TokenBucket{
-                    tokens:   capacity,
-                    capacity: capacity,
-                    stop:     make(chan struct{}),
-                    ticker:   time.NewTicker(time.Second / time.Duration(rate)),
+                if q.limit > 0 {
+                    sql += fmt.Sprintf(" LIMIT %d", q.limit)
                 }
-                go func() {
-                    for {
-                        select {
-                        case <-tb.ticker.C:
-                            tb.mu.Lock()
-                            if tb.tokens < tb.capacity {
-                                tb.tokens++
-                            }
-                            tb.mu.Unlock()
-                        case <-tb.stop:
-                            tb.ticker.Stop()
-                            return
-                        }
-                    }
-                }()
-                return tb
-            }
-
-            func (tb *TokenBucket) Allow() bool {
-                tb.mu.Lock()
-                defer tb.mu.Unlock()
-                if tb.tokens > 0 {
-                    tb.tokens--
-                    return true
-                }
-                return false
-            }
-
-            func (tb *TokenBucket) Stop() {
-                close(tb.stop)
+                return sql
             }
           difficulty: 3
           annotations:
             - type: pattern
-              label: Token Bucket
+              label: Builder Pattern
               text: >-
-                The token bucket algorithm allows bursts up to capacity while maintaining an average rate. It is widely
-                used in API rate limiting and network traffic shaping.
+                The builder pattern constructs complex objects step by step. Method chaining (returning *Query) creates
+                a fluent API that reads like natural language.
             - type: gotcha
-              label: Mutex + Channel
+              label: SQL Injection
               text: >-
-                The mutex protects the tokens field from concurrent access. The stop channel signals the background
-                goroutine to exit. Mixing both is fine when they protect different things.
+                Using fmt.Sprintf for SQL parameters is unsafe in production. Real query builders use parameterized
+                queries ($1, $2) to prevent SQL injection.
+            - type: idiom
+              label: Pointer Receiver
+              text: >-
+                Methods return *Query (pointer), enabling chaining. If they returned Query (value), each method would
+                operate on a copy.
+        - id: v2
+          title: HTML Builder
+          description: >-
+            Build a fluent HTML element builder. <code>NewElement(tag)</code> creates an element. Chain <code>.Attr(key,
+            value)</code>, <code>.Class(cls)</code>, <code>.Text(content)</code>, and <code>.Child(elem)</code>. Call
+            <code>.Render()</code> to produce HTML. Example:
+            <code>NewElement("div").Class("container").Text("Hello").Render()</code> produces <code>&lt;div
+            class="container"&gt;Hello&lt;/div&gt;</code>.
+          functionSignature: func NewElement(tag string) *Element
+          testCases:
+            - input: NewElement("p").Text("Hello").Render()
+              output: "\"<p>Hello</p>\""
+            - input: NewElement("div").Class("box").Attr("id", "main").Text("Content").Render()
+              output: "\"<div class=\\\"box\\\" id=\\\"main\\\">Content</div>\""
+            - input: NewElement("a").Attr("href", "/home").Text("Home").Render()
+              output: "\"<a href=\\\"/home\\\">Home</a>\""
+          hints:
+            - title: 🤔 Think about it
+              content: What data does an HTML element consist of? How do you assemble the opening tag with attributes?
+            - title: 💡 Hint
+              content: >-
+                Store tag, attrs (map or slice of pairs), classes ([]string), text, and children. Render assembles them:
+                opening tag + attrs + text + children + closing tag.
+            - title: 🔧 Pattern
+              content: |-
+                <pre>1. Element: tag, attrs map, classes []string, text, children
+                2. Each method modifies Element and returns *Element
+                3. Render() builds: &lt;tag attrs&gt;text + children&lt;/tag&gt;
+                4. Class() is syntactic sugar for Attr("class", ...)</pre>
+          solution: |-
+            type Element struct {
+                tag      string
+                attrs    [][2]string
+                classes  []string
+                text     string
+                children []*Element
+            }
+
+            func NewElement(tag string) *Element {
+                return &Element{tag: tag}
+            }
+
+            func (e *Element) Attr(key, value string) *Element {
+                e.attrs = append(e.attrs, [2]string{key, value})
+                return e
+            }
+
+            func (e *Element) Class(cls string) *Element {
+                e.classes = append(e.classes, cls)
+                return e
+            }
+
+            func (e *Element) Text(content string) *Element {
+                e.text = content
+                return e
+            }
+
+            func (e *Element) Child(child *Element) *Element {
+                e.children = append(e.children, child)
+                return e
+            }
+
+            func (e *Element) Render() string {
+                var b strings.Builder
+                b.WriteString("<" + e.tag)
+                if len(e.classes) > 0 {
+                    b.WriteString(fmt.Sprintf(` class="%s"`, strings.Join(e.classes, " ")))
+                }
+                for _, attr := range e.attrs {
+                    b.WriteString(fmt.Sprintf(` %s="%s"`, attr[0], attr[1]))
+                }
+                b.WriteString(">")
+                b.WriteString(e.text)
+                for _, child := range e.children {
+                    b.WriteString(child.Render())
+                }
+                b.WriteString("</" + e.tag + ">")
+                return b.String()
+            }
+          difficulty: 3
+          annotations:
+            - type: pattern
+              label: Builder Pattern
+              text: >-
+                The builder creates a tree structure. Each method adds data and returns the builder for chaining.
+                Render() is the terminal operation.
+            - type: stdlib
+              label: strings.Builder
+              text: >-
+                Use strings.Builder for efficient string concatenation. It avoids allocating new strings on every
+                append, unlike string += operations.
         - id: v3
-          title: Sliding Window Limiter
+          title: Request Builder
           description: >-
-            Build a <code>SlidingWindow</code> rate limiter that allows at most <code>maxRequests</code> in the last
-            <code>window</code> duration. <code>Allow()</code> returns true if under the limit. Track request timestamps
-            and evict expired ones.
-          functionSignature: func NewSlidingWindow(maxRequests int, window time.Duration) *SlidingWindow
+            Build a fluent HTTP request builder. <code>NewRequest(method, url)</code> creates a request. Chain
+            <code>.Header(key, value)</code>, <code>.QueryParam(key, value)</code>, <code>.Body(data)</code>, and
+            <code>.Timeout(d)</code>. Call <code>.Build()</code> to produce a description string showing method, full
+            URL with query params, headers, and body.
+          functionSignature: func NewRequest(method, url string) *RequestBuilder
           testCases:
-            - input: NewSlidingWindow(3, time.Second)
-              output: 3 rapid Allow() return true, 4th returns false, true again after 1s
-            - input: NewSlidingWindow(1, 500*time.Millisecond)
-              output: Allow() true, then false, then true after 500ms
+            - input: >-
+                NewRequest("GET", "https://api.example.com/users").QueryParam("page", "1").Header("Accept",
+                "application/json").Build()
+              output: "\"GET https://api.example.com/users?page=1\\nAccept: application/json\""
+            - input: NewRequest("POST", "https://api.example.com/users").Body(`{"name":"Go"}`).Build()
+              output: "\"POST https://api.example.com/users\\n\\n{\\\"name\\\":\\\"Go\\\"}\""
           hints:
             - title: 🤔 Think about it
-              content: How do you track when each request happened? How do you efficiently remove old entries?
+              content: What parts make up a full HTTP request? How do query parameters attach to a URL?
             - title: 💡 Hint
               content: >-
-                Store timestamps in a slice. On each Allow(), remove timestamps older than now-window. If
-                len(timestamps) < maxRequests, add now and return true.
+                Store method, base URL, query params as key-value pairs, headers as key-value pairs, body, and timeout.
+                Build() assembles the URL with query string and formats the output.
             - title: 🔧 Pattern
               content: |-
-                <pre>1. SlidingWindow: timestamps []time.Time, max, window, mu
-                2. Allow(): lock, evict old timestamps
-                3. If len < max: append now, return true
-                4. Else return false</pre>
+                <pre>1. RequestBuilder: method, url, params, headers, body, timeout
+                2. QueryParam appends to params slice
+                3. Build() joins params with & and appends to URL with ?
+                4. Format: METHOD URL\nHeaders\n\nBody</pre>
           solution: |-
-            type SlidingWindow struct {
-                timestamps  []time.Time
-                maxRequests int
-                window      time.Duration
-                mu          sync.Mutex
+            type RequestBuilder struct {
+                method  string
+                url     string
+                params  [][2]string
+                headers [][2]string
+                body    string
+                timeout time.Duration
             }
 
-            func NewSlidingWindow(maxRequests int, window time.Duration) *SlidingWindow {
-                return &SlidingWindow{
-                    maxRequests: maxRequests,
-                    window:      window,
-                }
+            func NewRequest(method, url string) *RequestBuilder {
+                return &RequestBuilder{method: method, url: url}
             }
 
-            func (sw *SlidingWindow) Allow() bool {
-                sw.mu.Lock()
-                defer sw.mu.Unlock()
+            func (r *RequestBuilder) Header(key, value string) *RequestBuilder {
+                r.headers = append(r.headers, [2]string{key, value})
+                return r
+            }
 
-                now := time.Now()
-                cutoff := now.Add(-sw.window)
+            func (r *RequestBuilder) QueryParam(key, value string) *RequestBuilder {
+                r.params = append(r.params, [2]string{key, value})
+                return r
+            }
 
-                // Evict expired timestamps
-                valid := sw.timestamps[:0]
-                for _, ts := range sw.timestamps {
-                    if ts.After(cutoff) {
-                        valid = append(valid, ts)
+            func (r *RequestBuilder) Body(data string) *RequestBuilder {
+                r.body = data
+                return r
+            }
+
+            func (r *RequestBuilder) Timeout(d time.Duration) *RequestBuilder {
+                r.timeout = d
+                return r
+            }
+
+            func (r *RequestBuilder) Build() string {
+                fullURL := r.url
+                if len(r.params) > 0 {
+                    parts := make([]string, len(r.params))
+                    for i, p := range r.params {
+                        parts[i] = p[0] + "=" + p[1]
                     }
+                    fullURL += "?" + strings.Join(parts, "&")
                 }
-                sw.timestamps = valid
-
-                if len(sw.timestamps) < sw.maxRequests {
-                    sw.timestamps = append(sw.timestamps, now)
-                    return true
+                result := r.method + " " + fullURL
+                for _, h := range r.headers {
+                    result += "\n" + h[0] + ": " + h[1]
                 }
-                return false
+                if r.body != "" {
+                    result += "\n\n" + r.body
+                }
+                return result
             }
           difficulty: 3
           annotations:
             - type: pattern
-              label: Sliding Window
+              label: Builder Pattern
               text: >-
-                The sliding window tracks individual request times, giving more accurate rate limiting than fixed
-                windows. It prevents burst-at-boundary attacks.
-            - type: complexity
-              label: O(n)
-              text: >-
-                Each Allow() scans all stored timestamps to evict expired ones. For high-throughput systems, consider a
-                ring buffer or sorted structure for O(1) eviction.
-        - id: v4
-          title: Per-Key Rate Limiter
-          description: >-
-            Build a <code>PerKeyLimiter</code> that rate-limits per key (e.g., per user or per IP). <code>Allow(key
-            string)</code> returns true if the key has not exceeded <code>maxPerSecond</code> requests. Use a map of
-            last-allowed timestamps.
-          functionSignature: func NewPerKeyLimiter(maxPerSecond int) *PerKeyLimiter
-          testCases:
-            - input: limiter.Allow("user1") // first call
-              output: "true"
-            - input: limiter.Allow("user1") // immediate second call, maxPerSecond=1
-              output: "false"
-            - input: limiter.Allow("user2") // different key
-              output: "true"
-          hints:
-            - title: 🤔 Think about it
-              content: How do you track rate limits independently for each key? What data structure maps keys to their state?
-            - title: 💡 Hint
-              content: >-
-                Use a map[string]time.Time to store the last-allowed time per key. If now - lastAllowed >= interval,
-                allow and update. Use a mutex for thread safety.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>1. PerKeyLimiter: limits map[string]time.Time, interval, mu
-                2. interval = time.Second / maxPerSecond
-                3. Allow(key): lock, check last time for key
-                4. If enough time passed or new key: update and return true</pre>
-          solution: |-
-            type PerKeyLimiter struct {
-                limits   map[string]time.Time
-                interval time.Duration
-                mu       sync.Mutex
-            }
-
-            func NewPerKeyLimiter(maxPerSecond int) *PerKeyLimiter {
-                return &PerKeyLimiter{
-                    limits:   make(map[string]time.Time),
-                    interval: time.Second / time.Duration(maxPerSecond),
-                }
-            }
-
-            func (l *PerKeyLimiter) Allow(key string) bool {
-                l.mu.Lock()
-                defer l.mu.Unlock()
-
-                now := time.Now()
-                last, exists := l.limits[key]
-                if !exists || now.Sub(last) >= l.interval {
-                    l.limits[key] = now
-                    return true
-                }
-                return false
-            }
-          difficulty: 3
-          annotations:
-            - type: pattern
-              label: Per-Key Limiting
-              text: >-
-                Per-key rate limiting is essential for multi-tenant systems. Each user or IP gets its own rate limit,
-                preventing one user from starving others.
-            - type: gotcha
-              label: Memory Growth
-              text: >-
-                The limits map grows unboundedly. In production, add a background cleanup goroutine that evicts entries
-                older than the window to prevent memory leaks.
-    - id: challenge_3
-      block: 3
-      difficulty: 4
-      concept: Graceful Shutdown
-      docLinks:
-        - url: https://pkg.go.dev/os/signal#Notify
-          title: Package signal.Notify
-          note: receiving OS signals
-        - url: https://pkg.go.dev/context#WithCancel
-          title: Package context.WithCancel
-          note: cancellation propagation
-        - url: https://pkg.go.dev/net/http#Server.Shutdown
-          title: Package http.Server.Shutdown
-          note: graceful HTTP shutdown
-      variants:
-        - id: v1
-          title: Signal-Based Shutdown
-          description: >-
-            Write a program that starts a worker goroutine printing "working..." every 100ms. On receiving
-            <code>os.Interrupt</code> (Ctrl+C), signal the worker to stop via a channel, wait for it to finish, then
-            print "Done" and exit.
-          functionSignature: func main()
-          testCases:
-            - input: Run program, press Ctrl+C after ~500ms
-              output: Several 'working...' lines, then 'Worker stopping...', 'Done'
-            - input: Run program, press Ctrl+C immediately
-              output: "'Worker stopping...', 'Done'"
-          hints:
-            - title: 🤔 Think about it
-              content: How does the main goroutine tell the worker to stop? How does it know the worker has actually finished?
-            - title: 💡 Hint
-              content: >-
-                Use two channels: 'stop' (main tells worker to stop) and 'done' (worker confirms it stopped). The worker
-                uses select to check for stop signals between work iterations.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>1. Create stop and done channels
-                2. Worker: select on stop or default (do work)
-                3. signal.Notify(sigCh, os.Interrupt)
-                4. <-sigCh, close(stop), <-done, print Done</pre>
-          solution: |-
-            func main() {
-                stop := make(chan struct{})
-                done := make(chan struct{})
-
-                go func() {
-                    defer close(done)
-                    for {
-                        select {
-                        case <-stop:
-                            fmt.Println("Worker stopping...")
-                            return
-                        default:
-                            fmt.Println("working...")
-                            time.Sleep(100 * time.Millisecond)
-                        }
-                    }
-                }()
-
-                sigCh := make(chan os.Signal, 1)
-                signal.Notify(sigCh, os.Interrupt)
-                <-sigCh
-
-                fmt.Println("Shutting down...")
-                close(stop)
-                <-done
-                fmt.Println("Done")
-            }
-          difficulty: 4
-          annotations:
-            - type: idiom
-              label: Close to Broadcast
-              text: >-
-                Closing a channel wakes all goroutines blocked on it. This is the Go way to broadcast a cancellation
-                signal to multiple workers.
-            - type: stdlib
-              label: os/signal
-              text: >-
-                signal.Notify registers for OS signals. Use a buffered channel (size 1) to avoid missing the signal if
-                the receiver is not ready.
-        - id: v2
-          title: Context-Based Shutdown
-          description: >-
-            Rewrite graceful shutdown using <code>context.Context</code>. Create a cancellable context, pass it to the
-            worker. On Ctrl+C, cancel the context. The worker checks <code>ctx.Done()</code> in its select loop.
-          functionSignature: func worker(ctx context.Context, done chan struct{})
-          testCases:
-            - input: Run program, press Ctrl+C after ~300ms
-              output: Several 'working...' lines, then 'context canceled', 'Done'
-            - input: Run program, press Ctrl+C immediately
-              output: "'context canceled', 'Done'"
-          hints:
-            - title: 🤔 Think about it
-              content: How does context.WithCancel propagate cancellation? What channel does the worker monitor?
-            - title: 💡 Hint
-              content: >-
-                Create ctx, cancel := context.WithCancel(context.Background()). Pass ctx to the worker. Worker selects
-                on ctx.Done(). Main calls cancel() on signal.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>1. ctx, cancel := context.WithCancel(context.Background())
-                2. Worker: select on ctx.Done() or default
-                3. On signal: cancel()
-                4. <-done to wait for worker</pre>
-          solution: |-
-            func worker(ctx context.Context, done chan struct{}) {
-                defer close(done)
-                for {
-                    select {
-                    case <-ctx.Done():
-                        fmt.Println(ctx.Err())
-                        return
-                    default:
-                        fmt.Println("working...")
-                        time.Sleep(100 * time.Millisecond)
-                    }
-                }
-            }
-
-            func main() {
-                ctx, cancel := context.WithCancel(context.Background())
-                done := make(chan struct{})
-
-                go worker(ctx, done)
-
-                sigCh := make(chan os.Signal, 1)
-                signal.Notify(sigCh, os.Interrupt)
-                <-sigCh
-
-                fmt.Println("Shutting down...")
-                cancel()
-                <-done
-                fmt.Println("Done")
-            }
-          difficulty: 4
-          annotations:
-            - type: idiom
-              label: Context Cancellation
-              text: >-
-                Using context for cancellation is idiomatic Go. It integrates with the standard library (net/http,
-                database/sql) and propagates through call chains.
+                HTTP request builders are common in Go libraries. They ensure all parts of a request are set before
+                sending, avoiding partially-configured requests.
             - type: alternative
-              label: signal.NotifyContext
+              label: net/http
               text: >-
-                Go 1.16+ provides signal.NotifyContext which combines signal handling and context cancellation in one
-                call, simplifying the pattern.
-        - id: v3
-          title: Multi-Worker Shutdown
-          description: >-
-            Start 3 worker goroutines, each with an ID. On Ctrl+C, signal all workers to stop, wait for all to finish
-            using a <code>sync.WaitGroup</code>, then exit. Each worker should print its ID when stopping.
-          functionSignature: func main()
-          testCases:
-            - input: Run program, press Ctrl+C
-              output: All 3 workers print stopping messages, then 'All workers done'
-            - input: Workers have IDs 1, 2, 3
-              output: Each worker prints 'Worker N stopping...'
-          hints:
-            - title: 🤔 Think about it
-              content: How do you signal all workers at once? How do you wait for all of them to finish?
-            - title: 💡 Hint
-              content: >-
-                Close a shared 'stop' channel to broadcast to all workers. Use sync.WaitGroup with Add(3), and each
-                worker calls Done() when finished.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>1. stop channel, WaitGroup
-                2. Launch 3 workers: wg.Add(1) each, defer wg.Done()
-                3. Workers select on stop
-                4. On signal: close(stop), wg.Wait()
-                5. Print 'All workers done'</pre>
-          solution: |-
-            func main() {
-                stop := make(chan struct{})
-                var wg sync.WaitGroup
-
-                for i := 1; i <= 3; i++ {
-                    wg.Add(1)
-                    go func(id int) {
-                        defer wg.Done()
-                        for {
-                            select {
-                            case <-stop:
-                                fmt.Printf("Worker %d stopping...\n", id)
-                                return
-                            default:
-                                fmt.Printf("Worker %d working...\n", id)
-                                time.Sleep(100 * time.Millisecond)
-                            }
-                        }
-                    }(i)
-                }
-
-                sigCh := make(chan os.Signal, 1)
-                signal.Notify(sigCh, os.Interrupt)
-                <-sigCh
-
-                fmt.Println("Shutting down...")
-                close(stop)
-                wg.Wait()
-                fmt.Println("All workers done")
-            }
-          difficulty: 4
-          annotations:
-            - type: idiom
-              label: WaitGroup for Completion
-              text: >-
-                sync.WaitGroup tracks N goroutines. Each calls Done() when finished. Wait() blocks until all are done.
-                This is simpler than counting 'done' channels.
+                In production, use net/http.NewRequest and set headers directly. This builder is educational; real code
+                uses the standard library.
             - type: gotcha
-              label: Loop Variable Capture
+              label: URL Encoding
               text: >-
-                Pass the loop variable 'i' as a function argument: go func(id int){...}(i). Capturing 'i' directly in
-                the closure would give all goroutines the same value.
+                Query parameters should be URL-encoded in production. Use net/url.Values and its Encode() method to
+                handle special characters.
         - id: v4
-          title: Shutdown with Drain
+          title: Config Builder
           description: >-
-            Start a worker that processes jobs from a channel. On Ctrl+C, stop sending new jobs but let the worker
-            finish all queued jobs before exiting. Print the count of processed jobs at the end.
-          functionSignature: func main()
+            Build a fluent configuration builder. <code>NewConfig()</code> creates a config. Chain <code>.Set(key, value
+            string)</code>, <code>.SetInt(key string, value int)</code>, <code>.SetBool(key string, value bool)</code>,
+            and <code>.From(map[string]string)</code>. Call <code>.Build()</code> to return a
+            <code>map[string]string</code> of all settings. Call <code>.Get(key)</code> on the result to retrieve
+            values.
+          functionSignature: func NewConfig() *ConfigBuilder
           testCases:
-            - input: Queue 10 jobs, Ctrl+C after 3 processed
-              output: All 10 jobs processed, then 'Processed 10 jobs'
-            - input: Queue 5 jobs, Ctrl+C before any processed
-              output: All 5 jobs processed, then 'Processed 5 jobs'
+            - input: NewConfig().Set("host", "localhost").SetInt("port", 8080).Build()
+              output: "map[string]string{\"host\": \"localhost\", \"port\": \"8080\"}"
+            - input: NewConfig().SetBool("debug", true).Set("env", "dev").Build()
+              output: "map[string]string{\"debug\": \"true\", \"env\": \"dev\"}"
+            - input: "NewConfig().From(map[string]string{\"a\": \"1\"}).Set(\"b\", \"2\").Build()"
+              output: "map[string]string{\"a\": \"1\", \"b\": \"2\"}"
           hints:
             - title: 🤔 Think about it
-              content: >-
-                How does the worker know there are no more jobs coming? What is the difference between stopping
-                immediately and draining?
+              content: How do you store values of different types in a uniform way? What is the simplest common representation?
             - title: 💡 Hint
               content: >-
-                Close the jobs channel to signal no more jobs. The worker ranges over the channel and processes all
-                remaining items. This naturally drains the queue.
+                Store everything as map[string]string internally. SetInt uses strconv.Itoa, SetBool uses
+                strconv.FormatBool. From merges an existing map.
             - title: 🔧 Pattern
               content: |-
-                <pre>1. Buffered jobs channel, done channel
-                2. Producer goroutine sends jobs (checks for stop)
-                3. Worker ranges over jobs channel
-                4. On signal: close(stop), producer closes jobs
-                5. <-done waits for worker to drain all jobs</pre>
+                <pre>1. ConfigBuilder has data map[string]string
+                2. Set stores string directly
+                3. SetInt converts int to string
+                4. SetBool converts bool to string
+                5. From copies all entries from input map
+                6. Build returns a copy of the map</pre>
           solution: |-
-            func main() {
-                jobs := make(chan int, 20)
-                done := make(chan int)
-                stop := make(chan struct{})
-
-                // Producer
-                go func() {
-                    i := 0
-                    for {
-                        select {
-                        case <-stop:
-                            close(jobs)
-                            return
-                        default:
-                            i++
-                            jobs <- i
-                            time.Sleep(50 * time.Millisecond)
-                        }
-                    }
-                }()
-
-                // Worker
-                go func() {
-                    count := 0
-                    for job := range jobs {
-                        fmt.Printf("Processing job %d\n", job)
-                        time.Sleep(100 * time.Millisecond)
-                        count++
-                    }
-                    done <- count
-                }()
-
-                sigCh := make(chan os.Signal, 1)
-                signal.Notify(sigCh, os.Interrupt)
-                <-sigCh
-
-                fmt.Println("Shutting down, draining queue...")
-                close(stop)
-                count := <-done
-                fmt.Printf("Processed %d jobs\n", count)
+            type ConfigBuilder struct {
+                data map[string]string
             }
-          difficulty: 4
+
+            func NewConfig() *ConfigBuilder {
+                return &ConfigBuilder{data: make(map[string]string)}
+            }
+
+            func (c *ConfigBuilder) Set(key, value string) *ConfigBuilder {
+                c.data[key] = value
+                return c
+            }
+
+            func (c *ConfigBuilder) SetInt(key string, value int) *ConfigBuilder {
+                c.data[key] = strconv.Itoa(value)
+                return c
+            }
+
+            func (c *ConfigBuilder) SetBool(key string, value bool) *ConfigBuilder {
+                c.data[key] = strconv.FormatBool(value)
+                return c
+            }
+
+            func (c *ConfigBuilder) From(m map[string]string) *ConfigBuilder {
+                for k, v := range m {
+                    c.data[k] = v
+                }
+                return c
+            }
+
+            func (c *ConfigBuilder) Build() map[string]string {
+                result := make(map[string]string, len(c.data))
+                for k, v := range c.data {
+                    result[k] = v
+                }
+                return result
+            }
+          difficulty: 3
           annotations:
             - type: pattern
-              label: Graceful Drain
+              label: Builder Pattern
               text: >-
-                Draining a queue before shutdown ensures no work is lost. This is critical for message queues, task
-                processors, and database write buffers.
+                The config builder accumulates settings and produces an immutable result. Build() returns a copy, so
+                further modifications to the builder do not affect the built config.
             - type: idiom
-              label: Range Over Channel
+              label: Defensive Copy
               text: >-
-                Using range on the jobs channel processes all buffered items until the channel is closed. This is the
-                cleanest way to drain a work queue in Go.
-            - type: gotcha
-              label: Buffered Channel Drain
+                Build() copies the internal map to prevent callers from mutating the builder's state. This is a common
+                Go pattern for returning safe data.
+            - type: stdlib
+              label: strconv
               text: >-
-                A buffered channel can hold items even after close(). The worker's range loop will process all buffered
-                items before ending. This is by design.
+                The strconv package converts between strings and basic types. Itoa (int to ASCII), FormatBool, and their
+                Parse counterparts are essential Go tools.

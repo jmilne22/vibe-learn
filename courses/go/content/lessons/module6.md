@@ -1,212 +1,149 @@
-## Basic Arguments with os.Args
+## Generics Basics
 
-*os.Args basics*
+Go 1.18+ introduced generics. Write once, use with any type.
+
+*Generic functions*
 
 ```go
-package main
-
-import (
-    "fmt"
-    "os"
-)
-
-func main() {
-    // os.Args[0] = program name
-    // os.Args[1:] = actual arguments
-    fmt.Println("Program:", os.Args[0])
-    fmt.Println("Args:", os.Args[1:])
-    
-    if len(os.Args) < 2 {
-        fmt.Fprintln(os.Stderr, "Usage: program <name>")
-        os.Exit(1)
+// Generic function
+func Min[T constraints.Ordered](a, b T) T {
+    if a < b {
+        return a
     }
+    return b
+}
+
+// Works with any ordered type
+Min(3, 5)          // 3
+Min("a", "b")      // "a"
+Min(3.14, 2.71)    // 2.71
+
+// Generic Map function
+func Map[T, U any](items []T, f func(T) U) []U {
+    result := make([]U, len(items))
+    for i, item := range items {
+        result[i] = f(item)
+    }
+    return result
+}
+
+// Usage
+nums := []int{1, 2, 3}
+doubled := Map(nums, func(n int) int { return n * 2 })
+// [2, 4, 6]
+```
+
+## Type Parameters and Constraints
+
+Type parameters let you write generic types and functions. Constraints limit what types are allowed.
+
+*Type constraints*
+
+```go
+import "golang.org/x/exp/constraints"
+
+// Built-in constraints:
+// any          — no constraint (like interface{})
+// comparable   — supports == and !=
+// constraints.Ordered — supports < > <= >=
+
+// Custom constraint
+type Number interface {
+    ~int | ~int8 | ~int16 | ~int32 | ~int64 |
+    ~float32 | ~float64
+}
+
+func Sum[T Number](nums []T) T {
+    var total T
+    for _, n := range nums {
+        total += n
+    }
+    return total
+}
+
+Sum([]int{1, 2, 3})          // 6
+Sum([]float64{1.1, 2.2})     // 3.3
+```
+
+## Generic Data Structures
+
+Generics shine when building reusable data structures.
+
+*Generic linked list*
+
+```go
+type Node[T any] struct {
+    Value T
+    Next  *Node[T]
+}
+
+type LinkedList[T any] struct {
+    Head *Node[T]
+    Len  int
+}
+
+func (ll *LinkedList[T]) Push(val T) {
+    ll.Head = &Node[T]{Value: val, Next: ll.Head}
+    ll.Len++
+}
+
+func (ll *LinkedList[T]) Pop() (T, bool) {
+    if ll.Head == nil {
+        var zero T
+        return zero, false
+    }
+    val := ll.Head.Value
+    ll.Head = ll.Head.Next
+    ll.Len--
+    return val, true
 }
 ```
 
-*Terminal*
+## Generic Utility Functions
 
-```bash
-$ go run main.go hello world
-Program: /tmp/go-build.../main
-Args: [hello world]
-```
+Common patterns you'll use everywhere.
 
-## The flag Package
-
-*Using flag*
+*Utility functions*
 
 ```go
-package main
-
-import (
-    "flag"
-    "fmt"
-)
-
-func main() {
-    // Define flags (returns pointers!)
-    name := flag.String("name", "World", "Name to greet")
-    count := flag.Int("count", 1, "Times to greet")
-    verbose := flag.Bool("verbose", false, "Verbose output")
-    
-    // Parse command line
-    flag.Parse()
-    
-    // Access values (dereference pointers)
-    for i := 0; i < *count; i++ {
-        if *verbose {
-            fmt.Printf("[%d] Hello, %s!\n", i+1, *name)
-        } else {
-            fmt.Printf("Hello, %s!\n", *name)
+// Filter returns elements matching a predicate
+func Filter[T any](items []T, pred func(T) bool) []T {
+    var result []T
+    for _, item := range items {
+        if pred(item) {
+            result = append(result, item)
         }
     }
-    
-    // Remaining args (non-flag)
-    fmt.Println("Remaining:", flag.Args())
-}
-```
-
-*Usage*
-
-```bash
-$ go run main.go -name=Gopher -count=3 -verbose
-[1] Hello, Gopher!
-[2] Hello, Gopher!
-[3] Hello, Gopher!
-
-$ go run main.go -help
-Usage of main:
-  -count int
-        Times to greet (default 1)
-  -name string
-        Name to greet (default "World")
-  -verbose
-        Verbose output
-```
-
-## Cobra for Subcommands
-
-For complex CLIs with subcommands (like git, docker), use Cobra.
-
-*Install Cobra*
-
-```bash
-$ go get github.com/spf13/cobra@latest
-```
-
-*Cobra structure*
-
-```go
-// cmd/root.go
-package cmd
-
-import "github.com/spf13/cobra"
-
-var rootCmd = &cobra.Command{
-    Use:   "myapp",
-    Short: "My awesome CLI app",
+    return result
 }
 
-func Execute() error {
-    return rootCmd.Execute()
+// Reduce folds a slice into a single value
+func Reduce[T, U any](items []T, initial U, f func(U, T) U) U {
+    acc := initial
+    for _, item := range items {
+        acc = f(acc, item)
+    }
+    return acc
 }
 
-// cmd/greet.go
-var greetCmd = &cobra.Command{
-    Use:   "greet [name]",
-    Short: "Greet someone",
-    Args:  cobra.ExactArgs(1),
-    Run: func(cmd *cobra.Command, args []string) {
-        loud, _ := cmd.Flags().GetBool("loud")
-        name := args[0]
-        if loud {
-            fmt.Printf("HELLO, %s!!!\n", strings.ToUpper(name))
-        } else {
-            fmt.Printf("Hello, %s!\n", name)
+// Contains checks if a slice contains an element
+func Contains[T comparable](items []T, target T) bool {
+    for _, item := range items {
+        if item == target {
+            return true
         }
-    },
-}
-
-func init() {
-    greetCmd.Flags().BoolP("loud", "l", false, "Shout the greeting")
-    rootCmd.AddCommand(greetCmd)
-}
-```
-
-## stdin, stdout, stderr
-
-*Working with streams*
-
-```go
-package main
-
-import (
-    "bufio"
-    "fmt"
-    "os"
-    "strings"
-)
-
-func main() {
-    // Write to stdout (normal output)
-    fmt.Println("This goes to stdout")
-    
-    // Write to stderr (errors/progress)
-    fmt.Fprintln(os.Stderr, "This goes to stderr")
-    
-    // Read from stdin line by line
-    scanner := bufio.NewScanner(os.Stdin)
-    for scanner.Scan() {
-        line := scanner.Text()
-        fmt.Println(strings.ToUpper(line))
     }
-    
-    if err := scanner.Err(); err != nil {
-        fmt.Fprintln(os.Stderr, "Error:", err)
-        os.Exit(1)
-    }
-}
-```
-
-*Piping*
-
-```bash
-# Pipe input
-$ echo "hello world" | go run main.go
-HELLO WORLD
-
-# Redirect stderr
-$ go run main.go 2>/dev/null
-
-# Combine with other tools
-$ cat file.txt | go run main.go | grep pattern
-```
-
-## Exit Codes
-
-*Proper exit handling*
-
-```go
-func main() {
-    if err := run(); err != nil {
-        fmt.Fprintln(os.Stderr, "Error:", err)
-        os.Exit(1)
-    }
+    return false
 }
 
-func run() error {
-    // Your actual logic here
-    // Return errors instead of os.Exit()
-    return nil
-}
+// Usage
+nums := []int{1, 2, 3, 4, 5}
+evens := Filter(nums, func(n int) bool { return n%2 == 0 })
+// [2, 4]
 
-// Common exit codes:
-// 0 = success
-// 1 = general error
-// 2 = misuse of command
+sum := Reduce(nums, 0, func(acc, n int) int { return acc + n })
+// 15
 ```
-
-> **Pattern:** Keep main() thin. Put logic in run() that returns errors. Easier to test!
 
 ## Exercises
 
@@ -228,8 +165,8 @@ Combine concepts and learn patterns. Each challenge has multiple variants at dif
 
 ## Module 6 Summary
 
-- **os.Args** — raw argument access
-- **flag package** — built-in flag parsing
-- **Cobra** — for complex subcommand CLIs
-- **os.Stdin/Stdout/Stderr** — standard streams
-- **os.Exit(code)** — 0 = success, 1+ = error
+- **Generics** with `[T any]` or `[T constraints.Ordered]`
+- **Type constraints** limit which types a generic accepts
+- **Custom constraints** use interface unions with `~` for underlying types
+- **Generic utilities** like Filter, Map, Reduce eliminate repetitive code
+- **Generic data structures** like LinkedList work with any type

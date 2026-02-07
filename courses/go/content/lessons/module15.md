@@ -1,243 +1,223 @@
-## Why Sets Matter
+## Same Package, Multiple Files
 
-Tons of real problems are set problems in disguise:
+This is the first thing that confuses people from Python. In Go, all files in the same directory with the same `package` declaration are ONE unit. They share everything automatically.
 
-- What files are in directory A but not B?
-- Which users have permission X but not Y?
-- What config changed between versions?
-- Which items need to be added/removed to sync two lists?
-
-If you have two lists and need to compare them, you're doing set math.
-
-## Set Operations Visualized
-
-Set A: {1, 2, 3, 4}
-Set B: {3, 4, 5, 6}
-
-Union (A ∪ B)
-
-= {1, 2, 3, 4, 5, 6}
-
-// Everything
-
-Intersection (A ∩ B)
-
-= {3, 4}
-
-// In both
-
-Difference (A - B)
-
-= {1, 2}
-
-// In A but not B
-
-Difference (B - A)
-
-= {5, 6}
-
-// In B but not A
-
-## Sets in Go: map[T]struct{}
-
-Go doesn't have a built-in set type. Use a map with empty struct values.
-
-*Basic set*
+*main.go*
 
 ```go
-// struct{} takes zero bytes — perfect for "I just need the keys"
-type Set[T comparable] map[T]struct{}
+package main
 
-// Create from slice
-func NewSet[T comparable](items []T) Set[T] {
-    s := make(Set[T], len(items))
-    for _, item := range items {
-        s[item] = struct{}{}
-    }
-    return s
-}
-
-// Check membership — O(1)
-func (s Set[T]) Contains(item T) bool {
-    _, ok := s[item]
-    return ok
-}
-
-// Add item
-func (s Set[T]) Add(item T) {
-    s[item] = struct{}{}
-}
-
-// Convert back to slice
-func (s Set[T]) ToSlice() []T {
-    result := make([]T, 0, len(s))
-    for item := range s {
-        result = append(result, item)
-    }
-    return result
+func main() {
+    cfg := LoadConfig()  // Defined in config.go
+    Process(cfg)         // Defined in process.go
 }
 ```
 
-> **Why struct{} instead of bool?:** `map[string]bool` works but wastes 1 byte per entry. `map[string]struct{}` uses zero extra bytes. For large sets, this adds up.
-
-## Set Operations
-
-*Set operations*
+*config.go*
 
 ```go
-// Difference: items in A but not in B
-func Difference[T comparable](a, b Set[T]) Set[T] {
-    result := make(Set[T])
-    for item := range a {
-        if !b.Contains(item) {
-            result[item] = struct{}{}
-        }
-    }
-    return result
+package main
+
+type Config struct {
+    Name string
 }
 
-// Intersection: items in both A and B
-func Intersection[T comparable](a, b Set[T]) Set[T] {
-    result := make(Set[T])
-    for item := range a {
-        if b.Contains(item) {
-            result[item] = struct{}{}
-        }
-    }
-    return result
-}
-
-// Union: items in A or B or both
-func Union[T comparable](a, b Set[T]) Set[T] {
-    result := make(Set[T], len(a)+len(b))
-    for item := range a {
-        result[item] = struct{}{}
-    }
-    for item := range b {
-        result[item] = struct{}{}
-    }
-    return result
+func LoadConfig() *Config {
+    return &Config{Name: "test"}
 }
 ```
 
-## Comparing Two Lists
-
-The classic "diff" problem: given two lists, what's different?
-
-*Diff two slices*
+*process.go*
 
 ```go
-// Result of comparing two lists
-type Diff[T comparable] struct {
-    OnlyInA []T  // In first list but not second
-    OnlyInB []T  // In second list but not first
-    InBoth  []T  // In both lists
-}
+package main
 
-func Compare[T comparable](a, b []T) Diff[T] {
-    setA := NewSet(a)
-    setB := NewSet(b)
-    
-    return Diff[T]{
-        OnlyInA: Difference(setA, setB).ToSlice(),
-        OnlyInB: Difference(setB, setA).ToSlice(),
-        InBoth:  Intersection(setA, setB).ToSlice(),
-    }
-}
-
-// Usage
-current := []string{"a", "b", "c"}
-desired := []string{"b", "c", "d"}
-
-diff := Compare(current, desired)
-// diff.OnlyInA = ["a"]      // current has, desired doesn't
-// diff.OnlyInB = ["d"]      // desired has, current doesn't
-// diff.InBoth  = ["b", "c"] // both have
-```
-
-## Performance: O(n) vs O(n²)
-
-This is why sets matter for performance.
-
-*Naive approach — O(n²)*
-
-```go
-// DON'T DO THIS for large lists
-func slowDiff(a, b []string) []string {
-    var onlyInA []string
-    for _, itemA := range a {
-        found := false
-        for _, itemB := range b {  // Loops through B for every A
-            if itemA == itemB {
-                found = true
-                break
-            }
-        }
-        if !found {
-            onlyInA = append(onlyInA, itemA)
-        }
-    }
-    return onlyInA
-}
-// 1000 items × 1000 items = 1,000,000 comparisons
-```
-
-*Set approach — O(n)*
-
-```go
-// DO THIS
-func fastDiff(a, b []string) []string {
-    setB := NewSet(b)  // O(n) to build
-    
-    var onlyInA []string
-    for _, item := range a {
-        if !setB.Contains(item) {  // O(1) lookup!
-            onlyInA = append(onlyInA, item)
-        }
-    }
-    return onlyInA
-}
-// 1000 items = ~2000 operations
-```
-
-## Sorting for Consistent Output
-
-Maps (and therefore sets) iterate in random order. Sort before displaying.
-
-*Sorted output*
-
-```go
-import "sort"
-
-func (s Set[string]) SortedSlice() []string {
-    result := s.ToSlice()
-    sort.Strings(result)
-    return result
-}
-
-// For any comparable type that's also orderable
-func SortedKeys[K cmp.Ordered, V any](m map[K]V) []K {
-    keys := make([]K, 0, len(m))
-    for k := range m {
-        keys = append(keys, k)
-    }
-    slices.Sort(keys)
-    return keys
+func Process(cfg *Config) {  // Can use Config from config.go
+    fmt.Println(cfg.Name)
 }
 ```
 
-## Real World Applications
+No imports between them. They just... work together. The compiler sees them as one blob.
 
-Places you'll use this pattern:
+*Running it*
 
-- **File sync** — what files to copy/delete
-- **Database migrations** — what columns to add/remove
-- **Permission systems** — what access to grant/revoke
-- **Config management** — what changed between versions
-- **Dependency resolution** — what to install/uninstall
-- **Cache invalidation** — what keys are stale
+```bash
+# Compiles ALL .go files in current directory
+$ go run .
 
-Any time you're comparing "what is" vs "what should be" — that's a diff.
+# Or explicitly
+$ go run main.go config.go process.go
+```
+
+## When to Split Files
+
+There's no hard rule, but here's what works:
+
+- **By type** — one file per major struct/type and its methods
+- **By responsibility** — config stuff in config.go, HTTP stuff in http.go
+- **When it gets long** — if you're scrolling forever, split it
+
+Don't over-split. A 200-line file is fine. Ten 20-line files is annoying.
+
+## Packages = Directories
+
+When your project gets bigger, you'll want separate packages. Each directory is a package.
+
+*Directory structure*
+
+```go
+myproject/
+├── go.mod              # module github.com/you/myproject
+├── main.go             # package main
+└── stuff/
+    └── stuff.go        # package stuff
+```
+
+*stuff/stuff.go*
+
+```go
+package stuff
+
+func DoThing() string {
+    return "did the thing"
+}
+```
+
+*main.go*
+
+```go
+package main
+
+import "github.com/you/myproject/stuff"
+
+func main() {
+    result := stuff.DoThing()
+    fmt.Println(result)
+}
+```
+
+> **Import Path:** The import path is your module name (from go.mod) + the directory path. Not the file path. Not the package name. The directory.
+
+## Uppercase = Exported (Public)
+
+This is Go's visibility system. Dead simple once you get it.
+
+*Visibility rules*
+
+```go
+package stuff
+
+// Exported — visible outside this package
+func PublicFunc() {}      // ✓ Uppercase first letter
+type PublicType struct{} // ✓
+var PublicVar = 42       // ✓
+
+// Unexported — only visible inside this package
+func privateFunc() {}     // ✗ Lowercase first letter
+type privateType struct{} // ✗
+var privateVar = 42      // ✗
+```
+
+From another package, you can only access the uppercase stuff:
+
+*main.go*
+
+```go
+import "github.com/you/myproject/stuff"
+
+stuff.PublicFunc()   // ✓ Works
+stuff.privateFunc()  // ✗ Compile error
+```
+
+## The internal/ Directory
+
+Go has one magic directory name: `internal/`
+
+Code inside `internal/` can only be imported by code in the parent directory tree. The compiler enforces this.
+
+*internal/ example*
+
+```go
+myproject/
+├── go.mod
+├── main.go                 # Can import internal/secret
+├── cmd/
+│   └── tool/
+│       └── main.go         # Can import internal/secret
+└── internal/
+    └── secret/
+        └── secret.go       # package secret
+```
+
+If someone else imports your module, they **cannot** import anything from your internal/ directory. Compiler stops them.
+
+> **When to use internal/:** Put implementation details you don't want to be part of your public API. You can refactor internal code freely without breaking anyone.
+
+## Common Project Layouts
+
+### Small CLI tool
+
+*Simple layout*
+
+```go
+mytool/
+├── go.mod
+├── main.go         # Everything in one package
+├── config.go
+└── commands.go
+```
+
+### Medium project
+
+*With packages*
+
+```go
+mytool/
+├── go.mod
+├── main.go
+├── cmd/            # CLI command definitions
+│   ├── root.go
+│   └── serve.go
+└── internal/       # Private implementation
+    ├── config/
+    └── server/
+```
+
+### Library + CLI
+
+*Dual-purpose*
+
+```go
+mylib/
+├── go.mod
+├── mylib.go        # Public library API (package mylib)
+├── cmd/
+│   └── mylib/
+│       └── main.go # CLI that uses the library
+└── internal/       # Shared private code
+```
+
+## Circular Import = Compile Error
+
+Go doesn't allow circular imports. If package A imports B, B cannot import A.
+
+*This won't compile*
+
+```go
+// a/a.go
+package a
+import "myproject/b"  // A imports B
+
+// b/b.go
+package b
+import "myproject/a"  // B imports A — ERROR!
+```
+
+**Solutions:**
+
+- Merge the packages if they're that intertwined
+- Extract shared types into a third package both can import
+- Use interfaces to break the dependency
 
 ## Exercises
 
@@ -257,11 +237,10 @@ Combine concepts and learn patterns. Each challenge has multiple variants at dif
             <noscript><p class="js-required">JavaScript is required for the interactive exercises.</p></noscript>
             </div>
 
-## Module 15 Summary
+## Module 13 Summary
 
-- **Set = map[T]struct{}** — O(1) membership test
-- **Difference(A, B)** — in A but not B
-- **Intersection(A, B)** — in both
-- **Union(A, B)** — in either or both
-- **Compare two lists** → OnlyInA, OnlyInB, InBoth
-- **Always sort** before displaying for consistency
+- **Same package, multiple files** — share everything, no imports needed
+- **Package = directory** — import path is module + directory
+- **Uppercase = exported** — visible outside package
+- **internal/** — compiler-enforced private packages
+- **No circular imports** — design around it

@@ -1,1558 +1,1203 @@
 conceptLinks:
-  Big O Notation: "#lesson-big-o"
-  Hash Maps: "#lesson-hash-maps"
-  Two Pointers: "#lesson-two-pointers"
-  Sliding Window: "#lesson-sliding-window"
-  Stacks: "#lesson-stacks"
-  Binary Search: "#lesson-binary-search"
-  Linked Lists: "#lesson-linked-lists"
-  Trees: "#lesson-trees"
-  Graphs & BFS: "#lesson-graphs"
-  Sorting: "#lesson-sorting"
-  Heaps: "#lesson-heaps"
-  Tries: "#lesson-tries"
+  Table-Driven Tests: "#lesson-table-tests"
+  Test Helpers: "#lesson-test-helpers"
+  Mocking with Interfaces: "#lesson-mocking"
+  Edge Case Testing: "#lesson-edge-cases"
+  Code Coverage: "#lesson-coverage"
 sharedContent: {}
 variants:
   warmups:
     - id: warmup_1
-      concept: Stacks
+      concept: Table-Driven Tests
       variants:
         - id: v1
-          title: Stack with a Slice
+          title: Test a KV Parser
           description: >-
-            Implement a stack of integers using a Go slice. Write functions <code>push</code>,
-            <code>pop</code>, <code>peek</code>, and <code>isEmpty</code> that operate on
-            a <code>*[]int</code>. Pop and peek should return <code>(int, bool)</code> to handle
-            the empty case.
+            Write a function <code>parseKV(s string) (string, string, error)</code> that parses <code>"KEY=value"</code>
+            strings. Then write table-driven tests covering: valid input, missing <code>=</code>, empty key, empty
+            value, and value containing <code>=</code>.
           hints:
-            - "Push appends to the slice: <code>*s = append(*s, val)</code>"
-            - "Pop reads the last element, then reslices: <code>*s = (*s)[:len(*s)-1]</code>"
-            - Check <code>len(*s) == 0</code> before pop or peek to avoid panics.
+            - Use <code>strings.Index(s, "=")</code> to find the separator.
+            - Table-driven tests use a slice of structs with input and expected fields.
+            - Use <code>t.Run(name, func(t *testing.T) {...})</code> for subtests.
           solution: |-
-            func push(s *[]int, val int) {
-                *s = append(*s, val)
-            }
-
-            func pop(s *[]int) (int, bool) {
-                if len(*s) == 0 {
-                    return 0, false
+            func parseKV(s string) (string, string, error) {
+                idx := strings.Index(s, "=")
+                if idx == -1 {
+                    return "", "", fmt.Errorf("missing = in %q", s)
                 }
-                val := (*s)[len(*s)-1]
-                *s = (*s)[:len(*s)-1]
-                return val, true
+                return s[:idx], s[idx+1:], nil
             }
 
-            func peek(s *[]int) (int, bool) {
-                if len(*s) == 0 {
-                    return 0, false
+            func TestParseKV(t *testing.T) {
+                tests := []struct {
+                    name    string
+                    input   string
+                    key     string
+                    value   string
+                    wantErr bool
+                }{
+                    {"valid", "HOST=localhost", "HOST", "localhost", false},
+                    {"missing equals", "noequals", "", "", true},
+                    {"empty key", "=value", "", "value", false},
+                    {"empty value", "KEY=", "KEY", "", false},
+                    {"value with equals", "DSN=user=admin", "DSN", "user=admin", false},
                 }
-                return (*s)[len(*s)-1], true
-            }
-
-            func isEmpty(s *[]int) bool {
-                return len(*s) == 0
+                for _, tt := range tests {
+                    t.Run(tt.name, func(t *testing.T) {
+                        k, v, err := parseKV(tt.input)
+                        if (err != nil) != tt.wantErr {
+                            t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
+                        }
+                        if k != tt.key || v != tt.value {
+                            t.Errorf("got (%q, %q), want (%q, %q)", k, v, tt.key, tt.value)
+                        }
+                    })
+                }
             }
           annotations:
             - type: idiom
-              label: Slice as Stack
-              text: "Go slices are natural stacks: append to push, reslice to pop. No extra library needed."
+              label: Table-Driven Tests
+              text: "Table-driven tests are the idiomatic Go pattern: define cases as a slice of structs, loop with t.Run."
             - type: gotcha
-              label: Bounds Check
-              text: Always check length before indexing the last element. An empty pop without a guard causes a panic.
+              label: strings.Index vs Split
+              text: strings.Index finds the first =, preserving = in values. strings.Split would break on all = signs.
         - id: v2
-          title: Generic Stack Struct
+          title: Test a URL Parser
           description: >-
-            Build a <code>Stack[T any]</code> generic struct with methods <code>Push(val T)</code>,
-            <code>Pop() (T, bool)</code>, <code>Peek() (T, bool)</code>, and <code>Len() int</code>.
-            Use a slice internally.
+            Write a function <code>parseURL(s string) (scheme, host string, err error)</code> that extracts the scheme
+            and host from a URL like <code>"https://example.com"</code>. Write table-driven tests for valid URLs,
+            missing <code>://</code>, empty scheme, and empty host.
           hints:
-            - "Declare with <code>type Stack[T any] struct { items []T }</code>"
-            - Methods use the pointer receiver <code>(s *Stack[T])</code>.
-            - "For the zero value on empty pop: <code>var zero T; return zero, false</code>"
+            - Use <code>strings.Index(s, "://")</code> to find the separator.
+            - Define test cases with input, expected scheme, expected host, and wantErr.
           solution: |-
-            type Stack[T any] struct {
-                items []T
-            }
-
-            func (s *Stack[T]) Push(val T) {
-                s.items = append(s.items, val)
-            }
-
-            func (s *Stack[T]) Pop() (T, bool) {
-                if len(s.items) == 0 {
-                    var zero T
-                    return zero, false
+            func parseURL(s string) (string, string, error) {
+                idx := strings.Index(s, "://")
+                if idx == -1 {
+                    return "", "", fmt.Errorf("missing :// in %q", s)
                 }
-                val := s.items[len(s.items)-1]
-                s.items = s.items[:len(s.items)-1]
-                return val, true
-            }
-
-            func (s *Stack[T]) Peek() (T, bool) {
-                if len(s.items) == 0 {
-                    var zero T
-                    return zero, false
+                scheme := s[:idx]
+                host := s[idx+3:]
+                if scheme == "" {
+                    return "", "", fmt.Errorf("empty scheme")
                 }
-                return s.items[len(s.items)-1], true
+                return scheme, host, nil
             }
 
-            func (s *Stack[T]) Len() int {
-                return len(s.items)
+            func TestParseURL(t *testing.T) {
+                tests := []struct {
+                    name    string
+                    input   string
+                    scheme  string
+                    host    string
+                    wantErr bool
+                }{
+                    {"valid https", "https://example.com", "https", "example.com", false},
+                    {"valid http", "http://localhost", "http", "localhost", false},
+                    {"missing separator", "example.com", "", "", true},
+                    {"empty scheme", "://host", "", "", true},
+                    {"with path", "https://api.io/v1", "https", "api.io/v1", false},
+                }
+                for _, tt := range tests {
+                    t.Run(tt.name, func(t *testing.T) {
+                        s, h, err := parseURL(tt.input)
+                        if (err != nil) != tt.wantErr {
+                            t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
+                        }
+                        if !tt.wantErr && (s != tt.scheme || h != tt.host) {
+                            t.Errorf("got (%q, %q), want (%q, %q)", s, h, tt.scheme, tt.host)
+                        }
+                    })
+                }
             }
           annotations:
             - type: idiom
-              label: Generic Zero Value
-              text: "Use <code>var zero T</code> to get the zero value of any generic type parameter."
-            - type: pattern
-              label: Generics for Data Structures
-              text: Go generics make type-safe reusable data structures possible without interface{} casts.
+              label: Subtests with t.Run
+              text: t.Run creates named subtests, making it easy to identify which case failed.
+            - type: stdlib
+              label: net/url Package
+              text: In production, use net/url.Parse instead of hand-rolling URL parsing.
         - id: v3
-          title: Min Stack
+          title: Test a CSV Line Parser
           description: >-
-            Implement a <code>MinStack</code> that supports <code>Push(val int)</code>,
-            <code>Pop() int</code>, <code>Top() int</code>, and <code>GetMin() int</code>,
-            all in O(1) time. Use two internal slices — one for values, one to track the current minimum.
+            Write a function <code>parseCSVLine(line string) []string</code> that splits a CSV line by commas and trims
+            whitespace from each field. Write table-driven tests for normal input, extra spaces, empty fields, and
+            single field.
           hints:
-            - Keep a parallel <code>mins</code> slice. On push, append the min of the new value and the current min.
-            - "On pop, pop from both slices."
-            - "GetMin returns the top of the mins slice."
+            - Use <code>strings.Split(line, ",")</code> then <code>strings.TrimSpace</code> on each part.
+            - "Test edge cases: empty string, trailing comma, spaces around commas."
           solution: |-
-            type MinStack struct {
-                vals []int
-                mins []int
+            func parseCSVLine(line string) []string {
+                if line == "" {
+                    return nil
+                }
+                parts := strings.Split(line, ",")
+                result := make([]string, len(parts))
+                for i, p := range parts {
+                    result[i] = strings.TrimSpace(p)
+                }
+                return result
             }
 
-            func (s *MinStack) Push(val int) {
-                s.vals = append(s.vals, val)
-                if len(s.mins) == 0 || val <= s.mins[len(s.mins)-1] {
-                    s.mins = append(s.mins, val)
-                } else {
-                    s.mins = append(s.mins, s.mins[len(s.mins)-1])
+            func TestParseCSVLine(t *testing.T) {
+                tests := []struct {
+                    name  string
+                    input string
+                    want  []string
+                }{
+                    {"normal", "a,b,c", []string{"a", "b", "c"}},
+                    {"with spaces", " a , b , c ", []string{"a", "b", "c"}},
+                    {"empty fields", "a,,c", []string{"a", "", "c"}},
+                    {"single field", "hello", []string{"hello"}},
+                    {"empty string", "", nil},
+                    {"trailing comma", "a,b,", []string{"a", "b", ""}},
+                }
+                for _, tt := range tests {
+                    t.Run(tt.name, func(t *testing.T) {
+                        got := parseCSVLine(tt.input)
+                        if !reflect.DeepEqual(got, tt.want) {
+                            t.Errorf("got %v, want %v", got, tt.want)
+                        }
+                    })
+                }
+            }
+          annotations:
+            - type: gotcha
+              label: nil vs Empty Slice
+              text: reflect.DeepEqual distinguishes nil from []string{}. Be explicit about which your function returns.
+            - type: stdlib
+              label: encoding/csv
+              text: For real CSV parsing, use encoding/csv which handles quoting, escaping, and multi-line fields.
+        - id: v4
+          title: Test a Duration Parser
+          description: >-
+            Write a function <code>parseDuration(s string) (int, error)</code> that parses strings like
+            <code>"30s"</code>, <code>"5m"</code>, <code>"2h"</code> into total seconds. Write table-driven tests for
+            each unit, invalid formats, and edge cases.
+          hints:
+            - Extract the numeric part and the suffix. Use a switch on the suffix to multiply.
+            - "Test: valid durations, unknown units, empty string, non-numeric values."
+          solution: |-
+            func parseDuration(s string) (int, error) {
+                if len(s) < 2 {
+                    return 0, fmt.Errorf("invalid duration: %q", s)
+                }
+                unit := s[len(s)-1]
+                numStr := s[:len(s)-1]
+                n, err := strconv.Atoi(numStr)
+                if err != nil {
+                    return 0, fmt.Errorf("invalid number in %q: %w", s, err)
+                }
+                switch unit {
+                case 's':
+                    return n, nil
+                case 'm':
+                    return n * 60, nil
+                case 'h':
+                    return n * 3600, nil
+                default:
+                    return 0, fmt.Errorf("unknown unit %q in %q", string(unit), s)
                 }
             }
 
-            func (s *MinStack) Pop() int {
-                val := s.vals[len(s.vals)-1]
-                s.vals = s.vals[:len(s.vals)-1]
-                s.mins = s.mins[:len(s.mins)-1]
-                return val
+            func TestParseDuration(t *testing.T) {
+                tests := []struct {
+                    name    string
+                    input   string
+                    want    int
+                    wantErr bool
+                }{
+                    {"seconds", "30s", 30, false},
+                    {"minutes", "5m", 300, false},
+                    {"hours", "2h", 7200, false},
+                    {"unknown unit", "10d", 0, true},
+                    {"empty", "", 0, true},
+                    {"no number", "s", 0, true},
+                    {"no unit", "123", 0, true},
+                }
+                for _, tt := range tests {
+                    t.Run(tt.name, func(t *testing.T) {
+                        got, err := parseDuration(tt.input)
+                        if (err != nil) != tt.wantErr {
+                            t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
+                        }
+                        if got != tt.want {
+                            t.Errorf("got %d, want %d", got, tt.want)
+                        }
+                    })
+                }
+            }
+          annotations:
+            - type: idiom
+              label: Error Wrapping
+              text: Use %w in fmt.Errorf to wrap errors, allowing callers to use errors.Is/As.
+            - type: stdlib
+              label: time.ParseDuration
+              text: Go's standard library has time.ParseDuration for real duration parsing with more units.
+    - id: warmup_2
+      concept: Mocking with Interfaces
+      variants:
+        - id: v1
+          title: Test with Mock HTTP Client
+          description: >-
+            Create a <code>WeatherService</code> struct that depends on an <code>HTTPClient</code> interface. Write a
+            mock implementation for testing and verify that the service handles success and error responses correctly.
+          hints:
+            - >-
+              Define <code>HTTPClient</code> interface with a <code>Get(url string) (*http.Response, error)</code>
+              method.
+            - Create a <code>mockClient</code> struct with fields for the canned response and error.
+            - Use <code>io.NopCloser</code> to wrap a string reader as a response body.
+          solution: |-
+            type HTTPClient interface {
+                Get(url string) (*http.Response, error)
             }
 
-            func (s *MinStack) Top() int {
-                return s.vals[len(s.vals)-1]
+            type WeatherService struct {
+                client HTTPClient
             }
 
-            func (s *MinStack) GetMin() int {
-                return s.mins[len(s.mins)-1]
+            func (ws *WeatherService) GetTemp(city string) (float64, error) {
+                resp, err := ws.client.Get("https://api.weather.com/" + city)
+                if err != nil {
+                    return 0, err
+                }
+                defer resp.Body.Close()
+                var data struct{ Temp float64 }
+                json.NewDecoder(resp.Body).Decode(&data)
+                return data.Temp, nil
+            }
+
+            type mockClient struct {
+                resp *http.Response
+                err  error
+            }
+
+            func (m *mockClient) Get(url string) (*http.Response, error) {
+                return m.resp, m.err
+            }
+
+            func TestGetTemp_Success(t *testing.T) {
+                body := io.NopCloser(strings.NewReader(`{"Temp": 72.5}`))
+                mock := &mockClient{
+                    resp: &http.Response{StatusCode: 200, Body: body},
+                }
+                svc := &WeatherService{client: mock}
+                temp, err := svc.GetTemp("london")
+                if err != nil {
+                    t.Fatalf("unexpected error: %v", err)
+                }
+                if temp != 72.5 {
+                    t.Errorf("got %.1f, want 72.5", temp)
+                }
+            }
+
+            func TestGetTemp_Error(t *testing.T) {
+                mock := &mockClient{err: fmt.Errorf("network error")}
+                svc := &WeatherService{client: mock}
+                _, err := svc.GetTemp("london")
+                if err == nil {
+                    t.Error("expected error, got nil")
+                }
+            }
+          annotations:
+            - type: idiom
+              label: Interface for Mocking
+              text: Define small interfaces at the consumer site. This is Go's implicit interface satisfaction at work.
+            - type: pattern
+              label: Dependency Injection
+              text: Pass dependencies as interfaces through struct fields to enable easy testing with mocks.
+        - id: v2
+          title: Test with Mock Database
+          description: >-
+            Create a <code>UserService</code> that depends on a <code>UserStore</code> interface with <code>FindByID(id
+            int) (User, error)</code>. Mock the store for testing both found and not-found cases.
+          hints:
+            - Define <code>UserStore</code> interface with a single method.
+            - Create a mock that returns a predefined user or an error.
+            - Test both the happy path and the not-found error path.
+          solution: |-
+            type User struct {
+                ID   int
+                Name string
+            }
+
+            type UserStore interface {
+                FindByID(id int) (User, error)
+            }
+
+            type UserService struct {
+                store UserStore
+            }
+
+            func (s *UserService) GetUser(id int) (User, error) {
+                return s.store.FindByID(id)
+            }
+
+            type mockStore struct {
+                user User
+                err  error
+            }
+
+            func (m *mockStore) FindByID(id int) (User, error) {
+                return m.user, m.err
+            }
+
+            func TestGetUser_Found(t *testing.T) {
+                mock := &mockStore{user: User{ID: 1, Name: "Alice"}}
+                svc := &UserService{store: mock}
+                u, err := svc.GetUser(1)
+                if err != nil {
+                    t.Fatalf("unexpected error: %v", err)
+                }
+                if u.Name != "Alice" {
+                    t.Errorf("got %q, want %q", u.Name, "Alice")
+                }
+            }
+
+            func TestGetUser_NotFound(t *testing.T) {
+                mock := &mockStore{err: fmt.Errorf("not found")}
+                svc := &UserService{store: mock}
+                _, err := svc.GetUser(999)
+                if err == nil {
+                    t.Error("expected error, got nil")
+                }
+            }
+          annotations:
+            - type: idiom
+              label: Small Interfaces
+              text: Go prefers small, focused interfaces. A single-method interface is easy to mock and test.
+            - type: gotcha
+              label: Nil Error Check
+              text: Always check err first before using the result. A non-nil error means the result may be invalid.
+        - id: v3
+          title: Test with Mock Logger
+          description: >-
+            Create a <code>PaymentProcessor</code> that depends on a <code>Logger</code> interface with <code>Log(msg
+            string)</code>. Mock the logger to verify that processing logs the correct messages.
+          hints:
+            - The mock logger can store messages in a <code>[]string</code> slice field.
+            - After calling the processor, inspect the mock's recorded messages.
+            - This pattern is called a 'spy' -- a mock that records calls.
+          solution: |-
+            type Logger interface {
+                Log(msg string)
+            }
+
+            type PaymentProcessor struct {
+                logger Logger
+            }
+
+            func (p *PaymentProcessor) Process(amount float64) error {
+                if amount <= 0 {
+                    p.logger.Log("invalid amount")
+                    return fmt.Errorf("amount must be positive")
+                }
+                p.logger.Log(fmt.Sprintf("processed %.2f", amount))
+                return nil
+            }
+
+            type spyLogger struct {
+                messages []string
+            }
+
+            func (s *spyLogger) Log(msg string) {
+                s.messages = append(s.messages, msg)
+            }
+
+            func TestProcess_ValidAmount(t *testing.T) {
+                spy := &spyLogger{}
+                proc := &PaymentProcessor{logger: spy}
+                err := proc.Process(50.00)
+                if err != nil {
+                    t.Fatalf("unexpected error: %v", err)
+                }
+                if len(spy.messages) != 1 || spy.messages[0] != "processed 50.00" {
+                    t.Errorf("got messages %v", spy.messages)
+                }
+            }
+
+            func TestProcess_InvalidAmount(t *testing.T) {
+                spy := &spyLogger{}
+                proc := &PaymentProcessor{logger: spy}
+                err := proc.Process(-10)
+                if err == nil {
+                    t.Error("expected error for negative amount")
+                }
+                if len(spy.messages) != 1 || spy.messages[0] != "invalid amount" {
+                    t.Errorf("got messages %v", spy.messages)
+                }
             }
           annotations:
             - type: pattern
-              label: Parallel Tracking
-              text: A second stack tracking minimums at each level gives O(1) GetMin without scanning.
-            - type: complexity
-              label: O(1) All Operations
-              text: Push, pop, top, and getMin all run in constant time at the cost of O(n) extra space.
+              label: Spy Pattern
+              text: A spy is a mock that records interactions. Store calls in a slice to verify behavior after the fact.
+            - type: idiom
+              label: Interface Segregation
+              text: The Logger interface has a single method. Go encourages narrow interfaces that are easy to implement.
         - id: v4
-          title: Stack-Based Reversal
+          title: Test with Mock Notifier
           description: >-
-            Write a function <code>reverseString(s string) string</code> that uses a stack
-            (slice of runes) to reverse the input. Push each character, then pop them all off.
+            Create an <code>AlertService</code> that depends on a <code>Notifier</code> interface with <code>Send(to,
+            msg string) error</code>. Mock the notifier to test success, failure, and verify the correct arguments are
+            passed.
           hints:
-            - Convert the string to runes and push each one onto a <code>[]rune</code> stack.
-            - Pop all runes off the stack into a result slice.
-            - Convert the result back to a string.
+            - Store both <code>to</code> and <code>msg</code> in the mock to verify call arguments.
+            - Use a configurable error field so you can test both success and failure paths.
+            - Check that the mock received the expected arguments after calling the service.
+          solution: |-
+            type Notifier interface {
+                Send(to, msg string) error
+            }
+
+            type AlertService struct {
+                notifier Notifier
+            }
+
+            func (a *AlertService) Alert(user, message string) error {
+                return a.notifier.Send(user, "ALERT: "+message)
+            }
+
+            type mockNotifier struct {
+                lastTo  string
+                lastMsg string
+                err     error
+            }
+
+            func (m *mockNotifier) Send(to, msg string) error {
+                m.lastTo = to
+                m.lastMsg = msg
+                return m.err
+            }
+
+            func TestAlert_Success(t *testing.T) {
+                mock := &mockNotifier{}
+                svc := &AlertService{notifier: mock}
+                err := svc.Alert("alice", "server down")
+                if err != nil {
+                    t.Fatalf("unexpected error: %v", err)
+                }
+                if mock.lastTo != "alice" {
+                    t.Errorf("sent to %q, want %q", mock.lastTo, "alice")
+                }
+                if mock.lastMsg != "ALERT: server down" {
+                    t.Errorf("sent msg %q, want %q", mock.lastMsg, "ALERT: server down")
+                }
+            }
+
+            func TestAlert_Failure(t *testing.T) {
+                mock := &mockNotifier{err: fmt.Errorf("send failed")}
+                svc := &AlertService{notifier: mock}
+                err := svc.Alert("bob", "disk full")
+                if err == nil {
+                    t.Error("expected error, got nil")
+                }
+            }
+          annotations:
+            - type: pattern
+              label: Argument Capture
+              text: Store method arguments in mock fields to verify the correct values were passed.
+            - type: gotcha
+              label: Mock Reuse
+              text: If a mock is reused across calls, previous values are overwritten. Use slices to capture multiple calls.
+  challenges:
+    - id: challenge_1
+      block: 1
+      difficulty: 2
+      concept: Edge Case Testing
+      docLinks:
+        - url: https://pkg.go.dev/testing
+          title: Package testing
+          note: test functions and subtests
+        - url: https://go.dev/blog/subtests
+          title: "Go Blog: Using Subtests and Sub-benchmarks"
+          note: organizing test cases
+      variants:
+        - id: v1
+          title: Test SafeDivide Edge Cases
+          description: >-
+            Write a function <code>safeDivide(a, b float64) (float64, error)</code> that divides a by b, returning an
+            error for division by zero. Then write comprehensive tests covering: normal division, division by zero, zero
+            dividend, negative numbers, and very large numbers.
+          functionSignature: func safeDivide(a, b float64) (float64, error)
+          testCases:
+            - input: 10.0, 2.0
+              output: 5.0, nil
+            - input: 10.0, 0.0
+              output: 0.0, error
+            - input: 0.0, 5.0
+              output: 0.0, nil
+            - input: "-10.0, 2.0"
+              output: "-5.0, nil"
+          hints:
+            - title: 🤔 Think about it
+              content: >-
+                What are all the ways division can go wrong or produce surprising results? Think about zero, negatives,
+                and extreme values.
+            - title: 💡 Hint
+              content: >-
+                Check b == 0 first and return an error. Otherwise return a/b. Your tests should cover normal, zero
+                divisor, zero dividend, negative values, and math.MaxFloat64.
+            - title: 🔧 Pattern
+              content: |-
+                <pre>1. Define function with error return
+                2. Guard clause for b == 0
+                3. Table-driven tests with:
+                   - Normal positive values
+                   - Division by zero
+                   - Zero / nonzero
+                   - Negative values
+                   - Very large values</pre>
+          solution: |-
+            func safeDivide(a, b float64) (float64, error) {
+                if b == 0 {
+                    return 0, fmt.Errorf("division by zero")
+                }
+                return a / b, nil
+            }
+
+            func TestSafeDivide(t *testing.T) {
+                tests := []struct {
+                    name    string
+                    a, b    float64
+                    want    float64
+                    wantErr bool
+                }{
+                    {"normal", 10, 2, 5, false},
+                    {"divide by zero", 10, 0, 0, true},
+                    {"zero dividend", 0, 5, 0, false},
+                    {"negatives", -10, 2, -5, false},
+                    {"both negative", -10, -2, 5, false},
+                    {"large numbers", 1e18, 1e9, 1e9, false},
+                    {"small result", 1, 3, 0.3333333333333333, false},
+                }
+                for _, tt := range tests {
+                    t.Run(tt.name, func(t *testing.T) {
+                        got, err := safeDivide(tt.a, tt.b)
+                        if (err != nil) != tt.wantErr {
+                            t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
+                        }
+                        if !tt.wantErr && got != tt.want {
+                            t.Errorf("got %v, want %v", got, tt.want)
+                        }
+                    })
+                }
+            }
+          difficulty: 2
+          annotations:
+            - type: gotcha
+              label: Float Comparison
+              text: >-
+                Comparing floats with == can fail due to precision. For approximate equality, use math.Abs(got-want) <
+                epsilon.
+            - type: idiom
+              label: Guard Clause
+              text: Check error conditions first and return early. This keeps the happy path unindented.
+        - id: v2
+          title: Test StringReverse Edge Cases
+          description: >-
+            Write a function <code>reverseString(s string) string</code> that reverses a string. Write tests for: empty
+            string, single character, ASCII string, Unicode string with multi-byte characters, and string with spaces.
+          functionSignature: func reverseString(s string) string
+          testCases:
+            - input: "\"hello\""
+              output: "\"olleh\""
+            - input: "\"\""
+              output: "\"\""
+            - input: "\"a\""
+              output: "\"a\""
+            - input: "\"世界\""
+              output: "\"界世\""
+          hints:
+            - title: 🤔 Think about it
+              content: Strings in Go are byte sequences. What happens if you reverse bytes of a multi-byte Unicode character?
+            - title: 💡 Hint
+              content: >-
+                Convert to []rune first to handle Unicode correctly. Then reverse the rune slice using a two-pointer
+                swap.
+            - title: 🔧 Pattern
+              content: |-
+                <pre>1. Convert string to []rune
+                2. Two-pointer swap: left=0, right=len-1
+                3. While left < right: swap and move inward
+                4. Convert back to string
+                5. Test: empty, single char, ASCII, Unicode, spaces</pre>
           solution: |-
             func reverseString(s string) string {
-                stack := []rune{}
-                for _, ch := range s {
-                    stack = append(stack, ch)
+                runes := []rune(s)
+                for i, j := 0, len(runes)-1; i < j; i, j = i+1, j-1 {
+                    runes[i], runes[j] = runes[j], runes[i]
                 }
-                result := make([]rune, 0, len(stack))
-                for len(stack) > 0 {
-                    top := stack[len(stack)-1]
-                    stack = stack[:len(stack)-1]
-                    result = append(result, top)
-                }
-                return string(result)
-            }
-          annotations:
-            - type: idiom
-              label: Rune Conversion
-              text: "Range over a string yields runes, handling multi-byte UTF-8 correctly."
-            - type: alternative
-              label: Two-Pointer Reverse
-              text: A two-pointer swap on []rune is more efficient — this exercise demonstrates the stack concept.
-    - id: warmup_2
-      concept: Binary Search
-      variants:
-        - id: v1
-          title: Classic Binary Search
-          description: >-
-            Write a function <code>binarySearch(nums []int, target int) int</code> that returns
-            the index of <code>target</code> in a sorted slice, or <code>-1</code> if not found.
-            Use the standard <code>lo</code>/<code>hi</code> pointer approach.
-          hints:
-            - "Initialize <code>lo, hi := 0, len(nums)-1</code>"
-            - "Calculate mid as <code>lo + (hi-lo)/2</code> to avoid integer overflow."
-            - "Compare nums[mid] to target: equal → return, less → move lo up, greater → move hi down."
-          solution: |-
-            func binarySearch(nums []int, target int) int {
-                lo, hi := 0, len(nums)-1
-                for lo <= hi {
-                    mid := lo + (hi-lo)/2
-                    if nums[mid] == target {
-                        return mid
-                    } else if nums[mid] < target {
-                        lo = mid + 1
-                    } else {
-                        hi = mid - 1
-                    }
-                }
-                return -1
-            }
-          annotations:
-            - type: complexity
-              label: O(log n)
-              text: Each iteration halves the search space, giving logarithmic time complexity.
-            - type: gotcha
-              label: Off-by-One
-              text: "Use <code>lo <= hi</code> (not <code><</code>) to ensure the single-element case is checked."
-        - id: v2
-          title: Search Insert Position
-          description: >-
-            Write a function <code>searchInsert(nums []int, target int) int</code> that returns
-            the index where <code>target</code> is found, or the index where it would be inserted
-            to keep the slice sorted.
-          hints:
-            - "This is a left-bisect: find the leftmost position where target could go."
-            - "Initialize <code>lo, hi := 0, len(nums)</code> — note hi is len, not len-1."
-            - "If <code>nums[mid] < target</code>, move lo up. Otherwise move hi down."
-          solution: |-
-            func searchInsert(nums []int, target int) int {
-                lo, hi := 0, len(nums)
-                for lo < hi {
-                    mid := lo + (hi-lo)/2
-                    if nums[mid] < target {
-                        lo = mid + 1
-                    } else {
-                        hi = mid
-                    }
-                }
-                return lo
-            }
-          annotations:
-            - type: idiom
-              label: Left Bisect Pattern
-              text: "Setting hi = len(nums) and using <code>lo < hi</code> finds the insertion point cleanly."
-            - type: stdlib
-              label: sort.SearchInts
-              text: Go's sort.SearchInts does exactly this — but implementing it teaches the bisect pattern.
-        - id: v3
-          title: First and Last Position
-          description: >-
-            Write a function <code>searchRange(nums []int, target int) (int, int)</code> that returns
-            the first and last index of <code>target</code> in a sorted slice. Return <code>(-1, -1)</code>
-            if not found.
-          hints:
-            - Run binary search twice — once to find the leftmost occurrence, once for the rightmost.
-            - "For leftmost: when you find target, keep searching left (<code>hi = mid</code>)."
-            - "For rightmost: when you find target, keep searching right (<code>lo = mid + 1</code>)."
-          solution: |-
-            func searchRange(nums []int, target int) (int, int) {
-                left := findLeft(nums, target)
-                if left == -1 {
-                    return -1, -1
-                }
-                right := findRight(nums, target)
-                return left, right
+                return string(runes)
             }
 
-            func findLeft(nums []int, target int) int {
-                lo, hi := 0, len(nums)-1
-                result := -1
-                for lo <= hi {
-                    mid := lo + (hi-lo)/2
-                    if nums[mid] == target {
-                        result = mid
-                        hi = mid - 1
-                    } else if nums[mid] < target {
-                        lo = mid + 1
-                    } else {
-                        hi = mid - 1
-                    }
+            func TestReverseString(t *testing.T) {
+                tests := []struct {
+                    name  string
+                    input string
+                    want  string
+                }{
+                    {"empty", "", ""},
+                    {"single char", "a", "a"},
+                    {"ascii", "hello", "olleh"},
+                    {"unicode", "世界", "界世"},
+                    {"with spaces", "go lang", "gnal og"},
+                    {"palindrome", "racecar", "racecar"},
+                    {"emoji", "😀😁", "😁😀"},
                 }
-                return result
-            }
-
-            func findRight(nums []int, target int) int {
-                lo, hi := 0, len(nums)-1
-                result := -1
-                for lo <= hi {
-                    mid := lo + (hi-lo)/2
-                    if nums[mid] == target {
-                        result = mid
-                        lo = mid + 1
-                    } else if nums[mid] < target {
-                        lo = mid + 1
-                    } else {
-                        hi = mid - 1
-                    }
-                }
-                return result
-            }
-          annotations:
-            - type: pattern
-              label: Dual Binary Search
-              text: Finding a range in sorted data requires two passes — one for each boundary.
-            - type: complexity
-              label: O(log n)
-              text: Two binary searches is still O(log n) — constant factor doesn't change the class.
-        - id: v4
-          title: Square Root via Binary Search
-          description: >-
-            Write a function <code>mySqrt(x int) int</code> that returns the integer square root of
-            <code>x</code> (the largest integer <code>n</code> where <code>n*n <= x</code>). Use
-            binary search on the answer space.
-          hints:
-            - "Search the range [0, x]. The answer is the largest mid where mid*mid <= x."
-            - "If mid*mid <= x, record mid as a candidate and search higher."
-            - "If mid*mid > x, search lower."
-          solution: |-
-            func mySqrt(x int) int {
-                if x < 2 {
-                    return x
-                }
-                lo, hi := 1, x/2
-                result := 1
-                for lo <= hi {
-                    mid := lo + (hi-lo)/2
-                    if mid <= x/mid {
-                        result = mid
-                        lo = mid + 1
-                    } else {
-                        hi = mid - 1
-                    }
-                }
-                return result
-            }
-          annotations:
-            - type: pattern
-              label: Binary Search on Answer
-              text: "Binary search works on answer spaces too — not just arrays. Search for the value that satisfies a condition."
-            - type: gotcha
-              label: Overflow Prevention
-              text: "Use <code>mid <= x/mid</code> instead of <code>mid*mid <= x</code> to avoid integer overflow."
-    - id: warmup_3
-      concept: Hash Maps
-      variants:
-        - id: v1
-          title: Count Frequencies with a Map
-          description: >-
-            Write a function <code>frequencies(nums []int) map[int]int</code> that returns a map
-            where each key is a number from the input and the value is how many times it appears.
-          hints:
-            - "Create a map with <code>make(map[int]int)</code>."
-            - "Range over nums and increment: <code>freq[n]++</code>"
-            - "Missing keys in a Go map return the zero value (0 for int), so no need to check existence."
-          solution: |-
-            func frequencies(nums []int) map[int]int {
-                freq := make(map[int]int)
-                for _, n := range nums {
-                    freq[n]++
-                }
-                return freq
-            }
-          annotations:
-            - type: idiom
-              label: Zero Value Increment
-              text: "Go maps return the zero value for missing keys. <code>freq[n]++</code> works even if n hasn't been seen."
-            - type: complexity
-              label: O(n)
-              text: Single pass through the slice, O(1) map operations. Total O(n) time and space.
-        - id: v2
-          title: Word Frequency Counter
-          description: >-
-            Write a function <code>wordFreq(text string) map[string]int</code> that splits text
-            on whitespace and counts occurrences of each word. Convert words to lowercase first.
-          hints:
-            - "Use <code>strings.Fields(text)</code> to split on whitespace."
-            - "Use <code>strings.ToLower(word)</code> before counting."
-            - "The pattern is the same as number frequencies — just with string keys."
-          solution: |-
-            func wordFreq(text string) map[string]int {
-                freq := make(map[string]int)
-                for _, word := range strings.Fields(text) {
-                    freq[strings.ToLower(word)]++
-                }
-                return freq
-            }
-          annotations:
-            - type: stdlib
-              label: strings.Fields
-              text: "strings.Fields splits on any whitespace and handles multiple spaces, unlike strings.Split."
-            - type: idiom
-              label: Normalize Keys
-              text: Always normalize map keys (lowercase, trim) to avoid duplicates from case differences.
-        - id: v3
-          title: Find Duplicates
-          description: >-
-            Write a function <code>findDuplicates(nums []int) []int</code> that returns all values
-            that appear more than once. Use a map to track what you've seen.
-          hints:
-            - "Track seen values in a <code>map[int]bool</code>."
-            - "If you see a value that's already in the map, it's a duplicate."
-            - "Use a second map or set to avoid adding the same duplicate twice."
-          solution: |-
-            func findDuplicates(nums []int) []int {
-                seen := make(map[int]bool)
-                added := make(map[int]bool)
-                var result []int
-                for _, n := range nums {
-                    if seen[n] && !added[n] {
-                        result = append(result, n)
-                        added[n] = true
-                    }
-                    seen[n] = true
-                }
-                return result
-            }
-          annotations:
-            - type: pattern
-              label: Seen Set
-              text: "A map[T]bool as a set is the Go idiom for tracking membership. Check with <code>if seen[val]</code>."
-            - type: complexity
-              label: O(n)
-              text: "Single pass with O(1) map lookups. Compare to the O(n²) nested-loop brute force."
-        - id: v4
-          title: Group Anagrams
-          description: >-
-            Write a function <code>groupAnagrams(words []string) [][]string</code> that groups words
-            that are anagrams of each other. Two words are anagrams if they have the same characters
-            in a different order.
-          hints:
-            - "Sort the characters of each word to create a canonical key."
-            - "Use a <code>map[string][]string</code> to group words by their sorted key."
-            - "Convert to []rune, sort, convert back to string for the key."
-          solution: |-
-            func groupAnagrams(words []string) [][]string {
-                groups := make(map[string][]string)
-                for _, word := range words {
-                    runes := []rune(word)
-                    sort.Slice(runes, func(i, j int) bool {
-                        return runes[i] < runes[j]
+                for _, tt := range tests {
+                    t.Run(tt.name, func(t *testing.T) {
+                        got := reverseString(tt.input)
+                        if got != tt.want {
+                            t.Errorf("got %q, want %q", got, tt.want)
+                        }
                     })
-                    key := string(runes)
-                    groups[key] = append(groups[key], word)
                 }
-                result := make([][]string, 0, len(groups))
-                for _, group := range groups {
-                    result = append(result, group)
-                }
-                return result
             }
+          difficulty: 2
           annotations:
-            - type: pattern
-              label: Canonical Key
-              text: "Sorting characters creates a canonical form — all anagrams produce the same sorted string."
-            - type: complexity
-              label: O(n * k log k)
-              text: "n words, each of length k sorted in O(k log k). Map operations are O(1) amortized."
-    - id: warmup_4
-      concept: Linked Lists
-      variants:
-        - id: v1
-          title: Reverse a Linked List
-          description: >-
-            Given a singly linked list node type <code>type ListNode struct { Val int; Next *ListNode }</code>,
-            write a function <code>reverseList(head *ListNode) *ListNode</code> that reverses the list
-            in place and returns the new head.
-          hints:
-            - "Use three pointers: prev (starts nil), curr (starts at head), next (temp save)."
-            - "On each step: save next, point curr.Next to prev, advance prev and curr."
-            - "When curr is nil, prev is the new head."
-          solution: |-
-            type ListNode struct {
-                Val  int
-                Next *ListNode
-            }
-
-            func reverseList(head *ListNode) *ListNode {
-                var prev *ListNode
-                curr := head
-                for curr != nil {
-                    next := curr.Next
-                    curr.Next = prev
-                    prev = curr
-                    curr = next
-                }
-                return prev
-            }
-          annotations:
-            - type: pattern
-              label: Three-Pointer Reversal
-              text: "The prev/curr/next pattern is the standard linked list reversal. Memorize it — it shows up everywhere."
             - type: gotcha
-              label: Save Next First
-              text: You must save curr.Next before overwriting it. Otherwise you lose the rest of the list.
-        - id: v2
-          title: Find Middle Node
-          description: >-
-            Write a function <code>middleNode(head *ListNode) *ListNode</code> that returns the
-            middle node of a linked list. If there are two middle nodes, return the second one.
-            Use the fast/slow pointer technique.
-          hints:
-            - "Slow pointer moves 1 step, fast pointer moves 2 steps."
-            - "When fast reaches the end, slow is at the middle."
-            - "Loop condition: <code>fast != nil && fast.Next != nil</code>"
-          solution: |-
-            func middleNode(head *ListNode) *ListNode {
-                slow, fast := head, head
-                for fast != nil && fast.Next != nil {
-                    slow = slow.Next
-                    fast = fast.Next.Next
-                }
-                return slow
-            }
-          annotations:
-            - type: pattern
-              label: Fast/Slow Pointers
-              text: "The tortoise and hare technique finds midpoints and detects cycles in O(n) time, O(1) space."
-            - type: complexity
-              label: O(n) Time, O(1) Space
-              text: "Single pass with two pointers — no extra data structures."
+              label: Bytes vs Runes
+              text: >-
+                Reversing bytes breaks multi-byte UTF-8 characters. Always convert to []rune for character-level
+                operations.
+            - type: idiom
+              label: Multi-Variable Assignment
+              text: Go allows i, j = i+1, j-1 in for loop post statements for clean two-pointer iteration.
         - id: v3
-          title: Detect Cycle
+          title: Test Contains Edge Cases
           description: >-
-            Write a function <code>hasCycle(head *ListNode) bool</code> that returns true if the
-            linked list has a cycle. Use Floyd's cycle detection (fast/slow pointers).
+            Write a function <code>contains(haystack []string, needle string) bool</code>. Write tests for: found at
+            start, found at end, not found, empty slice, empty needle, and nil slice.
+          functionSignature: func contains(haystack []string, needle string) bool
+          testCases:
+            - input: "[]string{\"a\", \"b\", \"c\"}, \"b\""
+              output: "true"
+            - input: "[]string{\"a\", \"b\", \"c\"}, \"d\""
+              output: "false"
+            - input: "[]string{}, \"a\""
+              output: "false"
+            - input: nil, "a"
+              output: "false"
           hints:
-            - "If fast and slow ever point to the same node, there's a cycle."
-            - "If fast reaches nil, there's no cycle."
-            - "Start both at head. Move slow by 1, fast by 2."
+            - title: 🤔 Think about it
+              content: What should happen with a nil slice? An empty slice? An empty needle that might be in the slice?
+            - title: 💡 Hint
+              content: A simple range loop handles nil and empty slices identically -- they both iterate zero times.
+            - title: 🔧 Pattern
+              content: |-
+                <pre>1. Range over haystack
+                2. If item == needle, return true
+                3. After loop, return false
+                4. Test: found first, found last, not found,
+                   empty slice, nil slice, empty needle</pre>
           solution: |-
-            func hasCycle(head *ListNode) bool {
-                slow, fast := head, head
-                for fast != nil && fast.Next != nil {
-                    slow = slow.Next
-                    fast = fast.Next.Next
-                    if slow == fast {
+            func contains(haystack []string, needle string) bool {
+                for _, s := range haystack {
+                    if s == needle {
                         return true
                     }
                 }
                 return false
             }
+
+            func TestContains(t *testing.T) {
+                tests := []struct {
+                    name     string
+                    haystack []string
+                    needle   string
+                    want     bool
+                }{
+                    {"found at start", []string{"a", "b", "c"}, "a", true},
+                    {"found at end", []string{"a", "b", "c"}, "c", true},
+                    {"found in middle", []string{"a", "b", "c"}, "b", true},
+                    {"not found", []string{"a", "b", "c"}, "d", false},
+                    {"empty slice", []string{}, "a", false},
+                    {"nil slice", nil, "a", false},
+                    {"empty needle exists", []string{"a", "", "b"}, "", true},
+                    {"empty needle missing", []string{"a", "b"}, "", false},
+                }
+                for _, tt := range tests {
+                    t.Run(tt.name, func(t *testing.T) {
+                        got := contains(tt.haystack, tt.needle)
+                        if got != tt.want {
+                            t.Errorf("got %v, want %v", got, tt.want)
+                        }
+                    })
+                }
+            }
+          difficulty: 2
           annotations:
-            - type: pattern
-              label: Floyd's Algorithm
-              text: "If there's a cycle, the fast pointer will eventually lap the slow pointer."
-            - type: gotcha
-              label: Nil Checks
-              text: "Check both fast != nil and fast.Next != nil to avoid nil pointer dereference."
+            - type: idiom
+              label: Nil Slice Safety
+              text: Range over a nil slice is safe in Go -- it simply iterates zero times.
+            - type: stdlib
+              label: slices.Contains
+              text: Go 1.21+ provides slices.Contains for this exact pattern.
         - id: v4
-          title: Merge Two Sorted Lists
+          title: Test Max Edge Cases
           description: >-
-            Write a function <code>mergeTwoLists(l1, l2 *ListNode) *ListNode</code> that merges
-            two sorted linked lists into one sorted list. Return the head of the merged list.
-          hints:
-            - "Use a dummy head node to simplify the merge logic."
-            - "Compare the current nodes of both lists, append the smaller one."
-            - "When one list is exhausted, append the rest of the other."
-          solution: |-
-            func mergeTwoLists(l1, l2 *ListNode) *ListNode {
-                dummy := &ListNode{}
-                curr := dummy
-                for l1 != nil && l2 != nil {
-                    if l1.Val <= l2.Val {
-                        curr.Next = l1
-                        l1 = l1.Next
-                    } else {
-                        curr.Next = l2
-                        l2 = l2.Next
-                    }
-                    curr = curr.Next
-                }
-                if l1 != nil {
-                    curr.Next = l1
-                } else {
-                    curr.Next = l2
-                }
-                return dummy.Next
-            }
-          annotations:
-            - type: pattern
-              label: Dummy Head
-              text: "A dummy node eliminates special-case logic for the first element. Return dummy.Next."
-            - type: complexity
-              label: O(n + m)
-              text: "Visits each node exactly once. This is the same merge used in merge sort."
-    - id: warmup_5
-      concept: Trees
-      variants:
-        - id: v1
-          title: Inorder Traversal
-          description: >-
-            Given <code>type TreeNode struct { Val int; Left, Right *TreeNode }</code>, write a
-            function <code>inorderTraversal(root *TreeNode) []int</code> that returns the values
-            in inorder (left, node, right). For a BST this gives sorted order.
-          hints:
-            - "Base case: if root is nil, return nil."
-            - "Recurse left, append current value, recurse right."
-            - "Use <code>append(result, values...)</code> to merge slices."
-          solution: |-
-            type TreeNode struct {
-                Val   int
-                Left  *TreeNode
-                Right *TreeNode
-            }
-
-            func inorderTraversal(root *TreeNode) []int {
-                if root == nil {
-                    return nil
-                }
-                var result []int
-                result = append(result, inorderTraversal(root.Left)...)
-                result = append(result, root.Val)
-                result = append(result, inorderTraversal(root.Right)...)
-                return result
-            }
-          annotations:
-            - type: pattern
-              label: Recursive Traversal
-              text: "Tree traversals follow a template: base case (nil check), recurse left, process node, recurse right."
-            - type: idiom
-              label: Inorder = Sorted
-              text: "Inorder traversal of a BST produces values in sorted order — useful for validation."
-        - id: v2
-          title: Max Depth
-          description: >-
-            Write a function <code>maxDepth(root *TreeNode) int</code> that returns the maximum
-            depth of a binary tree. An empty tree has depth 0, a single node has depth 1.
-          hints:
-            - "Base case: nil returns 0."
-            - "Recurse on left and right, take the max, add 1."
-            - "In Go, use an if/else since there's no built-in max for ints (before Go 1.21)."
-          solution: |-
-            func maxDepth(root *TreeNode) int {
-                if root == nil {
-                    return 0
-                }
-                left := maxDepth(root.Left)
-                right := maxDepth(root.Right)
-                if left > right {
-                    return left + 1
-                }
-                return right + 1
-            }
-          annotations:
-            - type: pattern
-              label: Bottom-Up Recursion
-              text: "Compute children first, then combine results. Most tree height/size problems follow this pattern."
-            - type: complexity
-              label: O(n)
-              text: "Visits every node exactly once. Space is O(h) for the call stack, where h is the tree height."
-        - id: v3
-          title: Level Order Traversal (BFS)
-          description: >-
-            Write a function <code>levelOrder(root *TreeNode) [][]int</code> that returns the values
-            of the tree level by level, from left to right. Use a queue (slice) for BFS.
-          hints:
-            - "Start with root in the queue. Process one level at a time."
-            - "For each level, record the queue length, then process that many nodes."
-            - "Add each node's children to the queue as you go."
-          solution: |-
-            func levelOrder(root *TreeNode) [][]int {
-                if root == nil {
-                    return nil
-                }
-                var result [][]int
-                queue := []*TreeNode{root}
-                for len(queue) > 0 {
-                    levelSize := len(queue)
-                    level := make([]int, 0, levelSize)
-                    for i := 0; i < levelSize; i++ {
-                        node := queue[0]
-                        queue = queue[1:]
-                        level = append(level, node.Val)
-                        if node.Left != nil {
-                            queue = append(queue, node.Left)
-                        }
-                        if node.Right != nil {
-                            queue = append(queue, node.Right)
-                        }
-                    }
-                    result = append(result, level)
-                }
-                return result
-            }
-          annotations:
-            - type: pattern
-              label: BFS Level Tracking
-              text: "Snapshot the queue length at the start of each level to know how many nodes belong to that level."
-            - type: idiom
-              label: Slice as Queue
-              text: "Use <code>queue[0]</code> to dequeue and <code>queue = queue[1:]</code> to advance. Simple and readable."
-        - id: v4
-          title: Invert Binary Tree
-          description: >-
-            Write a function <code>invertTree(root *TreeNode) *TreeNode</code> that mirrors a binary
-            tree (swaps left and right children at every node). Return the root.
-          hints:
-            - "Base case: nil returns nil."
-            - "Swap left and right children, then recurse on both."
-            - "This is a single-line swap in Go: <code>root.Left, root.Right = root.Right, root.Left</code>"
-          solution: |-
-            func invertTree(root *TreeNode) *TreeNode {
-                if root == nil {
-                    return nil
-                }
-                root.Left, root.Right = root.Right, root.Left
-                invertTree(root.Left)
-                invertTree(root.Right)
-                return root
-            }
-          annotations:
-            - type: idiom
-              label: Tuple Swap
-              text: "Go's multiple assignment makes swaps clean: <code>a, b = b, a</code> without a temp variable."
-            - type: pattern
-              label: Top-Down Recursion
-              text: "Process the current node first, then recurse on children. Contrast with bottom-up (maxDepth)."
-  challenges:
-    - id: challenge_1
-      block: 1
-      difficulty: 2
-      concept: Graphs & BFS
-      docLinks:
-        - url: https://pkg.go.dev/container/list
-          title: container/list
-          note: alternative queue implementation
-      variants:
-        - id: v1
-          title: Implement BFS on a Graph
-          description: >-
-            Implement a function <code>bfs(graph map[int][]int, start int) []int</code> that performs
-            breadth-first search on an adjacency list graph and returns the nodes in visit order.
-          functionSignature: func bfs(graph map[int][]int, start int) []int
+            Write a function <code>max(nums []int) (int, error)</code> that returns the maximum value from a slice.
+            Write tests for: normal slice, single element, all same values, negative numbers, empty slice, and nil
+            slice.
+          functionSignature: func max(nums []int) (int, error)
           testCases:
-            - input: "map[int][]int{0: {1, 2}, 1: {3}, 2: {3}, 3: {}}, 0"
-              output: "[0, 1, 2, 3]"
-            - input: "map[int][]int{0: {}}, 0"
-              output: "[0]"
+            - input: "[]int{3, 1, 4, 1, 5}"
+              output: 5, nil
+            - input: "[]int{42}"
+              output: 42, nil
+            - input: "[]int{}"
+              output: 0, error
+            - input: nil
+              output: 0, error
           hints:
-            - title: "\U0001F914 Think about it"
+            - title: 🤔 Think about it
               content: >-
-                BFS visits nodes level by level. What data structure processes things in the order
-                they were added?
-            - title: "\U0001F4A1 Hint"
+                What should you return for an empty or nil slice? What should the initial max be -- zero, or the first
+                element?
+            - title: 💡 Hint
               content: >-
-                Use a slice as a queue. Track visited nodes in a map. Dequeue from the front, enqueue
-                neighbors that haven't been visited.
-            - title: "\U0001F527 Pattern"
+                Return an error for empty/nil slices. Initialize max to nums[0], then compare each subsequent element.
+                This avoids the trap of initializing to 0 (which fails for all-negative slices).
+            - title: 🔧 Pattern
               content: |-
-                <pre>1. Initialize queue with start node
-                2. Mark start as visited
-                3. While queue is not empty:
-                   a. Dequeue front node
-                   b. Add to result
-                   c. For each neighbor:
-                      - If not visited, mark visited and enqueue</pre>
+                <pre>1. Check len(nums) == 0 -> return error
+                2. Set result = nums[0]
+                3. For each remaining element:
+                   - If element > result, update result
+                4. Return result
+                5. Test: normal, single, same, negatives, empty, nil</pre>
           solution: |-
-            func bfs(graph map[int][]int, start int) []int {
-                visited := make(map[int]bool)
-                queue := []int{start}
-                visited[start] = true
-                var order []int
-
-                for len(queue) > 0 {
-                    node := queue[0]
-                    queue = queue[1:]
-                    order = append(order, node)
-
-                    for _, neighbor := range graph[node] {
-                        if !visited[neighbor] {
-                            visited[neighbor] = true
-                            queue = append(queue, neighbor)
-                        }
+            func maxVal(nums []int) (int, error) {
+                if len(nums) == 0 {
+                    return 0, fmt.Errorf("empty slice")
+                }
+                m := nums[0]
+                for _, n := range nums[1:] {
+                    if n > m {
+                        m = n
                     }
                 }
-                return order
+                return m, nil
+            }
+
+            func TestMax(t *testing.T) {
+                tests := []struct {
+                    name    string
+                    input   []int
+                    want    int
+                    wantErr bool
+                }{
+                    {"normal", []int{3, 1, 4, 1, 5}, 5, false},
+                    {"single", []int{42}, 42, false},
+                    {"all same", []int{7, 7, 7}, 7, false},
+                    {"negatives", []int{-3, -1, -4}, -1, false},
+                    {"mixed", []int{-2, 0, 2}, 2, false},
+                    {"empty", []int{}, 0, true},
+                    {"nil", nil, 0, true},
+                }
+                for _, tt := range tests {
+                    t.Run(tt.name, func(t *testing.T) {
+                        got, err := maxVal(tt.input)
+                        if (err != nil) != tt.wantErr {
+                            t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
+                        }
+                        if !tt.wantErr && got != tt.want {
+                            t.Errorf("got %d, want %d", got, tt.want)
+                        }
+                    })
+                }
             }
           difficulty: 2
           annotations:
-            - type: pattern
-              label: BFS Template
-              text: "Queue + visited set is the universal BFS pattern. Works for trees, graphs, grids, and state spaces."
             - type: gotcha
-              label: Mark on Enqueue
-              text: "Mark nodes visited when enqueueing, not when dequeuing. This prevents duplicate entries in the queue."
-            - type: complexity
-              label: O(V + E)
-              text: "Visits each vertex once and checks each edge once."
-        - id: v2
-          title: Count Connected Components
-          description: >-
-            Write a function <code>countComponents(n int, edges [][]int) int</code> that counts the
-            number of connected components in an undirected graph. Nodes are numbered 0 to n-1.
-          functionSignature: func countComponents(n int, edges [][]int) int
-          testCases:
-            - input: "5, [][]int{{0,1},{1,2},{3,4}}"
-              output: "2"
-            - input: "3, [][]int{}"
-              output: "3"
-          hints:
-            - title: "\U0001F914 Think about it"
-              content: >-
-                Each BFS/DFS from an unvisited node discovers one connected component. How many times
-                do you need to start a new traversal?
-            - title: "\U0001F4A1 Hint"
-              content: >-
-                Build an adjacency list from edges. Loop through all nodes — if unvisited, run BFS/DFS
-                and increment the component count.
-            - title: "\U0001F527 Pattern"
-              content: |-
-                <pre>1. Build adjacency list from edges (both directions)
-                2. Create visited set
-                3. For each node 0..n-1:
-                   - If not visited: BFS/DFS from it, count++
-                4. Return count</pre>
-          solution: |-
-            func countComponents(n int, edges [][]int) int {
-                graph := make(map[int][]int)
-                for i := 0; i < n; i++ {
-                    graph[i] = []int{}
-                }
-                for _, e := range edges {
-                    graph[e[0]] = append(graph[e[0]], e[1])
-                    graph[e[1]] = append(graph[e[1]], e[0])
-                }
-
-                visited := make(map[int]bool)
-                count := 0
-                for i := 0; i < n; i++ {
-                    if !visited[i] {
-                        queue := []int{i}
-                        visited[i] = true
-                        for len(queue) > 0 {
-                            node := queue[0]
-                            queue = queue[1:]
-                            for _, nb := range graph[node] {
-                                if !visited[nb] {
-                                    visited[nb] = true
-                                    queue = append(queue, nb)
-                                }
-                            }
-                        }
-                        count++
-                    }
-                }
-                return count
-            }
-          difficulty: 2
-          annotations:
-            - type: pattern
-              label: Component Counting
-              text: "Each BFS/DFS start from an unvisited node discovers exactly one connected component."
-            - type: gotcha
-              label: Undirected Edges
-              text: "Add edges in both directions for undirected graphs: graph[a] = b and graph[b] = a."
-        - id: v3
-          title: Shortest Path in Unweighted Graph
-          description: >-
-            Write a function <code>shortestPath(graph map[int][]int, start, end int) int</code> that
-            returns the shortest path length between two nodes. Return <code>-1</code> if no path exists.
-          functionSignature: func shortestPath(graph map[int][]int, start, end int) int
-          testCases:
-            - input: "map[int][]int{0: {1, 2}, 1: {3}, 2: {3}, 3: {}}, 0, 3"
-              output: "2"
-            - input: "map[int][]int{0: {1}, 1: {}, 2: {}}, 0, 2"
-              output: "-1"
-          hints:
-            - title: "\U0001F914 Think about it"
-              content: "BFS explores nodes level by level. What does each level represent in terms of distance?"
-            - title: "\U0001F4A1 Hint"
-              content: >-
-                Track distance in a map alongside visited status. When you visit a neighbor, its distance
-                is current node's distance + 1.
-            - title: "\U0001F527 Pattern"
-              content: |-
-                <pre>1. BFS from start, tracking distance
-                2. distance[start] = 0
-                3. For each dequeued node:
-                   - If it's the target, return distance
-                   - Enqueue unvisited neighbors with distance+1
-                4. If queue empties, return -1</pre>
-          solution: |-
-            func shortestPath(graph map[int][]int, start, end int) int {
-                if start == end {
-                    return 0
-                }
-                visited := make(map[int]bool)
-                type entry struct {
-                    node int
-                    dist int
-                }
-                queue := []entry{{start, 0}}
-                visited[start] = true
-
-                for len(queue) > 0 {
-                    curr := queue[0]
-                    queue = queue[1:]
-
-                    for _, nb := range graph[curr.node] {
-                        if nb == end {
-                            return curr.dist + 1
-                        }
-                        if !visited[nb] {
-                            visited[nb] = true
-                            queue = append(queue, entry{nb, curr.dist + 1})
-                        }
-                    }
-                }
-                return -1
-            }
-          difficulty: 2
-          annotations:
-            - type: pattern
-              label: BFS = Shortest Path
-              text: "BFS guarantees the first time you reach a node is via the shortest path (for unweighted graphs)."
+              label: Init to First Element
+              text: Never initialize max to 0 or math.MinInt. Use nums[0] to handle all-negative slices correctly.
             - type: idiom
-              label: Anonymous Struct
-              text: "Go's anonymous structs (<code>struct { node int; dist int }</code>) are perfect for lightweight queue entries."
-        - id: v4
-          title: Grid Flood Fill
-          description: >-
-            Write a function <code>floodFill(grid [][]int, sr, sc, newColor int) [][]int</code> that
-            performs a flood fill starting from <code>(sr, sc)</code>, changing all connected cells of
-            the same color to <code>newColor</code>. Return the modified grid.
-          functionSignature: func floodFill(grid [][]int, sr, sc, newColor int) [][]int
-          testCases:
-            - input: "[][]int{{1,1,1},{1,1,0},{1,0,1}}, 1, 1, 2"
-              output: "[][]int{{2,2,2},{2,2,0},{2,0,1}}"
-          hints:
-            - title: "\U0001F914 Think about it"
-              content: "This is BFS/DFS on a grid. What are the 'neighbors' of a cell? When should you stop spreading?"
-            - title: "\U0001F4A1 Hint"
-              content: >-
-                Start at (sr, sc). Use BFS with a queue of (row, col) pairs. Spread to 4-directional
-                neighbors that have the original color.
-            - title: "\U0001F527 Pattern"
-              content: |-
-                <pre>1. Record originalColor = grid[sr][sc]
-                2. If originalColor == newColor, return (no-op)
-                3. BFS from (sr, sc):
-                   - Set cell to newColor
-                   - Enqueue neighbors with originalColor
-                4. Return modified grid</pre>
-          solution: |-
-            func floodFill(grid [][]int, sr, sc, newColor int) [][]int {
-                origColor := grid[sr][sc]
-                if origColor == newColor {
-                    return grid
-                }
-                type point struct{ r, c int }
-                queue := []point{{sr, sc}}
-                grid[sr][sc] = newColor
-                dirs := []point{{-1, 0}, {1, 0}, {0, -1}, {0, 1}}
-
-                for len(queue) > 0 {
-                    p := queue[0]
-                    queue = queue[1:]
-                    for _, d := range dirs {
-                        nr, nc := p.r+d.r, p.c+d.c
-                        if nr >= 0 && nr < len(grid) && nc >= 0 && nc < len(grid[0]) && grid[nr][nc] == origColor {
-                            grid[nr][nc] = newColor
-                            queue = append(queue, point{nr, nc})
-                        }
-                    }
-                }
-                return grid
-            }
-          difficulty: 2
-          annotations:
-            - type: pattern
-              label: Grid BFS
-              text: "Grid problems are graph problems in disguise. Cells are nodes, 4-directional neighbors are edges."
-            - type: gotcha
-              label: Same Color Check
-              text: "If originalColor == newColor, return immediately. Otherwise BFS loops forever."
+              label: Error for Empty Input
+              text: Return an error when the input is invalid rather than returning a misleading zero value.
     - id: challenge_2
       block: 2
       difficulty: 3
-      concept: Sorting
+      concept: Code Coverage
       docLinks:
-        - url: https://pkg.go.dev/sort
-          title: Package sort
-          note: Go's standard sorting
+        - url: https://go.dev/blog/cover
+          title: "Go Blog: The cover story"
+          note: go test -cover and -coverprofile
+        - url: https://pkg.go.dev/cmd/go#hdr-Testing_flags
+          title: "Go Command: Testing flags"
+          note: -covermode, -coverprofile flags
       variants:
         - id: v1
-          title: Implement Merge Sort
+          title: Achieve Coverage for FizzBuzz
           description: >-
-            Implement <code>mergeSort(nums []int) []int</code> that sorts a slice using the
-            divide-and-conquer merge sort algorithm. Return a new sorted slice.
-          functionSignature: func mergeSort(nums []int) []int
+            Write a function <code>fizzBuzz(n int) string</code> that returns <code>"FizzBuzz"</code> for multiples of
+            15, <code>"Fizz"</code> for multiples of 3, <code>"Buzz"</code> for multiples of 5, and the number as a
+            string otherwise. Write enough tests to achieve 100% branch coverage.
+          functionSignature: func fizzBuzz(n int) string
           testCases:
-            - input: "[]int{38, 27, 43, 3, 9, 82, 10}"
-              output: "[]int{3, 9, 10, 27, 38, 43, 82}"
-            - input: "[]int{1}"
-              output: "[]int{1}"
-            - input: "[]int{}"
-              output: "[]int{}"
+            - input: "15"
+              output: "\"FizzBuzz\""
+            - input: "3"
+              output: "\"Fizz\""
+            - input: "5"
+              output: "\"Buzz\""
+            - input: "7"
+              output: "\"7\""
           hints:
-            - title: "\U0001F914 Think about it"
+            - title: 🤔 Think about it
+              content: How many branches does this function have? You need at least one test per branch to get 100% coverage.
+            - title: 💡 Hint
               content: >-
-                Merge sort splits the array in half, sorts each half, then merges the sorted halves.
-                What's the base case?
-            - title: "\U0001F4A1 Hint"
-              content: >-
-                Base case: slices of length 0 or 1 are already sorted. Split at midpoint, recursively
-                sort both halves, then merge using two pointers.
-            - title: "\U0001F527 Pattern"
+                There are 4 branches: divisible by 15, divisible by 3 (not 15), divisible by 5 (not 15), and neither.
+                One test per branch gives full coverage.
+            - title: 🔧 Pattern
               content: |-
-                <pre>1. Base case: len <= 1, return copy
-                2. Split at mid = len/2
-                3. Recursively sort left and right halves
-                4. Merge: two pointers comparing elements
-                   - Take smaller element, advance that pointer
-                5. Append remaining elements from either half</pre>
+                <pre>1. Write the function with if/else if chain
+                2. Count branches: 4
+                3. Write one test case per branch
+                4. Run: go test -cover
+                5. Verify: coverage: 100%</pre>
           solution: |-
-            func mergeSort(nums []int) []int {
-                if len(nums) <= 1 {
-                    result := make([]int, len(nums))
-                    copy(result, nums)
-                    return result
+            func fizzBuzz(n int) string {
+                switch {
+                case n%15 == 0:
+                    return "FizzBuzz"
+                case n%3 == 0:
+                    return "Fizz"
+                case n%5 == 0:
+                    return "Buzz"
+                default:
+                    return strconv.Itoa(n)
                 }
-                mid := len(nums) / 2
-                left := mergeSort(nums[:mid])
-                right := mergeSort(nums[mid:])
-                return mergeSorted(left, right)
             }
 
-            func mergeSorted(left, right []int) []int {
-                result := make([]int, 0, len(left)+len(right))
-                i, j := 0, 0
-                for i < len(left) && j < len(right) {
-                    if left[i] <= right[j] {
-                        result = append(result, left[i])
-                        i++
-                    } else {
-                        result = append(result, right[j])
-                        j++
-                    }
+            func TestFizzBuzz(t *testing.T) {
+                tests := []struct {
+                    input int
+                    want  string
+                }{
+                    {15, "FizzBuzz"},
+                    {30, "FizzBuzz"},
+                    {3, "Fizz"},
+                    {9, "Fizz"},
+                    {5, "Buzz"},
+                    {10, "Buzz"},
+                    {7, "7"},
+                    {1, "1"},
                 }
-                result = append(result, left[i:]...)
-                result = append(result, right[j:]...)
-                return result
+                for _, tt := range tests {
+                    t.Run(strconv.Itoa(tt.input), func(t *testing.T) {
+                        got := fizzBuzz(tt.input)
+                        if got != tt.want {
+                            t.Errorf("fizzBuzz(%d) = %q, want %q", tt.input, got, tt.want)
+                        }
+                    })
+                }
             }
+
+            // Run: go test -coverprofile=coverage.out
+            // View: go tool cover -html=coverage.out
           difficulty: 3
           annotations:
-            - type: pattern
-              label: Divide and Conquer
-              text: "Split the problem in half, solve each half, combine results. This pattern gives O(n log n)."
-            - type: complexity
-              label: O(n log n) Time, O(n) Space
-              text: "log n levels of recursion, O(n) work per level. The merge step requires O(n) temporary space."
             - type: idiom
-              label: Stable Sort
-              text: "Merge sort is stable (equal elements maintain their relative order). Go's sort.Stable uses a similar approach."
-        - id: v2
-          title: Implement Quick Select (Kth Smallest)
-          description: >-
-            Implement <code>kthSmallest(nums []int, k int) int</code> that finds the k-th smallest
-            element (1-indexed) using the quickselect algorithm. Average O(n) time.
-          functionSignature: func kthSmallest(nums []int, k int) int
-          testCases:
-            - input: "[]int{3, 1, 4, 1, 5, 9, 2, 6}, 3"
-              output: "2"
-            - input: "[]int{7, 2, 1}, 1"
-              output: "1"
-          hints:
-            - title: "\U0001F914 Think about it"
-              content: >-
-                Quickselect is like quicksort but only recurses into the partition containing the target.
-                How does this reduce from O(n log n) to O(n) average?
-            - title: "\U0001F4A1 Hint"
-              content: >-
-                Pick a pivot, partition around it. If pivot lands at position k-1, you're done. If k-1
-                is in the left partition, recurse left. Otherwise recurse right.
-            - title: "\U0001F527 Pattern"
-              content: |-
-                <pre>1. Pick pivot (last element)
-                2. Partition: elements < pivot go left
-                3. Place pivot at partition boundary
-                4. If pivot index == k-1: return pivot
-                5. If k-1 < pivot index: recurse left
-                6. Else: recurse right</pre>
-          solution: |-
-            func kthSmallest(nums []int, k int) int {
-                return quickSelect(nums, 0, len(nums)-1, k-1)
-            }
-
-            func quickSelect(nums []int, lo, hi, target int) int {
-                if lo == hi {
-                    return nums[lo]
-                }
-                pivot := nums[hi]
-                storeIdx := lo
-                for i := lo; i < hi; i++ {
-                    if nums[i] < pivot {
-                        nums[i], nums[storeIdx] = nums[storeIdx], nums[i]
-                        storeIdx++
-                    }
-                }
-                nums[storeIdx], nums[hi] = nums[hi], nums[storeIdx]
-
-                if storeIdx == target {
-                    return nums[storeIdx]
-                } else if target < storeIdx {
-                    return quickSelect(nums, lo, storeIdx-1, target)
-                }
-                return quickSelect(nums, storeIdx+1, hi, target)
-            }
-          difficulty: 3
-          annotations:
-            - type: pattern
-              label: Quickselect
-              text: "Like quicksort but only recurse into one partition. Average O(n), worst case O(n²)."
-            - type: complexity
-              label: Average O(n)
-              text: "n + n/2 + n/4 + ... = 2n. Only processing one partition each time gives linear average."
-        - id: v3
-          title: Sort a Linked List
-          description: >-
-            Implement <code>sortList(head *ListNode) *ListNode</code> that sorts a linked list in
-            O(n log n) time using merge sort. Split the list at the midpoint, sort both halves,
-            then merge.
-          functionSignature: func sortList(head *ListNode) *ListNode
-          testCases:
-            - input: "4 -> 2 -> 1 -> 3"
-              output: "1 -> 2 -> 3 -> 4"
-            - input: "nil"
-              output: "nil"
-          hints:
-            - title: "\U0001F914 Think about it"
-              content: "How do you find the midpoint of a linked list? How do you split it into two halves?"
-            - title: "\U0001F4A1 Hint"
-              content: >-
-                Use slow/fast pointers to find the middle. Break the list in two by setting the node
-                before mid's Next to nil. Recursively sort both halves, then merge.
-            - title: "\U0001F527 Pattern"
-              content: |-
-                <pre>1. Base case: nil or single node
-                2. Find mid with slow/fast pointers
-                3. Split: prev.Next = nil
-                4. Sort left half, sort right half
-                5. Merge two sorted lists (dummy head pattern)</pre>
-          solution: |-
-            func sortList(head *ListNode) *ListNode {
-                if head == nil || head.Next == nil {
-                    return head
-                }
-                slow, fast := head, head
-                var prev *ListNode
-                for fast != nil && fast.Next != nil {
-                    prev = slow
-                    slow = slow.Next
-                    fast = fast.Next.Next
-                }
-                prev.Next = nil
-
-                left := sortList(head)
-                right := sortList(slow)
-                return mergeLists(left, right)
-            }
-
-            func mergeLists(l1, l2 *ListNode) *ListNode {
-                dummy := &ListNode{}
-                curr := dummy
-                for l1 != nil && l2 != nil {
-                    if l1.Val <= l2.Val {
-                        curr.Next = l1
-                        l1 = l1.Next
-                    } else {
-                        curr.Next = l2
-                        l2 = l2.Next
-                    }
-                    curr = curr.Next
-                }
-                if l1 != nil {
-                    curr.Next = l1
-                } else {
-                    curr.Next = l2
-                }
-                return dummy.Next
-            }
-          difficulty: 3
-          annotations:
-            - type: pattern
-              label: Linked List Merge Sort
-              text: "Merge sort is ideal for linked lists — splitting at midpoint is O(n), merge is O(n), no random access needed."
+              label: Switch with No Condition
+              text: switch {} with case expressions is cleaner than if/else chains for multiple conditions.
             - type: gotcha
-              label: Break the List
-              text: "You must set prev.Next = nil to actually split the list. Otherwise both halves share the same tail."
-        - id: v4
-          title: Merge K Sorted Slices
-          description: >-
-            Implement <code>mergeKSorted(lists [][]int) []int</code> that merges k sorted integer
-            slices into one sorted slice. Use a divide-and-conquer approach.
-          functionSignature: func mergeKSorted(lists [][]int) []int
-          testCases:
-            - input: "[][]int{{1,4,5},{1,3,4},{2,6}}"
-              output: "[]int{1,1,2,3,4,4,5,6}"
-            - input: "[][]int{}"
-              output: "[]int{}"
-          hints:
-            - title: "\U0001F914 Think about it"
-              content: "Merging two sorted slices is easy. How can you use that to merge k slices efficiently?"
-            - title: "\U0001F4A1 Hint"
-              content: >-
-                Pair up slices and merge each pair. Repeat until one slice remains. This is divide-and-conquer
-                on the list of lists.
-            - title: "\U0001F527 Pattern"
-              content: |-
-                <pre>1. Base case: 0 lists -> empty, 1 list -> return it
-                2. Split lists into left half and right half
-                3. Recursively merge each half
-                4. Merge the two resulting sorted slices</pre>
-          solution: |-
-            func mergeKSorted(lists [][]int) []int {
-                if len(lists) == 0 {
-                    return []int{}
-                }
-                if len(lists) == 1 {
-                    result := make([]int, len(lists[0]))
-                    copy(result, lists[0])
-                    return result
-                }
-                mid := len(lists) / 2
-                left := mergeKSorted(lists[:mid])
-                right := mergeKSorted(lists[mid:])
-                return mergeTwo(left, right)
-            }
-
-            func mergeTwo(a, b []int) []int {
-                result := make([]int, 0, len(a)+len(b))
-                i, j := 0, 0
-                for i < len(a) && j < len(b) {
-                    if a[i] <= b[j] {
-                        result = append(result, a[i])
-                        i++
-                    } else {
-                        result = append(result, b[j])
-                        j++
-                    }
-                }
-                result = append(result, a[i:]...)
-                result = append(result, b[j:]...)
-                return result
-            }
-          difficulty: 3
-          annotations:
+              label: Check 15 First
+              text: Check divisible-by-15 before 3 or 5. Otherwise, 15 matches the first condition it hits.
             - type: pattern
-              label: Divide and Conquer Merge
-              text: "Pair-wise merging gives O(n log k) — much better than merging one at a time which is O(nk)."
-            - type: complexity
-              label: O(n log k)
-              text: "n total elements across k lists. log k merge rounds, each touching all n elements."
-    - id: challenge_3
-      block: 3
-      difficulty: 3
-      concept: Heaps & Tries
-      docLinks:
-        - url: https://pkg.go.dev/container/heap
-          title: container/heap
-          note: heap interface and operations
-      variants:
-        - id: v1
-          title: Build a Min-Heap
-          description: >-
-            Implement a min-heap that satisfies Go's <code>heap.Interface</code>. Then write a
-            function <code>kSmallest(nums []int, k int) []int</code> that returns the k smallest
-            elements using your heap.
-          functionSignature: func kSmallest(nums []int, k int) []int
-          testCases:
-            - input: "[]int{5, 3, 8, 1, 2, 7}, 3"
-              output: "[]int{1, 2, 3}"
-            - input: "[]int{1}, 1"
-              output: "[]int{1}"
-          hints:
-            - title: "\U0001F914 Think about it"
-              content: >-
-                heap.Interface requires Len, Less, Swap, Push, and Pop. Which methods go on the value
-                receiver vs pointer receiver?
-            - title: "\U0001F4A1 Hint"
-              content: >-
-                Len, Less, Swap use value receiver. Push and Pop use pointer receiver because they modify
-                the slice. Push appends, Pop removes and returns the last element.
-            - title: "\U0001F527 Pattern"
-              content: |-
-                <pre>1. Define IntHeap as []int
-                2. Implement Len, Less (min: h[i] < h[j]), Swap
-                3. Push: append to *h
-                4. Pop: remove and return last element of *h
-                5. Init heap, push all nums, pop k times</pre>
-          solution: |-
-            type IntHeap []int
-
-            func (h IntHeap) Len() int           { return len(h) }
-            func (h IntHeap) Less(i, j int) bool { return h[i] < h[j] }
-            func (h IntHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
-
-            func (h *IntHeap) Push(x interface{}) {
-                *h = append(*h, x.(int))
-            }
-
-            func (h *IntHeap) Pop() interface{} {
-                old := *h
-                n := len(old)
-                x := old[n-1]
-                *h = old[:n-1]
-                return x
-            }
-
-            func kSmallest(nums []int, k int) []int {
-                h := &IntHeap{}
-                heap.Init(h)
-                for _, n := range nums {
-                    heap.Push(h, n)
-                }
-                result := make([]int, 0, k)
-                for i := 0; i < k && h.Len() > 0; i++ {
-                    result = append(result, heap.Pop(h).(int))
-                }
-                return result
-            }
-          difficulty: 3
-          annotations:
-            - type: idiom
-              label: heap.Interface
-              text: "Go's heap package works through an interface. You implement 5 methods and the package handles the rest."
-            - type: gotcha
-              label: Push/Pop Receivers
-              text: "Push and Pop MUST use pointer receivers (*IntHeap) because they modify the underlying slice."
-            - type: complexity
-              label: O(n + k log n)
-              text: "heap.Init is O(n). Each Pop is O(log n), done k times."
+              label: Coverage Strategy
+              text: Map each branch to at least one test case. Use go test -cover to verify.
         - id: v2
-          title: Top K Frequent Elements
+          title: Achieve Coverage for GradeCalculator
           description: >-
-            Write a function <code>topKFrequent(nums []int, k int) []int</code> that returns the
-            k most frequent elements. Use a map for counting and a heap for selection.
-          functionSignature: func topKFrequent(nums []int, k int) []int
+            Write a function <code>grade(score int) (string, error)</code> that returns a letter grade (A/B/C/D/F) for
+            scores 0-100, and an error for out-of-range scores. Write tests to achieve at least 80% coverage using
+            <code>go test -cover</code>.
+          functionSignature: func grade(score int) (string, error)
           testCases:
-            - input: "[]int{1,1,1,2,2,3}, 2"
-              output: "[]int{1, 2}"
-            - input: "[]int{1}, 1"
-              output: "[]int{1}"
+            - input: "95"
+              output: "\"A\", nil"
+            - input: "85"
+              output: "\"B\", nil"
+            - input: "75"
+              output: "\"C\", nil"
+            - input: "65"
+              output: "\"D\", nil"
+            - input: "50"
+              output: "\"F\", nil"
+            - input: "-1"
+              output: "\"\", error"
+            - input: "101"
+              output: "\"\", error"
           hints:
-            - title: "\U0001F914 Think about it"
+            - title: 🤔 Think about it
+              content: "Count the branches: invalid low, invalid high, A, B, C, D, F. That's 7 branches to cover."
+            - title: 💡 Hint
               content: >-
-                First count frequencies, then find the top k. A max-heap on frequency lets you extract
-                the k most frequent efficiently.
-            - title: "\U0001F4A1 Hint"
-              content: >-
-                Count frequencies with a map. Build a max-heap of (num, freq) pairs. Pop k times.
-                For a max-heap, reverse the Less comparison.
-            - title: "\U0001F527 Pattern"
+                Write at least one test per branch. Use go test -coverprofile=coverage.out and go tool cover
+                -html=coverage.out to find uncovered lines.
+            - title: 🔧 Pattern
               content: |-
-                <pre>1. Count frequencies: map[int]int
-                2. Build heap entries: {num, freq}
-                3. Max-heap: Less returns freq[i] > freq[j]
-                4. Init heap with all entries
-                5. Pop k times for the top k</pre>
+                <pre>1. Write function with range validation + grade logic
+                2. List all branches (7 total)
+                3. Write table-driven tests with one case per branch
+                4. Run: go test -cover
+                5. Check coverage report for gaps</pre>
           solution: |-
-            type freqEntry struct {
-                num  int
-                freq int
+            func grade(score int) (string, error) {
+                if score < 0 || score > 100 {
+                    return "", fmt.Errorf("score %d out of range 0-100", score)
+                }
+                switch {
+                case score >= 90:
+                    return "A", nil
+                case score >= 80:
+                    return "B", nil
+                case score >= 70:
+                    return "C", nil
+                case score >= 60:
+                    return "D", nil
+                default:
+                    return "F", nil
+                }
             }
 
-            type freqHeap []freqEntry
-
-            func (h freqHeap) Len() int           { return len(h) }
-            func (h freqHeap) Less(i, j int) bool { return h[i].freq > h[j].freq }
-            func (h freqHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
-
-            func (h *freqHeap) Push(x interface{}) {
-                *h = append(*h, x.(freqEntry))
-            }
-
-            func (h *freqHeap) Pop() interface{} {
-                old := *h
-                n := len(old)
-                x := old[n-1]
-                *h = old[:n-1]
-                return x
-            }
-
-            func topKFrequent(nums []int, k int) []int {
-                freq := make(map[int]int)
-                for _, n := range nums {
-                    freq[n]++
+            func TestGrade(t *testing.T) {
+                tests := []struct {
+                    name    string
+                    score   int
+                    want    string
+                    wantErr bool
+                }{
+                    {"A grade", 95, "A", false},
+                    {"A boundary", 90, "A", false},
+                    {"B grade", 85, "B", false},
+                    {"C grade", 75, "C", false},
+                    {"D grade", 65, "D", false},
+                    {"F grade", 50, "F", false},
+                    {"zero", 0, "F", false},
+                    {"perfect", 100, "A", false},
+                    {"too low", -1, "", true},
+                    {"too high", 101, "", true},
                 }
-
-                h := &freqHeap{}
-                for num, count := range freq {
-                    heap.Push(h, freqEntry{num, count})
+                for _, tt := range tests {
+                    t.Run(tt.name, func(t *testing.T) {
+                        got, err := grade(tt.score)
+                        if (err != nil) != tt.wantErr {
+                            t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
+                        }
+                        if got != tt.want {
+                            t.Errorf("got %q, want %q", got, tt.want)
+                        }
+                    })
                 }
-
-                result := make([]int, 0, k)
-                for i := 0; i < k; i++ {
-                    entry := heap.Pop(h).(freqEntry)
-                    result = append(result, entry.num)
-                }
-                return result
             }
           difficulty: 3
           annotations:
             - type: pattern
-              label: Frequency + Heap
-              text: "Count with a map, select with a heap. This two-phase pattern handles 'top K by frequency' problems."
-            - type: alternative
-              label: Bucket Sort
-              text: "An alternative O(n) approach uses bucket sort by frequency — index = frequency, value = list of nums."
-        - id: v3
-          title: Implement a Trie
-          description: >-
-            Implement a <code>Trie</code> struct with methods <code>Insert(word string)</code>,
-            <code>Search(word string) bool</code>, and <code>StartsWith(prefix string) bool</code>.
-            Search returns true only for exact matches. StartsWith returns true if any inserted word
-            begins with the prefix.
-          functionSignature: "type Trie struct { ... }"
-          testCases:
-            - input: "Insert(\"apple\"), Search(\"apple\")"
-              output: "true"
-            - input: "Search(\"app\")"
-              output: "false"
-            - input: "StartsWith(\"app\")"
-              output: "true"
-          hints:
-            - title: "\U0001F914 Think about it"
-              content: >-
-                Each node has a map of children (char -> node) and a boolean marking end-of-word.
-                How does this differ from Search vs StartsWith?
-            - title: "\U0001F4A1 Hint"
-              content: >-
-                Insert: traverse/create nodes for each character, mark last as end. Search: traverse
-                and check isEnd. StartsWith: traverse without checking isEnd.
-            - title: "\U0001F527 Pattern"
-              content: |-
-                <pre>1. TrieNode: children map[rune]*TrieNode, isEnd bool
-                2. Insert: for each char, create node if missing, move down
-                3. Mark final node as isEnd = true
-                4. Search: traverse, return node.isEnd
-                5. StartsWith: traverse, return true if traversal completes</pre>
-          solution: |-
-            type TrieNode struct {
-                children map[rune]*TrieNode
-                isEnd    bool
-            }
-
-            type Trie struct {
-                root *TrieNode
-            }
-
-            func NewTrie() *Trie {
-                return &Trie{root: &TrieNode{children: make(map[rune]*TrieNode)}}
-            }
-
-            func (t *Trie) Insert(word string) {
-                node := t.root
-                for _, ch := range word {
-                    if _, ok := node.children[ch]; !ok {
-                        node.children[ch] = &TrieNode{children: make(map[rune]*TrieNode)}
-                    }
-                    node = node.children[ch]
-                }
-                node.isEnd = true
-            }
-
-            func (t *Trie) Search(word string) bool {
-                node := t.root
-                for _, ch := range word {
-                    if _, ok := node.children[ch]; !ok {
-                        return false
-                    }
-                    node = node.children[ch]
-                }
-                return node.isEnd
-            }
-
-            func (t *Trie) StartsWith(prefix string) bool {
-                node := t.root
-                for _, ch := range prefix {
-                    if _, ok := node.children[ch]; !ok {
-                        return false
-                    }
-                    node = node.children[ch]
-                }
-                return true
-            }
-          difficulty: 3
-          annotations:
-            - type: pattern
-              label: Trie Structure
-              text: "Each node is a map of children. Traversal follows characters one at a time down the tree."
-            - type: complexity
-              label: O(m) Per Operation
-              text: "Insert, Search, and StartsWith all take O(m) time where m is the word/prefix length."
+              label: Boundary Testing
+              text: Test boundary values (90, 80, 70, 60) in addition to mid-range values for thorough coverage.
             - type: idiom
-              label: Map Children
-              text: "Using map[rune]*TrieNode handles Unicode. For ASCII-only, a [26]*TrieNode array is faster."
-        - id: v4
-          title: Trie with Autocomplete
+              label: Coverage Profiling
+              text: Use go test -coverprofile=c.out && go tool cover -html=c.out to visualize coverage.
+        - id: v3
+          title: Achieve Coverage for PasswordValidator
           description: >-
-            Extend a Trie with an <code>Autocomplete(prefix string, limit int) []string</code> method
-            that returns up to <code>limit</code> words starting with the given prefix.
-          functionSignature: func (t *Trie) Autocomplete(prefix string, limit int) []string
+            Write a function <code>validatePassword(pw string) []string</code> that returns a slice of validation error
+            messages. Rules: min 8 chars, at least one uppercase, one lowercase, one digit. Write tests to cover all
+            validation branches.
+          functionSignature: func validatePassword(pw string) []string
           testCases:
-            - input: "Insert: [\"apple\", \"app\", \"application\", \"banana\"], Autocomplete(\"app\", 2)"
-              output: "[\"app\", \"apple\"]"
-            - input: "Autocomplete(\"xyz\", 5)"
+            - input: "\"Abcdef1x\""
               output: "[]"
+            - input: "\"short\""
+              output: "[\"must be at least 8 characters\", \"must contain uppercase\", \"must contain digit\"]"
+            - input: "\"abcdefgh\""
+              output: "[\"must contain uppercase\", \"must contain digit\"]"
+            - input: "\"ABCDEFGH\""
+              output: "[\"must contain lowercase\", \"must contain digit\"]"
           hints:
-            - title: "\U0001F914 Think about it"
-              content: "First navigate to the prefix node, then collect all words reachable from that node."
-            - title: "\U0001F4A1 Hint"
+            - title: 🤔 Think about it
               content: >-
-                Use DFS from the prefix node, building up the current word as you go. When you hit an
-                isEnd node, add the word to results. Stop when you reach the limit.
-            - title: "\U0001F527 Pattern"
+                Each validation rule is an independent branch. You need tests where each rule fails individually and in
+                combination.
+            - title: 💡 Hint
+              content: >-
+                Use unicode.IsUpper, unicode.IsLower, and unicode.IsDigit to check characters. Collect all errors rather
+                than returning on the first one.
+            - title: 🔧 Pattern
               content: |-
-                <pre>1. Navigate to the prefix node (return empty if not found)
-                2. DFS from prefix node:
-                   - Track current path as a string
-                   - If isEnd, add to results
-                   - If results >= limit, stop
-                   - Recurse into each child</pre>
+                <pre>1. Check length >= 8
+                2. Range over runes checking:
+                   - hasUpper (unicode.IsUpper)
+                   - hasLower (unicode.IsLower)
+                   - hasDigit (unicode.IsDigit)
+                3. Collect all failures into []string
+                4. Test: valid, too short, missing upper,
+                   missing lower, missing digit, combinations</pre>
           solution: |-
-            func (t *Trie) Autocomplete(prefix string, limit int) []string {
-                node := t.root
-                for _, ch := range prefix {
-                    if _, ok := node.children[ch]; !ok {
-                        return nil
-                    }
-                    node = node.children[ch]
+            func validatePassword(pw string) []string {
+                var errors []string
+                if len(pw) < 8 {
+                    errors = append(errors, "must be at least 8 characters")
                 }
-                var results []string
-                var dfs func(n *TrieNode, path string)
-                dfs = func(n *TrieNode, path string) {
-                    if len(results) >= limit {
-                        return
-                    }
-                    if n.isEnd {
-                        results = append(results, path)
-                    }
-                    for ch, child := range n.children {
-                        dfs(child, path+string(ch))
+                var hasUpper, hasLower, hasDigit bool
+                for _, r := range pw {
+                    switch {
+                    case unicode.IsUpper(r):
+                        hasUpper = true
+                    case unicode.IsLower(r):
+                        hasLower = true
+                    case unicode.IsDigit(r):
+                        hasDigit = true
                     }
                 }
-                dfs(node, prefix)
-                return results
+                if !hasUpper {
+                    errors = append(errors, "must contain uppercase")
+                }
+                if !hasLower {
+                    errors = append(errors, "must contain lowercase")
+                }
+                if !hasDigit {
+                    errors = append(errors, "must contain digit")
+                }
+                return errors
+            }
+
+            func TestValidatePassword(t *testing.T) {
+                tests := []struct {
+                    name     string
+                    password string
+                    wantErrs int
+                }{
+                    {"valid", "Abcdef1x", 0},
+                    {"too short", "Ab1", 1},
+                    {"no upper", "abcdefg1", 1},
+                    {"no lower", "ABCDEFG1", 1},
+                    {"no digit", "Abcdefgh", 1},
+                    {"empty", "", 4},
+                    {"all lower", "abcdefgh", 2},
+                    {"all upper", "ABCDEFGH", 2},
+                    {"all digits", "12345678", 2},
+                }
+                for _, tt := range tests {
+                    t.Run(tt.name, func(t *testing.T) {
+                        errs := validatePassword(tt.password)
+                        if len(errs) != tt.wantErrs {
+                            t.Errorf("got %d errors %v, want %d", len(errs), errs, tt.wantErrs)
+                        }
+                    })
+                }
             }
           difficulty: 3
           annotations:
+            - type: idiom
+              label: Collect All Errors
+              text: >-
+                Return all validation errors at once rather than stopping at the first. This gives users complete
+                feedback.
+            - type: stdlib
+              label: unicode Package
+              text: The unicode package provides IsUpper, IsLower, IsDigit for rune classification.
+        - id: v4
+          title: Achieve Coverage for RomanNumeral
+          description: >-
+            Write a function <code>toRoman(n int) (string, error)</code> that converts integers 1-3999 to Roman numeral
+            strings. Write tests to achieve at least 80% coverage, including boundary values and error cases.
+          functionSignature: func toRoman(n int) (string, error)
+          testCases:
+            - input: "1"
+              output: "\"I\", nil"
+            - input: "4"
+              output: "\"IV\", nil"
+            - input: "1994"
+              output: "\"MCMXCIV\", nil"
+            - input: "0"
+              output: "\"\", error"
+            - input: "4000"
+              output: "\"\", error"
+          hints:
+            - title: 🤔 Think about it
+              content: >-
+                Roman numerals use a greedy algorithm: subtract the largest possible value at each step. What values
+                should your lookup table contain?
+            - title: 💡 Hint
+              content: >-
+                Use parallel slices of values [1000, 900, 500, 400, ...] and symbols ["M", "CM", "D", "CD", ...]. Loop
+                from largest to smallest, appending symbols while the value fits.
+            - title: 🔧 Pattern
+              content: |-
+                <pre>1. Validate n is 1-3999
+                2. Define values and symbols arrays
+                3. For each value/symbol pair:
+                   - While n >= value: append symbol, subtract value
+                4. Return accumulated string
+                5. Test boundaries: 1, 3999, 0, 4000, and key values</pre>
+          solution: |-
+            func toRoman(n int) (string, error) {
+                if n < 1 || n > 3999 {
+                    return "", fmt.Errorf("%d out of range 1-3999", n)
+                }
+                values := []int{1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1}
+                symbols := []string{"M", "CM", "D", "CD", "C", "XC", "L", "XL", "X", "IX", "V", "IV", "I"}
+                var result strings.Builder
+                for i, val := range values {
+                    for n >= val {
+                        result.WriteString(symbols[i])
+                        n -= val
+                    }
+                }
+                return result.String(), nil
+            }
+
+            func TestToRoman(t *testing.T) {
+                tests := []struct {
+                    name    string
+                    input   int
+                    want    string
+                    wantErr bool
+                }{
+                    {"one", 1, "I", false},
+                    {"four", 4, "IV", false},
+                    {"nine", 9, "IX", false},
+                    {"fourteen", 14, "XIV", false},
+                    {"forty", 40, "XL", false},
+                    {"ninety", 90, "XC", false},
+                    {"four hundred", 400, "CD", false},
+                    {"nine hundred", 900, "CM", false},
+                    {"1994", 1994, "MCMXCIV", false},
+                    {"3999", 3999, "MMMCMXCIX", false},
+                    {"zero", 0, "", true},
+                    {"negative", -1, "", true},
+                    {"too large", 4000, "", true},
+                }
+                for _, tt := range tests {
+                    t.Run(tt.name, func(t *testing.T) {
+                        got, err := toRoman(tt.input)
+                        if (err != nil) != tt.wantErr {
+                            t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
+                        }
+                        if got != tt.want {
+                            t.Errorf("got %q, want %q", got, tt.want)
+                        }
+                    })
+                }
+            }
+          difficulty: 3
+          annotations:
+            - type: idiom
+              label: strings.Builder
+              text: >-
+                Use strings.Builder for efficient string concatenation in loops. It avoids allocating new strings each
+                iteration.
             - type: pattern
-              label: DFS Collection
-              text: "DFS from a trie node collects all words in its subtree. Adding a limit makes it practical for autocomplete."
-            - type: gotcha
-              label: Map Iteration Order
-              text: "Go map iteration is random. For alphabetical autocomplete, sort the children keys first."
+              label: Greedy Algorithm
+              text: The greedy approach works here because Roman numeral values are specifically designed to allow it.
+            - type: complexity
+              label: O(1)
+              text: >-
+                The maximum number of iterations is bounded (3999 / 1 = 3999 symbols max), making this effectively
+                constant time.

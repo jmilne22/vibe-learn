@@ -1,1203 +1,925 @@
 conceptLinks:
-  Table-Driven Tests: "#lesson-table-tests"
-  Test Helpers: "#lesson-test-helpers"
-  Mocking with Interfaces: "#lesson-mocking"
-  Edge Case Testing: "#lesson-edge-cases"
-  Code Coverage: "#lesson-coverage"
+  Which Clone: "#lesson-exec-lookpath"
+  System Info: "#lesson-os-user"
+  Process List: "#lesson-exec-command"
+  Git Status Parser: "#lesson-command-output"
 sharedContent: {}
 variants:
   warmups:
     - id: warmup_1
-      concept: Table-Driven Tests
+      concept: Which Clone
       variants:
         - id: v1
-          title: Test a KV Parser
+          title: Which Clone
           description: >-
-            Write a function <code>parseKV(s string) (string, string, error)</code> that parses <code>"KEY=value"</code>
-            strings. Then write table-driven tests covering: valid input, missing <code>=</code>, empty key, empty
-            value, and value containing <code>=</code>.
+            Write a program that takes a command name as <code>os.Args[1]</code> and prints its full path using
+            <code>exec.LookPath</code>. If not found, print an error to stderr and exit with code 1. If no argument is
+            given, print usage and exit with code 1.
           hints:
-            - Use <code>strings.Index(s, "=")</code> to find the separator.
-            - Table-driven tests use a slice of structs with input and expected fields.
-            - Use <code>t.Run(name, func(t *testing.T) {...})</code> for subtests.
+            - Use <code>exec.LookPath(os.Args[1])</code> to find the binary.
+            - Check <code>len(os.Args) < 2</code> for missing arguments.
+            - Use <code>fmt.Fprintln(os.Stderr, ...)</code> for error output.
           solution: |-
-            func parseKV(s string) (string, string, error) {
-                idx := strings.Index(s, "=")
-                if idx == -1 {
-                    return "", "", fmt.Errorf("missing = in %q", s)
+            func main() {
+                if len(os.Args) < 2 {
+                    fmt.Fprintln(os.Stderr, "usage: which command")
+                    os.Exit(1)
                 }
-                return s[:idx], s[idx+1:], nil
-            }
 
-            func TestParseKV(t *testing.T) {
-                tests := []struct {
-                    name    string
-                    input   string
-                    key     string
-                    value   string
-                    wantErr bool
-                }{
-                    {"valid", "HOST=localhost", "HOST", "localhost", false},
-                    {"missing equals", "noequals", "", "", true},
-                    {"empty key", "=value", "", "value", false},
-                    {"empty value", "KEY=", "KEY", "", false},
-                    {"value with equals", "DSN=user=admin", "DSN", "user=admin", false},
-                }
-                for _, tt := range tests {
-                    t.Run(tt.name, func(t *testing.T) {
-                        k, v, err := parseKV(tt.input)
-                        if (err != nil) != tt.wantErr {
-                            t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
-                        }
-                        if k != tt.key || v != tt.value {
-                            t.Errorf("got (%q, %q), want (%q, %q)", k, v, tt.key, tt.value)
-                        }
-                    })
-                }
-            }
-          annotations:
-            - type: idiom
-              label: Table-Driven Tests
-              text: "Table-driven tests are the idiomatic Go pattern: define cases as a slice of structs, loop with t.Run."
-            - type: gotcha
-              label: strings.Index vs Split
-              text: strings.Index finds the first =, preserving = in values. strings.Split would break on all = signs.
-        - id: v2
-          title: Test a URL Parser
-          description: >-
-            Write a function <code>parseURL(s string) (scheme, host string, err error)</code> that extracts the scheme
-            and host from a URL like <code>"https://example.com"</code>. Write table-driven tests for valid URLs,
-            missing <code>://</code>, empty scheme, and empty host.
-          hints:
-            - Use <code>strings.Index(s, "://")</code> to find the separator.
-            - Define test cases with input, expected scheme, expected host, and wantErr.
-          solution: |-
-            func parseURL(s string) (string, string, error) {
-                idx := strings.Index(s, "://")
-                if idx == -1 {
-                    return "", "", fmt.Errorf("missing :// in %q", s)
-                }
-                scheme := s[:idx]
-                host := s[idx+3:]
-                if scheme == "" {
-                    return "", "", fmt.Errorf("empty scheme")
-                }
-                return scheme, host, nil
-            }
-
-            func TestParseURL(t *testing.T) {
-                tests := []struct {
-                    name    string
-                    input   string
-                    scheme  string
-                    host    string
-                    wantErr bool
-                }{
-                    {"valid https", "https://example.com", "https", "example.com", false},
-                    {"valid http", "http://localhost", "http", "localhost", false},
-                    {"missing separator", "example.com", "", "", true},
-                    {"empty scheme", "://host", "", "", true},
-                    {"with path", "https://api.io/v1", "https", "api.io/v1", false},
-                }
-                for _, tt := range tests {
-                    t.Run(tt.name, func(t *testing.T) {
-                        s, h, err := parseURL(tt.input)
-                        if (err != nil) != tt.wantErr {
-                            t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
-                        }
-                        if !tt.wantErr && (s != tt.scheme || h != tt.host) {
-                            t.Errorf("got (%q, %q), want (%q, %q)", s, h, tt.scheme, tt.host)
-                        }
-                    })
-                }
-            }
-          annotations:
-            - type: idiom
-              label: Subtests with t.Run
-              text: t.Run creates named subtests, making it easy to identify which case failed.
-            - type: stdlib
-              label: net/url Package
-              text: In production, use net/url.Parse instead of hand-rolling URL parsing.
-        - id: v3
-          title: Test a CSV Line Parser
-          description: >-
-            Write a function <code>parseCSVLine(line string) []string</code> that splits a CSV line by commas and trims
-            whitespace from each field. Write table-driven tests for normal input, extra spaces, empty fields, and
-            single field.
-          hints:
-            - Use <code>strings.Split(line, ",")</code> then <code>strings.TrimSpace</code> on each part.
-            - "Test edge cases: empty string, trailing comma, spaces around commas."
-          solution: |-
-            func parseCSVLine(line string) []string {
-                if line == "" {
-                    return nil
-                }
-                parts := strings.Split(line, ",")
-                result := make([]string, len(parts))
-                for i, p := range parts {
-                    result[i] = strings.TrimSpace(p)
-                }
-                return result
-            }
-
-            func TestParseCSVLine(t *testing.T) {
-                tests := []struct {
-                    name  string
-                    input string
-                    want  []string
-                }{
-                    {"normal", "a,b,c", []string{"a", "b", "c"}},
-                    {"with spaces", " a , b , c ", []string{"a", "b", "c"}},
-                    {"empty fields", "a,,c", []string{"a", "", "c"}},
-                    {"single field", "hello", []string{"hello"}},
-                    {"empty string", "", nil},
-                    {"trailing comma", "a,b,", []string{"a", "b", ""}},
-                }
-                for _, tt := range tests {
-                    t.Run(tt.name, func(t *testing.T) {
-                        got := parseCSVLine(tt.input)
-                        if !reflect.DeepEqual(got, tt.want) {
-                            t.Errorf("got %v, want %v", got, tt.want)
-                        }
-                    })
-                }
-            }
-          annotations:
-            - type: gotcha
-              label: nil vs Empty Slice
-              text: reflect.DeepEqual distinguishes nil from []string{}. Be explicit about which your function returns.
-            - type: stdlib
-              label: encoding/csv
-              text: For real CSV parsing, use encoding/csv which handles quoting, escaping, and multi-line fields.
-        - id: v4
-          title: Test a Duration Parser
-          description: >-
-            Write a function <code>parseDuration(s string) (int, error)</code> that parses strings like
-            <code>"30s"</code>, <code>"5m"</code>, <code>"2h"</code> into total seconds. Write table-driven tests for
-            each unit, invalid formats, and edge cases.
-          hints:
-            - Extract the numeric part and the suffix. Use a switch on the suffix to multiply.
-            - "Test: valid durations, unknown units, empty string, non-numeric values."
-          solution: |-
-            func parseDuration(s string) (int, error) {
-                if len(s) < 2 {
-                    return 0, fmt.Errorf("invalid duration: %q", s)
-                }
-                unit := s[len(s)-1]
-                numStr := s[:len(s)-1]
-                n, err := strconv.Atoi(numStr)
+                path, err := exec.LookPath(os.Args[1])
                 if err != nil {
-                    return 0, fmt.Errorf("invalid number in %q: %w", s, err)
+                    fmt.Fprintf(os.Stderr, "%s: command not found\n", os.Args[1])
+                    os.Exit(1)
                 }
-                switch unit {
-                case 's':
-                    return n, nil
-                case 'm':
-                    return n * 60, nil
-                case 'h':
-                    return n * 3600, nil
-                default:
-                    return 0, fmt.Errorf("unknown unit %q in %q", string(unit), s)
-                }
+                fmt.Println(path)
             }
-
-            func TestParseDuration(t *testing.T) {
-                tests := []struct {
-                    name    string
-                    input   string
-                    want    int
-                    wantErr bool
-                }{
-                    {"seconds", "30s", 30, false},
-                    {"minutes", "5m", 300, false},
-                    {"hours", "2h", 7200, false},
-                    {"unknown unit", "10d", 0, true},
-                    {"empty", "", 0, true},
-                    {"no number", "s", 0, true},
-                    {"no unit", "123", 0, true},
+          annotations:
+            - type: stdlib
+              label: exec.LookPath
+              text: >-
+                exec.LookPath searches for an executable in the directories listed in the PATH environment variable. It
+                returns the full path or an error.
+            - type: idiom
+              label: Exit Codes
+              text: >-
+                os.Exit(1) signals failure to the calling shell. Convention: 0 = success, 1 = general error, 2 = misuse.
+                Match the behavior of the tool you are cloning.
+        - id: v2
+          title: Which All
+          description: >-
+            Write a program that finds ALL matching executables for a command name (not just the first). Split the
+            <code>PATH</code> environment variable, check each directory for the executable, and print all matches.
+          hints:
+            - Use <code>os.Getenv("PATH")</code> and <code>strings.Split(..., ":")</code> to get directories.
+            - Use <code>filepath.Join(dir, name)</code> to construct the path.
+            - Check if the file exists and is executable with <code>os.Stat</code>.
+          solution: |-
+            func main() {
+                if len(os.Args) < 2 {
+                    fmt.Fprintln(os.Stderr, "usage: which-all command")
+                    os.Exit(1)
                 }
-                for _, tt := range tests {
-                    t.Run(tt.name, func(t *testing.T) {
-                        got, err := parseDuration(tt.input)
-                        if (err != nil) != tt.wantErr {
-                            t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
-                        }
-                        if got != tt.want {
-                            t.Errorf("got %d, want %d", got, tt.want)
-                        }
-                    })
+
+                name := os.Args[1]
+                pathDirs := strings.Split(os.Getenv("PATH"), ":")
+                found := false
+
+                for _, dir := range pathDirs {
+                    full := filepath.Join(dir, name)
+                    info, err := os.Stat(full)
+                    if err != nil {
+                        continue
+                    }
+                    if info.Mode()&0111 != 0 {
+                        fmt.Println(full)
+                        found = true
+                    }
+                }
+
+                if !found {
+                    os.Exit(1)
                 }
             }
           annotations:
             - type: idiom
-              label: Error Wrapping
-              text: Use %w in fmt.Errorf to wrap errors, allowing callers to use errors.Is/As.
+              label: File Permissions
+              text: >-
+                Check executable bits with info.Mode()&0111 != 0. The octal 0111 checks user, group, and other execute
+                bits. This is how the shell determines if a file is runnable.
             - type: stdlib
-              label: time.ParseDuration
-              text: Go's standard library has time.ParseDuration for real duration parsing with more units.
+              label: filepath.Join
+              text: >-
+                filepath.Join correctly joins path components using the OS-specific separator. Always prefer it over
+                manual string concatenation for file paths.
+        - id: v3
+          title: Command Checker
+          description: >-
+            Write <code>func commandExists(name string) bool</code> that returns true if the given command is available
+            on the system. Then write a main function that checks a list of required tools (<code>go</code>,
+            <code>git</code>, <code>docker</code>, <code>kubectl</code>) and prints which are available and which are
+            missing.
+          hints:
+            - Use <code>exec.LookPath</code> and check the error.
+            - Loop over a slice of tool names and print status for each.
+            - Use a boolean return instead of printing directly for testability.
+          solution: |-
+            func commandExists(name string) bool {
+                _, err := exec.LookPath(name)
+                return err == nil
+            }
+
+            func main() {
+                tools := []string{"go", "git", "docker", "kubectl"}
+                for _, tool := range tools {
+                    if commandExists(tool) {
+                        fmt.Printf("[OK]    %s\n", tool)
+                    } else {
+                        fmt.Printf("[MISS]  %s\n", tool)
+                    }
+                }
+            }
+          annotations:
+            - type: idiom
+              label: Boolean Wrapper
+              text: >-
+                Wrapping exec.LookPath in a bool function is a common Go pattern. It simplifies the calling code and
+                makes the intent clear: does this command exist?
+            - type: alternative
+              label: Error Details
+              text: >-
+                For more detail, return (string, error) instead of bool. The string can be the path, and the error
+                explains why the lookup failed.
+        - id: v4
+          title: PATH Inspector
+          description: >-
+            Write a program that prints each directory in the <code>PATH</code> environment variable on its own line,
+            along with how many executables it contains. Skip directories that do not exist.
+          hints:
+            - Use <code>os.ReadDir(dir)</code> to list directory contents.
+            - Count files where <code>info.Type().IsRegular()</code> and executable bits are set.
+            - Use <code>strings.Split(os.Getenv("PATH"), ":")</code> to get directories.
+          solution: |-
+            func main() {
+                pathDirs := strings.Split(os.Getenv("PATH"), ":")
+                for _, dir := range pathDirs {
+                    entries, err := os.ReadDir(dir)
+                    if err != nil {
+                        continue
+                    }
+                    count := 0
+                    for _, entry := range entries {
+                        if !entry.IsDir() {
+                            info, err := entry.Info()
+                            if err == nil && info.Mode()&0111 != 0 {
+                                count++
+                            }
+                        }
+                    }
+                    fmt.Printf("%s (%d executables)\n", dir, count)
+                }
+            }
+          annotations:
+            - type: stdlib
+              label: os.ReadDir
+              text: >-
+                os.ReadDir reads a directory and returns sorted DirEntry values. It is more efficient than os.ReadFile
+                for listing directories and was added in Go 1.16.
+            - type: gotcha
+              label: Permission Errors
+              text: >-
+                Some PATH directories may not be readable. Always check errors from os.ReadDir and skip inaccessible
+                directories gracefully.
     - id: warmup_2
-      concept: Mocking with Interfaces
+      concept: System Info
       variants:
         - id: v1
-          title: Test with Mock HTTP Client
+          title: System Info
           description: >-
-            Create a <code>WeatherService</code> struct that depends on an <code>HTTPClient</code> interface. Write a
-            mock implementation for testing and verify that the service handles success and error responses correctly.
+            Write a program that prints: hostname, current user, home directory, shell (from <code>SHELL</code> env
+            var), and whether the current user is root (<code>os.Geteuid() == 0</code>).
           hints:
-            - >-
-              Define <code>HTTPClient</code> interface with a <code>Get(url string) (*http.Response, error)</code>
-              method.
-            - Create a <code>mockClient</code> struct with fields for the canned response and error.
-            - Use <code>io.NopCloser</code> to wrap a string reader as a response body.
+            - Use <code>os.Hostname()</code> for hostname.
+            - Use <code>user.Current()</code> to get user info.
+            - Use <code>os.Getenv("SHELL")</code> for the shell.
           solution: |-
-            type HTTPClient interface {
-                Get(url string) (*http.Response, error)
-            }
+            func main() {
+                hostname, _ := os.Hostname()
+                u, _ := user.Current()
+                shell := os.Getenv("SHELL")
+                isRoot := os.Geteuid() == 0
 
-            type WeatherService struct {
-                client HTTPClient
-            }
-
-            func (ws *WeatherService) GetTemp(city string) (float64, error) {
-                resp, err := ws.client.Get("https://api.weather.com/" + city)
-                if err != nil {
-                    return 0, err
-                }
-                defer resp.Body.Close()
-                var data struct{ Temp float64 }
-                json.NewDecoder(resp.Body).Decode(&data)
-                return data.Temp, nil
-            }
-
-            type mockClient struct {
-                resp *http.Response
-                err  error
-            }
-
-            func (m *mockClient) Get(url string) (*http.Response, error) {
-                return m.resp, m.err
-            }
-
-            func TestGetTemp_Success(t *testing.T) {
-                body := io.NopCloser(strings.NewReader(`{"Temp": 72.5}`))
-                mock := &mockClient{
-                    resp: &http.Response{StatusCode: 200, Body: body},
-                }
-                svc := &WeatherService{client: mock}
-                temp, err := svc.GetTemp("london")
-                if err != nil {
-                    t.Fatalf("unexpected error: %v", err)
-                }
-                if temp != 72.5 {
-                    t.Errorf("got %.1f, want 72.5", temp)
-                }
-            }
-
-            func TestGetTemp_Error(t *testing.T) {
-                mock := &mockClient{err: fmt.Errorf("network error")}
-                svc := &WeatherService{client: mock}
-                _, err := svc.GetTemp("london")
-                if err == nil {
-                    t.Error("expected error, got nil")
-                }
+                fmt.Println("Hostname:", hostname)
+                fmt.Println("User:", u.Username)
+                fmt.Println("Home:", u.HomeDir)
+                fmt.Println("Shell:", shell)
+                fmt.Println("Root:", isRoot)
             }
           annotations:
-            - type: idiom
-              label: Interface for Mocking
-              text: Define small interfaces at the consumer site. This is Go's implicit interface satisfaction at work.
-            - type: pattern
-              label: Dependency Injection
-              text: Pass dependencies as interfaces through struct fields to enable easy testing with mocks.
+            - type: stdlib
+              label: os/user
+              text: >-
+                The os/user package provides user.Current() for the current user's info including Username, HomeDir,
+                Uid, and Gid.
+            - type: gotcha
+              label: Cross-Platform
+              text: >-
+                os.Geteuid() is Unix-only. On Windows, use a different approach. The SHELL env var is also
+                Unix-specific; Windows uses COMSPEC.
         - id: v2
-          title: Test with Mock Database
+          title: Environment Dump
           description: >-
-            Create a <code>UserService</code> that depends on a <code>UserStore</code> interface with <code>FindByID(id
-            int) (User, error)</code>. Mock the store for testing both found and not-found cases.
+            Write a program that prints all environment variables sorted alphabetically. Format each as
+            <code>KEY=VALUE</code>. Also print the total count of environment variables.
           hints:
-            - Define <code>UserStore</code> interface with a single method.
-            - Create a mock that returns a predefined user or an error.
-            - Test both the happy path and the not-found error path.
+            - Use <code>os.Environ()</code> to get all env vars as <code>[]string</code>.
+            - Use <code>sort.Strings</code> to sort them.
+            - Each entry is already in <code>KEY=VALUE</code> format.
           solution: |-
-            type User struct {
-                ID   int
-                Name string
-            }
-
-            type UserStore interface {
-                FindByID(id int) (User, error)
-            }
-
-            type UserService struct {
-                store UserStore
-            }
-
-            func (s *UserService) GetUser(id int) (User, error) {
-                return s.store.FindByID(id)
-            }
-
-            type mockStore struct {
-                user User
-                err  error
-            }
-
-            func (m *mockStore) FindByID(id int) (User, error) {
-                return m.user, m.err
-            }
-
-            func TestGetUser_Found(t *testing.T) {
-                mock := &mockStore{user: User{ID: 1, Name: "Alice"}}
-                svc := &UserService{store: mock}
-                u, err := svc.GetUser(1)
-                if err != nil {
-                    t.Fatalf("unexpected error: %v", err)
+            func main() {
+                envs := os.Environ()
+                sort.Strings(envs)
+                for _, env := range envs {
+                    fmt.Println(env)
                 }
-                if u.Name != "Alice" {
-                    t.Errorf("got %q, want %q", u.Name, "Alice")
-                }
-            }
-
-            func TestGetUser_NotFound(t *testing.T) {
-                mock := &mockStore{err: fmt.Errorf("not found")}
-                svc := &UserService{store: mock}
-                _, err := svc.GetUser(999)
-                if err == nil {
-                    t.Error("expected error, got nil")
-                }
+                fmt.Printf("\nTotal: %d environment variables\n", len(envs))
             }
           annotations:
+            - type: stdlib
+              label: os.Environ
+              text: >-
+                os.Environ() returns a copy of all environment variables as a []string in KEY=VALUE format. Modifying
+                the returned slice does not affect the environment.
             - type: idiom
-              label: Small Interfaces
-              text: Go prefers small, focused interfaces. A single-method interface is easy to mock and test.
-            - type: gotcha
-              label: Nil Error Check
-              text: Always check err first before using the result. A non-nil error means the result may be invalid.
+              label: Sort Before Display
+              text: >-
+                Sorting environment variables makes output reproducible and easier to read. sort.Strings sorts in-place,
+                which is fine since os.Environ returns a copy.
         - id: v3
-          title: Test with Mock Logger
+          title: Runtime Info
           description: >-
-            Create a <code>PaymentProcessor</code> that depends on a <code>Logger</code> interface with <code>Log(msg
-            string)</code>. Mock the logger to verify that processing logs the correct messages.
+            Write a program that prints Go runtime information: Go version, OS, architecture, number of CPUs, and number
+            of goroutines currently running.
           hints:
-            - The mock logger can store messages in a <code>[]string</code> slice field.
-            - After calling the processor, inspect the mock's recorded messages.
-            - This pattern is called a 'spy' -- a mock that records calls.
+            - Use <code>runtime.Version()</code>, <code>runtime.GOOS</code>, <code>runtime.GOARCH</code>.
+            - Use <code>runtime.NumCPU()</code> for CPU count.
+            - Use <code>runtime.NumGoroutine()</code> for active goroutines.
           solution: |-
-            type Logger interface {
-                Log(msg string)
-            }
-
-            type PaymentProcessor struct {
-                logger Logger
-            }
-
-            func (p *PaymentProcessor) Process(amount float64) error {
-                if amount <= 0 {
-                    p.logger.Log("invalid amount")
-                    return fmt.Errorf("amount must be positive")
-                }
-                p.logger.Log(fmt.Sprintf("processed %.2f", amount))
-                return nil
-            }
-
-            type spyLogger struct {
-                messages []string
-            }
-
-            func (s *spyLogger) Log(msg string) {
-                s.messages = append(s.messages, msg)
-            }
-
-            func TestProcess_ValidAmount(t *testing.T) {
-                spy := &spyLogger{}
-                proc := &PaymentProcessor{logger: spy}
-                err := proc.Process(50.00)
-                if err != nil {
-                    t.Fatalf("unexpected error: %v", err)
-                }
-                if len(spy.messages) != 1 || spy.messages[0] != "processed 50.00" {
-                    t.Errorf("got messages %v", spy.messages)
-                }
-            }
-
-            func TestProcess_InvalidAmount(t *testing.T) {
-                spy := &spyLogger{}
-                proc := &PaymentProcessor{logger: spy}
-                err := proc.Process(-10)
-                if err == nil {
-                    t.Error("expected error for negative amount")
-                }
-                if len(spy.messages) != 1 || spy.messages[0] != "invalid amount" {
-                    t.Errorf("got messages %v", spy.messages)
-                }
+            func main() {
+                fmt.Println("Go Version:", runtime.Version())
+                fmt.Println("OS:", runtime.GOOS)
+                fmt.Println("Arch:", runtime.GOARCH)
+                fmt.Println("CPUs:", runtime.NumCPU())
+                fmt.Println("Goroutines:", runtime.NumGoroutine())
             }
           annotations:
-            - type: pattern
-              label: Spy Pattern
-              text: A spy is a mock that records interactions. Store calls in a slice to verify behavior after the fact.
+            - type: stdlib
+              label: runtime Package
+              text: >-
+                The runtime package exposes Go runtime internals. GOOS and GOARCH are compile-time constants reflecting
+                the target platform.
             - type: idiom
-              label: Interface Segregation
-              text: The Logger interface has a single method. Go encourages narrow interfaces that are easy to implement.
+              label: Build Constraints
+              text: >-
+                runtime.GOOS and runtime.GOARCH are set at compile time based on GOOS/GOARCH environment variables or
+                build tags. They cannot change at runtime.
         - id: v4
-          title: Test with Mock Notifier
+          title: Disk Usage
           description: >-
-            Create an <code>AlertService</code> that depends on a <code>Notifier</code> interface with <code>Send(to,
-            msg string) error</code>. Mock the notifier to test success, failure, and verify the correct arguments are
-            passed.
+            Write a program that prints the current working directory and the total size of all files in it
+            (non-recursive). Use <code>os.Getwd()</code> and <code>os.ReadDir</code>.
           hints:
-            - Store both <code>to</code> and <code>msg</code> in the mock to verify call arguments.
-            - Use a configurable error field so you can test both success and failure paths.
-            - Check that the mock received the expected arguments after calling the service.
+            - Use <code>os.Getwd()</code> for the current directory.
+            - Use <code>os.ReadDir(".")</code> to list files.
+            - Call <code>entry.Info()</code> to get size via <code>info.Size()</code>.
           solution: |-
-            type Notifier interface {
-                Send(to, msg string) error
-            }
+            func main() {
+                cwd, _ := os.Getwd()
+                fmt.Println("Directory:", cwd)
 
-            type AlertService struct {
-                notifier Notifier
-            }
-
-            func (a *AlertService) Alert(user, message string) error {
-                return a.notifier.Send(user, "ALERT: "+message)
-            }
-
-            type mockNotifier struct {
-                lastTo  string
-                lastMsg string
-                err     error
-            }
-
-            func (m *mockNotifier) Send(to, msg string) error {
-                m.lastTo = to
-                m.lastMsg = msg
-                return m.err
-            }
-
-            func TestAlert_Success(t *testing.T) {
-                mock := &mockNotifier{}
-                svc := &AlertService{notifier: mock}
-                err := svc.Alert("alice", "server down")
+                entries, err := os.ReadDir(".")
                 if err != nil {
-                    t.Fatalf("unexpected error: %v", err)
+                    fmt.Fprintln(os.Stderr, err)
+                    os.Exit(1)
                 }
-                if mock.lastTo != "alice" {
-                    t.Errorf("sent to %q, want %q", mock.lastTo, "alice")
-                }
-                if mock.lastMsg != "ALERT: server down" {
-                    t.Errorf("sent msg %q, want %q", mock.lastMsg, "ALERT: server down")
-                }
-            }
 
-            func TestAlert_Failure(t *testing.T) {
-                mock := &mockNotifier{err: fmt.Errorf("send failed")}
-                svc := &AlertService{notifier: mock}
-                err := svc.Alert("bob", "disk full")
-                if err == nil {
-                    t.Error("expected error, got nil")
+                var totalSize int64
+                fileCount := 0
+                for _, entry := range entries {
+                    if !entry.IsDir() {
+                        info, err := entry.Info()
+                        if err == nil {
+                            totalSize += info.Size()
+                            fileCount++
+                        }
+                    }
                 }
+                fmt.Printf("Files: %d\n", fileCount)
+                fmt.Printf("Total size: %d bytes\n", totalSize)
             }
           annotations:
-            - type: pattern
-              label: Argument Capture
-              text: Store method arguments in mock fields to verify the correct values were passed.
-            - type: gotcha
-              label: Mock Reuse
-              text: If a mock is reused across calls, previous values are overwritten. Use slices to capture multiple calls.
+            - type: stdlib
+              label: os.Getwd
+              text: >-
+                os.Getwd returns the current working directory. It corresponds to the shell's pwd command. The returned
+                path is always absolute.
+            - type: alternative
+              label: filepath.WalkDir
+              text: >-
+                For recursive directory traversal, use filepath.WalkDir instead of os.ReadDir. It handles nested
+                directories and provides the path to each entry.
   challenges:
     - id: challenge_1
       block: 1
-      difficulty: 2
-      concept: Edge Case Testing
+      difficulty: 3
+      concept: Process List
       docLinks:
-        - url: https://pkg.go.dev/testing
-          title: Package testing
-          note: test functions and subtests
-        - url: https://go.dev/blog/subtests
-          title: "Go Blog: Using Subtests and Sub-benchmarks"
-          note: organizing test cases
+        - url: https://pkg.go.dev/os/exec#Command
+          title: Package exec.Command
+          note: running external commands
+        - url: https://pkg.go.dev/strings#Fields
+          title: Package strings.Fields
+          note: splitting whitespace-delimited output
+        - url: https://pkg.go.dev/strconv#ParseFloat
+          title: Package strconv.ParseFloat
+          note: parsing numeric columns
       variants:
         - id: v1
-          title: Test SafeDivide Edge Cases
+          title: High CPU Processes
           description: >-
-            Write a function <code>safeDivide(a, b float64) (float64, error)</code> that divides a by b, returning an
-            error for division by zero. Then write comprehensive tests covering: normal division, division by zero, zero
-            dividend, negative numbers, and very large numbers.
-          functionSignature: func safeDivide(a, b float64) (float64, error)
+            Write a program that runs <code>ps aux</code>, parses the output, and prints the PID and command name for
+            any process using more than 1% CPU. Use <code>strings.Fields</code> to split columns and
+            <code>strconv.ParseFloat</code> for CPU%.
+          functionSignature: func main()
           testCases:
-            - input: 10.0, 2.0
-              output: 5.0, nil
-            - input: 10.0, 0.0
-              output: 0.0, error
-            - input: 0.0, 5.0
-              output: 0.0, nil
-            - input: "-10.0, 2.0"
-              output: "-5.0, nil"
+            - input: ps aux output with chrome at 5.2% CPU
+              output: "PID: 1234  CPU: 5.2%  CMD: chrome"
+            - input: ps aux output with no high-CPU process
+              output: (no output)
           hints:
             - title: 🤔 Think about it
-              content: >-
-                What are all the ways division can go wrong or produce surprising results? Think about zero, negatives,
-                and extreme values.
+              content: What does each column in ps aux output represent? Which column index is CPU%, PID, and command?
             - title: 💡 Hint
               content: >-
-                Check b == 0 first and return an error. Otherwise return a/b. Your tests should cover normal, zero
-                divisor, zero dividend, negative values, and math.MaxFloat64.
+                Fields: [0]=USER, [1]=PID, [2]=%CPU, [3]=%MEM, ... [10]=COMMAND. Skip the header line (first line).
+                Parse field[2] as float64.
             - title: 🔧 Pattern
               content: |-
-                <pre>1. Define function with error return
-                2. Guard clause for b == 0
-                3. Table-driven tests with:
-                   - Normal positive values
-                   - Division by zero
-                   - Zero / nonzero
-                   - Negative values
-                   - Very large values</pre>
+                <pre>1. exec.Command("ps", "aux").Output()
+                2. Split by newline, skip header
+                3. For each line: strings.Fields, parse CPU% at index 2
+                4. If > 1.0: print PID and CMD</pre>
           solution: |-
-            func safeDivide(a, b float64) (float64, error) {
-                if b == 0 {
-                    return 0, fmt.Errorf("division by zero")
+            func main() {
+                out, err := exec.Command("ps", "aux").Output()
+                if err != nil {
+                    fmt.Fprintln(os.Stderr, err)
+                    os.Exit(1)
                 }
-                return a / b, nil
-            }
+                lines := strings.Split(string(out), "\n")
 
-            func TestSafeDivide(t *testing.T) {
-                tests := []struct {
-                    name    string
-                    a, b    float64
-                    want    float64
-                    wantErr bool
-                }{
-                    {"normal", 10, 2, 5, false},
-                    {"divide by zero", 10, 0, 0, true},
-                    {"zero dividend", 0, 5, 0, false},
-                    {"negatives", -10, 2, -5, false},
-                    {"both negative", -10, -2, 5, false},
-                    {"large numbers", 1e18, 1e9, 1e9, false},
-                    {"small result", 1, 3, 0.3333333333333333, false},
-                }
-                for _, tt := range tests {
-                    t.Run(tt.name, func(t *testing.T) {
-                        got, err := safeDivide(tt.a, tt.b)
-                        if (err != nil) != tt.wantErr {
-                            t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
-                        }
-                        if !tt.wantErr && got != tt.want {
-                            t.Errorf("got %v, want %v", got, tt.want)
-                        }
-                    })
-                }
-            }
-          difficulty: 2
-          annotations:
-            - type: gotcha
-              label: Float Comparison
-              text: >-
-                Comparing floats with == can fail due to precision. For approximate equality, use math.Abs(got-want) <
-                epsilon.
-            - type: idiom
-              label: Guard Clause
-              text: Check error conditions first and return early. This keeps the happy path unindented.
-        - id: v2
-          title: Test StringReverse Edge Cases
-          description: >-
-            Write a function <code>reverseString(s string) string</code> that reverses a string. Write tests for: empty
-            string, single character, ASCII string, Unicode string with multi-byte characters, and string with spaces.
-          functionSignature: func reverseString(s string) string
-          testCases:
-            - input: "\"hello\""
-              output: "\"olleh\""
-            - input: "\"\""
-              output: "\"\""
-            - input: "\"a\""
-              output: "\"a\""
-            - input: "\"世界\""
-              output: "\"界世\""
-          hints:
-            - title: 🤔 Think about it
-              content: Strings in Go are byte sequences. What happens if you reverse bytes of a multi-byte Unicode character?
-            - title: 💡 Hint
-              content: >-
-                Convert to []rune first to handle Unicode correctly. Then reverse the rune slice using a two-pointer
-                swap.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>1. Convert string to []rune
-                2. Two-pointer swap: left=0, right=len-1
-                3. While left < right: swap and move inward
-                4. Convert back to string
-                5. Test: empty, single char, ASCII, Unicode, spaces</pre>
-          solution: |-
-            func reverseString(s string) string {
-                runes := []rune(s)
-                for i, j := 0, len(runes)-1; i < j; i, j = i+1, j-1 {
-                    runes[i], runes[j] = runes[j], runes[i]
-                }
-                return string(runes)
-            }
-
-            func TestReverseString(t *testing.T) {
-                tests := []struct {
-                    name  string
-                    input string
-                    want  string
-                }{
-                    {"empty", "", ""},
-                    {"single char", "a", "a"},
-                    {"ascii", "hello", "olleh"},
-                    {"unicode", "世界", "界世"},
-                    {"with spaces", "go lang", "gnal og"},
-                    {"palindrome", "racecar", "racecar"},
-                    {"emoji", "😀😁", "😁😀"},
-                }
-                for _, tt := range tests {
-                    t.Run(tt.name, func(t *testing.T) {
-                        got := reverseString(tt.input)
-                        if got != tt.want {
-                            t.Errorf("got %q, want %q", got, tt.want)
-                        }
-                    })
-                }
-            }
-          difficulty: 2
-          annotations:
-            - type: gotcha
-              label: Bytes vs Runes
-              text: >-
-                Reversing bytes breaks multi-byte UTF-8 characters. Always convert to []rune for character-level
-                operations.
-            - type: idiom
-              label: Multi-Variable Assignment
-              text: Go allows i, j = i+1, j-1 in for loop post statements for clean two-pointer iteration.
-        - id: v3
-          title: Test Contains Edge Cases
-          description: >-
-            Write a function <code>contains(haystack []string, needle string) bool</code>. Write tests for: found at
-            start, found at end, not found, empty slice, empty needle, and nil slice.
-          functionSignature: func contains(haystack []string, needle string) bool
-          testCases:
-            - input: "[]string{\"a\", \"b\", \"c\"}, \"b\""
-              output: "true"
-            - input: "[]string{\"a\", \"b\", \"c\"}, \"d\""
-              output: "false"
-            - input: "[]string{}, \"a\""
-              output: "false"
-            - input: nil, "a"
-              output: "false"
-          hints:
-            - title: 🤔 Think about it
-              content: What should happen with a nil slice? An empty slice? An empty needle that might be in the slice?
-            - title: 💡 Hint
-              content: A simple range loop handles nil and empty slices identically -- they both iterate zero times.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>1. Range over haystack
-                2. If item == needle, return true
-                3. After loop, return false
-                4. Test: found first, found last, not found,
-                   empty slice, nil slice, empty needle</pre>
-          solution: |-
-            func contains(haystack []string, needle string) bool {
-                for _, s := range haystack {
-                    if s == needle {
-                        return true
+                for _, line := range lines[1:] {
+                    fields := strings.Fields(line)
+                    if len(fields) < 11 {
+                        continue
+                    }
+                    cpu, err := strconv.ParseFloat(fields[2], 64)
+                    if err != nil {
+                        continue
+                    }
+                    if cpu > 1.0 {
+                        fmt.Printf("PID: %s  CPU: %.1f%%  CMD: %s\n",
+                            fields[1], cpu, fields[10])
                     }
                 }
-                return false
             }
-
-            func TestContains(t *testing.T) {
-                tests := []struct {
-                    name     string
-                    haystack []string
-                    needle   string
-                    want     bool
-                }{
-                    {"found at start", []string{"a", "b", "c"}, "a", true},
-                    {"found at end", []string{"a", "b", "c"}, "c", true},
-                    {"found in middle", []string{"a", "b", "c"}, "b", true},
-                    {"not found", []string{"a", "b", "c"}, "d", false},
-                    {"empty slice", []string{}, "a", false},
-                    {"nil slice", nil, "a", false},
-                    {"empty needle exists", []string{"a", "", "b"}, "", true},
-                    {"empty needle missing", []string{"a", "b"}, "", false},
-                }
-                for _, tt := range tests {
-                    t.Run(tt.name, func(t *testing.T) {
-                        got := contains(tt.haystack, tt.needle)
-                        if got != tt.want {
-                            t.Errorf("got %v, want %v", got, tt.want)
-                        }
-                    })
-                }
-            }
-          difficulty: 2
+          difficulty: 3
           annotations:
-            - type: idiom
-              label: Nil Slice Safety
-              text: Range over a nil slice is safe in Go -- it simply iterates zero times.
             - type: stdlib
-              label: slices.Contains
-              text: Go 1.21+ provides slices.Contains for this exact pattern.
-        - id: v4
-          title: Test Max Edge Cases
+              label: exec.Command
+              text: >-
+                exec.Command creates a command to run. Output() runs it and returns combined stdout. For stderr too, use
+                CombinedOutput().
+            - type: gotcha
+              label: Field Parsing
+              text: >-
+                strings.Fields handles multiple spaces between columns, unlike strings.Split(line, " ") which would
+                create empty entries. Always use Fields for columnar output.
+        - id: v2
+          title: Memory Hogs
           description: >-
-            Write a function <code>max(nums []int) (int, error)</code> that returns the maximum value from a slice.
-            Write tests for: normal slice, single element, all same values, negative numbers, empty slice, and nil
-            slice.
-          functionSignature: func max(nums []int) (int, error)
+            Write a program that runs <code>ps aux</code>, parses output, and prints the top 5 processes by memory usage
+            (%MEM column). Sort them in descending order and display PID, %MEM, and command.
+          functionSignature: func main()
           testCases:
-            - input: "[]int{3, 1, 4, 1, 5}"
-              output: 5, nil
-            - input: "[]int{42}"
-              output: 42, nil
-            - input: "[]int{}"
-              output: 0, error
-            - input: nil
-              output: 0, error
+            - input: ps aux output with various processes
+              output: Top 5 processes by memory, sorted descending
+            - input: Fewer than 5 processes
+              output: All processes sorted by memory
           hints:
             - title: 🤔 Think about it
               content: >-
-                What should you return for an empty or nil slice? What should the initial max be -- zero, or the first
-                element?
+                How do you sort processes by a parsed numeric field? What data structure can hold the parsed data for
+                sorting?
             - title: 💡 Hint
               content: >-
-                Return an error for empty/nil slices. Initialize max to nums[0], then compare each subsequent element.
-                This avoids the trap of initializing to 0 (which fails for all-negative slices).
+                Parse into a struct slice: {pid string, mem float64, cmd string}. Use sort.Slice with a custom less
+                function. Take the first 5 (or fewer).
             - title: 🔧 Pattern
               content: |-
-                <pre>1. Check len(nums) == 0 -> return error
-                2. Set result = nums[0]
-                3. For each remaining element:
-                   - If element > result, update result
-                4. Return result
-                5. Test: normal, single, same, negatives, empty, nil</pre>
+                <pre>1. Parse ps aux into []ProcessInfo structs
+                2. sort.Slice by mem descending
+                3. Print top min(5, len) entries</pre>
           solution: |-
-            func maxVal(nums []int) (int, error) {
-                if len(nums) == 0 {
-                    return 0, fmt.Errorf("empty slice")
-                }
-                m := nums[0]
-                for _, n := range nums[1:] {
-                    if n > m {
-                        m = n
-                    }
-                }
-                return m, nil
+            type ProcessInfo struct {
+                pid string
+                mem float64
+                cmd string
             }
 
-            func TestMax(t *testing.T) {
-                tests := []struct {
-                    name    string
-                    input   []int
-                    want    int
-                    wantErr bool
-                }{
-                    {"normal", []int{3, 1, 4, 1, 5}, 5, false},
-                    {"single", []int{42}, 42, false},
-                    {"all same", []int{7, 7, 7}, 7, false},
-                    {"negatives", []int{-3, -1, -4}, -1, false},
-                    {"mixed", []int{-2, 0, 2}, 2, false},
-                    {"empty", []int{}, 0, true},
-                    {"nil", nil, 0, true},
+            func main() {
+                out, err := exec.Command("ps", "aux").Output()
+                if err != nil {
+                    fmt.Fprintln(os.Stderr, err)
+                    os.Exit(1)
                 }
-                for _, tt := range tests {
-                    t.Run(tt.name, func(t *testing.T) {
-                        got, err := maxVal(tt.input)
-                        if (err != nil) != tt.wantErr {
-                            t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
-                        }
-                        if !tt.wantErr && got != tt.want {
-                            t.Errorf("got %d, want %d", got, tt.want)
-                        }
+
+                var procs []ProcessInfo
+                lines := strings.Split(string(out), "\n")
+                for _, line := range lines[1:] {
+                    fields := strings.Fields(line)
+                    if len(fields) < 11 {
+                        continue
+                    }
+                    mem, err := strconv.ParseFloat(fields[3], 64)
+                    if err != nil {
+                        continue
+                    }
+                    procs = append(procs, ProcessInfo{
+                        pid: fields[1], mem: mem, cmd: fields[10],
                     })
                 }
+
+                sort.Slice(procs, func(i, j int) bool {
+                    return procs[i].mem > procs[j].mem
+                })
+
+                limit := 5
+                if len(procs) < limit {
+                    limit = len(procs)
+                }
+                for _, p := range procs[:limit] {
+                    fmt.Printf("PID: %s  MEM: %.1f%%  CMD: %s\n", p.pid, p.mem, p.cmd)
+                }
             }
-          difficulty: 2
+          difficulty: 3
           annotations:
-            - type: gotcha
-              label: Init to First Element
-              text: Never initialize max to 0 or math.MinInt. Use nums[0] to handle all-negative slices correctly.
+            - type: stdlib
+              label: sort.Slice
+              text: >-
+                sort.Slice sorts a slice using a custom less function. It modifies the slice in place. For stable
+                sorting (preserving equal-element order), use sort.SliceStable.
+            - type: complexity
+              label: O(n log n)
+              text: >-
+                Parsing is O(n), sorting is O(n log n). For top-K problems, a heap (container/heap) would be O(n log k)
+                but sort.Slice is simpler for small k.
+        - id: v3
+          title: Process Tree
+          description: >-
+            Write a program that runs <code>ps -eo pid,ppid,comm</code> and builds a parent-child tree. Print processes
+            in a tree format with indentation showing the hierarchy. Start from PID 1 (init/systemd).
+          functionSignature: func main()
+          testCases:
+            - input: ps output with systemd -> sshd -> bash
+              output: 1 systemd\n  123 sshd\n    456 bash
+            - input: ps output with multiple children
+              output: indented tree showing parent-child relationships
+          hints:
+            - title: 🤔 Think about it
+              content: What data structure represents a tree? How do you map parent PIDs to their children?
+            - title: 💡 Hint
+              content: >-
+                Use map[string][]string to map PPID to list of child PIDs. Use another map for PID to command name.
+                Recursively print from PID 1 with increasing indent.
+            - title: 🔧 Pattern
+              content: |-
+                <pre>1. Parse ps -eo pid,ppid,comm
+                2. Build children map: ppid -> []pid
+                3. Build names map: pid -> comm
+                4. Recursive print: printTree(pid, indent)
+                5. Start from PID "1"</pre>
+          solution: |-
+            func main() {
+                out, err := exec.Command("ps", "-eo", "pid,ppid,comm").Output()
+                if err != nil {
+                    fmt.Fprintln(os.Stderr, err)
+                    os.Exit(1)
+                }
+
+                children := make(map[string][]string)
+                names := make(map[string]string)
+
+                lines := strings.Split(string(out), "\n")
+                for _, line := range lines[1:] {
+                    fields := strings.Fields(line)
+                    if len(fields) < 3 {
+                        continue
+                    }
+                    pid, ppid, comm := fields[0], fields[1], fields[2]
+                    names[pid] = comm
+                    children[ppid] = append(children[ppid], pid)
+                }
+
+                var printTree func(pid string, indent int)
+                printTree = func(pid string, indent int) {
+                    fmt.Printf("%s%s %s\n", strings.Repeat("  ", indent), pid, names[pid])
+                    for _, child := range children[pid] {
+                        printTree(child, indent+1)
+                    }
+                }
+                printTree("1", 0)
+            }
+          difficulty: 3
+          annotations:
+            - type: pattern
+              label: Tree Building
+              text: >-
+                Building a tree from flat parent-child data is a common pattern. Use a map from parent to children list,
+                then traverse recursively from the root.
             - type: idiom
-              label: Error for Empty Input
-              text: Return an error when the input is invalid rather than returning a misleading zero value.
+              label: Recursive Closure
+              text: >-
+                Declaring a function variable before the closure allows recursion: var f func(); f = func() { f() }.
+                This is how Go handles anonymous recursive functions.
+        - id: v4
+          title: Process Monitor
+          description: >-
+            Write a program that monitors a specific process name. Run <code>ps aux</code> every 2 seconds, find the
+            process, and print its CPU and memory usage. Stop after 5 iterations or if the process disappears.
+          functionSignature: func main()
+          testCases:
+            - input: Monitor 'bash' for 5 iterations
+              output: 5 lines showing CPU/MEM for bash
+            - input: Monitor 'nonexistent'
+              output: "'Process not found' and exit"
+          hints:
+            - title: 🤔 Think about it
+              content: How do you repeatedly check for a process? How do you match the process name in ps output?
+            - title: 💡 Hint
+              content: >-
+                Use a for loop with time.Sleep(2 * time.Second). In each iteration, run ps aux, scan for the process
+                name in the command column. Print CPU/MEM or break if not found.
+            - title: 🔧 Pattern
+              content: |-
+                <pre>1. Get process name from os.Args[1]
+                2. Loop 5 times with 2s sleep
+                3. Run ps aux, parse lines
+                4. Find matching command, print stats
+                5. If not found, print message and break</pre>
+          solution: |-
+            func main() {
+                if len(os.Args) < 2 {
+                    fmt.Fprintln(os.Stderr, "usage: monitor <process-name>")
+                    os.Exit(1)
+                }
+                target := os.Args[1]
+
+                for i := 0; i < 5; i++ {
+                    out, err := exec.Command("ps", "aux").Output()
+                    if err != nil {
+                        fmt.Fprintln(os.Stderr, err)
+                        os.Exit(1)
+                    }
+
+                    found := false
+                    lines := strings.Split(string(out), "\n")
+                    for _, line := range lines[1:] {
+                        fields := strings.Fields(line)
+                        if len(fields) < 11 {
+                            continue
+                        }
+                        if strings.Contains(fields[10], target) {
+                            cpu, _ := strconv.ParseFloat(fields[2], 64)
+                            mem, _ := strconv.ParseFloat(fields[3], 64)
+                            fmt.Printf("[%d] %s - CPU: %.1f%% MEM: %.1f%%\n",
+                                i+1, target, cpu, mem)
+                            found = true
+                            break
+                        }
+                    }
+
+                    if !found {
+                        fmt.Printf("Process '%s' not found\n", target)
+                        break
+                    }
+                    if i < 4 {
+                        time.Sleep(2 * time.Second)
+                    }
+                }
+            }
+          difficulty: 3
+          annotations:
+            - type: alternative
+              label: Ticker-Based
+              text: >-
+                For production monitoring, use time.NewTicker instead of time.Sleep. Tickers account for execution time,
+                keeping intervals more consistent.
+            - type: gotcha
+              label: Self-Matching
+              text: >-
+                Be aware that the ps command itself or the monitor program may appear in ps output. Real tools use PID
+                files or more specific matching to avoid false positives.
     - id: challenge_2
       block: 2
       difficulty: 3
-      concept: Code Coverage
+      concept: Git Status Parser
       docLinks:
-        - url: https://go.dev/blog/cover
-          title: "Go Blog: The cover story"
-          note: go test -cover and -coverprofile
-        - url: https://pkg.go.dev/cmd/go#hdr-Testing_flags
-          title: "Go Command: Testing flags"
-          note: -covermode, -coverprofile flags
+        - url: https://pkg.go.dev/os/exec#Cmd.Output
+          title: Package exec.Cmd.Output
+          note: capturing command output
+        - url: https://pkg.go.dev/bufio#Scanner
+          title: Package bufio.Scanner
+          note: line-by-line output processing
       variants:
         - id: v1
-          title: Achieve Coverage for FizzBuzz
+          title: Git Status Counter
           description: >-
-            Write a function <code>fizzBuzz(n int) string</code> that returns <code>"FizzBuzz"</code> for multiples of
-            15, <code>"Fizz"</code> for multiples of 3, <code>"Buzz"</code> for multiples of 5, and the number as a
-            string otherwise. Write enough tests to achieve 100% branch coverage.
-          functionSignature: func fizzBuzz(n int) string
+            Write a program that runs <code>git status --porcelain</code> and prints counts of modified, added, and
+            deleted files. Handle the porcelain format where the first two characters indicate status:
+            <code>M</code>=modified, <code>A</code> or <code>??</code>=added/new, <code>D</code>=deleted.
+          functionSignature: func main()
           testCases:
-            - input: "15"
-              output: "\"FizzBuzz\""
-            - input: "3"
-              output: "\"Fizz\""
-            - input: "5"
-              output: "\"Buzz\""
-            - input: "7"
-              output: "\"7\""
-          hints:
-            - title: 🤔 Think about it
-              content: How many branches does this function have? You need at least one test per branch to get 100% coverage.
-            - title: 💡 Hint
-              content: >-
-                There are 4 branches: divisible by 15, divisible by 3 (not 15), divisible by 5 (not 15), and neither.
-                One test per branch gives full coverage.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>1. Write the function with if/else if chain
-                2. Count branches: 4
-                3. Write one test case per branch
-                4. Run: go test -cover
-                5. Verify: coverage: 100%</pre>
-          solution: |-
-            func fizzBuzz(n int) string {
-                switch {
-                case n%15 == 0:
-                    return "FizzBuzz"
-                case n%3 == 0:
-                    return "Fizz"
-                case n%5 == 0:
-                    return "Buzz"
-                default:
-                    return strconv.Itoa(n)
-                }
-            }
-
-            func TestFizzBuzz(t *testing.T) {
-                tests := []struct {
-                    input int
-                    want  string
-                }{
-                    {15, "FizzBuzz"},
-                    {30, "FizzBuzz"},
-                    {3, "Fizz"},
-                    {9, "Fizz"},
-                    {5, "Buzz"},
-                    {10, "Buzz"},
-                    {7, "7"},
-                    {1, "1"},
-                }
-                for _, tt := range tests {
-                    t.Run(strconv.Itoa(tt.input), func(t *testing.T) {
-                        got := fizzBuzz(tt.input)
-                        if got != tt.want {
-                            t.Errorf("fizzBuzz(%d) = %q, want %q", tt.input, got, tt.want)
-                        }
-                    })
-                }
-            }
-
-            // Run: go test -coverprofile=coverage.out
-            // View: go tool cover -html=coverage.out
-          difficulty: 3
-          annotations:
-            - type: idiom
-              label: Switch with No Condition
-              text: switch {} with case expressions is cleaner than if/else chains for multiple conditions.
-            - type: gotcha
-              label: Check 15 First
-              text: Check divisible-by-15 before 3 or 5. Otherwise, 15 matches the first condition it hits.
-            - type: pattern
-              label: Coverage Strategy
-              text: Map each branch to at least one test case. Use go test -cover to verify.
-        - id: v2
-          title: Achieve Coverage for GradeCalculator
-          description: >-
-            Write a function <code>grade(score int) (string, error)</code> that returns a letter grade (A/B/C/D/F) for
-            scores 0-100, and an error for out-of-range scores. Write tests to achieve at least 80% coverage using
-            <code>go test -cover</code>.
-          functionSignature: func grade(score int) (string, error)
-          testCases:
-            - input: "95"
-              output: "\"A\", nil"
-            - input: "85"
-              output: "\"B\", nil"
-            - input: "75"
-              output: "\"C\", nil"
-            - input: "65"
-              output: "\"D\", nil"
-            - input: "50"
-              output: "\"F\", nil"
-            - input: "-1"
-              output: "\"\", error"
-            - input: "101"
-              output: "\"\", error"
-          hints:
-            - title: 🤔 Think about it
-              content: "Count the branches: invalid low, invalid high, A, B, C, D, F. That's 7 branches to cover."
-            - title: 💡 Hint
-              content: >-
-                Write at least one test per branch. Use go test -coverprofile=coverage.out and go tool cover
-                -html=coverage.out to find uncovered lines.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>1. Write function with range validation + grade logic
-                2. List all branches (7 total)
-                3. Write table-driven tests with one case per branch
-                4. Run: go test -cover
-                5. Check coverage report for gaps</pre>
-          solution: |-
-            func grade(score int) (string, error) {
-                if score < 0 || score > 100 {
-                    return "", fmt.Errorf("score %d out of range 0-100", score)
-                }
-                switch {
-                case score >= 90:
-                    return "A", nil
-                case score >= 80:
-                    return "B", nil
-                case score >= 70:
-                    return "C", nil
-                case score >= 60:
-                    return "D", nil
-                default:
-                    return "F", nil
-                }
-            }
-
-            func TestGrade(t *testing.T) {
-                tests := []struct {
-                    name    string
-                    score   int
-                    want    string
-                    wantErr bool
-                }{
-                    {"A grade", 95, "A", false},
-                    {"A boundary", 90, "A", false},
-                    {"B grade", 85, "B", false},
-                    {"C grade", 75, "C", false},
-                    {"D grade", 65, "D", false},
-                    {"F grade", 50, "F", false},
-                    {"zero", 0, "F", false},
-                    {"perfect", 100, "A", false},
-                    {"too low", -1, "", true},
-                    {"too high", 101, "", true},
-                }
-                for _, tt := range tests {
-                    t.Run(tt.name, func(t *testing.T) {
-                        got, err := grade(tt.score)
-                        if (err != nil) != tt.wantErr {
-                            t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
-                        }
-                        if got != tt.want {
-                            t.Errorf("got %q, want %q", got, tt.want)
-                        }
-                    })
-                }
-            }
-          difficulty: 3
-          annotations:
-            - type: pattern
-              label: Boundary Testing
-              text: Test boundary values (90, 80, 70, 60) in addition to mid-range values for thorough coverage.
-            - type: idiom
-              label: Coverage Profiling
-              text: Use go test -coverprofile=c.out && go tool cover -html=c.out to visualize coverage.
-        - id: v3
-          title: Achieve Coverage for PasswordValidator
-          description: >-
-            Write a function <code>validatePassword(pw string) []string</code> that returns a slice of validation error
-            messages. Rules: min 8 chars, at least one uppercase, one lowercase, one digit. Write tests to cover all
-            validation branches.
-          functionSignature: func validatePassword(pw string) []string
-          testCases:
-            - input: "\"Abcdef1x\""
-              output: "[]"
-            - input: "\"short\""
-              output: "[\"must be at least 8 characters\", \"must contain uppercase\", \"must contain digit\"]"
-            - input: "\"abcdefgh\""
-              output: "[\"must contain uppercase\", \"must contain digit\"]"
-            - input: "\"ABCDEFGH\""
-              output: "[\"must contain lowercase\", \"must contain digit\"]"
+            - input: git repo with 2 modified, 1 new, 1 deleted
+              output: "Modified: 2, Added: 1, Deleted: 1"
+            - input: clean git repo
+              output: "Modified: 0, Added: 0, Deleted: 0"
+            - input: not a git repo
+              output: Not a git repo
           hints:
             - title: 🤔 Think about it
               content: >-
-                Each validation rule is an independent branch. You need tests where each rule fails individually and in
-                combination.
+                What does each two-character status code mean in porcelain format? How do you distinguish staged vs
+                unstaged changes?
             - title: 💡 Hint
               content: >-
-                Use unicode.IsUpper, unicode.IsLower, and unicode.IsDigit to check characters. Collect all errors rather
-                than returning on the first one.
+                Porcelain first two chars: 'M ' or ' M' or 'MM' = modified, 'A ' or '??' = added, 'D ' or ' D' =
+                deleted. Check with line[0:2] switch.
             - title: 🔧 Pattern
               content: |-
-                <pre>1. Check length >= 8
-                2. Range over runes checking:
-                   - hasUpper (unicode.IsUpper)
-                   - hasLower (unicode.IsLower)
-                   - hasDigit (unicode.IsDigit)
-                3. Collect all failures into []string
-                4. Test: valid, too short, missing upper,
-                   missing lower, missing digit, combinations</pre>
+                <pre>1. Run git status --porcelain
+                2. Check error (not a git repo)
+                3. Split output by newline
+                4. For each line: switch on first 2 chars
+                5. Increment counters, print results</pre>
           solution: |-
-            func validatePassword(pw string) []string {
-                var errors []string
-                if len(pw) < 8 {
-                    errors = append(errors, "must be at least 8 characters")
+            func main() {
+                out, err := exec.Command("git", "status", "--porcelain").Output()
+                if err != nil {
+                    fmt.Println("Not a git repo")
+                    return
                 }
-                var hasUpper, hasLower, hasDigit bool
-                for _, r := range pw {
-                    switch {
-                    case unicode.IsUpper(r):
-                        hasUpper = true
-                    case unicode.IsLower(r):
-                        hasLower = true
-                    case unicode.IsDigit(r):
-                        hasDigit = true
+
+                var modified, added, deleted int
+                for _, line := range strings.Split(string(out), "\n") {
+                    if len(line) < 2 {
+                        continue
+                    }
+                    switch line[0:2] {
+                    case " M", "M ", "MM":
+                        modified++
+                    case "A ", "??":
+                        added++
+                    case " D", "D ":
+                        deleted++
                     }
                 }
-                if !hasUpper {
-                    errors = append(errors, "must contain uppercase")
-                }
-                if !hasLower {
-                    errors = append(errors, "must contain lowercase")
-                }
-                if !hasDigit {
-                    errors = append(errors, "must contain digit")
-                }
-                return errors
-            }
-
-            func TestValidatePassword(t *testing.T) {
-                tests := []struct {
-                    name     string
-                    password string
-                    wantErrs int
-                }{
-                    {"valid", "Abcdef1x", 0},
-                    {"too short", "Ab1", 1},
-                    {"no upper", "abcdefg1", 1},
-                    {"no lower", "ABCDEFG1", 1},
-                    {"no digit", "Abcdefgh", 1},
-                    {"empty", "", 4},
-                    {"all lower", "abcdefgh", 2},
-                    {"all upper", "ABCDEFGH", 2},
-                    {"all digits", "12345678", 2},
-                }
-                for _, tt := range tests {
-                    t.Run(tt.name, func(t *testing.T) {
-                        errs := validatePassword(tt.password)
-                        if len(errs) != tt.wantErrs {
-                            t.Errorf("got %d errors %v, want %d", len(errs), errs, tt.wantErrs)
-                        }
-                    })
-                }
+                fmt.Printf("Modified: %d, Added: %d, Deleted: %d\n",
+                    modified, added, deleted)
             }
           difficulty: 3
           annotations:
-            - type: idiom
-              label: Collect All Errors
-              text: >-
-                Return all validation errors at once rather than stopping at the first. This gives users complete
-                feedback.
             - type: stdlib
-              label: unicode Package
-              text: The unicode package provides IsUpper, IsLower, IsDigit for rune classification.
-        - id: v4
-          title: Achieve Coverage for RomanNumeral
+              label: exec.Command
+              text: >-
+                git status --porcelain gives machine-readable output that is stable across Git versions. Always use
+                --porcelain for scripting, never the default human-readable format.
+            - type: gotcha
+              label: Two-Character Status
+              text: >-
+                The porcelain format uses TWO characters: index status and working tree status. 'M ' means staged
+                modification, ' M' means unstaged. Both are valid modifications.
+        - id: v2
+          title: Git Branch Info
           description: >-
-            Write a function <code>toRoman(n int) (string, error)</code> that converts integers 1-3999 to Roman numeral
-            strings. Write tests to achieve at least 80% coverage, including boundary values and error cases.
-          functionSignature: func toRoman(n int) (string, error)
+            Write a program that parses <code>git status --porcelain -b</code> to extract the current branch name and
+            ahead/behind counts. Also list all changed files grouped by status.
+          functionSignature: func main()
           testCases:
-            - input: "1"
-              output: "\"I\", nil"
-            - input: "4"
-              output: "\"IV\", nil"
-            - input: "1994"
-              output: "\"MCMXCIV\", nil"
-            - input: "0"
-              output: "\"\", error"
-            - input: "4000"
-              output: "\"\", error"
+            - input: On branch main, 2 ahead, 1 modified file
+              output: "Branch: main (ahead 2)\\nModified: file.go"
+            - input: On branch feature, clean
+              output: "Branch: feature\\nNo changes"
           hints:
             - title: 🤔 Think about it
-              content: >-
-                Roman numerals use a greedy algorithm: subtract the largest possible value at each step. What values
-                should your lookup table contain?
+              content: What does the -b flag add to porcelain output? What does the branch line look like?
             - title: 💡 Hint
               content: >-
-                Use parallel slices of values [1000, 900, 500, 400, ...] and symbols ["M", "CM", "D", "CD", ...]. Loop
-                from largest to smallest, appending symbols while the value fits.
+                With -b, the first line is: ## branch...origin/branch [ahead N, behind M]. Parse this line separately.
+                Remaining lines are status lines.
             - title: 🔧 Pattern
               content: |-
-                <pre>1. Validate n is 1-3999
-                2. Define values and symbols arrays
-                3. For each value/symbol pair:
-                   - While n >= value: append symbol, subtract value
-                4. Return accumulated string
-                5. Test boundaries: 1, 3999, 0, 4000, and key values</pre>
+                <pre>1. Run git status --porcelain -b
+                2. First line: parse branch and ahead/behind
+                3. Remaining lines: parse status codes
+                4. Group files by status
+                5. Print branch info and file groups</pre>
           solution: |-
-            func toRoman(n int) (string, error) {
-                if n < 1 || n > 3999 {
-                    return "", fmt.Errorf("%d out of range 1-3999", n)
+            func main() {
+                out, err := exec.Command("git", "status", "--porcelain", "-b").Output()
+                if err != nil {
+                    fmt.Println("Not a git repo")
+                    return
                 }
-                values := []int{1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1}
-                symbols := []string{"M", "CM", "D", "CD", "C", "XC", "L", "XL", "X", "IX", "V", "IV", "I"}
-                var result strings.Builder
-                for i, val := range values {
-                    for n >= val {
-                        result.WriteString(symbols[i])
-                        n -= val
+
+                lines := strings.Split(strings.TrimSpace(string(out)), "\n")
+                if len(lines) == 0 {
+                    return
+                }
+
+                // Parse branch line: ## main...origin/main [ahead 2]
+                branchLine := lines[0][3:] // skip "## "
+                branch := branchLine
+                if idx := strings.Index(branchLine, "..."); idx != -1 {
+                    branch = branchLine[:idx]
+                }
+                info := branch
+                if idx := strings.Index(branchLine, "["); idx != -1 {
+                    end := strings.Index(branchLine, "]")
+                    info += " (" + branchLine[idx+1:end] + ")"
+                }
+                fmt.Println("Branch:", info)
+
+                modified := []string{}
+                added := []string{}
+                deleted := []string{}
+                for _, line := range lines[1:] {
+                    if len(line) < 3 {
+                        continue
+                    }
+                    file := strings.TrimSpace(line[3:])
+                    switch line[0:2] {
+                    case " M", "M ", "MM":
+                        modified = append(modified, file)
+                    case "A ", "??":
+                        added = append(added, file)
+                    case " D", "D ":
+                        deleted = append(deleted, file)
                     }
                 }
-                return result.String(), nil
-            }
 
-            func TestToRoman(t *testing.T) {
-                tests := []struct {
-                    name    string
-                    input   int
-                    want    string
-                    wantErr bool
-                }{
-                    {"one", 1, "I", false},
-                    {"four", 4, "IV", false},
-                    {"nine", 9, "IX", false},
-                    {"fourteen", 14, "XIV", false},
-                    {"forty", 40, "XL", false},
-                    {"ninety", 90, "XC", false},
-                    {"four hundred", 400, "CD", false},
-                    {"nine hundred", 900, "CM", false},
-                    {"1994", 1994, "MCMXCIV", false},
-                    {"3999", 3999, "MMMCMXCIX", false},
-                    {"zero", 0, "", true},
-                    {"negative", -1, "", true},
-                    {"too large", 4000, "", true},
+                if len(modified)+len(added)+len(deleted) == 0 {
+                    fmt.Println("No changes")
+                    return
                 }
-                for _, tt := range tests {
-                    t.Run(tt.name, func(t *testing.T) {
-                        got, err := toRoman(tt.input)
-                        if (err != nil) != tt.wantErr {
-                            t.Errorf("wantErr=%v, got err=%v", tt.wantErr, err)
-                        }
-                        if got != tt.want {
-                            t.Errorf("got %q, want %q", got, tt.want)
-                        }
-                    })
+                for _, f := range modified { fmt.Println("Modified:", f) }
+                for _, f := range added { fmt.Println("Added:", f) }
+                for _, f := range deleted { fmt.Println("Deleted:", f) }
+            }
+          difficulty: 3
+          annotations:
+            - type: gotcha
+              label: Branch Line Format
+              text: >-
+                The -b branch line format varies: '## main' (no remote), '## main...origin/main' (with remote), '##
+                main...origin/main [ahead 1]' (with tracking info).
+            - type: idiom
+              label: String Slicing
+              text: >-
+                Go strings can be sliced like line[0:2] or line[3:]. This is efficient as it shares the underlying
+                bytes. Be careful with Unicode; use []rune for multi-byte characters.
+        - id: v3
+          title: Git Diff Stats
+          description: >-
+            Write a program that runs <code>git diff --stat</code> and parses the output to extract file names and the
+            number of insertions/deletions for each. Print a summary showing total files changed, insertions, and
+            deletions.
+          functionSignature: func main()
+          testCases:
+            - input: git diff --stat with 3 files, +20 -5
+              output: 3 files changed, 20 insertions, 5 deletions
+            - input: no changes
+              output: No changes
+          hints:
+            - title: 🤔 Think about it
+              content: What does git diff --stat output look like? Where are the numbers for insertions and deletions?
+            - title: 💡 Hint
+              content: >-
+                The last line of --stat is a summary like: '3 files changed, 20 insertions(+), 5 deletions(-)'. Parse
+                this line, or parse each file line which shows ' file | N +++---'.
+            - title: 🔧 Pattern
+              content: |-
+                <pre>1. Run git diff --stat
+                2. Parse the summary line (last non-empty line)
+                3. Extract numbers using string parsing or regexp
+                4. Print formatted summary</pre>
+          solution: |-
+            func main() {
+                out, err := exec.Command("git", "diff", "--stat").Output()
+                if err != nil {
+                    fmt.Fprintln(os.Stderr, err)
+                    os.Exit(1)
+                }
+
+                output := strings.TrimSpace(string(out))
+                if output == "" {
+                    fmt.Println("No changes")
+                    return
+                }
+
+                lines := strings.Split(output, "\n")
+                // Parse individual file lines
+                for _, line := range lines[:len(lines)-1] {
+                    parts := strings.Split(line, "|")
+                    if len(parts) == 2 {
+                        file := strings.TrimSpace(parts[0])
+                        changes := strings.TrimSpace(parts[1])
+                        fmt.Printf("  %s: %s\n", file, changes)
+                    }
+                }
+
+                // Print summary line as-is
+                summary := lines[len(lines)-1]
+                fmt.Println(strings.TrimSpace(summary))
+            }
+          difficulty: 3
+          annotations:
+            - type: stdlib
+              label: git diff --stat
+              text: >-
+                git diff --stat produces a human-readable summary of changes. For machine-readable output, use --numstat
+                which gives tab-separated insertions/deletions/filename.
+            - type: alternative
+              label: Use --numstat
+              text: >-
+                git diff --numstat outputs 'insertions\tdeletions\tfile' per line, which is easier to parse
+                programmatically than --stat's visual bars.
+        - id: v4
+          title: Git Log Parser
+          description: >-
+            Write a program that runs <code>git log --oneline -10</code> and parses each line into a commit hash and
+            message. Group commits by the first word of the message (e.g., "fix", "add", "update") and print the grouped
+            results.
+          functionSignature: func main()
+          testCases:
+            - input: "git log with 'fix: bug', 'add: feature', 'fix: typo'"
+              output: "fix (2):\\n  abc1234 fix: bug\\n  def5678 fix: typo\\nadd (1):\\n  ghi9012 add: feature"
+            - input: empty repo
+              output: No commits
+          hints:
+            - title: 🤔 Think about it
+              content: How do you extract the first word from a commit message? What data structure groups items by a key?
+            - title: 💡 Hint
+              content: >-
+                Each oneline line is: 'hash message'. Split to get hash and message. Use strings.Fields(message)[0] for
+                the first word. Group with map[string][]string.
+            - title: 🔧 Pattern
+              content: |-
+                <pre>1. Run git log --oneline -10
+                2. For each line: split into hash and message
+                3. Extract first word of message (lowercase)
+                4. Group in map[string][]string
+                5. Print groups with counts</pre>
+          solution: |-
+            func main() {
+                out, err := exec.Command("git", "log", "--oneline", "-10").Output()
+                if err != nil {
+                    fmt.Println("Not a git repo or no commits")
+                    return
+                }
+
+                output := strings.TrimSpace(string(out))
+                if output == "" {
+                    fmt.Println("No commits")
+                    return
+                }
+
+                groups := make(map[string][]string)
+                var order []string
+
+                for _, line := range strings.Split(output, "\n") {
+                    parts := strings.SplitN(line, " ", 2)
+                    if len(parts) < 2 {
+                        continue
+                    }
+                    hash := parts[0]
+                    message := parts[1]
+                    keyword := strings.ToLower(strings.Fields(message)[0])
+                    // Remove trailing colon if present
+                    keyword = strings.TrimRight(keyword, ":")
+
+                    if _, exists := groups[keyword]; !exists {
+                        order = append(order, keyword)
+                    }
+                    groups[keyword] = append(groups[keyword], hash+" "+message)
+                }
+
+                for _, key := range order {
+                    commits := groups[key]
+                    fmt.Printf("%s (%d):\n", key, len(commits))
+                    for _, c := range commits {
+                        fmt.Printf("  %s\n", c)
+                    }
                 }
             }
           difficulty: 3
           annotations:
             - type: idiom
-              label: strings.Builder
+              label: Insertion Order Map
               text: >-
-                Use strings.Builder for efficient string concatenation in loops. It avoids allocating new strings each
-                iteration.
-            - type: pattern
-              label: Greedy Algorithm
-              text: The greedy approach works here because Roman numeral values are specifically designed to allow it.
-            - type: complexity
-              label: O(1)
+                Go maps do not preserve insertion order. To print groups in the order they were first seen, maintain a
+                separate slice of keys.
+            - type: stdlib
+              label: strings.SplitN
               text: >-
-                The maximum number of iterations is bounded (3999 / 1 = 3999 symbols max), making this effectively
-                constant time.
+                strings.SplitN(s, sep, n) splits into at most n parts. SplitN(line, " ", 2) splits on the first space
+                only, keeping the rest of the message intact.

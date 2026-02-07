@@ -1,0 +1,980 @@
+conceptLinks:
+  Trees: "#lesson-trees"
+  Graphs & BFS: "#lesson-graphs"
+  Sorting: "#lesson-sorting"
+  Heaps: "#lesson-heaps"
+  Tries: "#lesson-tries"
+sharedContent: {}
+variants:
+  warmups:
+    - id: warmup_1
+      concept: Trees
+      variants:
+        - id: v1
+          title: Inorder Traversal
+          description: >-
+            Given <code>type TreeNode struct { Val int; Left, Right *TreeNode }</code>, write a
+            function <code>inorderTraversal(root *TreeNode) []int</code> that returns the values
+            in inorder (left, node, right). For a BST this gives sorted order.
+          hints:
+            - "Base case: if root is nil, return nil."
+            - "Recurse left, append current value, recurse right."
+            - "Use <code>append(result, values...)</code> to merge slices."
+          solution: |-
+            type TreeNode struct {
+                Val   int
+                Left  *TreeNode
+                Right *TreeNode
+            }
+
+            func inorderTraversal(root *TreeNode) []int {
+                if root == nil {
+                    return nil
+                }
+                var result []int
+                result = append(result, inorderTraversal(root.Left)...)
+                result = append(result, root.Val)
+                result = append(result, inorderTraversal(root.Right)...)
+                return result
+            }
+          annotations:
+            - type: pattern
+              label: Recursive Traversal
+              text: "Tree traversals follow a template: base case (nil check), recurse left, process node, recurse right."
+            - type: idiom
+              label: Inorder = Sorted
+              text: "Inorder traversal of a BST produces values in sorted order — useful for validation."
+        - id: v2
+          title: Max Depth
+          description: >-
+            Write a function <code>maxDepth(root *TreeNode) int</code> that returns the maximum
+            depth of a binary tree. An empty tree has depth 0, a single node has depth 1.
+          hints:
+            - "Base case: nil returns 0."
+            - "Recurse on left and right, take the max, add 1."
+            - "In Go, use an if/else since there's no built-in max for ints (before Go 1.21)."
+          solution: |-
+            func maxDepth(root *TreeNode) int {
+                if root == nil {
+                    return 0
+                }
+                left := maxDepth(root.Left)
+                right := maxDepth(root.Right)
+                if left > right {
+                    return left + 1
+                }
+                return right + 1
+            }
+          annotations:
+            - type: pattern
+              label: Bottom-Up Recursion
+              text: "Compute children first, then combine results. Most tree height/size problems follow this pattern."
+            - type: complexity
+              label: O(n)
+              text: "Visits every node exactly once. Space is O(h) for the call stack, where h is the tree height."
+        - id: v3
+          title: Level Order Traversal (BFS)
+          description: >-
+            Write a function <code>levelOrder(root *TreeNode) [][]int</code> that returns the values
+            of the tree level by level, from left to right. Use a queue (slice) for BFS.
+          hints:
+            - "Start with root in the queue. Process one level at a time."
+            - "For each level, record the queue length, then process that many nodes."
+            - "Add each node's children to the queue as you go."
+          solution: |-
+            func levelOrder(root *TreeNode) [][]int {
+                if root == nil {
+                    return nil
+                }
+                var result [][]int
+                queue := []*TreeNode{root}
+                for len(queue) > 0 {
+                    levelSize := len(queue)
+                    level := make([]int, 0, levelSize)
+                    for i := 0; i < levelSize; i++ {
+                        node := queue[0]
+                        queue = queue[1:]
+                        level = append(level, node.Val)
+                        if node.Left != nil {
+                            queue = append(queue, node.Left)
+                        }
+                        if node.Right != nil {
+                            queue = append(queue, node.Right)
+                        }
+                    }
+                    result = append(result, level)
+                }
+                return result
+            }
+          annotations:
+            - type: pattern
+              label: BFS Level Tracking
+              text: "Snapshot the queue length at the start of each level to know how many nodes belong to that level."
+            - type: idiom
+              label: Slice as Queue
+              text: "Use <code>queue[0]</code> to dequeue and <code>queue = queue[1:]</code> to advance. Simple and readable."
+        - id: v4
+          title: Invert Binary Tree
+          description: >-
+            Write a function <code>invertTree(root *TreeNode) *TreeNode</code> that mirrors a binary
+            tree (swaps left and right children at every node). Return the root.
+          hints:
+            - "Base case: nil returns nil."
+            - "Swap left and right children, then recurse on both."
+            - "This is a single-line swap in Go: <code>root.Left, root.Right = root.Right, root.Left</code>"
+          solution: |-
+            func invertTree(root *TreeNode) *TreeNode {
+                if root == nil {
+                    return nil
+                }
+                root.Left, root.Right = root.Right, root.Left
+                invertTree(root.Left)
+                invertTree(root.Right)
+                return root
+            }
+          annotations:
+            - type: idiom
+              label: Tuple Swap
+              text: "Go's multiple assignment makes swaps clean: <code>a, b = b, a</code> without a temp variable."
+            - type: pattern
+              label: Top-Down Recursion
+              text: "Process the current node first, then recurse on children. Contrast with bottom-up (maxDepth)."
+  challenges:
+    - id: challenge_1
+      block: 1
+      difficulty: 2
+      concept: Graphs & BFS
+      docLinks:
+        - url: https://pkg.go.dev/container/list
+          title: container/list
+          note: alternative queue implementation
+      variants:
+        - id: v1
+          title: Implement BFS on a Graph
+          description: >-
+            Implement a function <code>bfs(graph map[int][]int, start int) []int</code> that performs
+            breadth-first search on an adjacency list graph and returns the nodes in visit order.
+          functionSignature: func bfs(graph map[int][]int, start int) []int
+          testCases:
+            - input: "map[int][]int{0: {1, 2}, 1: {3}, 2: {3}, 3: {}}, 0"
+              output: "[0, 1, 2, 3]"
+            - input: "map[int][]int{0: {}}, 0"
+              output: "[0]"
+          hints:
+            - title: "\U0001F914 Think about it"
+              content: >-
+                BFS visits nodes level by level. What data structure processes things in the order
+                they were added?
+            - title: "\U0001F4A1 Hint"
+              content: >-
+                Use a slice as a queue. Track visited nodes in a map. Dequeue from the front, enqueue
+                neighbors that haven't been visited.
+            - title: "\U0001F527 Pattern"
+              content: |-
+                <pre>1. Initialize queue with start node
+                2. Mark start as visited
+                3. While queue is not empty:
+                   a. Dequeue front node
+                   b. Add to result
+                   c. For each neighbor:
+                      - If not visited, mark visited and enqueue</pre>
+          solution: |-
+            func bfs(graph map[int][]int, start int) []int {
+                visited := make(map[int]bool)
+                queue := []int{start}
+                visited[start] = true
+                var order []int
+
+                for len(queue) > 0 {
+                    node := queue[0]
+                    queue = queue[1:]
+                    order = append(order, node)
+
+                    for _, neighbor := range graph[node] {
+                        if !visited[neighbor] {
+                            visited[neighbor] = true
+                            queue = append(queue, neighbor)
+                        }
+                    }
+                }
+                return order
+            }
+          difficulty: 2
+          annotations:
+            - type: pattern
+              label: BFS Template
+              text: "Queue + visited set is the universal BFS pattern. Works for trees, graphs, grids, and state spaces."
+            - type: gotcha
+              label: Mark on Enqueue
+              text: "Mark nodes visited when enqueueing, not when dequeuing. This prevents duplicate entries in the queue."
+            - type: complexity
+              label: O(V + E)
+              text: "Visits each vertex once and checks each edge once."
+        - id: v2
+          title: Count Connected Components
+          description: >-
+            Write a function <code>countComponents(n int, edges [][]int) int</code> that counts the
+            number of connected components in an undirected graph. Nodes are numbered 0 to n-1.
+          functionSignature: func countComponents(n int, edges [][]int) int
+          testCases:
+            - input: "5, [][]int{{0,1},{1,2},{3,4}}"
+              output: "2"
+            - input: "3, [][]int{}"
+              output: "3"
+          hints:
+            - title: "\U0001F914 Think about it"
+              content: >-
+                Each BFS/DFS from an unvisited node discovers one connected component. How many times
+                do you need to start a new traversal?
+            - title: "\U0001F4A1 Hint"
+              content: >-
+                Build an adjacency list from edges. Loop through all nodes — if unvisited, run BFS/DFS
+                and increment the component count.
+            - title: "\U0001F527 Pattern"
+              content: |-
+                <pre>1. Build adjacency list from edges (both directions)
+                2. Create visited set
+                3. For each node 0..n-1:
+                   - If not visited: BFS/DFS from it, count++
+                4. Return count</pre>
+          solution: |-
+            func countComponents(n int, edges [][]int) int {
+                graph := make(map[int][]int)
+                for i := 0; i < n; i++ {
+                    graph[i] = []int{}
+                }
+                for _, e := range edges {
+                    graph[e[0]] = append(graph[e[0]], e[1])
+                    graph[e[1]] = append(graph[e[1]], e[0])
+                }
+
+                visited := make(map[int]bool)
+                count := 0
+                for i := 0; i < n; i++ {
+                    if !visited[i] {
+                        queue := []int{i}
+                        visited[i] = true
+                        for len(queue) > 0 {
+                            node := queue[0]
+                            queue = queue[1:]
+                            for _, nb := range graph[node] {
+                                if !visited[nb] {
+                                    visited[nb] = true
+                                    queue = append(queue, nb)
+                                }
+                            }
+                        }
+                        count++
+                    }
+                }
+                return count
+            }
+          difficulty: 2
+          annotations:
+            - type: pattern
+              label: Component Counting
+              text: "Each BFS/DFS start from an unvisited node discovers exactly one connected component."
+            - type: gotcha
+              label: Undirected Edges
+              text: "Add edges in both directions for undirected graphs: graph[a] = b and graph[b] = a."
+        - id: v3
+          title: Shortest Path in Unweighted Graph
+          description: >-
+            Write a function <code>shortestPath(graph map[int][]int, start, end int) int</code> that
+            returns the shortest path length between two nodes. Return <code>-1</code> if no path exists.
+          functionSignature: func shortestPath(graph map[int][]int, start, end int) int
+          testCases:
+            - input: "map[int][]int{0: {1, 2}, 1: {3}, 2: {3}, 3: {}}, 0, 3"
+              output: "2"
+            - input: "map[int][]int{0: {1}, 1: {}, 2: {}}, 0, 2"
+              output: "-1"
+          hints:
+            - title: "\U0001F914 Think about it"
+              content: "BFS explores nodes level by level. What does each level represent in terms of distance?"
+            - title: "\U0001F4A1 Hint"
+              content: >-
+                Track distance in a map alongside visited status. When you visit a neighbor, its distance
+                is current node's distance + 1.
+            - title: "\U0001F527 Pattern"
+              content: |-
+                <pre>1. BFS from start, tracking distance
+                2. distance[start] = 0
+                3. For each dequeued node:
+                   - If it's the target, return distance
+                   - Enqueue unvisited neighbors with distance+1
+                4. If queue empties, return -1</pre>
+          solution: |-
+            func shortestPath(graph map[int][]int, start, end int) int {
+                if start == end {
+                    return 0
+                }
+                visited := make(map[int]bool)
+                type entry struct {
+                    node int
+                    dist int
+                }
+                queue := []entry{{start, 0}}
+                visited[start] = true
+
+                for len(queue) > 0 {
+                    curr := queue[0]
+                    queue = queue[1:]
+
+                    for _, nb := range graph[curr.node] {
+                        if nb == end {
+                            return curr.dist + 1
+                        }
+                        if !visited[nb] {
+                            visited[nb] = true
+                            queue = append(queue, entry{nb, curr.dist + 1})
+                        }
+                    }
+                }
+                return -1
+            }
+          difficulty: 2
+          annotations:
+            - type: pattern
+              label: BFS = Shortest Path
+              text: "BFS guarantees the first time you reach a node is via the shortest path (for unweighted graphs)."
+            - type: idiom
+              label: Anonymous Struct
+              text: "Go's anonymous structs (<code>struct { node int; dist int }</code>) are perfect for lightweight queue entries."
+        - id: v4
+          title: Grid Flood Fill
+          description: >-
+            Write a function <code>floodFill(grid [][]int, sr, sc, newColor int) [][]int</code> that
+            performs a flood fill starting from <code>(sr, sc)</code>, changing all connected cells of
+            the same color to <code>newColor</code>. Return the modified grid.
+          functionSignature: func floodFill(grid [][]int, sr, sc, newColor int) [][]int
+          testCases:
+            - input: "[][]int{{1,1,1},{1,1,0},{1,0,1}}, 1, 1, 2"
+              output: "[][]int{{2,2,2},{2,2,0},{2,0,1}}"
+          hints:
+            - title: "\U0001F914 Think about it"
+              content: "This is BFS/DFS on a grid. What are the 'neighbors' of a cell? When should you stop spreading?"
+            - title: "\U0001F4A1 Hint"
+              content: >-
+                Start at (sr, sc). Use BFS with a queue of (row, col) pairs. Spread to 4-directional
+                neighbors that have the original color.
+            - title: "\U0001F527 Pattern"
+              content: |-
+                <pre>1. Record originalColor = grid[sr][sc]
+                2. If originalColor == newColor, return (no-op)
+                3. BFS from (sr, sc):
+                   - Set cell to newColor
+                   - Enqueue neighbors with originalColor
+                4. Return modified grid</pre>
+          solution: |-
+            func floodFill(grid [][]int, sr, sc, newColor int) [][]int {
+                origColor := grid[sr][sc]
+                if origColor == newColor {
+                    return grid
+                }
+                type point struct{ r, c int }
+                queue := []point{{sr, sc}}
+                grid[sr][sc] = newColor
+                dirs := []point{{-1, 0}, {1, 0}, {0, -1}, {0, 1}}
+
+                for len(queue) > 0 {
+                    p := queue[0]
+                    queue = queue[1:]
+                    for _, d := range dirs {
+                        nr, nc := p.r+d.r, p.c+d.c
+                        if nr >= 0 && nr < len(grid) && nc >= 0 && nc < len(grid[0]) && grid[nr][nc] == origColor {
+                            grid[nr][nc] = newColor
+                            queue = append(queue, point{nr, nc})
+                        }
+                    }
+                }
+                return grid
+            }
+          difficulty: 2
+          annotations:
+            - type: pattern
+              label: Grid BFS
+              text: "Grid problems are graph problems in disguise. Cells are nodes, 4-directional neighbors are edges."
+            - type: gotcha
+              label: Same Color Check
+              text: "If originalColor == newColor, return immediately. Otherwise BFS loops forever."
+    - id: challenge_2
+      block: 2
+      difficulty: 3
+      concept: Sorting
+      docLinks:
+        - url: https://pkg.go.dev/sort
+          title: Package sort
+          note: Go's standard sorting
+      variants:
+        - id: v1
+          title: Implement Merge Sort
+          description: >-
+            Implement <code>mergeSort(nums []int) []int</code> that sorts a slice using the
+            divide-and-conquer merge sort algorithm. Return a new sorted slice.
+          functionSignature: func mergeSort(nums []int) []int
+          testCases:
+            - input: "[]int{38, 27, 43, 3, 9, 82, 10}"
+              output: "[]int{3, 9, 10, 27, 38, 43, 82}"
+            - input: "[]int{1}"
+              output: "[]int{1}"
+            - input: "[]int{}"
+              output: "[]int{}"
+          hints:
+            - title: "\U0001F914 Think about it"
+              content: >-
+                Merge sort splits the array in half, sorts each half, then merges the sorted halves.
+                What's the base case?
+            - title: "\U0001F4A1 Hint"
+              content: >-
+                Base case: slices of length 0 or 1 are already sorted. Split at midpoint, recursively
+                sort both halves, then merge using two pointers.
+            - title: "\U0001F527 Pattern"
+              content: |-
+                <pre>1. Base case: len <= 1, return copy
+                2. Split at mid = len/2
+                3. Recursively sort left and right halves
+                4. Merge: two pointers comparing elements
+                   - Take smaller element, advance that pointer
+                5. Append remaining elements from either half</pre>
+          solution: |-
+            func mergeSort(nums []int) []int {
+                if len(nums) <= 1 {
+                    result := make([]int, len(nums))
+                    copy(result, nums)
+                    return result
+                }
+                mid := len(nums) / 2
+                left := mergeSort(nums[:mid])
+                right := mergeSort(nums[mid:])
+                return mergeSorted(left, right)
+            }
+
+            func mergeSorted(left, right []int) []int {
+                result := make([]int, 0, len(left)+len(right))
+                i, j := 0, 0
+                for i < len(left) && j < len(right) {
+                    if left[i] <= right[j] {
+                        result = append(result, left[i])
+                        i++
+                    } else {
+                        result = append(result, right[j])
+                        j++
+                    }
+                }
+                result = append(result, left[i:]...)
+                result = append(result, right[j:]...)
+                return result
+            }
+          difficulty: 3
+          annotations:
+            - type: pattern
+              label: Divide and Conquer
+              text: "Split the problem in half, solve each half, combine results. This pattern gives O(n log n)."
+            - type: complexity
+              label: O(n log n) Time, O(n) Space
+              text: "log n levels of recursion, O(n) work per level. The merge step requires O(n) temporary space."
+            - type: idiom
+              label: Stable Sort
+              text: "Merge sort is stable (equal elements maintain their relative order). Go's sort.Stable uses a similar approach."
+        - id: v2
+          title: Implement Quick Select (Kth Smallest)
+          description: >-
+            Implement <code>kthSmallest(nums []int, k int) int</code> that finds the k-th smallest
+            element (1-indexed) using the quickselect algorithm. Average O(n) time.
+          functionSignature: func kthSmallest(nums []int, k int) int
+          testCases:
+            - input: "[]int{3, 1, 4, 1, 5, 9, 2, 6}, 3"
+              output: "2"
+            - input: "[]int{7, 2, 1}, 1"
+              output: "1"
+          hints:
+            - title: "\U0001F914 Think about it"
+              content: >-
+                Quickselect is like quicksort but only recurses into the partition containing the target.
+                How does this reduce from O(n log n) to O(n) average?
+            - title: "\U0001F4A1 Hint"
+              content: >-
+                Pick a pivot, partition around it. If pivot lands at position k-1, you're done. If k-1
+                is in the left partition, recurse left. Otherwise recurse right.
+            - title: "\U0001F527 Pattern"
+              content: |-
+                <pre>1. Pick pivot (last element)
+                2. Partition: elements < pivot go left
+                3. Place pivot at partition boundary
+                4. If pivot index == k-1: return pivot
+                5. If k-1 < pivot index: recurse left
+                6. Else: recurse right</pre>
+          solution: |-
+            func kthSmallest(nums []int, k int) int {
+                return quickSelect(nums, 0, len(nums)-1, k-1)
+            }
+
+            func quickSelect(nums []int, lo, hi, target int) int {
+                if lo == hi {
+                    return nums[lo]
+                }
+                pivot := nums[hi]
+                storeIdx := lo
+                for i := lo; i < hi; i++ {
+                    if nums[i] < pivot {
+                        nums[i], nums[storeIdx] = nums[storeIdx], nums[i]
+                        storeIdx++
+                    }
+                }
+                nums[storeIdx], nums[hi] = nums[hi], nums[storeIdx]
+
+                if storeIdx == target {
+                    return nums[storeIdx]
+                } else if target < storeIdx {
+                    return quickSelect(nums, lo, storeIdx-1, target)
+                }
+                return quickSelect(nums, storeIdx+1, hi, target)
+            }
+          difficulty: 3
+          annotations:
+            - type: pattern
+              label: Quickselect
+              text: "Like quicksort but only recurse into one partition. Average O(n), worst case O(n²)."
+            - type: complexity
+              label: Average O(n)
+              text: "n + n/2 + n/4 + ... = 2n. Only processing one partition each time gives linear average."
+        - id: v3
+          title: Sort a Linked List
+          description: >-
+            Implement <code>sortList(head *ListNode) *ListNode</code> that sorts a linked list in
+            O(n log n) time using merge sort. Split the list at the midpoint, sort both halves,
+            then merge.
+          functionSignature: func sortList(head *ListNode) *ListNode
+          testCases:
+            - input: "4 -> 2 -> 1 -> 3"
+              output: "1 -> 2 -> 3 -> 4"
+            - input: "nil"
+              output: "nil"
+          hints:
+            - title: "\U0001F914 Think about it"
+              content: "How do you find the midpoint of a linked list? How do you split it into two halves?"
+            - title: "\U0001F4A1 Hint"
+              content: >-
+                Use slow/fast pointers to find the middle. Break the list in two by setting the node
+                before mid's Next to nil. Recursively sort both halves, then merge.
+            - title: "\U0001F527 Pattern"
+              content: |-
+                <pre>1. Base case: nil or single node
+                2. Find mid with slow/fast pointers
+                3. Split: prev.Next = nil
+                4. Sort left half, sort right half
+                5. Merge two sorted lists (dummy head pattern)</pre>
+          solution: |-
+            func sortList(head *ListNode) *ListNode {
+                if head == nil || head.Next == nil {
+                    return head
+                }
+                slow, fast := head, head
+                var prev *ListNode
+                for fast != nil && fast.Next != nil {
+                    prev = slow
+                    slow = slow.Next
+                    fast = fast.Next.Next
+                }
+                prev.Next = nil
+
+                left := sortList(head)
+                right := sortList(slow)
+                return mergeLists(left, right)
+            }
+
+            func mergeLists(l1, l2 *ListNode) *ListNode {
+                dummy := &ListNode{}
+                curr := dummy
+                for l1 != nil && l2 != nil {
+                    if l1.Val <= l2.Val {
+                        curr.Next = l1
+                        l1 = l1.Next
+                    } else {
+                        curr.Next = l2
+                        l2 = l2.Next
+                    }
+                    curr = curr.Next
+                }
+                if l1 != nil {
+                    curr.Next = l1
+                } else {
+                    curr.Next = l2
+                }
+                return dummy.Next
+            }
+          difficulty: 3
+          annotations:
+            - type: pattern
+              label: Linked List Merge Sort
+              text: "Merge sort is ideal for linked lists — splitting at midpoint is O(n), merge is O(n), no random access needed."
+            - type: gotcha
+              label: Break the List
+              text: "You must set prev.Next = nil to actually split the list. Otherwise both halves share the same tail."
+        - id: v4
+          title: Merge K Sorted Slices
+          description: >-
+            Implement <code>mergeKSorted(lists [][]int) []int</code> that merges k sorted integer
+            slices into one sorted slice. Use a divide-and-conquer approach.
+          functionSignature: func mergeKSorted(lists [][]int) []int
+          testCases:
+            - input: "[][]int{{1,4,5},{1,3,4},{2,6}}"
+              output: "[]int{1,1,2,3,4,4,5,6}"
+            - input: "[][]int{}"
+              output: "[]int{}"
+          hints:
+            - title: "\U0001F914 Think about it"
+              content: "Merging two sorted slices is easy. How can you use that to merge k slices efficiently?"
+            - title: "\U0001F4A1 Hint"
+              content: >-
+                Pair up slices and merge each pair. Repeat until one slice remains. This is divide-and-conquer
+                on the list of lists.
+            - title: "\U0001F527 Pattern"
+              content: |-
+                <pre>1. Base case: 0 lists -> empty, 1 list -> return it
+                2. Split lists into left half and right half
+                3. Recursively merge each half
+                4. Merge the two resulting sorted slices</pre>
+          solution: |-
+            func mergeKSorted(lists [][]int) []int {
+                if len(lists) == 0 {
+                    return []int{}
+                }
+                if len(lists) == 1 {
+                    result := make([]int, len(lists[0]))
+                    copy(result, lists[0])
+                    return result
+                }
+                mid := len(lists) / 2
+                left := mergeKSorted(lists[:mid])
+                right := mergeKSorted(lists[mid:])
+                return mergeTwo(left, right)
+            }
+
+            func mergeTwo(a, b []int) []int {
+                result := make([]int, 0, len(a)+len(b))
+                i, j := 0, 0
+                for i < len(a) && j < len(b) {
+                    if a[i] <= b[j] {
+                        result = append(result, a[i])
+                        i++
+                    } else {
+                        result = append(result, b[j])
+                        j++
+                    }
+                }
+                result = append(result, a[i:]...)
+                result = append(result, b[j:]...)
+                return result
+            }
+          difficulty: 3
+          annotations:
+            - type: pattern
+              label: Divide and Conquer Merge
+              text: "Pair-wise merging gives O(n log k) — much better than merging one at a time which is O(nk)."
+            - type: complexity
+              label: O(n log k)
+              text: "n total elements across k lists. log k merge rounds, each touching all n elements."
+    - id: challenge_3
+      block: 3
+      difficulty: 3
+      concept: Heaps & Tries
+      docLinks:
+        - url: https://pkg.go.dev/container/heap
+          title: container/heap
+          note: heap interface and operations
+      variants:
+        - id: v1
+          title: Build a Min-Heap
+          description: >-
+            Implement a min-heap that satisfies Go's <code>heap.Interface</code>. Then write a
+            function <code>kSmallest(nums []int, k int) []int</code> that returns the k smallest
+            elements using your heap.
+          functionSignature: func kSmallest(nums []int, k int) []int
+          testCases:
+            - input: "[]int{5, 3, 8, 1, 2, 7}, 3"
+              output: "[]int{1, 2, 3}"
+            - input: "[]int{1}, 1"
+              output: "[]int{1}"
+          hints:
+            - title: "\U0001F914 Think about it"
+              content: >-
+                heap.Interface requires Len, Less, Swap, Push, and Pop. Which methods go on the value
+                receiver vs pointer receiver?
+            - title: "\U0001F4A1 Hint"
+              content: >-
+                Len, Less, Swap use value receiver. Push and Pop use pointer receiver because they modify
+                the slice. Push appends, Pop removes and returns the last element.
+            - title: "\U0001F527 Pattern"
+              content: |-
+                <pre>1. Define IntHeap as []int
+                2. Implement Len, Less (min: h[i] < h[j]), Swap
+                3. Push: append to *h
+                4. Pop: remove and return last element of *h
+                5. Init heap, push all nums, pop k times</pre>
+          solution: |-
+            type IntHeap []int
+
+            func (h IntHeap) Len() int           { return len(h) }
+            func (h IntHeap) Less(i, j int) bool { return h[i] < h[j] }
+            func (h IntHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
+
+            func (h *IntHeap) Push(x interface{}) {
+                *h = append(*h, x.(int))
+            }
+
+            func (h *IntHeap) Pop() interface{} {
+                old := *h
+                n := len(old)
+                x := old[n-1]
+                *h = old[:n-1]
+                return x
+            }
+
+            func kSmallest(nums []int, k int) []int {
+                h := &IntHeap{}
+                heap.Init(h)
+                for _, n := range nums {
+                    heap.Push(h, n)
+                }
+                result := make([]int, 0, k)
+                for i := 0; i < k && h.Len() > 0; i++ {
+                    result = append(result, heap.Pop(h).(int))
+                }
+                return result
+            }
+          difficulty: 3
+          annotations:
+            - type: idiom
+              label: heap.Interface
+              text: "Go's heap package works through an interface. You implement 5 methods and the package handles the rest."
+            - type: gotcha
+              label: Push/Pop Receivers
+              text: "Push and Pop MUST use pointer receivers (*IntHeap) because they modify the underlying slice."
+            - type: complexity
+              label: O(n + k log n)
+              text: "heap.Init is O(n). Each Pop is O(log n), done k times."
+        - id: v2
+          title: Top K Frequent Elements
+          description: >-
+            Write a function <code>topKFrequent(nums []int, k int) []int</code> that returns the
+            k most frequent elements. Use a map for counting and a heap for selection.
+          functionSignature: func topKFrequent(nums []int, k int) []int
+          testCases:
+            - input: "[]int{1,1,1,2,2,3}, 2"
+              output: "[]int{1, 2}"
+            - input: "[]int{1}, 1"
+              output: "[]int{1}"
+          hints:
+            - title: "\U0001F914 Think about it"
+              content: >-
+                First count frequencies, then find the top k. A max-heap on frequency lets you extract
+                the k most frequent efficiently.
+            - title: "\U0001F4A1 Hint"
+              content: >-
+                Count frequencies with a map. Build a max-heap of (num, freq) pairs. Pop k times.
+                For a max-heap, reverse the Less comparison.
+            - title: "\U0001F527 Pattern"
+              content: |-
+                <pre>1. Count frequencies: map[int]int
+                2. Build heap entries: {num, freq}
+                3. Max-heap: Less returns freq[i] > freq[j]
+                4. Init heap with all entries
+                5. Pop k times for the top k</pre>
+          solution: |-
+            type freqEntry struct {
+                num  int
+                freq int
+            }
+
+            type freqHeap []freqEntry
+
+            func (h freqHeap) Len() int           { return len(h) }
+            func (h freqHeap) Less(i, j int) bool { return h[i].freq > h[j].freq }
+            func (h freqHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
+
+            func (h *freqHeap) Push(x interface{}) {
+                *h = append(*h, x.(freqEntry))
+            }
+
+            func (h *freqHeap) Pop() interface{} {
+                old := *h
+                n := len(old)
+                x := old[n-1]
+                *h = old[:n-1]
+                return x
+            }
+
+            func topKFrequent(nums []int, k int) []int {
+                freq := make(map[int]int)
+                for _, n := range nums {
+                    freq[n]++
+                }
+
+                h := &freqHeap{}
+                for num, count := range freq {
+                    heap.Push(h, freqEntry{num, count})
+                }
+
+                result := make([]int, 0, k)
+                for i := 0; i < k; i++ {
+                    entry := heap.Pop(h).(freqEntry)
+                    result = append(result, entry.num)
+                }
+                return result
+            }
+          difficulty: 3
+          annotations:
+            - type: pattern
+              label: Frequency + Heap
+              text: "Count with a map, select with a heap. This two-phase pattern handles 'top K by frequency' problems."
+            - type: alternative
+              label: Bucket Sort
+              text: "An alternative O(n) approach uses bucket sort by frequency — index = frequency, value = list of nums."
+        - id: v3
+          title: Implement a Trie
+          description: >-
+            Implement a <code>Trie</code> struct with methods <code>Insert(word string)</code>,
+            <code>Search(word string) bool</code>, and <code>StartsWith(prefix string) bool</code>.
+            Search returns true only for exact matches. StartsWith returns true if any inserted word
+            begins with the prefix.
+          functionSignature: "type Trie struct { ... }"
+          testCases:
+            - input: "Insert(\"apple\"), Search(\"apple\")"
+              output: "true"
+            - input: "Search(\"app\")"
+              output: "false"
+            - input: "StartsWith(\"app\")"
+              output: "true"
+          hints:
+            - title: "\U0001F914 Think about it"
+              content: >-
+                Each node has a map of children (char -> node) and a boolean marking end-of-word.
+                How does this differ from Search vs StartsWith?
+            - title: "\U0001F4A1 Hint"
+              content: >-
+                Insert: traverse/create nodes for each character, mark last as end. Search: traverse
+                and check isEnd. StartsWith: traverse without checking isEnd.
+            - title: "\U0001F527 Pattern"
+              content: |-
+                <pre>1. TrieNode: children map[rune]*TrieNode, isEnd bool
+                2. Insert: for each char, create node if missing, move down
+                3. Mark final node as isEnd = true
+                4. Search: traverse, return node.isEnd
+                5. StartsWith: traverse, return true if traversal completes</pre>
+          solution: |-
+            type TrieNode struct {
+                children map[rune]*TrieNode
+                isEnd    bool
+            }
+
+            type Trie struct {
+                root *TrieNode
+            }
+
+            func NewTrie() *Trie {
+                return &Trie{root: &TrieNode{children: make(map[rune]*TrieNode)}}
+            }
+
+            func (t *Trie) Insert(word string) {
+                node := t.root
+                for _, ch := range word {
+                    if _, ok := node.children[ch]; !ok {
+                        node.children[ch] = &TrieNode{children: make(map[rune]*TrieNode)}
+                    }
+                    node = node.children[ch]
+                }
+                node.isEnd = true
+            }
+
+            func (t *Trie) Search(word string) bool {
+                node := t.root
+                for _, ch := range word {
+                    if _, ok := node.children[ch]; !ok {
+                        return false
+                    }
+                    node = node.children[ch]
+                }
+                return node.isEnd
+            }
+
+            func (t *Trie) StartsWith(prefix string) bool {
+                node := t.root
+                for _, ch := range prefix {
+                    if _, ok := node.children[ch]; !ok {
+                        return false
+                    }
+                    node = node.children[ch]
+                }
+                return true
+            }
+          difficulty: 3
+          annotations:
+            - type: pattern
+              label: Trie Structure
+              text: "Each node is a map of children. Traversal follows characters one at a time down the tree."
+            - type: complexity
+              label: O(m) Per Operation
+              text: "Insert, Search, and StartsWith all take O(m) time where m is the word/prefix length."
+            - type: idiom
+              label: Map Children
+              text: "Using map[rune]*TrieNode handles Unicode. For ASCII-only, a [26]*TrieNode array is faster."
+        - id: v4
+          title: Trie with Autocomplete
+          description: >-
+            Extend a Trie with an <code>Autocomplete(prefix string, limit int) []string</code> method
+            that returns up to <code>limit</code> words starting with the given prefix.
+          functionSignature: func (t *Trie) Autocomplete(prefix string, limit int) []string
+          testCases:
+            - input: "Insert: [\"apple\", \"app\", \"application\", \"banana\"], Autocomplete(\"app\", 2)"
+              output: "[\"app\", \"apple\"]"
+            - input: "Autocomplete(\"xyz\", 5)"
+              output: "[]"
+          hints:
+            - title: "\U0001F914 Think about it"
+              content: "First navigate to the prefix node, then collect all words reachable from that node."
+            - title: "\U0001F4A1 Hint"
+              content: >-
+                Use DFS from the prefix node, building up the current word as you go. When you hit an
+                isEnd node, add the word to results. Stop when you reach the limit.
+            - title: "\U0001F527 Pattern"
+              content: |-
+                <pre>1. Navigate to the prefix node (return empty if not found)
+                2. DFS from prefix node:
+                   - Track current path as a string
+                   - If isEnd, add to results
+                   - If results >= limit, stop
+                   - Recurse into each child</pre>
+          solution: |-
+            func (t *Trie) Autocomplete(prefix string, limit int) []string {
+                node := t.root
+                for _, ch := range prefix {
+                    if _, ok := node.children[ch]; !ok {
+                        return nil
+                    }
+                    node = node.children[ch]
+                }
+                var results []string
+                var dfs func(n *TrieNode, path string)
+                dfs = func(n *TrieNode, path string) {
+                    if len(results) >= limit {
+                        return
+                    }
+                    if n.isEnd {
+                        results = append(results, path)
+                    }
+                    for ch, child := range n.children {
+                        dfs(child, path+string(ch))
+                    }
+                }
+                dfs(node, prefix)
+                return results
+            }
+          difficulty: 3
+          annotations:
+            - type: pattern
+              label: DFS Collection
+              text: "DFS from a trie node collects all words in its subtree. Adding a limit makes it practical for autocomplete."
+            - type: gotcha
+              label: Map Iteration Order
+              text: "Go map iteration is random. For alphabetical autocomplete, sort the children keys first."

@@ -1,865 +1,619 @@
 conceptLinks:
-  Sets with Maps: "#lesson-sets"
-  Set Operations: "#lesson-set-ops"
-  Map as Set: "#lesson-maps-as-sets"
-  Diffing Collections: "#lesson-diffing"
+  Multiple Files: "#lesson-multiple-files"
+  Packages: "#lesson-packages"
+  Exported/Unexported: "#lesson-exported"
+  internal/ Directory: "#lesson-internal"
+  Project Layout: "#lesson-layout"
+  Circular Imports: "#lesson-circular"
 sharedContent: {}
 variants:
   warmups:
     - id: warmup_1
-      concept: Sets with Maps
+      concept: Multiple Files
       variants:
         - id: v1
-          title: Directory Diff
+          title: Split Code Across Files
           description: >-
-            Write a program that compares filenames in two string slices representing directories. Print files only in
-            A, only in B, and in both.
+            You have a program with a <code>Config</code> struct and a <code>Process</code> function. Show how to split
+            them into <code>config.go</code> and <code>process.go</code> in the same package. Write the code for both
+            files.
           hints:
-            - Build a <code>map[string]struct{}</code> from each slice, then iterate to find differences.
+            - Both files must have <code>package main</code> at the top.
+            - No imports are needed between files in the same package.
+            - <code>config.go</code> defines the struct, <code>process.go</code> uses it directly.
           solution: |-
-            func directoryDiff(a, b []string) (onlyA, onlyB, both []string) {
-                setA := make(map[string]struct{})
-                for _, f := range a {
-                    setA[f] = struct{}{}
-                }
-                setB := make(map[string]struct{})
-                for _, f := range b {
-                    setB[f] = struct{}{}
-                }
-                for f := range setA {
-                    if _, ok := setB[f]; ok {
-                        both = append(both, f)
-                    } else {
-                        onlyA = append(onlyA, f)
-                    }
-                }
-                for f := range setB {
-                    if _, ok := setA[f]; !ok {
-                        onlyB = append(onlyB, f)
-                    }
-                }
-                return
+            // config.go
+            package main
+
+            type Config struct {
+                Name string
+                Port int
+            }
+
+            func LoadConfig() *Config {
+                return &Config{Name: "app", Port: 8080}
+            }
+
+            // process.go
+            package main
+
+            import "fmt"
+
+            func Process(cfg *Config) {
+                fmt.Printf("Processing %s on port %d\n", cfg.Name, cfg.Port)
             }
           annotations:
             - type: idiom
-              label: Empty Struct Set
-              text: Use map[string]struct{}{} as a set. The empty struct uses zero bytes of storage.
-            - type: complexity
-              label: O(n + m)
-              text: Building both sets and diffing them is linear in the total number of elements.
-        - id: v2
-          title: Package Import Diff
-          description: Given two slices of Go import paths, find which imports are unique to each file and which are shared.
-          hints:
-            - Use <code>map[string]struct{}</code> to build sets from each import list, then compare.
-          solution: |-
-            func importDiff(fileA, fileB []string) (onlyA, onlyB, shared []string) {
-                setA := make(map[string]struct{})
-                for _, imp := range fileA {
-                    setA[imp] = struct{}{}
-                }
-                setB := make(map[string]struct{})
-                for _, imp := range fileB {
-                    setB[imp] = struct{}{}
-                }
-                for imp := range setA {
-                    if _, ok := setB[imp]; ok {
-                        shared = append(shared, imp)
-                    } else {
-                        onlyA = append(onlyA, imp)
-                    }
-                }
-                for imp := range setB {
-                    if _, ok := setA[imp]; !ok {
-                        onlyB = append(onlyB, imp)
-                    }
-                }
-                return
-            }
-          annotations:
-            - type: idiom
-              label: Comma-Ok Pattern
-              text: Use _, ok := m[key] to check membership without caring about the value.
+              label: Same Package
+              text: >-
+                Files in the same directory with the same <code>package</code> declaration share everything
+                automatically. No imports needed.
             - type: gotcha
-              label: Map Iteration Order
-              text: Map iteration order is randomized in Go. Sort results if you need deterministic output.
-        - id: v3
-          title: Config Key Diff
+              label: go run .
+              text: >-
+                Use <code>go run .</code> to compile all files in the directory. <code>go run main.go</code> alone won't
+                include other files.
+        - id: v2
+          title: When to Split Files
           description: >-
-            Given two <code>map[string]string</code> representing config files, find keys that are only in the first,
-            only in the second, and in both.
+            You have a <code>main.go</code> file with 400 lines containing a <code>Server</code> struct, an
+            <code>App</code> struct, and their methods. Describe how you'd split this and write the package declaration
+            for each file.
           hints:
-            - You already have maps -- just iterate the keys and check for membership in the other map.
+            - "Split by type: <code>server.go</code> for Server, <code>app.go</code> for App."
+            - Keep <code>main()</code> in <code>main.go</code> — it's the entry point.
+            - All files use <code>package main</code>.
           solution: |-
-            func configDiff(a, b map[string]string) (onlyA, onlyB, both []string) {
-                for k := range a {
-                    if _, ok := b[k]; ok {
-                        both = append(both, k)
-                    } else {
-                        onlyA = append(onlyA, k)
-                    }
-                }
-                for k := range b {
-                    if _, ok := a[k]; !ok {
-                        onlyB = append(onlyB, k)
-                    }
-                }
-                return
+            // main.go — entry point only
+            package main
+
+            func main() {
+                app := NewApp()
+                srv := NewServer(app)
+                srv.Start()
+            }
+
+            // app.go — App type and its methods
+            package main
+
+            type App struct { /* fields */ }
+            func NewApp() *App { return &App{} }
+
+            // server.go — Server type and its methods
+            package main
+
+            type Server struct { app *App }
+            func NewServer(app *App) *Server { return &Server{app: app} }
+            func (s *Server) Start() { /* ... */ }
+          annotations:
+            - type: idiom
+              label: One Type Per File
+              text: >-
+                A common Go convention: one major type and its methods per file, named after the type
+                (<code>server.go</code>, <code>app.go</code>).
+            - type: pattern
+              label: Thin main()
+              text: >-
+                Keep <code>main()</code> thin — just create objects and wire them together. Business logic belongs in
+                other files.
+        - id: v3
+          title: Run Multi-File Program
+          description: >-
+            You have <code>main.go</code>, <code>config.go</code>, and <code>helpers.go</code> in the same directory,
+            all with <code>package main</code>. Write the command to compile and run all of them.
+          hints:
+            - <code>go run .</code> compiles all <code>.go</code> files in the current directory.
+            - "Alternatively: <code>go run main.go config.go helpers.go</code>."
+            - <code>go build .</code> to compile into a binary.
+          solution: |-
+            // Run all files in current directory:
+            // $ go run .
+
+            // Or explicitly list files:
+            // $ go run main.go config.go helpers.go
+
+            // Build a binary:
+            // $ go build -o myapp .
+            // $ ./myapp
+          annotations:
+            - type: idiom
+              label: go run .
+              text: >-
+                The dot <code>.</code> tells Go to compile all Go files in the current directory. This is the standard
+                way to run multi-file programs.
+            - type: gotcha
+              label: go run main.go
+              text: >-
+                Running just <code>go run main.go</code> won't include other files. You'll get "undefined" errors for
+                types and functions in other files.
+    - id: warmup_2
+      concept: Packages
+      variants:
+        - id: v1
+          title: Create a Package
+          description: >-
+            Create a <code>utils</code> package in a <code>utils/</code> directory with a function <code>Greet(name
+            string) string</code>. Import and use it from <code>main.go</code>.
+          hints:
+            - File <code>utils/utils.go</code> with <code>package utils</code>.
+            - "Function must be uppercase to be exported: <code>func Greet</code>."
+            - "Import with the module path: <code>import \"myproject/utils\"</code>."
+          solution: |-
+            // utils/utils.go
+            package utils
+
+            import "fmt"
+
+            func Greet(name string) string {
+                return fmt.Sprintf("Hello, %s!", name)
+            }
+
+            // main.go
+            package main
+
+            import (
+                "fmt"
+                "myproject/utils"
+            )
+
+            func main() {
+                msg := utils.Greet("Alice")
+                fmt.Println(msg)
             }
           annotations:
             - type: idiom
-              label: Range over Map
-              text: for k := range m iterates over keys only, ignoring values.
-            - type: alternative
-              label: Sorted Output
-              text: Use sort.Strings() on results if you need deterministic ordering for tests.
-        - id: v4
-          title: Tag Diff
+              label: Package = Directory
+              text: >-
+                In Go, each directory is one package. The package name is declared in the source file, not the directory
+                name (though they usually match).
+            - type: idiom
+              label: Import Path
+              text: >-
+                The import path is your module name (from <code>go.mod</code>) plus the directory path. Not the file
+                path.
+        - id: v2
+          title: Package with Multiple Functions
           description: >-
-            Given two slices of tag strings (e.g., blog post tags), return tags that were added, removed, and unchanged
-            between the old and new versions.
+            Create a <code>math</code> package with two files: <code>add.go</code> with <code>Add(a, b int) int</code>
+            and <code>multiply.go</code> with <code>Multiply(a, b int) int</code>. Show the directory structure.
           hints:
-            - Build sets from both slices. Tags in new but not old are added; tags in old but not new are removed.
+            - Both files use <code>package math</code>.
+            - Both functions are uppercase (exported).
+            - "From main: <code>math.Add(1, 2)</code> and <code>math.Multiply(3, 4)</code>."
           solution: |-
-            func tagDiff(oldTags, newTags []string) (added, removed, unchanged []string) {
-                oldSet := make(map[string]struct{})
-                for _, t := range oldTags {
-                    oldSet[t] = struct{}{}
+            // Directory structure:
+            // myproject/
+            // ├── go.mod
+            // ├── main.go
+            // └── math/
+            //     ├── add.go
+            //     └── multiply.go
+
+            // math/add.go
+            package math
+
+            func Add(a, b int) int {
+                return a + b
+            }
+
+            // math/multiply.go
+            package math
+
+            func Multiply(a, b int) int {
+                return a * b
+            }
+
+            // main.go
+            package main
+
+            import (
+                "fmt"
+                "myproject/math"
+            )
+
+            func main() {
+                fmt.Println(math.Add(1, 2))
+                fmt.Println(math.Multiply(3, 4))
+            }
+          annotations:
+            - type: idiom
+              label: Multi-File Package
+              text: A package can span multiple files. The compiler merges all files in the same directory into one package.
+        - id: v3
+          title: Nested Packages
+          description: >-
+            Show the import path for a file at <code>internal/database/postgres.go</code> in a module named
+            <code>github.com/you/myapp</code>.
+          hints:
+            - The import path follows the directory structure from the module root.
+            - "Module name + directory: <code>github.com/you/myapp/internal/database</code>."
+            - The package declaration in the file would be <code>package database</code>.
+          solution: |-
+            // internal/database/postgres.go
+            package database
+
+            type DB struct { /* ... */ }
+
+            func Connect(dsn string) (*DB, error) {
+                // ...
+                return &DB{}, nil
+            }
+
+            // Import from within the module:
+            import "github.com/you/myapp/internal/database"
+
+            db, err := database.Connect("postgres://...")
+          annotations:
+            - type: idiom
+              label: Import = Module + Dir
+              text: >-
+                Import paths are always the module name from <code>go.mod</code> concatenated with the directory path
+                from the module root.
+            - type: gotcha
+              label: Package vs Directory Name
+              text: >-
+                The package name and directory name don't have to match, but by convention they should. The package
+                declaration in the file is what matters for code references.
+    - id: warmup_3
+      concept: Exported/Unexported
+      variants:
+        - id: v1
+          title: Identify Exported Names
+          description: >-
+            Given a package with <code>Config</code>, <code>loadDefaults</code>, <code>Port</code>, and
+            <code>httpClient</code>, identify which are exported (visible outside the package) and which are unexported.
+          hints:
+            - Uppercase first letter = exported.
+            - Lowercase first letter = unexported.
+            - This applies to types, functions, variables, and constants.
+          solution: |-
+            package server
+
+            // Exported — visible from other packages
+            type Config struct{}     // ✓ Uppercase C
+            var Port = 8080          // ✓ Uppercase P
+
+            // Unexported — only visible within this package
+            func loadDefaults() {}   // ✗ Lowercase l
+            var httpClient = &http.Client{} // ✗ Lowercase h
+          annotations:
+            - type: idiom
+              label: Visibility Rule
+              text: >-
+                Go's visibility is the simplest of any language: uppercase = public, lowercase = private. No keywords
+                needed.
+            - type: gotcha
+              label: Struct Fields Too
+              text: >-
+                The uppercase/lowercase rule applies to struct fields as well. Lowercase fields won't be visible in JSON
+                encoding or from other packages.
+        - id: v2
+          title: Exported Struct with Unexported Fields
+          description: >-
+            Create an exported <code>User</code> struct where <code>Name</code> is exported but <code>password</code> is
+            unexported. Write a constructor <code>NewUser</code> that sets both fields.
+          hints:
+            - "Exported type: <code>type User struct</code> (uppercase U)."
+            - "Unexported field: <code>password string</code> (lowercase p)."
+            - The constructor can set unexported fields because it's in the same package.
+          solution: |-
+            package auth
+
+            type User struct {
+                Name     string  // Exported — other packages can read this
+                password string  // Unexported — only this package can access
+            }
+
+            func NewUser(name, password string) *User {
+                return &User{
+                    Name:     name,
+                    password: password,
                 }
-                newSet := make(map[string]struct{})
-                for _, t := range newTags {
-                    newSet[t] = struct{}{}
-                }
-                for t := range newSet {
-                    if _, ok := oldSet[t]; ok {
-                        unchanged = append(unchanged, t)
-                    } else {
-                        added = append(added, t)
-                    }
-                }
-                for t := range oldSet {
-                    if _, ok := newSet[t]; !ok {
-                        removed = append(removed, t)
-                    }
-                }
-                return
+            }
+
+            func (u *User) CheckPassword(attempt string) bool {
+                return u.password == attempt
             }
           annotations:
             - type: pattern
-              label: Before/After Diff
+              label: Encapsulation
               text: >-
-                The before/after diff pattern is fundamental: build sets, then classify items as added, removed, or
-                unchanged.
+                Unexported fields + exported methods is Go's encapsulation pattern. External code can't access
+                <code>password</code> directly but can use <code>CheckPassword()</code>.
+            - type: idiom
+              label: Constructor Required
+              text: >-
+                If a struct has unexported fields, external code can't initialize them. A constructor like
+                <code>NewUser()</code> is the only way to create a complete instance.
+        - id: v3
+          title: Unexported Interface Implementation
+          description: >-
+            Create an unexported <code>storage</code> interface with a <code>Save(data []byte) error</code> method.
+            Create an exported <code>NewFileStorage</code> function that returns the interface.
+          hints:
+            - "Lowercase interface name: <code>type storage interface</code>."
+            - "The implementation struct can also be unexported: <code>type fileStorage struct</code>."
+            - The constructor returns the interface type, hiding the implementation.
+          solution: |-
+            package store
+
+            // Unexported interface — implementation detail
+            type storage interface {
+                Save(data []byte) error
+            }
+
+            // Unexported implementation
+            type fileStorage struct {
+                path string
+            }
+
+            func (f *fileStorage) Save(data []byte) error {
+                return os.WriteFile(f.path, data, 0644)
+            }
+
+            // Exported constructor — returns the unexported interface
+            func NewFileStorage(path string) storage {
+                return &fileStorage{path: path}
+            }
+          annotations:
+            - type: pattern
+              label: Hidden Implementation
+              text: >-
+                Returning an unexported interface from an exported constructor hides the implementation completely.
+                Callers only see the interface methods.
             - type: gotcha
-              label: Duplicate Tags
-              text: Using a set automatically deduplicates. If duplicates matter, use a map[string]int count instead.
-    - id: warmup_2
-      concept: Set Operations
+              label: Unexported Return Type
+              text: >-
+                Go allows exported functions to return unexported types. The caller can use the value but can't name the
+                type in their own code.
+    - id: warmup_4
+      concept: internal/ Directory
       variants:
         - id: v1
-          title: Find Common Words
-          description: Given two string slices of words, return a slice of words that appear in both lists.
-          hints:
-            - Build a set from the first slice, then check each word in the second slice against it.
-          solution: |-
-            func findCommon(a, b []string) []string {
-                set := make(map[string]struct{})
-                for _, w := range a {
-                    set[w] = struct{}{}
-                }
-                var common []string
-                seen := make(map[string]struct{})
-                for _, w := range b {
-                    if _, ok := set[w]; ok {
-                        if _, dup := seen[w]; !dup {
-                            common = append(common, w)
-                            seen[w] = struct{}{}
-                        }
-                    }
-                }
-                return common
-            }
-          annotations:
-            - type: idiom
-              label: Set Intersection
-              text: Intersection means items in both sets. Build one set, check the other against it.
-            - type: gotcha
-              label: Duplicates in Output
-              text: Without a 'seen' set, duplicates in the second slice could appear multiple times in the result.
-        - id: v2
-          title: Common Permissions
+          title: internal/ Access Rules
           description: >-
-            Given two slices of permission strings (e.g., <code>["read", "write", "admin"]</code>), return the
-            permissions that both users share.
+            Given a module <code>github.com/you/myapp</code> with an <code>internal/auth</code> package, which of these
+            can import it: <code>main.go</code> (root), <code>cmd/server/main.go</code>, and an external package that
+            depends on your module?
           hints:
-            - >-
-              Build a <code>map[string]struct{}</code> from user A's permissions. Check each of user B's permissions
-              against it.
+            - <code>internal/</code> is accessible to the parent directory tree.
+            - Both <code>main.go</code> and <code>cmd/server/main.go</code> are within the module.
+            - External packages CANNOT import anything under <code>internal/</code>.
           solution: |-
-            func commonPermissions(userA, userB []string) []string {
-                setA := make(map[string]struct{})
-                for _, p := range userA {
-                    setA[p] = struct{}{}
-                }
-                var shared []string
-                for _, p := range userB {
-                    if _, ok := setA[p]; ok {
-                        shared = append(shared, p)
-                    }
-                }
-                return shared
-            }
+            // Directory structure:
+            // github.com/you/myapp/
+            // ├── main.go                  ✓ Can import internal/auth
+            // ├── cmd/server/main.go       ✓ Can import internal/auth
+            // └── internal/auth/auth.go    Package being imported
+
+            // External module:
+            // github.com/other/project/
+            // └── main.go                  ✗ CANNOT import internal/auth
+            //                              Compiler error: use of internal package not allowed
           annotations:
             - type: idiom
-              label: Set Membership
-              text: Checking if _, ok := set[item]; ok is the standard Go pattern for set membership.
-            - type: complexity
-              label: O(n + m)
-              text: Building the first set is O(n), checking each item of the second is O(m). Total is linear.
+              label: internal/ Convention
+              text: >-
+                <code>internal/</code> is the only magic directory name in Go. The compiler enforces that only code in
+                the parent tree can import from it.
+            - type: pattern
+              label: API Boundary
+              text: >-
+                Use <code>internal/</code> for implementation details you want to refactor freely. Your public API stays
+                stable while internals can change.
+        - id: v2
+          title: Move Code to internal/
+          description: >-
+            You have a <code>database</code> package that external users shouldn't depend on. Show the directory
+            structure before and after moving it to <code>internal/</code>, and update the import path.
+          hints:
+            - "Before: <code>database/db.go</code> → import <code>myapp/database</code>."
+            - "After: <code>internal/database/db.go</code> → import <code>myapp/internal/database</code>."
+            - The package declaration stays <code>package database</code>.
+          solution: |-
+            // BEFORE:
+            // myapp/
+            // ├── database/
+            // │   └── db.go          package database
+            // └── main.go            import "myapp/database"
+
+            // AFTER:
+            // myapp/
+            // ├── internal/
+            // │   └── database/
+            // │       └── db.go      package database (unchanged)
+            // └── main.go            import "myapp/internal/database"
+
+            // The only change in code is the import path:
+            import "myapp/internal/database"  // was: "myapp/database"
+          annotations:
+            - type: idiom
+              label: Refactoring to internal/
+              text: >-
+                Moving packages to <code>internal/</code> only changes import paths. The package declaration and code
+                remain the same.
         - id: v3
-          title: Shared Dependencies
-          description: Given two slices representing Go module dependencies, return the modules both projects depend on.
+          title: Nested internal/ Directories
+          description: >-
+            In a module with <code>pkg/server/internal/handler</code>, who can import the <code>handler</code> package?
+            Can <code>pkg/server/server.go</code>? Can <code>main.go</code> at the root?
           hints:
-            - This is a set intersection. Build a set from one list, check the other.
+            - <code>internal/</code> restricts access to its parent directory tree.
+            - The parent of <code>pkg/server/internal/</code> is <code>pkg/server/</code>.
+            - Code above <code>pkg/server/</code> cannot access it.
           solution: |-
-            func sharedDeps(projA, projB []string) []string {
-                setA := make(map[string]struct{})
-                for _, dep := range projA {
-                    setA[dep] = struct{}{}
-                }
-                var shared []string
-                for _, dep := range projB {
-                    if _, ok := setA[dep]; ok {
-                        shared = append(shared, dep)
-                    }
-                }
-                return shared
-            }
-          annotations:
-            - type: stdlib
-              label: slices Package
-              text: Go 1.21+ has slices.Contains(), but a map set is still faster for repeated lookups.
-            - type: complexity
-              label: O(n + m)
-              text: Map lookup is O(1) amortized, making the total operation linear.
-        - id: v4
-          title: Common Students
-          description: Given two string slices representing class rosters, find students enrolled in both classes.
-          hints:
-            - Build a set from the first roster. Iterate over the second roster and collect matches.
-          solution: |-
-            func commonStudents(classA, classB []string) []string {
-                enrolled := make(map[string]struct{})
-                for _, s := range classA {
-                    enrolled[s] = struct{}{}
-                }
-                var both []string
-                for _, s := range classB {
-                    if _, ok := enrolled[s]; ok {
-                        both = append(both, s)
-                    }
-                }
-                return both
-            }
+            // Directory structure:
+            // myapp/
+            // ├── main.go                          ✗ Cannot import handler
+            // ├── pkg/
+            // │   ├── client/client.go             ✗ Cannot import handler
+            // │   └── server/
+            // │       ├── server.go                ✓ CAN import handler
+            // │       └── internal/
+            // │           └── handler/handler.go   The restricted package
+
+            // pkg/server/server.go:
+            import "myapp/pkg/server/internal/handler"  // ✓ Works
+
+            // main.go:
+            import "myapp/pkg/server/internal/handler"  // ✗ Compiler error
           annotations:
             - type: idiom
-              label: Empty Struct Value
-              text: struct{}{} is the idiomatic zero-cost value for Go sets since it allocates no memory.
-            - type: alternative
-              label: map[string]bool
-              text: Some Go code uses map[string]bool for readability (if set[key]), but struct{} saves memory.
+              label: Scoped internal/
+              text: >-
+                <code>internal/</code> scopes to its parent. You can have multiple <code>internal/</code> directories at
+                different levels, each with different access scopes.
   challenges:
     - id: challenge_1
-      block: 1
-      difficulty: 2
-      concept: Set Operations
+      concept: Project Layout
       docLinks:
-        - url: https://go.dev/blog/maps
-          title: "Go Blog: Go maps in action"
-          note: maps as sets (map[T]struct{})
-        - url: https://go.dev/ref/spec#Map_types
-          title: "Go Spec: Map types"
-          note: map type declarations
+        - url: https://go.dev/doc/modules/layout
+          title: "Go Docs: Module layout"
+          note: organizing Go modules
+        - url: https://pkg.go.dev/cmd/go#hdr-Internal_Directories
+          title: "Go Command: internal directories"
+          note: access control via internal/
       variants:
         - id: v1
-          title: Set Calculator
+          title: Design CLI Tool Layout
           description: >-
-            Write a function that performs set operations (union, intersection, difference) on two string slices. The
-            operation is specified as a string parameter.
-          functionSignature: func setCalc(op string, a, b []string) []string
-          testCases:
-            - input: "\"union\", []string{\"a\", \"b\", \"c\"}, []string{\"b\", \"c\", \"d\"}"
-              output: "[\"a\", \"b\", \"c\", \"d\"]"
-            - input: "\"intersect\", []string{\"a\", \"b\", \"c\"}, []string{\"b\", \"c\", \"d\"}"
-              output: "[\"b\", \"c\"]"
-            - input: "\"diff\", []string{\"a\", \"b\", \"c\"}, []string{\"b\", \"c\", \"d\"}"
-              output: "[\"a\"]"
+            Design the directory structure for a CLI tool called <code>taskctl</code> that has: a main entry point,
+            command handlers (list, add, delete), a config loader, and a task storage layer. Show the files and their
+            package declarations.
           hints:
-            - title: 🤔 Think about it
-              content: >-
-                What does each set operation mean? Union = everything from both. Intersection = only shared. Difference
-                = in A but not B.
-            - title: 💡 Hint
-              content: >-
-                Build map sets from both slices. Use a switch statement on the operation string. For union, combine both
-                sets. For intersect, find common keys. For diff, find keys only in A.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>1. Build setA and setB from slices
-                2. Switch on op:
-                   - union: add all from A, then all from B not in A
-                   - intersect: items in A that are also in B
-                   - diff: items in A that are NOT in B
-                3. Return result slice</pre>
+            - Use <code>cmd/</code> for command definitions or keep it flat for small CLIs.
+            - Put storage in <code>internal/</code> to hide the implementation.
+            - Config can be in the main package for simple tools.
           solution: |-
-            func setCalc(op string, a, b []string) []string {
-                setA := make(map[string]struct{})
-                for _, s := range a {
-                    setA[s] = struct{}{}
-                }
-                setB := make(map[string]struct{})
-                for _, s := range b {
-                    setB[s] = struct{}{}
-                }
+            // taskctl/
+            // ├── go.mod              module github.com/you/taskctl
+            // ├── main.go             package main — entry point, wires everything
+            // ├── commands.go         package main — list, add, delete handlers
+            // ├── config.go           package main — config loading
+            // └── internal/
+            //     └── store/
+            //         └── store.go    package store — task persistence
 
-                var result []string
-                switch op {
-                case "union":
-                    for s := range setA {
-                        result = append(result, s)
-                    }
-                    for s := range setB {
-                        if _, ok := setA[s]; !ok {
-                            result = append(result, s)
-                        }
-                    }
-                case "intersect":
-                    for s := range setA {
-                        if _, ok := setB[s]; ok {
-                            result = append(result, s)
-                        }
-                    }
-                case "diff":
-                    for s := range setA {
-                        if _, ok := setB[s]; !ok {
-                            result = append(result, s)
-                        }
-                    }
-                }
-                sort.Strings(result)
-                return result
-            }
-          difficulty: 2
-          annotations:
-            - type: idiom
-              label: Switch on Strings
-              text: Go's switch statement works cleanly on strings without needing break statements.
-            - type: complexity
-              label: O(n + m)
-              text: Each operation iterates through at most both sets, giving linear time complexity.
-        - id: v2
-          title: Permission Calculator
-          description: >-
-            Write a function that combines or restricts permission sets. Given an operation (<code>"grant"</code> for
-            union, <code>"restrict"</code> for intersection, <code>"revoke"</code> for difference), compute the
-            resulting permission set.
-          functionSignature: func permCalc(op string, current, modifier []string) []string
-          testCases:
-            - input: "\"grant\", []string{\"read\", \"write\"}, []string{\"write\", \"admin\"}"
-              output: "[\"admin\", \"read\", \"write\"]"
-            - input: "\"restrict\", []string{\"read\", \"write\", \"admin\"}, []string{\"read\", \"write\"}"
-              output: "[\"read\", \"write\"]"
-            - input: "\"revoke\", []string{\"read\", \"write\", \"admin\"}, []string{\"admin\"}"
-              output: "[\"read\", \"write\"]"
-          hints:
-            - title: 🤔 Think about it
-              content: >-
-                Grant adds new permissions (union). Restrict keeps only allowed permissions (intersection). Revoke
-                removes specific permissions (difference).
-            - title: 💡 Hint
-              content: >-
-                Map each operation name to its set operation. Build sets from both slices, then apply the appropriate
-                logic.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>1. Build sets from current and modifier slices
-                2. Switch on op:
-                   - "grant": union of current + modifier
-                   - "restrict": intersection of current and modifier
-                   - "revoke": difference of current minus modifier
-                3. Sort and return</pre>
-          solution: |-
-            func permCalc(op string, current, modifier []string) []string {
-                cur := make(map[string]struct{})
-                for _, p := range current {
-                    cur[p] = struct{}{}
-                }
-                mod := make(map[string]struct{})
-                for _, p := range modifier {
-                    mod[p] = struct{}{}
-                }
+            // main.go
+            package main
 
-                var result []string
-                switch op {
-                case "grant":
-                    for p := range cur {
-                        result = append(result, p)
-                    }
-                    for p := range mod {
-                        if _, ok := cur[p]; !ok {
-                            result = append(result, p)
-                        }
-                    }
-                case "restrict":
-                    for p := range cur {
-                        if _, ok := mod[p]; ok {
-                            result = append(result, p)
-                        }
-                    }
-                case "revoke":
-                    for p := range cur {
-                        if _, ok := mod[p]; !ok {
-                            result = append(result, p)
-                        }
-                    }
-                }
-                sort.Strings(result)
-                return result
+            func main() {
+                cfg := LoadConfig()
+                store := store.New(cfg.DBPath)
+                runCLI(store)
             }
-          difficulty: 2
+
+            // internal/store/store.go
+            package store
+
+            type Store struct { path string }
+            func New(path string) *Store { return &Store{path: path} }
+            func (s *Store) List() ([]Task, error) { /* ... */ }
           annotations:
             - type: pattern
-              label: Domain-Specific Names
-              text: Mapping domain concepts (grant/revoke) to set operations makes code more readable in context.
-            - type: idiom
-              label: Sorted Output
-              text: Sorting the result ensures deterministic output, essential for testing.
-        - id: v3
-          title: Feature Flag Manager
-          description: >-
-            Write a function that manages feature flags using set operations. Supports <code>"enable"</code> (union),
-            <code>"common"</code> (intersection), and <code>"disable"</code> (difference).
-          functionSignature: func featureFlags(op string, active, targets []string) []string
-          testCases:
-            - input: "\"enable\", []string{\"dark-mode\", \"beta-ui\"}, []string{\"beta-ui\", \"new-api\"}"
-              output: "[\"beta-ui\", \"dark-mode\", \"new-api\"]"
-            - input: "\"common\", []string{\"dark-mode\", \"beta-ui\", \"new-api\"}, []string{\"beta-ui\", \"new-api\"}"
-              output: "[\"beta-ui\", \"new-api\"]"
-            - input: "\"disable\", []string{\"dark-mode\", \"beta-ui\", \"new-api\"}, []string{\"beta-ui\"}"
-              output: "[\"dark-mode\", \"new-api\"]"
-          hints:
-            - title: 🤔 Think about it
-              content: >-
-                Enable adds flags (union), common finds shared flags (intersection), disable removes flags (difference).
-                Which set operation matches each?
-            - title: 💡 Hint
-              content: Build sets from both slices. Switch on the operation and apply the matching set operation.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>1. Build map sets from active and targets
-                2. Switch on op:
-                   - enable: union
-                   - common: intersection
-                   - disable: difference
-                3. Collect, sort, return</pre>
-          solution: |-
-            func featureFlags(op string, active, targets []string) []string {
-                actSet := make(map[string]struct{})
-                for _, f := range active {
-                    actSet[f] = struct{}{}
-                }
-                tgtSet := make(map[string]struct{})
-                for _, f := range targets {
-                    tgtSet[f] = struct{}{}
-                }
-
-                var result []string
-                switch op {
-                case "enable":
-                    for f := range actSet {
-                        result = append(result, f)
-                    }
-                    for f := range tgtSet {
-                        if _, ok := actSet[f]; !ok {
-                            result = append(result, f)
-                        }
-                    }
-                case "common":
-                    for f := range actSet {
-                        if _, ok := tgtSet[f]; ok {
-                            result = append(result, f)
-                        }
-                    }
-                case "disable":
-                    for f := range actSet {
-                        if _, ok := tgtSet[f]; !ok {
-                            result = append(result, f)
-                        }
-                    }
-                }
-                sort.Strings(result)
-                return result
-            }
-          difficulty: 2
-          annotations:
-            - type: idiom
-              label: Set as Map
-              text: Go has no built-in set type. map[T]struct{} is the canonical implementation.
-            - type: alternative
-              label: Generic Set
-              text: With Go generics, you could write a reusable Set[T comparable] type for all three operations.
-        - id: v4
-          title: Ingredient Calculator
-          description: >-
-            Write a function for recipe management. Given an operation (<code>"combine"</code> for union,
-            <code>"overlap"</code> for intersection, <code>"missing"</code> for difference), calculate the result
-            between two ingredient lists.
-          functionSignature: func ingredientCalc(op string, recipe, pantry []string) []string
-          testCases:
-            - input: "\"combine\", []string{\"flour\", \"sugar\"}, []string{\"sugar\", \"butter\"}"
-              output: "[\"butter\", \"flour\", \"sugar\"]"
-            - input: "\"overlap\", []string{\"flour\", \"sugar\", \"eggs\"}, []string{\"sugar\", \"eggs\", \"milk\"}"
-              output: "[\"eggs\", \"sugar\"]"
-            - input: "\"missing\", []string{\"flour\", \"sugar\", \"eggs\"}, []string{\"sugar\"}"
-              output: "[\"eggs\", \"flour\"]"
-          hints:
-            - title: 🤔 Think about it
-              content: >-
-                Combine merges all ingredients (union). Overlap finds what you already have (intersection). Missing
-                finds what you need to buy (difference).
-            - title: 💡 Hint
-              content: Build sets from both slices. Apply the matching set operation based on the op string.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>1. Build map sets from recipe and pantry
-                2. Switch on op:
-                   - combine: all unique items from both
-                   - overlap: items in both
-                   - missing: items in recipe but not pantry
-                3. Sort and return</pre>
-          solution: |-
-            func ingredientCalc(op string, recipe, pantry []string) []string {
-                rSet := make(map[string]struct{})
-                for _, i := range recipe {
-                    rSet[i] = struct{}{}
-                }
-                pSet := make(map[string]struct{})
-                for _, i := range pantry {
-                    pSet[i] = struct{}{}
-                }
-
-                var result []string
-                switch op {
-                case "combine":
-                    for i := range rSet {
-                        result = append(result, i)
-                    }
-                    for i := range pSet {
-                        if _, ok := rSet[i]; !ok {
-                            result = append(result, i)
-                        }
-                    }
-                case "overlap":
-                    for i := range rSet {
-                        if _, ok := pSet[i]; ok {
-                            result = append(result, i)
-                        }
-                    }
-                case "missing":
-                    for i := range rSet {
-                        if _, ok := pSet[i]; !ok {
-                            result = append(result, i)
-                        }
-                    }
-                }
-                sort.Strings(result)
-                return result
-            }
-          difficulty: 2
-          annotations:
-            - type: gotcha
-              label: Nil Slice vs Empty
-              text: If no items match, result is nil. Use make([]string, 0) if you need a non-nil empty slice for JSON.
-            - type: complexity
-              label: O((n+m) log(n+m))
-              text: Set operations are O(n+m) but the final sort adds O(k log k) where k is the result size.
-    - id: challenge_2
-      block: 2
-      difficulty: 3
-      concept: Diffing Collections
-      docLinks:
-        - url: https://go.dev/blog/maps
-          title: "Go Blog: Go maps in action"
-          note: membership testing with maps
-        - url: https://pkg.go.dev/sort#Strings
-          title: Package sort.Strings
-          note: sorting result slices
-      variants:
-        - id: v1
-          title: Change Detector
-          description: >-
-            Write a function that takes two string slices representing before/after snapshots and returns three slices:
-            added items, removed items, and unchanged items.
-          functionSignature: func detectChanges(before, after []string) (added, removed, unchanged []string)
-          testCases:
-            - input: "[]string{\"a.txt\", \"b.txt\", \"c.txt\"}, []string{\"b.txt\", \"c.txt\", \"d.txt\"}"
-              output: added=["d.txt"], removed=["a.txt"], unchanged=["b.txt", "c.txt"]
-            - input: "[]string{\"x\"}, []string{\"x\", \"y\", \"z\"}"
-              output: added=["y", "z"], removed=[], unchanged=["x"]
-            - input: "[]string{\"a\", \"b\"}, []string{}"
-              output: added=[], removed=["a", "b"], unchanged=[]
-          hints:
-            - title: 🤔 Think about it
-              content: >-
-                How do you classify each item? It's added if it's in 'after' but not 'before'. Removed if in 'before'
-                but not 'after'. Unchanged if in both.
-            - title: 💡 Hint
-              content: Build a set from 'before' and a set from 'after'. Iterate each set checking membership in the other.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>1. Build beforeSet and afterSet
-                2. For each item in afterSet:
-                   - In beforeSet? -> unchanged
-                   - Not in beforeSet? -> added
-                3. For each item in beforeSet:
-                   - Not in afterSet? -> removed
-                4. Sort all three slices</pre>
-          solution: |-
-            func detectChanges(before, after []string) (added, removed, unchanged []string) {
-                beforeSet := make(map[string]struct{})
-                for _, s := range before {
-                    beforeSet[s] = struct{}{}
-                }
-                afterSet := make(map[string]struct{})
-                for _, s := range after {
-                    afterSet[s] = struct{}{}
-                }
-
-                for s := range afterSet {
-                    if _, ok := beforeSet[s]; ok {
-                        unchanged = append(unchanged, s)
-                    } else {
-                        added = append(added, s)
-                    }
-                }
-                for s := range beforeSet {
-                    if _, ok := afterSet[s]; !ok {
-                        removed = append(removed, s)
-                    }
-                }
-
-                sort.Strings(added)
-                sort.Strings(removed)
-                sort.Strings(unchanged)
-                return
-            }
-          difficulty: 3
-          annotations:
-            - type: idiom
-              label: Named Returns
-              text: Named return values (added, removed, unchanged) act as documentation and allow bare returns.
-            - type: complexity
-              label: O(n log n)
-              text: Set operations are O(n), but sorting the output adds O(n log n).
-            - type: pattern
-              label: Three-Way Diff
-              text: The three-way classification (added/removed/unchanged) is the foundation of most diff algorithms.
-        - id: v2
-          title: Config Change Tracker
-          description: >-
-            Write a function that compares two <code>map[string]string</code> configs and returns slices of keys that
-            were added, removed, or modified (value changed).
-          functionSignature: func configChanges(old, new map[string]string) (added, removed, modified []string)
-          testCases:
-            - input: >-
-                map[string]string{"port": "8080", "host": "localhost"}, map[string]string{"port": "9090", "debug":
-                "true"}
-              output: added=["debug"], removed=["host"], modified=["port"]
-            - input: "map[string]string{\"a\": \"1\"}, map[string]string{\"a\": \"1\"}"
-              output: added=[], removed=[], modified=[]
-          hints:
-            - title: 🤔 Think about it
-              content: >-
-                This is like a diff but with an extra category: modified. A key is modified if it exists in both maps
-                but has a different value.
-            - title: 💡 Hint
-              content: >-
-                Iterate the old map: if a key is not in new, it was removed. If it is in new but with a different value,
-                it was modified. Then iterate new for keys not in old (added).
-            - title: 🔧 Pattern
-              content: |-
-                <pre>1. For each key in old:
-                   - Not in new? -> removed
-                   - In new with different value? -> modified
-                2. For each key in new:
-                   - Not in old? -> added
-                3. Sort all slices</pre>
-          solution: |-
-            func configChanges(old, new map[string]string) (added, removed, modified []string) {
-                for k, oldVal := range old {
-                    newVal, exists := new[k]
-                    if !exists {
-                        removed = append(removed, k)
-                    } else if oldVal != newVal {
-                        modified = append(modified, k)
-                    }
-                }
-                for k := range new {
-                    if _, exists := old[k]; !exists {
-                        added = append(added, k)
-                    }
-                }
-                sort.Strings(added)
-                sort.Strings(removed)
-                sort.Strings(modified)
-                return
-            }
-          difficulty: 3
-          annotations:
-            - type: pattern
-              label: Value-Aware Diff
-              text: Unlike a pure set diff, this pattern also detects modifications by comparing values for shared keys.
-            - type: gotcha
-              label: Zero Values
+              label: Flat Main Package
               text: >-
-                Accessing a missing map key returns the zero value (empty string), so always use the comma-ok idiom to
-                distinguish missing from empty.
-        - id: v3
-          title: Roster Change Report
+                Small CLI tools can keep everything in <code>package main</code> with multiple files. Only extract
+                packages when complexity grows.
+            - type: idiom
+              label: internal/ for Storage
+              text: >-
+                Storage implementations are internal details. Users of your tool don't need to import your database
+                layer.
+        - id: v2
+          title: Design Library Layout
           description: >-
-            Write a function that compares an old and new team roster (slices of name strings) and returns a formatted
-            report string listing who joined, who left, and who stayed.
-          functionSignature: func rosterReport(old, new []string) string
-          testCases:
-            - input: "[]string{\"Alice\", \"Bob\", \"Charlie\"}, []string{\"Bob\", \"Charlie\", \"Diana\"}"
-              output: "\"Joined: Diana\\nLeft: Alice\\nStayed: Bob, Charlie\""
-            - input: "[]string{\"Alice\"}, []string{\"Alice\"}"
-              output: "\"Joined: (none)\\nLeft: (none)\\nStayed: Alice\""
+            Design the directory structure for a reusable Go library called <code>httputil</code> that provides: public
+            middleware functions, a public client wrapper, and internal rate limiting logic.
           hints:
-            - title: 🤔 Think about it
-              content: First compute the three categories (joined, left, stayed), then format them into a report string.
-            - title: 💡 Hint
-              content: >-
-                Use set operations to find joined (in new, not old), left (in old, not new), stayed (in both). Then use
-                strings.Join to format each list.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>1. Build oldSet and newSet
-                2. Compute joined, left, stayed slices
-                3. Sort each slice
-                4. Format with strings.Join
-                5. Use "(none)" for empty categories</pre>
+            - "The root package is the public API: <code>package httputil</code>."
+            - Rate limiting goes in <code>internal/</code>.
+            - Middleware and client can be in the root or separate public packages.
           solution: |-
-            func rosterReport(old, new []string) string {
-                oldSet := make(map[string]struct{})
-                for _, n := range old {
-                    oldSet[n] = struct{}{}
-                }
-                newSet := make(map[string]struct{})
-                for _, n := range new {
-                    newSet[n] = struct{}{}
-                }
+            // httputil/
+            // ├── go.mod             module github.com/you/httputil
+            // ├── client.go          package httputil — public client wrapper
+            // ├── middleware.go       package httputil — public middleware
+            // └── internal/
+            //     └── ratelimit/
+            //         └── limiter.go  package ratelimit — hidden implementation
 
-                var joined, left, stayed []string
-                for n := range newSet {
-                    if _, ok := oldSet[n]; ok {
-                        stayed = append(stayed, n)
-                    } else {
-                        joined = append(joined, n)
-                    }
-                }
-                for n := range oldSet {
-                    if _, ok := newSet[n]; !ok {
-                        left = append(left, n)
-                    }
-                }
+            // client.go
+            package httputil
 
-                sort.Strings(joined)
-                sort.Strings(left)
-                sort.Strings(stayed)
+            import "github.com/you/httputil/internal/ratelimit"
 
-                format := func(label string, items []string) string {
-                    if len(items) == 0 {
-                        return label + ": (none)"
-                    }
-                    return label + ": " + strings.Join(items, ", ")
-                }
-
-                return format("Joined", joined) + "\n" + format("Left", left) + "\n" + format("Stayed", stayed)
+            type Client struct {
+                limiter *ratelimit.Limiter
             }
-          difficulty: 3
+
+            // middleware.go
+            package httputil
+
+            func LoggingMiddleware(next http.Handler) http.Handler { /* ... */ }
+            func AuthMiddleware(next http.Handler) http.Handler { /* ... */ }
           annotations:
-            - type: idiom
-              label: strings.Join
-              text: strings.Join is the idiomatic way to combine string slices with a separator.
             - type: pattern
-              label: Closures for Formatting
-              text: Using a local closure (format func) avoids code duplication for repetitive formatting logic.
-        - id: v4
-          title: Inventory Tracker
-          description: >-
-            Write a function that compares two <code>map[string]int</code> representing inventory counts. Return maps of
-            items that are new, removed, increased, and decreased.
-          functionSignature: >-
-            func inventoryDiff(before, after map[string]int) (new, removed map[string]int, increased, decreased
-            map[string][2]int)
-          testCases:
-            - input: "map[string]int{\"apples\": 5, \"bananas\": 3}, map[string]int{\"apples\": 8, \"cherries\": 2}"
-              output: "new={\"cherries\": 2}, removed={\"bananas\": 3}, increased={\"apples\": [5, 8]}, decreased={}"
-            - input: "map[string]int{\"a\": 10}, map[string]int{\"a\": 5}"
-              output: "new={}, removed={}, increased={}, decreased={\"a\": [10, 5]}"
-          hints:
-            - title: 🤔 Think about it
-              content: >-
-                This extends the diff pattern with quantity awareness. Items can be new, removed, or present in both
-                with a changed count.
-            - title: 💡 Hint
-              content: >-
-                Iterate 'before': if not in 'after', it was removed. If in 'after' with higher count, it increased. If
-                lower, decreased. Then check 'after' for new items.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>1. Initialize result maps with make()
-                2. For each item in before:
-                   - Not in after -> removed
-                   - In after, count higher -> increased
-                   - In after, count lower -> decreased
-                3. For each item in after:
-                   - Not in before -> new
-                4. Return all four maps</pre>
-          solution: >-
-            func inventoryDiff(before, after map[string]int) (newItems, removed map[string]int, increased, decreased
-            map[string][2]int) {
-                newItems = make(map[string]int)
-                removed = make(map[string]int)
-                increased = make(map[string][2]int)
-                decreased = make(map[string][2]int)
-
-                for item, oldCount := range before {
-                    newCount, exists := after[item]
-                    if !exists {
-                        removed[item] = oldCount
-                    } else if newCount > oldCount {
-                        increased[item] = [2]int{oldCount, newCount}
-                    } else if newCount < oldCount {
-                        decreased[item] = [2]int{oldCount, newCount}
-                    }
-                }
-                for item, count := range after {
-                    if _, exists := before[item]; !exists {
-                        newItems[item] = count
-                    }
-                }
-                return
-            }
-          difficulty: 3
-          annotations:
+              label: Library Root = API
+              text: >-
+                For libraries, the root package IS the public API. Users import just <code>httputil</code> and access
+                all public functions.
             - type: idiom
-              label: Array Value in Map
-              text: Using [2]int as a map value stores old/new counts without needing a struct.
-            - type: gotcha
-              label: Initialize Maps
-              text: Always initialize maps with make() before writing to them. Writing to a nil map causes a runtime panic.
-            - type: complexity
-              label: O(n + m)
-              text: Each item is visited once from each map, making the operation linear.
+              label: Hide Complexity
+              text: >-
+                Internal packages keep implementation details private. The rate limiter can change freely without
+                breaking library users.
+        - id: v3
+          title: Resolve Circular Import
+          description: >-
+            Package <code>user</code> imports <code>order</code> to get user's orders, and package <code>order</code>
+            imports <code>user</code> to get order's owner. This causes a circular import. Design a solution.
+          hints:
+            - "Option 1: Extract shared types into a third package (e.g., <code>models</code>)."
+            - "Option 2: Use an interface to break the dependency."
+            - "Option 3: Merge the packages if they're tightly coupled."
+          solution: |-
+            // PROBLEM: user ↔ order circular import
+
+            // SOLUTION: Extract shared types into a models package
+
+            // models/models.go
+            package models
+
+            type User struct {
+                ID   int
+                Name string
+            }
+
+            type Order struct {
+                ID     int
+                UserID int
+                Amount float64
+            }
+
+            // user/user.go
+            package user
+
+            import "myapp/models"
+
+            func GetUser(id int) *models.User { /* ... */ }
+
+            // order/order.go
+            package order
+
+            import "myapp/models"
+
+            func GetOrders(userID int) []models.Order { /* ... */ }
+
+            // No circular import — both packages import models, not each other
+          annotations:
+            - type: pattern
+              label: Third Package
+              text: >-
+                The most common fix for circular imports: extract shared types into a neutral <code>models</code> or
+                <code>types</code> package that both can import.
+            - type: pattern
+              label: Interface Solution
+              text: >-
+                Alternatively, define an interface in one package and have the other implement it. This breaks the
+                compile-time dependency.

@@ -193,41 +193,6 @@ func (q *Queue[T]) IsEmpty() bool {
 }
 ```
 
-## Generics Basics
-
-Go 1.18+ introduced generics. Write once, use with any type.
-
-*Generic functions*
-
-```go
-// Generic function
-func Min[T constraints.Ordered](a, b T) T {
-    if a < b {
-        return a
-    }
-    return b
-}
-
-// Works with any ordered type
-Min(3, 5)          // 3
-Min("a", "b")      // "a"
-Min(3.14, 2.71)    // 2.71
-
-// Generic Map function
-func Map[T, U any](items []T, f func(T) U) []U {
-    result := make([]U, len(items))
-    for i, item := range items {
-        result[i] = f(item)
-    }
-    return result
-}
-
-// Usage
-nums := []int{1, 2, 3}
-doubled := Map(nums, func(n int) int { return n * 2 })
-// [2, 4, 6]
-```
-
 ## Exercises
 
 Progress through each section in order, or jump to where you need practice.
@@ -252,4 +217,4 @@ Combine concepts and learn patterns. Each challenge has multiple variants at dif
 - **Slicing shares memory** — use copy() for independence
 - **Maps iterate randomly** — sort keys if order matters
 - **Set = map[T]struct{}**
-- **Generics** with [T any] or [T constraints.Ordered]
+- **Stack and Queue** built from slices with generics

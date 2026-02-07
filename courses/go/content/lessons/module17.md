@@ -1,457 +1,243 @@
-## Unit vs Integration Tests
+## Why Sets Matter
 
-Quick distinction:
+Tons of real problems are set problems in disguise:
 
-- **Unit tests** — test one function/component in isolation, mocked dependencies, fast
-- **Integration tests** — test multiple components together, real dependencies, slower
+- What files are in directory A but not B?
+- Which users have permission X but not Y?
+- What config changed between versions?
+- Which items need to be added/removed to sync two lists?
 
-Both are valuable. Unit tests catch logic bugs fast. Integration tests catch wiring bugs.
+If you have two lists and need to compare them, you're doing set math.
 
-## Testing HTTP Handlers
+## Set Operations Visualized
 
-Go's `net/http/httptest` package lets you test handlers without starting a real server.
+Set A: {1, 2, 3, 4}
+Set B: {3, 4, 5, 6}
 
-*server.go*
+Union (A ∪ B)
+
+= {1, 2, 3, 4, 5, 6}
+
+// Everything
+
+Intersection (A ∩ B)
+
+= {3, 4}
+
+// In both
+
+Difference (A - B)
+
+= {1, 2}
+
+// In A but not B
+
+Difference (B - A)
+
+= {5, 6}
+
+// In B but not A
+
+## Sets in Go: map[T]struct{}
+
+Go doesn't have a built-in set type. Use a map with empty struct values.
+
+*Basic set*
 
 ```go
-package main
+// struct{} takes zero bytes — perfect for "I just need the keys"
+type Set[T comparable] map[T]struct{}
 
-import (
-    "encoding/json"
-    "net/http"
-)
-
-type Response struct {
-    Message string `json:"message"`
-}
-
-func healthHandler(w http.ResponseWriter, r *http.Request) {
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(Response{Message: "ok"})
-}
-
-func echoHandler(w http.ResponseWriter, r *http.Request) {
-    name := r.URL.Query().Get("name")
-    if name == "" {
-        http.Error(w, "name required", http.StatusBadRequest)
-        return
+// Create from slice
+func NewSet[T comparable](items []T) Set[T] {
+    s := make(Set[T], len(items))
+    for _, item := range items {
+        s[item] = struct{}{}
     }
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(Response{Message: "hello " + name})
+    return s
+}
+
+// Check membership — O(1)
+func (s Set[T]) Contains(item T) bool {
+    _, ok := s[item]
+    return ok
+}
+
+// Add item
+func (s Set[T]) Add(item T) {
+    s[item] = struct{}{}
+}
+
+// Convert back to slice
+func (s Set[T]) ToSlice() []T {
+    result := make([]T, 0, len(s))
+    for item := range s {
+        result = append(result, item)
+    }
+    return result
 }
 ```
 
-*server_test.go*
+> **Why struct{} instead of bool?:** `map[string]bool` works but wastes 1 byte per entry. `map[string]struct{}` uses zero extra bytes. For large sets, this adds up.
+
+## Set Operations
+
+*Set operations*
 
 ```go
-package main
-
-import (
-    "encoding/json"
-    "net/http"
-    "net/http/httptest"
-    "testing"
-)
-
-func TestHealthHandler(t *testing.T) {
-    // Create a request
-    req := httptest.NewRequest("GET", "/health", nil)
-    
-    // Create a ResponseRecorder to capture the response
-    rr := httptest.NewRecorder()
-    
-    // Call the handler directly
-    healthHandler(rr, req)
-    
-    // Check status code
-    if rr.Code != http.StatusOK {
-        t.Errorf("got status %d, want %d", rr.Code, http.StatusOK)
+// Difference: items in A but not in B
+func Difference[T comparable](a, b Set[T]) Set[T] {
+    result := make(Set[T])
+    for item := range a {
+        if !b.Contains(item) {
+            result[item] = struct{}{}
+        }
     }
-    
-    // Check response body
-    var resp Response
-    if err := json.NewDecoder(rr.Body).Decode(&resp); err != nil {
-        t.Fatalf("failed to decode response: %v", err)
+    return result
+}
+
+// Intersection: items in both A and B
+func Intersection[T comparable](a, b Set[T]) Set[T] {
+    result := make(Set[T])
+    for item := range a {
+        if b.Contains(item) {
+            result[item] = struct{}{}
+        }
     }
+    return result
+}
+
+// Union: items in A or B or both
+func Union[T comparable](a, b Set[T]) Set[T] {
+    result := make(Set[T], len(a)+len(b))
+    for item := range a {
+        result[item] = struct{}{}
+    }
+    for item := range b {
+        result[item] = struct{}{}
+    }
+    return result
+}
+```
+
+## Comparing Two Lists
+
+The classic "diff" problem: given two lists, what's different?
+
+*Diff two slices*
+
+```go
+// Result of comparing two lists
+type Diff[T comparable] struct {
+    OnlyInA []T  // In first list but not second
+    OnlyInB []T  // In second list but not first
+    InBoth  []T  // In both lists
+}
+
+func Compare[T comparable](a, b []T) Diff[T] {
+    setA := NewSet(a)
+    setB := NewSet(b)
     
-    if resp.Message != "ok" {
-        t.Errorf("got message %q, want %q", resp.Message, "ok")
+    return Diff[T]{
+        OnlyInA: Difference(setA, setB).ToSlice(),
+        OnlyInB: Difference(setB, setA).ToSlice(),
+        InBoth:  Intersection(setA, setB).ToSlice(),
     }
 }
 
-func TestEchoHandler(t *testing.T) {
-    tests := []struct {
-        name       string
-        query      string
-        wantStatus int
-        wantMsg    string
-    }{
-        {"valid", "?name=World", http.StatusOK, "hello World"},
-        {"missing name", "", http.StatusBadRequest, ""},
-    }
-    
-    for _, tt := range tests {
-        t.Run(tt.name, func(t *testing.T) {
-            req := httptest.NewRequest("GET", "/echo"+tt.query, nil)
-            rr := httptest.NewRecorder()
-            
-            echoHandler(rr, req)
-            
-            if rr.Code != tt.wantStatus {
-                t.Errorf("status = %d, want %d", rr.Code, tt.wantStatus)
+// Usage
+current := []string{"a", "b", "c"}
+desired := []string{"b", "c", "d"}
+
+diff := Compare(current, desired)
+// diff.OnlyInA = ["a"]      // current has, desired doesn't
+// diff.OnlyInB = ["d"]      // desired has, current doesn't
+// diff.InBoth  = ["b", "c"] // both have
+```
+
+## Performance: O(n) vs O(n²)
+
+This is why sets matter for performance.
+
+*Naive approach — O(n²)*
+
+```go
+// DON'T DO THIS for large lists
+func slowDiff(a, b []string) []string {
+    var onlyInA []string
+    for _, itemA := range a {
+        found := false
+        for _, itemB := range b {  // Loops through B for every A
+            if itemA == itemB {
+                found = true
+                break
             }
-            
-            if tt.wantStatus == http.StatusOK {
-                var resp Response
-                json.NewDecoder(rr.Body).Decode(&resp)
-                if resp.Message != tt.wantMsg {
-                    t.Errorf("message = %q, want %q", resp.Message, tt.wantMsg)
-                }
-            }
-        })
+        }
+        if !found {
+            onlyInA = append(onlyInA, itemA)
+        }
     }
+    return onlyInA
 }
+// 1000 items × 1000 items = 1,000,000 comparisons
 ```
 
-## Testing Full HTTP Server
-
-Use `httptest.NewServer` to spin up a real test server.
-
-*Full server test*
+*Set approach — O(n)*
 
 ```go
-func TestFullServer(t *testing.T) {
-    // Create router/mux with all handlers
-    mux := http.NewServeMux()
-    mux.HandleFunc("/health", healthHandler)
-    mux.HandleFunc("/echo", echoHandler)
+// DO THIS
+func fastDiff(a, b []string) []string {
+    setB := NewSet(b)  // O(n) to build
     
-    // Start test server
-    server := httptest.NewServer(mux)
-    defer server.Close()
-    
-    // Make real HTTP request
-    resp, err := http.Get(server.URL + "/health")
-    if err != nil {
-        t.Fatalf("request failed: %v", err)
+    var onlyInA []string
+    for _, item := range a {
+        if !setB.Contains(item) {  // O(1) lookup!
+            onlyInA = append(onlyInA, item)
+        }
     }
-    defer resp.Body.Close()
-    
-    if resp.StatusCode != http.StatusOK {
-        t.Errorf("got status %d", resp.StatusCode)
-    }
+    return onlyInA
 }
-
-// Test with custom client (for timeouts, etc)
-func TestWithClient(t *testing.T) {
-    server := httptest.NewServer(http.HandlerFunc(healthHandler))
-    defer server.Close()
-    
-    client := &http.Client{
-        Timeout: 5 * time.Second,
-    }
-    
-    resp, err := client.Get(server.URL)
-    // ...
-}
+// 1000 items = ~2000 operations
 ```
 
-## Testing with Temporary Files
+## Sorting for Consistent Output
 
-Use `t.TempDir()` for tests that need file system access.
+Maps (and therefore sets) iterate in random order. Sort before displaying.
 
-*Temp directory testing*
+*Sorted output*
 
 ```go
-func TestConfigLoader(t *testing.T) {
-    // t.TempDir() creates a temp dir, auto-cleaned after test
-    dir := t.TempDir()
-    
-    // Create test config file
-    configPath := filepath.Join(dir, "config.yaml")
-    content := []byte(`
-name: test
-port: 8080
-`)
-    if err := os.WriteFile(configPath, content, 0644); err != nil {
-        t.Fatalf("failed to write config: %v", err)
-    }
-    
-    // Test your loader
-    cfg, err := LoadConfig(configPath)
-    if err != nil {
-        t.Fatalf("LoadConfig failed: %v", err)
-    }
-    
-    if cfg.Name != "test" {
-        t.Errorf("name = %q, want %q", cfg.Name, "test")
-    }
+import "sort"
+
+func (s Set[string]) SortedSlice() []string {
+    result := s.ToSlice()
+    sort.Strings(result)
+    return result
 }
 
-func TestFileWriter(t *testing.T) {
-    dir := t.TempDir()
-    outPath := filepath.Join(dir, "output.txt")
-    
-    // Test your writer
-    err := WriteReport(outPath, data)
-    if err != nil {
-        t.Fatalf("WriteReport failed: %v", err)
+// For any comparable type that's also orderable
+func SortedKeys[K cmp.Ordered, V any](m map[K]V) []K {
+    keys := make([]K, 0, len(m))
+    for k := range m {
+        keys = append(keys, k)
     }
-    
-    // Verify file was written correctly
-    got, err := os.ReadFile(outPath)
-    if err != nil {
-        t.Fatalf("failed to read output: %v", err)
-    }
-    
-    if !bytes.Contains(got, []byte("expected content")) {
-        t.Errorf("output missing expected content")
-    }
+    slices.Sort(keys)
+    return keys
 }
 ```
 
-## Build Tags for Integration Tests
+## Real World Applications
 
-Separate slow integration tests from fast unit tests using build tags.
+Places you'll use this pattern:
 
-*db_integration_test.go*
+- **File sync** — what files to copy/delete
+- **Database migrations** — what columns to add/remove
+- **Permission systems** — what access to grant/revoke
+- **Config management** — what changed between versions
+- **Dependency resolution** — what to install/uninstall
+- **Cache invalidation** — what keys are stale
 
-```go
-//go:build integration
-
-package db
-
-import "testing"
-
-// This test only runs when you specify the tag
-func TestRealDatabaseConnection(t *testing.T) {
-    db, err := Connect(os.Getenv("DATABASE_URL"))
-    if err != nil {
-        t.Fatalf("failed to connect: %v", err)
-    }
-    defer db.Close()
-    
-    // Test real queries...
-}
-```
-
-*Running with tags*
-
-```bash
-# Run only unit tests (default)
-$ go test ./...
-
-# Run integration tests too
-$ go test -tags=integration ./...
-
-# Run ONLY integration tests
-$ go test -tags=integration -run Integration ./...
-```
-
-> **CI Strategy:** Run unit tests on every commit. Run integration tests on PR merge or nightly. Keep your feedback loop fast.
-
-## Testing with Environment Variables
-
-*Env var testing*
-
-```go
-func TestConfigFromEnv(t *testing.T) {
-    // Set env for this test
-    t.Setenv("APP_PORT", "9000")
-    t.Setenv("APP_DEBUG", "true")
-    
-    // t.Setenv automatically restores original value after test
-    
-    cfg := LoadConfigFromEnv()
-    
-    if cfg.Port != 9000 {
-        t.Errorf("port = %d, want 9000", cfg.Port)
-    }
-    if !cfg.Debug {
-        t.Error("debug should be true")
-    }
-}
-
-// Skip if required env var not set
-func TestExternalAPI(t *testing.T) {
-    apiKey := os.Getenv("API_KEY")
-    if apiKey == "" {
-        t.Skip("API_KEY not set, skipping integration test")
-    }
-    
-    // Test with real API...
-}
-```
-
-## TestMain for Setup/Teardown
-
-Need to run setup before any tests in a package? Use `TestMain`.
-
-*db_test.go*
-
-```go
-package db
-
-import (
-    "os"
-    "testing"
-)
-
-var testDB *DB
-
-func TestMain(m *testing.M) {
-    // Setup: runs before any tests
-    var err error
-    testDB, err = SetupTestDatabase()
-    if err != nil {
-        fmt.Printf("failed to setup test db: %v\n", err)
-        os.Exit(1)
-    }
-    
-    // Run all tests
-    code := m.Run()
-    
-    // Teardown: runs after all tests
-    testDB.Close()
-    CleanupTestDatabase()
-    
-    os.Exit(code)
-}
-
-func TestCreateUser(t *testing.T) {
-    // testDB is available here
-    err := testDB.CreateUser(&User{Name: "Alice"})
-    if err != nil {
-        t.Fatalf("CreateUser failed: %v", err)
-    }
-}
-
-func TestGetUser(t *testing.T) {
-    // testDB is available here too
-    user, err := testDB.GetUser("alice")
-    // ...
-}
-```
-
-> **TestMain Gotcha:** If you define `TestMain`, you MUST call `m.Run()` or no tests will execute. Don't forget `os.Exit(code)` at the end.
-
-## Testing External Services
-
-For external APIs, either mock them or use a test/sandbox environment.
-
-*Mock external API*
-
-```go
-func TestPaymentProcessor(t *testing.T) {
-    // Create mock server that mimics the external API
-    mockAPI := httptest.NewServer(http.HandlerFunc(
-        func(w http.ResponseWriter, r *http.Request) {
-            // Verify request
-            if r.URL.Path != "/v1/charge" {
-                t.Errorf("unexpected path: %s", r.URL.Path)
-            }
-            
-            // Return mock response
-            w.Header().Set("Content-Type", "application/json")
-            fmt.Fprint(w, `{"id": "ch_123", "status": "success"}`)
-        },
-    ))
-    defer mockAPI.Close()
-    
-    // Point your client at the mock
-    client := NewPaymentClient(mockAPI.URL)
-    
-    result, err := client.Charge(1000)
-    if err != nil {
-        t.Fatalf("Charge failed: %v", err)
-    }
-    
-    if result.Status != "success" {
-        t.Errorf("status = %q, want success", result.Status)
-    }
-}
-```
-
-## Parallel Tests
-
-Speed up tests by running them in parallel (when safe to do so).
-
-*Parallel execution*
-
-```go
-func TestA(t *testing.T) {
-    t.Parallel()  // Mark as safe to run in parallel
-    // ... test code ...
-}
-
-func TestB(t *testing.T) {
-    t.Parallel()
-    // ... test code ...
-}
-
-// Table-driven with parallel subtests
-func TestParallelSubtests(t *testing.T) {
-    tests := []struct{ name string; input int }{
-        {"case1", 1},
-        {"case2", 2},
-        {"case3", 3},
-    }
-    
-    for _, tt := range tests {
-        tt := tt  // IMPORTANT: capture range variable
-        t.Run(tt.name, func(t *testing.T) {
-            t.Parallel()
-            // ... test using tt.input ...
-        })
-    }
-}
-```
-
-> **When NOT to parallelize:** Don't use `t.Parallel()` if tests share state, write to same files, or use shared database rows. Race conditions will ruin your day.
-
-## Golden Files
-
-For complex output, compare against "golden" reference files.
-
-*Golden file testing*
-
-```go
-func TestRenderTemplate(t *testing.T) {
-    output := RenderTemplate(data)
-    
-    goldenPath := "testdata/expected_output.golden"
-    
-    // Update golden file if -update flag is set
-    if *update {
-        os.WriteFile(goldenPath, []byte(output), 0644)
-        return
-    }
-    
-    // Compare against golden file
-    expected, err := os.ReadFile(goldenPath)
-    if err != nil {
-        t.Fatalf("failed to read golden file: %v", err)
-    }
-    
-    if output != string(expected) {
-        t.Errorf("output doesn't match golden file\ngot:\n%s\nwant:\n%s", 
-            output, expected)
-    }
-}
-
-// Define flag at package level
-var update = flag.Bool("update", false, "update golden files")
-```
-
-*Usage*
-
-```bash
-# Run tests normally
-$ go test
-
-# Update golden files when output changes intentionally
-$ go test -update
-```
+Any time you're comparing "what is" vs "what should be" — that's a diff.
 
 ## Exercises
 
@@ -471,13 +257,11 @@ Combine concepts and learn patterns. Each challenge has multiple variants at dif
             <noscript><p class="js-required">JavaScript is required for the interactive exercises.</p></noscript>
             </div>
 
-## Module 17 Summary
+## Module 15 Summary
 
-- **httptest.NewRecorder** — test handlers without network
-- **httptest.NewServer** — spin up real test server
-- **t.TempDir()** — auto-cleaned temp directories
-- **t.Setenv()** — set env vars that auto-restore
-- **//go:build integration** — separate slow tests
-- **TestMain** — package-level setup/teardown
-- **t.Parallel()** — run tests concurrently
-- **Golden files** — compare against reference output
+- **Set = map[T]struct{}** — O(1) membership test
+- **Difference(A, B)** — in A but not B
+- **Intersection(A, B)** — in both
+- **Union(A, B)** — in either or both
+- **Compare two lists** → OnlyInA, OnlyInB, InBoth
+- **Always sort** before displaying for consistency

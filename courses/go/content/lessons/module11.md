@@ -1,187 +1,208 @@
-## HTTP Client Basics
+## What is Bubble Tea?
 
-*Making HTTP requests*
+Bubble Tea is a TUI framework based on The Elm Architecture: **Model → Update → View**
+
+*Install*
+
+```bash
+go get github.com/charmbracelet/bubbletea
+go get github.com/charmbracelet/lipgloss  # Styling
+go get github.com/charmbracelet/bubbles   # Pre-built components
+```
+
+<div class="tui-demo">
+<span style="color: var(--green-bright)">? Select a task:</span>
+<br><span style="color: var(--purple)">❯</span> <span style="color: var(--text-main)">build</span> <span style="color: var(--text-dim)">- Build the application</span>
+<br>  <span style="color: var(--text-dim)">test - Run all tests</span>
+<br>  <span style="color: var(--text-dim)">deploy - Deploy to production</span>
+<br>  <span style="color: var(--text-dim)">clean - Remove build artifacts</span>
+<br><br><span style="color: var(--text-dim)">↑/↓: navigate • enter: select • q: quit</span>
+            </div>
+
+## The Elm Architecture
+
+*Basic structure*
 
 ```go
 package main
 
 import (
-    "encoding/json"
-    "io"
-    "net/http"
+    "fmt"
+    tea "github.com/charmbracelet/bubbletea"
 )
 
-// Simple GET
-resp, err := http.Get("https://api.github.com/users/golang")
-if err != nil {
-    panic(err)
-}
-defer resp.Body.Close()
-
-body, _ := io.ReadAll(resp.Body)
-fmt.Println(string(body))
-
-// JSON response into struct
-type User struct {
-    Login     string `json:"login"`
-    Name      string `json:"name"`
-    Followers int    `json:"followers"`
+// MODEL: Your application state
+type model struct {
+    choices  []string
+    cursor   int
+    selected map[int]struct{}
 }
 
-var user User
-json.NewDecoder(resp.Body).Decode(&user)
-
-// Custom request with headers
-req, _ := http.NewRequest("GET", "https://api.github.com/user", nil)
-req.Header.Set("Authorization", "Bearer "+token)
-req.Header.Set("Accept", "application/json")
-
-client := &http.Client{Timeout: 10 * time.Second}
-resp, err = client.Do(req)
-```
-
-## Building an API Client
-
-*GitHub API client*
-
-```go
-type GitHubClient struct {
-    baseURL    string
-    token      string
-    httpClient *http.Client
-}
-
-func NewGitHubClient(token string) *GitHubClient {
-    return &GitHubClient{
-        baseURL:    "https://api.github.com",
-        token:      token,
-        httpClient: &http.Client{Timeout: 30 * time.Second},
+// INIT: Initial state and optional command
+func initialModel() model {
+    return model{
+        choices:  []string{"Buy milk", "Walk dog", "Write code"},
+        selected: make(map[int]struct{}),
     }
 }
 
-func (c *GitHubClient) request(method, path string, body any) (*http.Response, error) {
-    var bodyReader io.Reader
-    if body != nil {
-        data, _ := json.Marshal(body)
-        bodyReader = bytes.NewReader(data)
+func (m model) Init() tea.Cmd {
+    return nil  // No initial command
+}
+
+// UPDATE: Handle messages (key presses, etc)
+func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+    switch msg := msg.(type) {
+    case tea.KeyMsg:
+        switch msg.String() {
+        case "q", "ctrl+c":
+            return m, tea.Quit
+        case "up", "k":
+            if m.cursor > 0 {
+                m.cursor--
+            }
+        case "down", "j":
+            if m.cursor < len(m.choices)-1 {
+                m.cursor++
+            }
+        case "enter", " ":
+            if _, ok := m.selected[m.cursor]; ok {
+                delete(m.selected, m.cursor)
+            } else {
+                m.selected[m.cursor] = struct{}{}
+            }
+        }
+    }
+    return m, nil
+}
+
+// VIEW: Render the UI as a string
+func (m model) View() string {
+    s := "What do you want to do?\n\n"
+    
+    for i, choice := range m.choices {
+        cursor := " "
+        if m.cursor == i {
+            cursor = ">"
+        }
+        
+        checked := " "
+        if _, ok := m.selected[i]; ok {
+            checked = "x"
+        }
+        
+        s += fmt.Sprintf("%s [%s] %s\n", cursor, checked, choice)
     }
     
-    req, err := http.NewRequest(method, c.baseURL+path, bodyReader)
-    if err != nil {
-        return nil, err
-    }
-    
-    req.Header.Set("Authorization", "Bearer "+c.token)
-    req.Header.Set("Accept", "application/vnd.github+json")
-    if body != nil {
-        req.Header.Set("Content-Type", "application/json")
-    }
-    
-    return c.httpClient.Do(req)
-}
-
-func (c *GitHubClient) GetUser(username string) (*User, error) {
-    resp, err := c.request("GET", "/users/"+username, nil)
-    if err != nil {
-        return nil, err
-    }
-    defer resp.Body.Close()
-    
-    if resp.StatusCode != http.StatusOK {
-        return nil, fmt.Errorf("API error: %s", resp.Status)
-    }
-    
-    var user User
-    if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
-        return nil, err
-    }
-    return &user, nil
-}
-```
-
-## Building HTTP Servers
-
-*Simple HTTP server*
-
-```go
-package main
-
-import (
-    "encoding/json"
-    "net/http"
-)
-
-type Response struct {
-    Message string `json:"message"`
+    s += "\nPress q to quit.\n"
+    return s
 }
 
 func main() {
-    http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-        w.WriteHeader(http.StatusOK)
-        w.Write([]byte("OK"))
-    })
-    
-    http.HandleFunc("/api/greet", func(w http.ResponseWriter, r *http.Request) {
-        name := r.URL.Query().Get("name")
-        if name == "" {
-            name = "World"
-        }
-        
-        resp := Response{Message: "Hello, " + name}
-        
-        w.Header().Set("Content-Type", "application/json")
-        json.NewEncoder(w).Encode(resp)
-    })
-    
-    fmt.Println("Server running on :8080")
-    http.ListenAndServe(":8080", nil)
+    p := tea.NewProgram(initialModel())
+    if _, err := p.Run(); err != nil {
+        fmt.Println("Error:", err)
+    }
 }
 ```
 
-## Middleware Pattern
+## Styling with Lipgloss
 
-*Middleware*
+*Using lipgloss*
 
 ```go
-// Middleware wraps a handler
-type Middleware func(http.Handler) http.Handler
+import "github.com/charmbracelet/lipgloss"
 
-// Logging middleware
-func LoggingMiddleware(next http.Handler) http.Handler {
-    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        start := time.Now()
-        next.ServeHTTP(w, r)
-        fmt.Printf("%s %s %v\n", r.Method, r.URL.Path, time.Since(start))
-    })
-}
+// Define styles
+var (
+    titleStyle = lipgloss.NewStyle().
+        Bold(true).
+        Foreground(lipgloss.Color("#00ff9d")).
+        MarginBottom(1)
+    
+    selectedStyle = lipgloss.NewStyle().
+        Foreground(lipgloss.Color("#9d00ff")).
+        Bold(true)
+    
+    normalStyle = lipgloss.NewStyle().
+        Foreground(lipgloss.Color("#888888"))
+    
+    boxStyle = lipgloss.NewStyle().
+        Border(lipgloss.RoundedBorder()).
+        BorderForeground(lipgloss.Color("#00ff9d")).
+        Padding(1, 2)
+)
 
-// Auth middleware
-func AuthMiddleware(next http.Handler) http.Handler {
-    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        token := r.Header.Get("Authorization")
-        if token == "" {
-            http.Error(w, "Unauthorized", http.StatusUnauthorized)
-            return
+func (m model) View() string {
+    title := titleStyle.Render("Select Tasks")
+    
+    var items string
+    for i, choice := range m.choices {
+        if m.cursor == i {
+            items += selectedStyle.Render("❯ "+choice) + "\n"
+        } else {
+            items += normalStyle.Render("  "+choice) + "\n"
         }
-        next.ServeHTTP(w, r)
-    })
-}
-
-// Chain middleware
-func Chain(h http.Handler, middlewares ...Middleware) http.Handler {
-    for _, m := range middlewares {
-        h = m(h)
     }
-    return h
+    
+    return boxStyle.Render(title + items)
 }
-
-// Usage
-handler := Chain(myHandler, LoggingMiddleware, AuthMiddleware)
 ```
 
-### 🔨 Project: GitHub CLI Tool
+## Using Pre-built Components (Bubbles)
 
-Put your skills to work! Build a CLI that interacts with the GitHub API.
+*Text input component*
+
+```go
+import (
+    "github.com/charmbracelet/bubbles/textinput"
+    tea "github.com/charmbracelet/bubbletea"
+)
+
+type model struct {
+    textInput textinput.Model
+    err       error
+}
+
+func initialModel() model {
+    ti := textinput.New()
+    ti.Placeholder = "Enter your name"
+    ti.Focus()
+    ti.CharLimit = 50
+    ti.Width = 30
+    
+    return model{textInput: ti}
+}
+
+func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+    var cmd tea.Cmd
+    
+    switch msg := msg.(type) {
+    case tea.KeyMsg:
+        switch msg.Type {
+        case tea.KeyEnter:
+            return m, tea.Quit
+        case tea.KeyCtrlC:
+            return m, tea.Quit
+        }
+    }
+    
+    m.textInput, cmd = m.textInput.Update(msg)
+    return m, cmd
+}
+
+func (m model) View() string {
+    return fmt.Sprintf(
+        "What's your name?\n\n%s\n\n%s",
+        m.textInput.View(),
+        "(press enter to submit)",
+    )
+}
+```
+
+### 🔨 Project: File Browser TUI
+
+Put your skills to work! Build an interactive terminal file browser with Bubble Tea.
 
 Start Project →
 
@@ -203,10 +224,11 @@ Combine concepts and learn patterns. Each challenge has multiple variants at dif
             <noscript><p class="js-required">JavaScript is required for the interactive exercises.</p></noscript>
             </div>
 
-## Module 11 Summary
+## Module 8 Summary
 
-- **http.Get/Post** — simple requests
-- **http.NewRequest** — custom requests with headers
-- **json.Decoder** — stream JSON from response
-- **http.HandleFunc** — register routes
-- **Middleware** — wrap handlers for cross-cutting concerns
+- **Bubble Tea** = Elm Architecture for terminals
+- **Model** = your state
+- **Update** = handle messages/events
+- **View** = render state as string
+- **Lipgloss** = CSS-like styling
+- **Bubbles** = pre-built components

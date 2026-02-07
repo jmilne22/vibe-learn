@@ -1,898 +1,614 @@
 conceptLinks:
-  os.Args: "#lesson-os-args"
-  flag Package: "#lesson-flags"
-  bufio.Scanner: "#lesson-scanner"
-  os.Stdin: "#lesson-stdin"
-  fmt.Fprintf: "#lesson-fprintf"
-  os.Exit: "#lesson-exit"
-  strconv: "#lesson-strconv"
-  strings Package: "#lesson-strings"
-  os.Environ: "#lesson-environ"
+  Generics: "#lesson-generics"
+  Stacks: "#lesson-stacks"
+  Slices: "#lesson-slices"
 sharedContent: {}
 variants:
   warmups:
     - id: warmup_1
-      concept: flag Package
+      concept: Generics
       variants:
         - id: v1
-          title: Echo Clone
+          title: Merge String Maps
           description: >-
-            Build an <code>echo</code> command that prints all arguments joined by spaces. Add a <code>-n</code> flag to
-            suppress the trailing newline.
+            Write <code>func merge[K comparable, V any](a, b map[K]V) map[K]V</code> that merges two maps. Values from
+            <code>b</code> override values from <code>a</code> when keys conflict.
           hints:
-            - Use <code>flag.Bool("n", false, "no trailing newline")</code> to define the flag.
-            - After <code>flag.Parse()</code>, remaining arguments are in <code>flag.Args()</code>.
-            - Use <code>strings.Join()</code> to combine arguments with spaces.
+            - Create a new map with <code>make(map[K]V)</code>.
+            - >-
+              Copy all entries from <code>a</code> first, then copy all from <code>b</code> to let <code>b</code>
+              override.
           solution: |-
-            func main() {
-                noNewline := flag.Bool("n", false, "no trailing newline")
-                flag.Parse()
-
-                output := strings.Join(flag.Args(), " ")
-                if *noNewline {
-                    fmt.Print(output)
-                } else {
-                    fmt.Println(output)
+            func merge[K comparable, V any](a, b map[K]V) map[K]V {
+                result := make(map[K]V)
+                for k, v := range a {
+                    result[k] = v
                 }
+                for k, v := range b {
+                    result[k] = v
+                }
+                return result
             }
           annotations:
             - type: idiom
-              label: Flag Pointers
+              label: Generic Constraints
               text: >-
-                The <code>flag</code> package returns pointers. You must dereference with <code>*noNewline</code> to get
-                the actual boolean value.
-            - type: stdlib
-              label: strings.Join
-              text: >-
-                <code>strings.Join(slice, sep)</code> is the idiomatic way to concatenate a slice of strings with a
-                separator.
+                The <code>comparable</code> constraint is required for map keys because Go maps need keys that support
+                <code>==</code> and <code>!=</code>.
+            - type: gotcha
+              label: Nil Map Write
+              text: Writing to a nil map panics. Always use <code>make()</code> to initialize a map before writing to it.
         - id: v2
-          title: Greeting CLI
+          title: Merge with Priority Flag
           description: >-
-            Build a <code>greet</code> command that takes a <code>-name</code> flag (default "World") and prints
-            <code>Hello, &lt;name&gt;!</code>. Add a <code>-loud</code> flag that uppercases the output.
+            Write <code>func mergeWith[K comparable, V any](a, b map[K]V, preferA bool) map[K]V</code>. If
+            <code>preferA</code> is true, values from <code>a</code> take priority on conflicts; otherwise
+            <code>b</code> wins.
           hints:
-            - Use <code>flag.String("name", "World", "...")</code> for the name flag.
-            - Use <code>strings.ToUpper()</code> for the loud option.
+            - Start by copying both maps into the result.
+            - Control which map you copy second to determine which one overrides.
           solution: |-
-            func main() {
-                name := flag.String("name", "World", "name to greet")
-                loud := flag.Bool("loud", false, "uppercase output")
-                flag.Parse()
-
-                msg := fmt.Sprintf("Hello, %s!", *name)
-                if *loud {
-                    msg = strings.ToUpper(msg)
+            func mergeWith[K comparable, V any](a, b map[K]V, preferA bool) map[K]V {
+                result := make(map[K]V)
+                if preferA {
+                    for k, v := range b {
+                        result[k] = v
+                    }
+                    for k, v := range a {
+                        result[k] = v
+                    }
+                } else {
+                    for k, v := range a {
+                        result[k] = v
+                    }
+                    for k, v := range b {
+                        result[k] = v
+                    }
                 }
-                fmt.Println(msg)
+                return result
             }
           annotations:
             - type: idiom
-              label: Flag Defaults
+              label: Copy Order Matters
               text: >-
-                The second argument to <code>flag.String()</code> is the default value, used when the flag is not
-                provided on the command line.
-            - type: stdlib
-              label: fmt.Sprintf
-              text: >-
-                <code>fmt.Sprintf</code> formats a string without printing it, useful when you need to transform the
-                output before displaying.
-        - id: v3
-          title: Repeat CLI
-          description: >-
-            Build a <code>repeat</code> command that takes a <code>-count</code> flag (default 1) and a
-            <code>-sep</code> flag (default newline). It repeats the given text argument the specified number of times.
-          hints:
-            - Use <code>flag.Int("count", 1, "...")</code> for the count flag.
-            - Use <code>flag.String("sep", "\n", "...")</code> for the separator.
-            - Use <code>strings.Repeat()</code> or a loop to produce the output.
-          solution: |-
-            func main() {
-                count := flag.Int("count", 1, "number of repetitions")
-                sep := flag.String("sep", "\n", "separator between repetitions")
-                flag.Parse()
-
-                text := strings.Join(flag.Args(), " ")
-                parts := make([]string, *count)
-                for i := range parts {
-                    parts[i] = text
-                }
-                fmt.Println(strings.Join(parts, *sep))
-            }
-          annotations:
-            - type: idiom
-              label: Flag Types
-              text: >-
-                The <code>flag</code> package supports <code>String</code>, <code>Int</code>, <code>Bool</code>,
-                <code>Float64</code>, and <code>Duration</code> out of the box.
+                When merging maps, the map copied second wins on conflicts. This is a common Go idiom for setting
+                defaults then overriding.
             - type: alternative
-              label: strings.Repeat
+              label: Conditional Insert
               text: >-
-                For simple repetition without a custom separator, <code>strings.Repeat(s, n)</code> repeats a string n
-                times.
-        - id: v4
-          title: Reverse Args
-          description: >-
-            Build a command that prints its arguments in reverse order, one per line. Add a <code>-inline</code> flag to
-            print them on a single line separated by spaces.
-          hints:
-            - Get arguments from <code>flag.Args()</code> after <code>flag.Parse()</code>.
-            - Reverse by iterating from <code>len(args)-1</code> down to <code>0</code>.
-          solution: |-
-            func main() {
-                inline := flag.Bool("inline", false, "print on one line")
-                flag.Parse()
-
-                args := flag.Args()
-                reversed := make([]string, len(args))
-                for i, arg := range args {
-                    reversed[len(args)-1-i] = arg
-                }
-
-                if *inline {
-                    fmt.Println(strings.Join(reversed, " "))
-                } else {
-                    for _, arg := range reversed {
-                        fmt.Println(arg)
-                    }
-                }
-            }
-          annotations:
-            - type: idiom
-              label: Reverse Pattern
-              text: >-
-                Go has no built-in reverse function for slices (prior to Go 1.21's <code>slices.Reverse</code>). The
-                index-swap pattern <code>reversed[len-1-i] = args[i]</code> is common.
-            - type: gotcha
-              label: flag.Parse Order
-              text: >-
-                You must call <code>flag.Parse()</code> before accessing <code>flag.Args()</code>. Arguments before
-                parsing are raw <code>os.Args</code>.
-    - id: warmup_2
-      concept: bufio.Scanner
-      variants:
-        - id: v1
-          title: Line Counter
-          description: >-
-            Build a <code>lc</code> tool that reads from stdin and counts lines. Add <code>-w</code> for word count and
-            <code>-c</code> for character count.
-          hints:
-            - Use <code>bufio.NewScanner(os.Stdin)</code> to read line by line.
-            - For words, use <code>strings.Fields(line)</code> which splits on whitespace.
-            - For characters, use <code>len([]rune(line))</code> to count Unicode characters.
-          solution: |-
-            func main() {
-                words := flag.Bool("w", false, "count words")
-                chars := flag.Bool("c", false, "count chars")
-                flag.Parse()
-
-                var lines, wordCount, charCount int
-                scanner := bufio.NewScanner(os.Stdin)
-                for scanner.Scan() {
-                    line := scanner.Text()
-                    lines++
-                    wordCount += len(strings.Fields(line))
-                    charCount += len([]rune(line))
-                }
-
-                switch {
-                case *words:
-                    fmt.Println(wordCount)
-                case *chars:
-                    fmt.Println(charCount)
-                default:
-                    fmt.Println(lines)
-                }
-            }
-          annotations:
-            - type: idiom
-              label: Scanner Loop
-              text: The <code>for scanner.Scan()</code> pattern is idiomatic Go for reading input line by line until EOF.
-            - type: stdlib
-              label: strings.Fields
-              text: >-
-                <code>strings.Fields()</code> splits on any whitespace and ignores leading/trailing whitespace, unlike
-                <code>strings.Split()</code>.
-        - id: v2
-          title: Longest Line
-          description: >-
-            Build a tool that reads from stdin and prints the longest line. Add a <code>-len</code> flag to print only
-            the length instead of the full line.
-          hints:
-            - Track the longest line seen so far while scanning.
-            - Compare lengths using <code>len([]rune(line))</code> for Unicode correctness.
-          solution: |-
-            func main() {
-                showLen := flag.Bool("len", false, "print length only")
-                flag.Parse()
-
-                var longest string
-                scanner := bufio.NewScanner(os.Stdin)
-                for scanner.Scan() {
-                    line := scanner.Text()
-                    if len([]rune(line)) > len([]rune(longest)) {
-                        longest = line
-                    }
-                }
-
-                if *showLen {
-                    fmt.Println(len([]rune(longest)))
-                } else {
-                    fmt.Println(longest)
-                }
-            }
-          annotations:
-            - type: gotcha
-              label: len(string) vs len([]rune)
-              text: >-
-                <code>len(s)</code> returns byte count, not character count. Use <code>len([]rune(s))</code> for the
-                actual character count with Unicode.
-            - type: pattern
-              label: Best So Far
-              text: >-
-                Tracking the 'best so far' while scanning is a single-pass O(n) pattern that avoids loading all input
-                into memory.
+                Alternatively, copy both maps in any order but check existence with the comma-ok pattern before
+                overwriting.
         - id: v3
-          title: Line Numberer
+          title: Merge Integer Maps with Sum
           description: >-
-            Build a tool that reads from stdin and prints each line with its line number prefixed. Add a
-            <code>-start</code> flag (default 1) to control the starting number.
+            Write <code>func mergeSum(a, b map[string]int) map[string]int</code> that merges two maps by
+            <strong>summing</strong> values for shared keys instead of overriding.
           hints:
-            - Use <code>flag.Int("start", 1, "...")</code> for the starting line number.
-            - Use <code>fmt.Printf("%d\t%s\n", num, line)</code> for formatted output.
+            - >-
+              Create a result map, copy all from <code>a</code>, then for each entry in <code>b</code> add to the
+              existing value.
+            - Remember that accessing a missing int map key returns <code>0</code>.
           solution: |-
-            func main() {
-                start := flag.Int("start", 1, "starting line number")
-                flag.Parse()
-
-                num := *start
-                scanner := bufio.NewScanner(os.Stdin)
-                for scanner.Scan() {
-                    fmt.Printf("%d\t%s\n", num, scanner.Text())
-                    num++
+            func mergeSum(a, b map[string]int) map[string]int {
+                result := make(map[string]int)
+                for k, v := range a {
+                    result[k] += v
                 }
+                for k, v := range b {
+                    result[k] += v
+                }
+                return result
             }
           annotations:
-            - type: stdlib
-              label: fmt.Printf
-              text: >-
-                <code>fmt.Printf</code> supports format verbs like <code>%d</code> (integer) and <code>%s</code>
-                (string), similar to C's printf.
             - type: idiom
-              label: Tab Separation
+              label: Zero Value Addition
               text: >-
-                Using <code>\t</code> (tab) between the number and content is the Unix convention, matching tools like
-                <code>cat -n</code> and <code>nl</code>.
+                In Go, <code>result[k] += v</code> works even if <code>k</code> is not yet in the map because the zero
+                value for <code>int</code> is <code>0</code>.
+            - type: complexity
+              label: O(n+m)
+              text: Iterates through both maps once, where n and m are the sizes of maps a and b.
         - id: v4
-          title: Unique Lines
+          title: Merge Multiple Maps
           description: >-
-            Build a tool that reads from stdin and prints only unique lines (removing consecutive duplicates, like
-            <code>uniq</code>). Add a <code>-count</code> flag to prefix each line with the number of consecutive
-            occurrences.
+            Write <code>func mergeAll[K comparable, V any](maps ...map[K]V) map[K]V</code> that merges any number of
+            maps. Later maps override earlier ones on conflicts.
           hints:
-            - Track the previous line. Only output when the current line differs from the previous.
-            - For the count flag, count consecutive duplicates before printing.
+            - Use a variadic parameter <code>...map[K]V</code>.
+            - Iterate through each map in order, copying entries into a single result map.
           solution: |-
-            func main() {
-                showCount := flag.Bool("count", false, "prefix with occurrence count")
-                flag.Parse()
-
-                scanner := bufio.NewScanner(os.Stdin)
-                var prev string
-                count := 0
-                first := true
-
-                for scanner.Scan() {
-                    line := scanner.Text()
-                    if first {
-                        prev = line
-                        count = 1
-                        first = false
-                        continue
-                    }
-                    if line == prev {
-                        count++
-                    } else {
-                        if *showCount {
-                            fmt.Printf("%d\t%s\n", count, prev)
-                        } else {
-                            fmt.Println(prev)
-                        }
-                        prev = line
-                        count = 1
+            func mergeAll[K comparable, V any](maps ...map[K]V) map[K]V {
+                result := make(map[K]V)
+                for _, m := range maps {
+                    for k, v := range m {
+                        result[k] = v
                     }
                 }
-                if !first {
-                    if *showCount {
-                        fmt.Printf("%d\t%s\n", count, prev)
-                    } else {
-                        fmt.Println(prev)
-                    }
-                }
+                return result
             }
           annotations:
-            - type: pattern
-              label: Previous Element Tracking
+            - type: idiom
+              label: Variadic Generics
               text: >-
-                Comparing each element to the previous one is a classic streaming pattern. It requires handling the
-                first and last elements as special cases.
+                Combining generics with variadic parameters (<code>...map[K]V</code>) creates flexible, reusable utility
+                functions.
             - type: gotcha
-              label: Last Line Flush
-              text: >-
-                When scanning line by line, do not forget to output the last group after the loop ends. This is a common
-                off-by-one error.
+              label: Nil Map in Variadic
+              text: Ranging over a nil map is safe in Go (zero iterations), so nil entries in the variadic list won't panic.
   challenges:
     - id: challenge_1
       block: 1
       difficulty: 2
-      concept: os.Environ
+      concept: Generics
       docLinks:
-        - url: https://pkg.go.dev/os#Environ
-          title: Package os.Environ
-          note: reading environment variables
-        - url: https://pkg.go.dev/strings#Split
-          title: Package strings.Split
-          note: parsing KEY=VALUE pairs
+        - url: https://go.dev/ref/spec#Type_parameter_declarations
+          title: "Go Spec: Type parameters"
+          note: generic type syntax
+        - url: https://go.dev/blog/intro-generics
+          title: "Go Blog: An Introduction To Generics"
+          note: generics tutorial
       variants:
         - id: v1
-          title: Env Printer
+          title: Generic Filter
           description: >-
-            Print environment variables. With no arguments, print all. With arguments, print only variables whose key
-            matches one of the arguments. Add an <code>-export</code> flag that formats output as <code>export
-            KEY="value"</code>.
-          functionSignature: func main()
+            Write <code>func Filter[T any](items []T, pred func(T) bool) []T</code> that returns a new slice containing
+            only elements for which the predicate returns true.
+          functionSignature: func Filter[T any](items []T, pred func(T) bool) []T
           testCases:
-            - input: ./envprint HOME
-              output: HOME=/home/user
-            - input: ./envprint -export HOME
-              output: export HOME="/home/user"
+            - input: Filter([]int{1, 2, 3, 4, 5}, func(n int) bool { return n%2 == 0 })
+              output: "[]int{2, 4}"
+            - input: Filter([]string{"go", "rust", "zig"}, func(s string) bool { return len(s) == 2 })
+              output: "[]string{\"go\"}"
           hints:
             - title: 🤔 Think about it
-              content: >-
-                How does <code>os.Environ()</code> return environment variables? What format are they in, and how do you
-                extract the key and value?
+              content: How do you build a new slice from a subset of elements? What determines which elements to keep?
             - title: 💡 Hint
               content: >-
-                <code>os.Environ()</code> returns <code>[]string</code> in <code>KEY=value</code> format. Use
-                <code>strings.SplitN(env, "=", 2)</code> to separate key and value (SplitN limits splits in case value
-                contains '=').
+                Create an empty result slice. Range over items, call <code>pred(item)</code>, and append if it returns
+                true.
             - title: 🔧 Pattern
               content: |-
-                <pre>1. Parse -export flag
-                2. Get filter args from flag.Args()
-                3. For each env var:
-                   - Split into key and value
-                   - If filters exist, skip non-matching keys
-                   - Print in plain or export format</pre>
+                <pre>1. Create empty result slice
+                2. For each item:
+                   - Call pred(item)
+                   - If true, append to result
+                3. Return result</pre>
           solution: |-
-            func main() {
-                export := flag.Bool("export", false, "export format")
-                flag.Parse()
-                filters := flag.Args()
-
-                for _, env := range os.Environ() {
-                    parts := strings.SplitN(env, "=", 2)
-                    key, val := parts[0], parts[1]
-
-                    if len(filters) > 0 {
-                        found := false
-                        for _, f := range filters {
-                            if f == key {
-                                found = true
-                                break
-                            }
-                        }
-                        if !found {
-                            continue
-                        }
-                    }
-
-                    if *export {
-                        fmt.Printf("export %s=%q\n", key, val)
-                    } else {
-                        fmt.Println(env)
+            func Filter[T any](items []T, pred func(T) bool) []T {
+                result := make([]T, 0)
+                for _, item := range items {
+                    if pred(item) {
+                        result = append(result, item)
                     }
                 }
+                return result
             }
           difficulty: 2
           annotations:
-            - type: stdlib
-              label: os.Environ
-              text: >-
-                <code>os.Environ()</code> returns a copy of all environment variables as a string slice in
-                <code>KEY=value</code> format.
             - type: idiom
-              label: "%q Verb"
+              label: Generic Functions
               text: >-
-                The <code>%q</code> format verb wraps a string in double quotes and escapes special characters, perfect
-                for shell-safe output.
+                Go 1.18+ supports type parameters. <code>[T any]</code> means T can be any type. The function works with
+                int, string, or any other type.
+            - type: complexity
+              label: O(n)
+              text: Single pass through the slice. The predicate is called once per element.
         - id: v2
-          title: Env Grep
+          title: Generic Map (Transform)
           description: >-
-            Build an <code>envgrep</code> tool that searches environment variable values (not just keys) using substring
-            matching. Add a <code>-i</code> flag for case-insensitive search and a <code>-keys</code> flag to only print
-            matching keys (not values).
-          functionSignature: func main()
+            Write <code>func Map[T any, U any](items []T, fn func(T) U) []U</code> that applies a transformation
+            function to each element and returns a new slice.
+          functionSignature: func Map[T any, U any](items []T, fn func(T) U) []U
           testCases:
-            - input: ./envgrep /usr
-              output: |-
-                PATH=/usr/local/bin:/usr/bin
-                ...
-            - input: ./envgrep -i -keys home
-              output: HOME
+            - input: Map([]int{1, 2, 3}, func(n int) int { return n * 2 })
+              output: "[]int{2, 4, 6}"
+            - input: Map([]string{"go", "rust"}, func(s string) int { return len(s) })
+              output: "[]int{2, 4}"
           hints:
             - title: 🤔 Think about it
-              content: How do you search within both the key and value? How do you implement case-insensitive matching?
+              content: You need to transform each element from type T to type U. What does the result slice look like?
             - title: 💡 Hint
               content: >-
-                Use <code>strings.Contains()</code> for substring matching. For case-insensitive search, convert both
-                the search term and the env var to lowercase with <code>strings.ToLower()</code>.
+                Pre-allocate <code>result := make([]U, len(items))</code> since you know the output size. Assign
+                <code>result[i] = fn(items[i])</code>.
             - title: 🔧 Pattern
               content: |-
-                <pre>1. Parse flags (-i, -keys) and get search pattern
-                2. For each env var:
-                   - Apply case folding if -i is set
-                   - Check if pattern is a substring of the full env var
-                   - Print key only or full var based on -keys flag</pre>
+                <pre>1. Allocate result slice of same length
+                2. For each index and item:
+                   - result[i] = fn(item)
+                3. Return result</pre>
           solution: |-
-            func main() {
-                insensitive := flag.Bool("i", false, "case insensitive")
-                keysOnly := flag.Bool("keys", false, "print keys only")
-                flag.Parse()
-
-                if len(flag.Args()) == 0 {
-                    fmt.Fprintln(os.Stderr, "usage: envgrep [-i] [-keys] pattern")
-                    os.Exit(1)
+            func Map[T any, U any](items []T, fn func(T) U) []U {
+                result := make([]U, len(items))
+                for i, item := range items {
+                    result[i] = fn(item)
                 }
-                pattern := flag.Args()[0]
-
-                for _, env := range os.Environ() {
-                    search := env
-                    pat := pattern
-                    if *insensitive {
-                        search = strings.ToLower(search)
-                        pat = strings.ToLower(pat)
-                    }
-                    if strings.Contains(search, pat) {
-                        if *keysOnly {
-                            parts := strings.SplitN(env, "=", 2)
-                            fmt.Println(parts[0])
-                        } else {
-                            fmt.Println(env)
-                        }
-                    }
-                }
-            }
-          difficulty: 2
-          annotations:
-            - type: stdlib
-              label: strings.Contains
-              text: >-
-                <code>strings.Contains(s, substr)</code> checks if <code>substr</code> is within <code>s</code>. It is
-                the idiomatic Go approach for substring search.
-            - type: idiom
-              label: Stderr for Errors
-              text: >-
-                Use <code>fmt.Fprintln(os.Stderr, ...)</code> for error messages so they do not mix with normal output
-                that might be piped.
-        - id: v3
-          title: Env Diff
-          description: >-
-            Build an <code>envdiff</code> tool that compares specified environment variables against expected values
-            from arguments in <code>KEY=expected</code> format. Print <code>OK</code> or <code>MISMATCH</code> for each.
-          functionSignature: func main()
-          testCases:
-            - input: ./envdiff HOME=/home/user
-              output: "HOME: OK"
-            - input: ./envdiff LANG=fake
-              output: "LANG: MISMATCH (got \"en_US.UTF-8\", want \"fake\")"
-          hints:
-            - title: 🤔 Think about it
-              content: >-
-                How do you get the value of a specific environment variable? How do you parse the expected value from
-                the command-line argument?
-            - title: 💡 Hint
-              content: >-
-                Use <code>os.Getenv(key)</code> to get a single env var. Split each argument with
-                <code>strings.SplitN(arg, "=", 2)</code> to extract the key and expected value.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>1. For each argument:
-                   - Split into key and expected value
-                   - Get actual value with os.Getenv(key)
-                   - Compare and print OK or MISMATCH</pre>
-          solution: |-
-            func main() {
-                for _, arg := range os.Args[1:] {
-                    parts := strings.SplitN(arg, "=", 2)
-                    if len(parts) != 2 {
-                        fmt.Fprintf(os.Stderr, "invalid format: %s (use KEY=value)\n", arg)
-                        continue
-                    }
-                    key, expected := parts[0], parts[1]
-                    actual := os.Getenv(key)
-                    if actual == expected {
-                        fmt.Printf("%s: OK\n", key)
-                    } else {
-                        fmt.Printf("%s: MISMATCH (got %q, want %q)\n", key, actual, expected)
-                    }
-                }
-            }
-          difficulty: 2
-          annotations:
-            - type: stdlib
-              label: os.Getenv
-              text: >-
-                <code>os.Getenv(key)</code> returns the value of an env var, or empty string if unset. Use
-                <code>os.LookupEnv()</code> to distinguish unset from empty.
-            - type: gotcha
-              label: Empty vs Unset
-              text: >-
-                <code>os.Getenv()</code> returns <code>""</code> for both unset and empty variables. Use
-                <code>os.LookupEnv()</code> if you need to tell them apart.
-        - id: v4
-          title: Env JSON
-          description: >-
-            Build an <code>envjson</code> tool that outputs environment variables as JSON. With no arguments, output all
-            as a JSON object. With arguments, output only matching keys. Add a <code>-pretty</code> flag for indented
-            output.
-          functionSignature: func main()
-          testCases:
-            - input: ./envjson HOME USER
-              output: "{\"HOME\":\"/home/user\",\"USER\":\"user\"}"
-            - input: ./envjson -pretty HOME
-              output: |-
-                {
-                  "HOME": "/home/user"
-                }
-          hints:
-            - title: 🤔 Think about it
-              content: How do you build a JSON object from a map in Go? What standard library package handles JSON encoding?
-            - title: 💡 Hint
-              content: >-
-                Build a <code>map[string]string</code> of the desired env vars. Use <code>json.Marshal()</code> or
-                <code>json.MarshalIndent()</code> for pretty printing.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>1. Collect env vars into a map
-                2. Filter by arguments if any
-                3. Marshal to JSON (indent if -pretty)
-                4. Print the result</pre>
-          solution: |-
-            func main() {
-                pretty := flag.Bool("pretty", false, "indented output")
-                flag.Parse()
-                filters := flag.Args()
-
-                envMap := make(map[string]string)
-                for _, env := range os.Environ() {
-                    parts := strings.SplitN(env, "=", 2)
-                    key, val := parts[0], parts[1]
-                    if len(filters) > 0 {
-                        found := false
-                        for _, f := range filters {
-                            if f == key {
-                                found = true
-                                break
-                            }
-                        }
-                        if !found {
-                            continue
-                        }
-                    }
-                    envMap[key] = val
-                }
-
-                var data []byte
-                var err error
-                if *pretty {
-                    data, err = json.MarshalIndent(envMap, "", "  ")
-                } else {
-                    data, err = json.Marshal(envMap)
-                }
-                if err != nil {
-                    fmt.Fprintln(os.Stderr, err)
-                    os.Exit(1)
-                }
-                fmt.Println(string(data))
-            }
-          difficulty: 3
-          annotations:
-            - type: stdlib
-              label: encoding/json
-              text: >-
-                <code>json.Marshal()</code> serializes Go values to JSON. <code>json.MarshalIndent()</code> adds
-                formatting for human readability.
-            - type: idiom
-              label: Error to Stderr
-              text: >-
-                CLI tools should write error messages to stderr and structured output to stdout so piping works
-                correctly.
-    - id: challenge_2
-      block: 1
-      difficulty: 2
-      concept: strconv
-      docLinks:
-        - url: https://pkg.go.dev/strconv
-          title: Package strconv
-          note: string-to-number conversions
-        - url: https://pkg.go.dev/os#Args
-          title: Package os.Args
-          note: command-line argument access
-      variants:
-        - id: v1
-          title: Simple Calculator
-          description: >-
-            Build a <code>calc</code> command that takes <code>num op num</code> as arguments, supporting
-            <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>. Exit with code 1 on division by zero or
-            invalid input.
-          functionSignature: func main()
-          testCases:
-            - input: ./calc 10 + 5
-              output: "15"
-            - input: ./calc 10 / 0
-              output: division by zero (exit 1)
-            - input: ./calc 7 * 3
-              output: "21"
-          hints:
-            - title: 🤔 Think about it
-              content: How do you convert string arguments to numbers? How do you handle the different operators?
-            - title: 💡 Hint
-              content: >-
-                Use <code>strconv.ParseFloat(s, 64)</code> to convert strings to numbers. A <code>switch</code> on the
-                operator string handles the four cases. Check for division by zero before dividing.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>1. Validate: exactly 3 arguments needed
-                2. Parse first and third args as float64
-                3. Switch on operator (second arg)
-                4. Handle division by zero specially
-                5. Print result or error + os.Exit(1)</pre>
-          solution: |-
-            func main() {
-                if len(os.Args) != 4 {
-                    fmt.Fprintln(os.Stderr, "usage: calc num op num")
-                    os.Exit(1)
-                }
-                a, err := strconv.ParseFloat(os.Args[1], 64)
-                if err != nil {
-                    fmt.Fprintln(os.Stderr, "invalid number:", os.Args[1])
-                    os.Exit(1)
-                }
-                op := os.Args[2]
-                b, err := strconv.ParseFloat(os.Args[3], 64)
-                if err != nil {
-                    fmt.Fprintln(os.Stderr, "invalid number:", os.Args[3])
-                    os.Exit(1)
-                }
-
-                var result float64
-                switch op {
-                case "+":
-                    result = a + b
-                case "-":
-                    result = a - b
-                case "*":
-                    result = a * b
-                case "/":
-                    if b == 0 {
-                        fmt.Fprintln(os.Stderr, "division by zero")
-                        os.Exit(1)
-                    }
-                    result = a / b
-                default:
-                    fmt.Fprintln(os.Stderr, "unknown operator:", op)
-                    os.Exit(1)
-                }
-                fmt.Println(result)
-            }
-          difficulty: 2
-          annotations:
-            - type: stdlib
-              label: strconv.ParseFloat
-              text: >-
-                <code>strconv.ParseFloat(s, 64)</code> parses a string into a float64. The second argument is the bit
-                size (32 or 64).
-            - type: idiom
-              label: os.Exit Codes
-              text: >-
-                Convention: exit code 0 means success, 1 means general error, 2 means usage error. Go's
-                <code>os.Exit()</code> sets the process exit code.
-        - id: v2
-          title: Temperature Converter
-          description: >-
-            Build a <code>tempconv</code> command: <code>tempconv 100 C</code> converts 100 Celsius to Fahrenheit,
-            <code>tempconv 212 F</code> converts to Celsius. Exit with code 1 for invalid unit.
-          functionSignature: func main()
-          testCases:
-            - input: ./tempconv 100 C
-              output: 212.00 F
-            - input: ./tempconv 32 F
-              output: 0.00 C
-            - input: ./tempconv 50 X
-              output: "unknown unit: X (exit 1)"
-          hints:
-            - title: 🤔 Think about it
-              content: What are the formulas for C-to-F and F-to-C conversion? How do you validate the unit argument?
-            - title: 💡 Hint
-              content: >-
-                C to F: <code>value*9/5 + 32</code>. F to C: <code>(value - 32) * 5/9</code>. Use
-                <code>strings.ToUpper()</code> to normalize the unit.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>1. Parse value and unit from args
-                2. Switch on unit:
-                   - "C": apply C->F formula
-                   - "F": apply F->C formula
-                   - else: error + exit(1)
-                3. Print formatted result</pre>
-          solution: |-
-            func main() {
-                if len(os.Args) != 3 {
-                    fmt.Fprintln(os.Stderr, "usage: tempconv value unit")
-                    os.Exit(1)
-                }
-                val, err := strconv.ParseFloat(os.Args[1], 64)
-                if err != nil {
-                    fmt.Fprintln(os.Stderr, "invalid number:", os.Args[1])
-                    os.Exit(1)
-                }
-                unit := strings.ToUpper(os.Args[2])
-
-                switch unit {
-                case "C":
-                    fmt.Printf("%.2f F\n", val*9.0/5.0+32)
-                case "F":
-                    fmt.Printf("%.2f C\n", (val-32)*5.0/9.0)
-                default:
-                    fmt.Fprintln(os.Stderr, "unknown unit:", os.Args[2])
-                    os.Exit(1)
-                }
+                return result
             }
           difficulty: 2
           annotations:
             - type: idiom
-              label: Input Normalization
+              label: Two Type Parameters
               text: >-
-                Converting user input to a canonical form (e.g., uppercase) before comparison is a common CLI pattern
-                that improves usability.
-            - type: stdlib
-              label: fmt.Printf %.2f
-              text: The <code>%.2f</code> format verb prints a float with exactly 2 decimal places.
-        - id: v3
-          title: Base Converter
-          description: >-
-            Build a <code>baseconv</code> command: <code>baseconv 255 hex</code> outputs <code>ff</code>, <code>baseconv
-            255 bin</code> outputs <code>11111111</code>, <code>baseconv 255 oct</code> outputs <code>377</code>. Exit
-            with code 1 for invalid input.
-          functionSignature: func main()
-          testCases:
-            - input: ./baseconv 255 hex
-              output: ff
-            - input: ./baseconv 10 bin
-              output: "1010"
-            - input: ./baseconv 255 oct
-              output: "377"
-          hints:
-            - title: 🤔 Think about it
-              content: How do you convert an integer to different bases in Go? Is there a formatting verb or function for this?
-            - title: 💡 Hint
-              content: >-
-                Use <code>strconv.FormatInt(n, base)</code> where base is 2, 8, or 16. Alternatively, use
-                <code>fmt.Sprintf</code> with <code>%x</code>, <code>%o</code>, or <code>%b</code>.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>1. Parse integer from first argument
-                2. Switch on base name:
-                   - "hex" -> base 16
-                   - "bin" -> base 2
-                   - "oct" -> base 8
-                3. Format and print</pre>
-          solution: |-
-            func main() {
-                if len(os.Args) != 3 {
-                    fmt.Fprintln(os.Stderr, "usage: baseconv number base")
-                    os.Exit(1)
-                }
-                n, err := strconv.ParseInt(os.Args[1], 10, 64)
-                if err != nil {
-                    fmt.Fprintln(os.Stderr, "invalid number:", os.Args[1])
-                    os.Exit(1)
-                }
-
-                switch strings.ToLower(os.Args[2]) {
-                case "hex":
-                    fmt.Println(strconv.FormatInt(n, 16))
-                case "bin":
-                    fmt.Println(strconv.FormatInt(n, 2))
-                case "oct":
-                    fmt.Println(strconv.FormatInt(n, 8))
-                default:
-                    fmt.Fprintln(os.Stderr, "unknown base:", os.Args[2])
-                    os.Exit(1)
-                }
-            }
-          difficulty: 2
-          annotations:
-            - type: stdlib
-              label: strconv.FormatInt
-              text: >-
-                <code>strconv.FormatInt(n, base)</code> converts an int64 to its string representation in the given base
-                (2-36).
+                Generic functions can have multiple type parameters. <code>[T any, U any]</code> allows input and output
+                to be different types.
             - type: alternative
-              label: fmt Verbs
+              label: Pre-allocate vs Append
               text: >-
-                You can also use <code>fmt.Sprintf("%x", n)</code> for hex, <code>"%b"</code> for binary, and
-                <code>"%o"</code> for octal.
-        - id: v4
-          title: Unit Calculator
+                When the output length equals the input length, pre-allocate with <code>make([]U, len(items))</code>
+                instead of using append for better performance.
+        - id: v3
+          title: Generic Reduce
           description: >-
-            Build a <code>unitcalc</code> tool that converts between units: <code>unitcalc 1000 m km</code> converts
-            1000 meters to kilometers. Support m/km, g/kg, and s/min.
-          functionSignature: func main()
+            Write <code>func Reduce[T any, U any](items []T, initial U, fn func(U, T) U) U</code> that reduces a slice
+            to a single value by applying a function cumulatively.
+          functionSignature: func Reduce[T any, U any](items []T, initial U, fn func(U, T) U) U
           testCases:
-            - input: ./unitcalc 1000 m km
-              output: "1.000"
-            - input: ./unitcalc 2.5 kg g
-              output: "2500.000"
-            - input: ./unitcalc 120 s min
-              output: "2.000"
+            - input: Reduce([]int{1, 2, 3, 4}, 0, func(acc, n int) int { return acc + n })
+              output: "10"
+            - input: Reduce([]string{"a", "b", "c"}, "", func(acc, s string) string { return acc + s })
+              output: "\"abc\""
           hints:
             - title: 🤔 Think about it
               content: >-
-                How do you structure conversion between related units? What data structure maps a unit to its base
-                value?
+                You need to accumulate a result by processing each element. What is the starting value and how does it
+                change with each element?
             - title: 💡 Hint
               content: >-
-                Define conversion factors to a base unit. For distance: m=1, km=1000. Convert to base unit first, then
-                to target: <code>value * fromFactor / toFactor</code>.
+                Start with <code>acc := initial</code>. For each item, update <code>acc = fn(acc, item)</code>. Return
+                acc at the end.
             - title: 🔧 Pattern
               content: |-
-                <pre>1. Define unit groups with factors:
-                   distance: m=1, km=1000
-                   mass: g=1, kg=1000
-                   time: s=1, min=60
-                2. Find which group both units belong to
-                3. Convert: value * fromFactor / toFactor</pre>
+                <pre>1. Set accumulator = initial value
+                2. For each item:
+                   - accumulator = fn(accumulator, item)
+                3. Return accumulator</pre>
           solution: |-
-            func main() {
-                if len(os.Args) != 4 {
-                    fmt.Fprintln(os.Stderr, "usage: unitcalc value from_unit to_unit")
-                    os.Exit(1)
+            func Reduce[T any, U any](items []T, initial U, fn func(U, T) U) U {
+                acc := initial
+                for _, item := range items {
+                    acc = fn(acc, item)
                 }
-                val, err := strconv.ParseFloat(os.Args[1], 64)
-                if err != nil {
-                    fmt.Fprintln(os.Stderr, "invalid number:", os.Args[1])
-                    os.Exit(1)
-                }
-                from := os.Args[2]
-                to := os.Args[3]
-
-                units := map[string]float64{
-                    "m": 1, "km": 1000,
-                    "g": 1, "kg": 1000,
-                    "s": 1, "min": 60,
-                }
-
-                fromFactor, okF := units[from]
-                toFactor, okT := units[to]
-                if !okF || !okT {
-                    fmt.Fprintln(os.Stderr, "unknown unit")
-                    os.Exit(1)
-                }
-
-                result := val * fromFactor / toFactor
-                fmt.Printf("%.3f\n", result)
+                return acc
             }
           difficulty: 3
           annotations:
             - type: pattern
-              label: Factor-Based Conversion
+              label: Fold/Reduce
               text: >-
-                Converting to a base unit then to the target is a scalable pattern. Adding new units only requires
-                adding entries to the factor map.
+                Reduce (also called fold) is a fundamental functional programming pattern. It can express sum, product,
+                concatenation, and many other aggregations.
+            - type: complexity
+              label: O(n)
+              text: Single pass through the slice. Total complexity depends on the provided function.
+        - id: v4
+          title: Generic Contains
+          description: >-
+            Write <code>func Contains[T comparable](items []T, target T) bool</code> that returns true if the target
+            element is found in the slice.
+          functionSignature: func Contains[T comparable](items []T, target T) bool
+          testCases:
+            - input: Contains([]int{1, 2, 3}, 2)
+              output: "true"
+            - input: Contains([]string{"go", "rust"}, "python")
+              output: "false"
+            - input: Contains([]int{}, 1)
+              output: "false"
+          hints:
+            - title: 🤔 Think about it
+              content: Why does this function need the <code>comparable</code> constraint instead of <code>any</code>?
+            - title: 💡 Hint
+              content: Loop through items, compare each with <code>==</code>. Return true on first match, false after the loop.
+            - title: 🔧 Pattern
+              content: |-
+                <pre>1. For each item:
+                   - If item == target, return true
+                2. Return false (not found)</pre>
+          solution: |-
+            func Contains[T comparable](items []T, target T) bool {
+                for _, item := range items {
+                    if item == target {
+                        return true
+                    }
+                }
+                return false
+            }
+          difficulty: 2
+          annotations:
+            - type: idiom
+              label: Comparable Constraint
+              text: >-
+                The <code>comparable</code> constraint is needed because <code>==</code> is not defined for all types
+                (e.g., slices, maps, functions cannot be compared).
+            - type: stdlib
+              label: slices.Contains
+              text: >-
+                Go 1.21+ provides <code>slices.Contains()</code> in the standard library, but implementing it yourself
+                teaches the underlying pattern.
+    - id: challenge_2
+      block: 2
+      difficulty: 3
+      concept: Stacks
+      docLinks:
+        - url: https://go.dev/ref/spec#Slice_types
+          title: "Go Spec: Slice types"
+          note: slices as dynamic arrays for stacks
+        - url: https://go.dev/ref/spec#Appending_and_copying_slices
+          title: "Go Spec: Appending and copying slices"
+          note: append for push, reslice for pop
+      variants:
+        - id: v1
+          title: Balanced Brackets
+          description: >-
+            Write <code>func isBalanced(s string) bool</code> that checks if a string of brackets <code>()[]{}</code> is
+            properly balanced. Non-bracket characters should be ignored.
+          functionSignature: func isBalanced(s string) bool
+          testCases:
+            - input: "\"({[]})\""
+              output: "true"
+            - input: "\"([)]\""
+              output: "false"
+            - input: "\"((())\""
+              output: "false"
+            - input: "\"\""
+              output: "true"
+          hints:
+            - title: 🤔 Think about it
+              content: >-
+                When you see a closing bracket, what do you need to check? What data structure helps you remember the
+                most recent unmatched opening bracket?
+            - title: 💡 Hint
+              content: >-
+                Use a slice as a stack. Push opening brackets, pop on closing brackets and check if they match. The
+                stack should be empty at the end.
+            - title: 🔧 Pattern
+              content: |-
+                <pre>1. Create bracket pairs map: closing -> opening
+                2. For each character:
+                   - Opening bracket? Push to stack
+                   - Closing bracket? Pop and verify match
+                3. Return: is stack empty?</pre>
+          solution: |-
+            func isBalanced(s string) bool {
+                stack := make([]rune, 0)
+                pairs := map[rune]rune{')': '(', ']': '[', '}': '{'}
+
+                for _, ch := range s {
+                    switch ch {
+                    case '(', '[', '{':
+                        stack = append(stack, ch)
+                    case ')', ']', '}':
+                        if len(stack) == 0 || stack[len(stack)-1] != pairs[ch] {
+                            return false
+                        }
+                        stack = stack[:len(stack)-1]
+                    }
+                }
+                return len(stack) == 0
+            }
+          difficulty: 3
+          annotations:
+            - type: idiom
+              label: Slice as Stack
+              text: >-
+                Go has no built-in stack type. Use a slice with <code>append()</code> for push and
+                <code>s[:len(s)-1]</code> for pop.
+            - type: complexity
+              label: O(n)
+              text: Single pass through the string. Each character is pushed and popped at most once.
+        - id: v2
+          title: Valid HTML Tags
+          description: >-
+            Write <code>func isValidHTML(s string) bool</code> that checks if simple HTML tags are properly nested. Tags
+            are like <code>&lt;b&gt;</code> and <code>&lt;/b&gt;</code>. Self-closing tags and attributes are not used.
+          functionSignature: func isValidHTML(s string) bool
+          testCases:
+            - input: "\"<b><i></i></b>\""
+              output: "true"
+            - input: "\"<b><i></b></i>\""
+              output: "false"
+            - input: "\"<p></p><div></div>\""
+              output: "true"
+            - input: "\"<p>\""
+              output: "false"
+          hints:
+            - title: 🤔 Think about it
+              content: >-
+                This is the bracket matching problem but with named tags. What needs to match when you encounter a
+                closing tag?
+            - title: 💡 Hint
+              content: >-
+                Extract tag names between < and >. Push opening tags onto a stack. When you see a closing tag (starts
+                with /), pop and check if the names match.
+            - title: 🔧 Pattern
+              content: |-
+                <pre>1. Parse tag names from the string
+                2. For each tag:
+                   - Opening tag? Push name to stack
+                   - Closing tag? Pop and verify name matches
+                3. Return: is stack empty?</pre>
+          solution: |-
+            func isValidHTML(s string) bool {
+                stack := make([]string, 0)
+                i := 0
+                for i < len(s) {
+                    if s[i] == '<' {
+                        j := i + 1
+                        for j < len(s) && s[j] != '>' {
+                            j++
+                        }
+                        if j >= len(s) {
+                            return false
+                        }
+                        tag := s[i+1 : j]
+                        if len(tag) > 0 && tag[0] == '/' {
+                            name := tag[1:]
+                            if len(stack) == 0 || stack[len(stack)-1] != name {
+                                return false
+                            }
+                            stack = stack[:len(stack)-1]
+                        } else {
+                            stack = append(stack, tag)
+                        }
+                        i = j + 1
+                    } else {
+                        i++
+                    }
+                }
+                return len(stack) == 0
+            }
+          difficulty: 3
+          annotations:
+            - type: pattern
+              label: Stack-Based Parsing
+              text: >-
+                Stacks are fundamental to parsing nested structures. Compilers and interpreters use this same pattern
+                for syntax analysis.
             - type: gotcha
-              label: Cross-Group Conversion
+              label: String Slicing
               text: >-
-                This simplified version does not prevent converting meters to kilograms. A production version would
-                group units and validate compatibility.
+                Go string slicing <code>s[i:j]</code> operates on bytes. For ASCII HTML tags this is fine, but be
+                careful with Unicode content.
+        - id: v3
+          title: Reverse Polish Notation
+          description: >-
+            Write <code>func evalRPN(tokens []string) int</code> that evaluates an expression in Reverse Polish
+            Notation. Supports <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code> (integer division).
+          functionSignature: func evalRPN(tokens []string) int
+          testCases:
+            - input: "[]string{\"2\", \"3\", \"+\"}"
+              output: "5"
+            - input: "[]string{\"4\", \"13\", \"5\", \"/\", \"+\"}"
+              output: "6"
+            - input: "[]string{\"3\", \"4\", \"*\", \"2\", \"-\"}"
+              output: "10"
+          hints:
+            - title: 🤔 Think about it
+              content: >-
+                In RPN, operators act on the two most recent numbers. What data structure naturally gives you access to
+                the most recent items?
+            - title: 💡 Hint
+              content: >-
+                Use a stack. Push numbers. When you see an operator, pop two numbers, apply the operator, push the
+                result. The final answer is the last item on the stack.
+            - title: 🔧 Pattern
+              content: |-
+                <pre>1. For each token:
+                   - Number? Parse and push to stack
+                   - Operator? Pop b, pop a, push a op b
+                2. Return top of stack</pre>
+          solution: |-
+            func evalRPN(tokens []string) int {
+                stack := make([]int, 0)
+                for _, tok := range tokens {
+                    switch tok {
+                    case "+", "-", "*", "/":
+                        b := stack[len(stack)-1]
+                        a := stack[len(stack)-2]
+                        stack = stack[:len(stack)-2]
+                        switch tok {
+                        case "+":
+                            stack = append(stack, a+b)
+                        case "-":
+                            stack = append(stack, a-b)
+                        case "*":
+                            stack = append(stack, a*b)
+                        case "/":
+                            stack = append(stack, a/b)
+                        }
+                    default:
+                        n, _ := strconv.Atoi(tok)
+                        stack = append(stack, n)
+                    }
+                }
+                return stack[0]
+            }
+          difficulty: 3
+          annotations:
+            - type: pattern
+              label: Stack-Based Evaluation
+              text: >-
+                RPN evaluation is a classic stack application. Calculators like the HP-48 use this notation because it
+                eliminates the need for parentheses.
+            - type: gotcha
+              label: Operand Order
+              text: >-
+                When popping two operands, the first popped is the right operand (b) and the second is the left (a).
+                Getting this wrong breaks subtraction and division.
+            - type: complexity
+              label: O(n)
+              text: Each token is processed exactly once. Stack operations are O(1) amortized.
+        - id: v4
+          title: Min Stack
+          description: >-
+            Implement a <code>MinStack</code> that supports <code>Push(val int)</code>, <code>Pop() int</code>,
+            <code>Top() int</code>, and <code>Min() int</code>. All operations must be O(1).
+          functionSignature: func NewMinStack() *MinStack
+          testCases:
+            - input: s := NewMinStack(); s.Push(3); s.Push(1); s.Push(2); s.Min()
+              output: "1"
+            - input: s := NewMinStack(); s.Push(3); s.Push(1); s.Pop(); s.Min()
+              output: "3"
+          hints:
+            - title: 🤔 Think about it
+              content: >-
+                If you only track one minimum value, what happens when you pop that minimum? How can you remember the
+                previous minimum?
+            - title: 💡 Hint
+              content: >-
+                Use two stacks: one for values and one for minimums. When pushing, also push the current minimum onto
+                the min stack. When popping, pop from both.
+            - title: 🔧 Pattern
+              content: |-
+                <pre>1. Maintain two parallel stacks: values and mins
+                2. Push: push value; push min(value, current min) to mins
+                3. Pop: pop from both stacks
+                4. Min: peek at top of mins stack</pre>
+          solution: |-
+            type MinStack struct {
+                values []int
+                mins   []int
+            }
+
+            func NewMinStack() *MinStack {
+                return &MinStack{}
+            }
+
+            func (s *MinStack) Push(val int) {
+                s.values = append(s.values, val)
+                if len(s.mins) == 0 || val <= s.mins[len(s.mins)-1] {
+                    s.mins = append(s.mins, val)
+                } else {
+                    s.mins = append(s.mins, s.mins[len(s.mins)-1])
+                }
+            }
+
+            func (s *MinStack) Pop() int {
+                val := s.values[len(s.values)-1]
+                s.values = s.values[:len(s.values)-1]
+                s.mins = s.mins[:len(s.mins)-1]
+                return val
+            }
+
+            func (s *MinStack) Top() int {
+                return s.values[len(s.values)-1]
+            }
+
+            func (s *MinStack) Min() int {
+                return s.mins[len(s.mins)-1]
+            }
+          difficulty: 3
+          annotations:
+            - type: pattern
+              label: Auxiliary Stack
+              text: >-
+                Using a parallel stack to track metadata (like minimums) is a classic pattern for achieving O(1)
+                operations on additional properties.
+            - type: complexity
+              label: O(1) all ops
+              text: Push, Pop, Top, and Min are all O(1) time. The trade-off is O(n) extra space for the mins stack.
+            - type: alternative
+              label: Space Optimization
+              text: >-
+                An optimization: only push to the min stack when the new value is less than or equal to the current min,
+                and only pop from it when the popped value equals the current min.

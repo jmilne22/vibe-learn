@@ -1,187 +1,212 @@
-## Reading & Writing Files
+## Basic Arguments with os.Args
 
-*File operations*
+*os.Args basics*
 
 ```go
 package main
 
 import (
+    "fmt"
     "os"
 )
 
 func main() {
-    // Read entire file (simple)
-    data, err := os.ReadFile("config.yaml")
-    if err != nil {
-        panic(err)
-    }
+    // os.Args[0] = program name
+    // os.Args[1:] = actual arguments
+    fmt.Println("Program:", os.Args[0])
+    fmt.Println("Args:", os.Args[1:])
     
-    // Write entire file
-    err = os.WriteFile("output.txt", []byte("Hello!"), 0644)
-    
-    // Check if file exists
-    if _, err := os.Stat("file.txt"); os.IsNotExist(err) {
-        fmt.Println("File doesn't exist")
-    }
-    
-    // Create directory
-    os.MkdirAll("path/to/dir", 0755)
-    
-    // List directory
-    entries, _ := os.ReadDir(".")
-    for _, e := range entries {
-        fmt.Println(e.Name(), e.IsDir())
+    if len(os.Args) < 2 {
+        fmt.Fprintln(os.Stderr, "Usage: program <name>")
+        os.Exit(1)
     }
 }
 ```
 
-## Parsing YAML
-
-*Install yaml package*
+*Terminal*
 
 ```bash
-$ go get gopkg.in/yaml.v3
+$ go run main.go hello world
+Program: /tmp/go-build.../main
+Args: [hello world]
 ```
 
-*tasks.yaml*
+## The flag Package
 
-```yaml
-name: my-project
-version: "1.0"
-
-tasks:
-  build:
-    command: go build -o app .
-    description: Build the application
-  
-  test:
-    command: go test ./...
-    description: Run tests
-  
-  deploy:
-    command: ./deploy.sh
-    depends_on:
-      - build
-      - test
-```
-
-*Parsing YAML*
+*Using flag*
 
 ```go
 package main
 
 import (
+    "flag"
     "fmt"
-    "os"
-    "gopkg.in/yaml.v3"
 )
 
-type Config struct {
-    Name    string          `yaml:"name"`
-    Version string          `yaml:"version"`
-    Tasks   map[string]Task `yaml:"tasks"`
-}
-
-type Task struct {
-    Command     string   `yaml:"command"`
-    Description string   `yaml:"description"`
-    DependsOn   []string `yaml:"depends_on"`
-}
-
 func main() {
-    data, err := os.ReadFile("tasks.yaml")
-    if err != nil {
-        panic(err)
+    // Define flags (returns pointers!)
+    name := flag.String("name", "World", "Name to greet")
+    count := flag.Int("count", 1, "Times to greet")
+    verbose := flag.Bool("verbose", false, "Verbose output")
+    
+    // Parse command line
+    flag.Parse()
+    
+    // Access values (dereference pointers)
+    for i := 0; i < *count; i++ {
+        if *verbose {
+            fmt.Printf("[%d] Hello, %s!\n", i+1, *name)
+        } else {
+            fmt.Printf("Hello, %s!\n", *name)
+        }
     }
     
-    var config Config
-    if err := yaml.Unmarshal(data, &config); err != nil {
-        panic(err)
-    }
-    
-    fmt.Printf("Project: %s v%s\n", config.Name, config.Version)
-    for name, task := range config.Tasks {
-        fmt.Printf("  %s: %s\n", name, task.Description)
-    }
+    // Remaining args (non-flag)
+    fmt.Println("Remaining:", flag.Args())
 }
 ```
 
-## Running Shell Commands
+*Usage*
 
-*os/exec package*
+```bash
+$ go run main.go -name=Gopher -count=3 -verbose
+[1] Hello, Gopher!
+[2] Hello, Gopher!
+[3] Hello, Gopher!
+
+$ go run main.go -help
+Usage of main:
+  -count int
+        Times to greet (default 1)
+  -name string
+        Name to greet (default "World")
+  -verbose
+        Verbose output
+```
+
+## Cobra for Subcommands
+
+For complex CLIs with subcommands (like git, docker), use Cobra.
+
+*Install Cobra*
+
+```bash
+$ go get github.com/spf13/cobra@latest
+```
+
+*Cobra structure*
+
+```go
+// cmd/root.go
+package cmd
+
+import "github.com/spf13/cobra"
+
+var rootCmd = &cobra.Command{
+    Use:   "myapp",
+    Short: "My awesome CLI app",
+}
+
+func Execute() error {
+    return rootCmd.Execute()
+}
+
+// cmd/greet.go
+var greetCmd = &cobra.Command{
+    Use:   "greet [name]",
+    Short: "Greet someone",
+    Args:  cobra.ExactArgs(1),
+    Run: func(cmd *cobra.Command, args []string) {
+        loud, _ := cmd.Flags().GetBool("loud")
+        name := args[0]
+        if loud {
+            fmt.Printf("HELLO, %s!!!\n", strings.ToUpper(name))
+        } else {
+            fmt.Printf("Hello, %s!\n", name)
+        }
+    },
+}
+
+func init() {
+    greetCmd.Flags().BoolP("loud", "l", false, "Shout the greeting")
+    rootCmd.AddCommand(greetCmd)
+}
+```
+
+## stdin, stdout, stderr
+
+*Working with streams*
 
 ```go
 package main
 
 import (
+    "bufio"
     "fmt"
     "os"
-    "os/exec"
+    "strings"
 )
 
 func main() {
-    // Simple command with output
-    out, err := exec.Command("ls", "-la").Output()
-    if err != nil {
-        fmt.Println("Error:", err)
+    // Write to stdout (normal output)
+    fmt.Println("This goes to stdout")
+    
+    // Write to stderr (errors/progress)
+    fmt.Fprintln(os.Stderr, "This goes to stderr")
+    
+    // Read from stdin line by line
+    scanner := bufio.NewScanner(os.Stdin)
+    for scanner.Scan() {
+        line := scanner.Text()
+        fmt.Println(strings.ToUpper(line))
     }
-    fmt.Println(string(out))
     
-    // Run through shell (for pipes, etc)
-    cmd := exec.Command("bash", "-c", "echo hello | tr a-z A-Z")
-    out, _ = cmd.Output()
-    fmt.Println(string(out))  // HELLO
-    
-    // Stream output in real-time
-    cmd = exec.Command("go", "build", "-v", ".")
-    cmd.Stdout = os.Stdout  // Connect to our stdout
-    cmd.Stderr = os.Stderr
-    err = cmd.Run()
-    
-    // Get exit code
-    if exitErr, ok := err.(*exec.ExitError); ok {
-        fmt.Println("Exit code:", exitErr.ExitCode())
+    if err := scanner.Err(); err != nil {
+        fmt.Fprintln(os.Stderr, "Error:", err)
+        os.Exit(1)
     }
 }
 ```
 
-> **Security:** Never pass user input directly to shell commands. Use exec.Command with separate args, not bash -c with string interpolation.
+*Piping*
 
-## Environment Variables
+```bash
+# Pipe input
+$ echo "hello world" | go run main.go
+HELLO WORLD
 
-*Working with env vars*
+# Redirect stderr
+$ go run main.go 2>/dev/null
+
+# Combine with other tools
+$ cat file.txt | go run main.go | grep pattern
+```
+
+## Exit Codes
+
+*Proper exit handling*
 
 ```go
-import "os"
-
-// Get env var (empty string if not set)
-home := os.Getenv("HOME")
-
-// Get with default
-port := os.Getenv("PORT")
-if port == "" {
-    port = "8080"
+func main() {
+    if err := run(); err != nil {
+        fmt.Fprintln(os.Stderr, "Error:", err)
+        os.Exit(1)
+    }
 }
 
-// Check if set
-val, exists := os.LookupEnv("API_KEY")
-if !exists {
-    panic("API_KEY not set")
+func run() error {
+    // Your actual logic here
+    // Return errors instead of os.Exit()
+    return nil
 }
 
-// Set env var
-os.Setenv("MY_VAR", "value")
-
-// Pass env to subprocess
-cmd := exec.Command("./script.sh")
-cmd.Env = append(os.Environ(), "CUSTOM=value")
+// Common exit codes:
+// 0 = success
+// 1 = general error
+// 2 = misuse of command
 ```
 
-### 🔨 Project: Task Runner
-
-Put your skills to work! Build a task runner that reads YAML configs and executes shell commands.
-
-Start Project →
+> **Pattern:** Keep main() thin. Put logic in run() that returns errors. Easier to test!
 
 ## Exercises
 
@@ -201,10 +226,10 @@ Combine concepts and learn patterns. Each challenge has multiple variants at dif
             <noscript><p class="js-required">JavaScript is required for the interactive exercises.</p></noscript>
             </div>
 
-## Module 7 Summary
+## Module 6 Summary
 
-- **os.ReadFile / WriteFile** — simple file I/O
-- **yaml.Unmarshal** — parse YAML into structs
-- **exec.Command** — run external commands
-- **cmd.Stdout = os.Stdout** — stream output
-- **os.Getenv / LookupEnv** — environment variables
+- **os.Args** — raw argument access
+- **flag package** — built-in flag parsing
+- **Cobra** — for complex subcommand CLIs
+- **os.Stdin/Stdout/Stderr** — standard streams
+- **os.Exit(code)** — 0 = success, 1+ = error

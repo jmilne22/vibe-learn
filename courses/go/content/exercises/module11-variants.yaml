@@ -1,655 +1,533 @@
 conceptLinks:
-  HTTP GET: "#lesson-http-get"
-  JSON Decoding: "#lesson-json-decode"
-  Custom Requests: "#lesson-custom-request"
-  API Client: "#lesson-api-client"
-  HTTP Server: "#lesson-http-server"
-  Middleware: "#lesson-middleware"
+  Elm Architecture: "#lesson-elm-architecture"
+  Model: "#lesson-model"
+  Update: "#lesson-update"
+  View: "#lesson-view"
+  Lipgloss: "#lesson-lipgloss"
+  Bubbles: "#lesson-bubbles"
 sharedContent: {}
 variants:
   warmups:
     - id: warmup_1
-      concept: HTTP GET
+      concept: Elm Architecture
       variants:
         - id: v1
-          title: Simple GET Request
+          title: Basic Model Struct
           description: >-
-            Make an HTTP GET request to <code>"https://api.example.com/health"</code>. Print the status code and read
-            the response body as a string.
+            Define a Bubble Tea <code>model</code> struct for a counter app. It should have a <code>count int</code>
+            field. Implement <code>Init()</code> to return <code>nil</code> (no initial command).
           hints:
-            - Use <code>http.Get(url)</code> — returns <code>(*http.Response, error)</code>.
-            - Always <code>defer resp.Body.Close()</code>.
-            - Read body with <code>io.ReadAll(resp.Body)</code>.
+            - "The model is just a struct: <code>type model struct { count int }</code>."
+            - <code>Init()</code> returns a <code>tea.Cmd</code> — use <code>nil</code> for no startup command.
+            - The signature is <code>func (m model) Init() tea.Cmd</code>.
           solution: |-
-            resp, err := http.Get("https://api.example.com/health")
-            if err != nil {
-                fmt.Println("Error:", err)
-                return
-            }
-            defer resp.Body.Close()
-
-            body, _ := io.ReadAll(resp.Body)
-            fmt.Println("Status:", resp.StatusCode)
-            fmt.Println("Body:", string(body))
-          annotations:
-            - type: idiom
-              label: Defer Close
-              text: >-
-                Always <code>defer resp.Body.Close()</code> immediately after checking the error. Forgetting this leaks
-                connections.
-            - type: gotcha
-              label: Body Close
-              text: The response body must be closed even if you don't read it. An unclosed body prevents connection reuse.
-        - id: v2
-          title: GET with Status Check
-          description: >-
-            Make a GET request and check if the status code is <code>200 OK</code>. If not, print an error with the
-            status. If it is, print the body.
-          hints:
-            - Compare <code>resp.StatusCode != http.StatusOK</code>.
-            - <code>resp.Status</code> gives you a human-readable status like <code>"200 OK"</code>.
-            - Read body only if the status is OK.
-          solution: |-
-            resp, err := http.Get("https://api.example.com/data")
-            if err != nil {
-                fmt.Println("Error:", err)
-                return
-            }
-            defer resp.Body.Close()
-
-            if resp.StatusCode != http.StatusOK {
-                fmt.Printf("API error: %s\n", resp.Status)
-                return
+            type model struct {
+                count int
             }
 
-            body, _ := io.ReadAll(resp.Body)
-            fmt.Println(string(body))
-          annotations:
-            - type: idiom
-              label: Status Constants
-              text: >-
-                Use <code>http.StatusOK</code>, <code>http.StatusNotFound</code>, etc. instead of raw numbers. They're
-                self-documenting.
-            - type: gotcha
-              label: Error vs Bad Status
-              text: >-
-                <code>http.Get</code> only returns an error for network failures. A 404 or 500 response is NOT an error
-                — you must check <code>resp.StatusCode</code>.
-        - id: v3
-          title: GET with Timeout
-          description: >-
-            Create an <code>http.Client</code> with a 10-second timeout. Use it to make a GET request instead of the
-            default client.
-          hints:
-            - "Create: <code>&http.Client{Timeout: 10 * time.Second}</code>."
-            - Use <code>client.Get(url)</code> instead of <code>http.Get(url)</code>.
-            - Import <code>time</code> for <code>time.Second</code>.
-          solution: |-
-            client := &http.Client{Timeout: 10 * time.Second}
-
-            resp, err := client.Get("https://api.example.com/data")
-            if err != nil {
-                fmt.Println("Error:", err)
-                return
-            }
-            defer resp.Body.Close()
-
-            body, _ := io.ReadAll(resp.Body)
-            fmt.Println(string(body))
-          annotations:
-            - type: idiom
-              label: Custom Client
-              text: >-
-                Always use a custom <code>http.Client</code> with a timeout in production. The default client has no
-                timeout and can hang forever.
-            - type: gotcha
-              label: Default Client
-              text: >-
-                <code>http.Get()</code> uses the default client with zero timeout. A slow server will block your
-                goroutine indefinitely.
-    - id: warmup_2
-      concept: JSON Decoding
-      variants:
-        - id: v1
-          title: Decode JSON Response
-          description: >-
-            Define a <code>User</code> struct with <code>Login</code>, <code>Name</code>, and <code>Followers int</code>
-            fields (with JSON tags). Decode an HTTP response body into it.
-          hints:
-            - "JSON tags: <code>`json:\"login\"`</code>."
-            - Use <code>json.NewDecoder(resp.Body).Decode(&user)</code>.
-            - This streams the JSON — no need to read the whole body first.
-          solution: |-
-            type User struct {
-                Login     string `json:"login"`
-                Name      string `json:"name"`
-                Followers int    `json:"followers"`
-            }
-
-            // After making the HTTP request:
-            var user User
-            if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
-                fmt.Println("Decode error:", err)
-                return
-            }
-            fmt.Printf("%s (%s) - %d followers\n", user.Name, user.Login, user.Followers)
-          annotations:
-            - type: idiom
-              label: Stream Decode
-              text: >-
-                <code>json.NewDecoder</code> reads from an <code>io.Reader</code> directly — no need to buffer the whole
-                body with <code>io.ReadAll</code> first.
-            - type: idiom
-              label: JSON Tags
-              text: >-
-                JSON tags map Go's uppercase field names to the API's lowercase/snake_case keys. Without tags, Go uses
-                the field name as-is.
-        - id: v2
-          title: Decode JSON Array
-          description: >-
-            Define a <code>Repo</code> struct with <code>Name string</code> and <code>Stars int</code> (JSON key:
-            <code>stargazers_count</code>). Decode an array of repos from a response body.
-          hints:
-            - "Decode into a slice: <code>var repos []Repo</code>."
-            - The JSON tag for stars is <code>`json:"stargazers_count"`</code>.
-            - Iterate and print each repo's name and star count.
-          solution: |-
-            type Repo struct {
-                Name  string `json:"name"`
-                Stars int    `json:"stargazers_count"`
-            }
-
-            var repos []Repo
-            if err := json.NewDecoder(resp.Body).Decode(&repos); err != nil {
-                fmt.Println("Decode error:", err)
-                return
-            }
-
-            for _, repo := range repos {
-                fmt.Printf("%s (%d stars)\n", repo.Name, repo.Stars)
-            }
-          annotations:
-            - type: idiom
-              label: Decode into Slice
-              text: >-
-                If the JSON response is an array, decode into a Go slice. The decoder handles the <code>[...]</code>
-                wrapping automatically.
-            - type: idiom
-              label: Field Mapping
-              text: >-
-                JSON tags let you map any JSON key to any Go field name. <code>stargazers_count</code> →
-                <code>Stars</code> keeps your Go code idiomatic.
-        - id: v3
-          title: Handle JSON Error Response
-          description: >-
-            When an API returns an error status, the body often contains JSON like <code>{"error": "not found", "code":
-            404}</code>. Decode this into an <code>APIError</code> struct when the status is not 200.
-          hints:
-            - Define <code>APIError</code> with <code>Error string</code> and <code>Code int</code> fields.
-            - Check status first. If not OK, decode into <code>APIError</code> instead.
-            - Return the structured error for the caller to handle.
-          solution: |-
-            type APIError struct {
-                Error string `json:"error"`
-                Code  int    `json:"code"`
-            }
-
-            if resp.StatusCode != http.StatusOK {
-                var apiErr APIError
-                json.NewDecoder(resp.Body).Decode(&apiErr)
-                fmt.Printf("API error %d: %s\n", apiErr.Code, apiErr.Error)
-                return
-            }
-          annotations:
-            - type: pattern
-              label: Error Response Parsing
-              text: >-
-                Many APIs return structured JSON errors. Parsing them gives callers actionable information instead of a
-                generic status code.
-    - id: warmup_3
-      concept: Custom Requests
-      variants:
-        - id: v1
-          title: GET with Authorization Header
-          description: >-
-            Create a custom HTTP request with an <code>Authorization: Bearer &lt;token&gt;</code> header. Execute it
-            with a custom client.
-          hints:
-            - Use <code>http.NewRequest("GET", url, nil)</code>.
-            - "Set header: <code>req.Header.Set(\"Authorization\", \"Bearer \"+token)</code>."
-            - "Execute: <code>client.Do(req)</code>."
-          solution: |-
-            req, err := http.NewRequest("GET", "https://api.example.com/user", nil)
-            if err != nil {
-                fmt.Println("Error:", err)
-                return
-            }
-            req.Header.Set("Authorization", "Bearer "+token)
-            req.Header.Set("Accept", "application/json")
-
-            client := &http.Client{Timeout: 10 * time.Second}
-            resp, err := client.Do(req)
-            if err != nil {
-                fmt.Println("Error:", err)
-                return
-            }
-            defer resp.Body.Close()
-          annotations:
-            - type: idiom
-              label: NewRequest
-              text: >-
-                <code>http.NewRequest</code> gives you a request object you can customize (headers, body, context)
-                before sending.
-            - type: idiom
-              label: Bearer Token
-              text: >-
-                The <code>Authorization: Bearer &lt;token&gt;</code> header is the standard way to authenticate API
-                requests.
-        - id: v2
-          title: POST with JSON Body
-          description: >-
-            Create a POST request with a JSON body. Marshal a struct to JSON, wrap it in a <code>bytes.NewReader</code>,
-            and set the <code>Content-Type</code> header.
-          hints:
-            - "Marshal: <code>data, _ := json.Marshal(payload)</code>."
-            - "Body: <code>bytes.NewReader(data)</code>."
-            - "Set header: <code>req.Header.Set(\"Content-Type\", \"application/json\")</code>."
-          solution: |-
-            type CreateRepoRequest struct {
-                Name        string `json:"name"`
-                Description string `json:"description"`
-                Private     bool   `json:"private"`
-            }
-
-            payload := CreateRepoRequest{
-                Name:        "my-repo",
-                Description: "A new repo",
-                Private:     false,
-            }
-
-            data, _ := json.Marshal(payload)
-            req, _ := http.NewRequest("POST", "https://api.example.com/repos", bytes.NewReader(data))
-            req.Header.Set("Content-Type", "application/json")
-            req.Header.Set("Authorization", "Bearer "+token)
-
-            client := &http.Client{Timeout: 10 * time.Second}
-            resp, err := client.Do(req)
-            if err != nil {
-                fmt.Println("Error:", err)
-                return
-            }
-            defer resp.Body.Close()
-          annotations:
-            - type: idiom
-              label: JSON Body
-              text: >-
-                For POST/PUT requests: marshal to JSON, wrap in <code>bytes.NewReader</code>, and set
-                <code>Content-Type: application/json</code>.
-            - type: gotcha
-              label: Content-Type Required
-              text: >-
-                Without <code>Content-Type: application/json</code>, many APIs will reject the request or misinterpret
-                the body.
-        - id: v3
-          title: DELETE Request
-          description: >-
-            Create and send an HTTP DELETE request to <code>/api/items/42</code>. Check that the response status is
-            <code>204 No Content</code>.
-          hints:
-            - Use <code>http.NewRequest("DELETE", url, nil)</code> — no body needed.
-            - Check <code>resp.StatusCode == http.StatusNoContent</code>.
-            - <code>204 No Content</code> means the delete was successful with no response body.
-          solution: |-
-            req, _ := http.NewRequest("DELETE", "https://api.example.com/items/42", nil)
-            req.Header.Set("Authorization", "Bearer "+token)
-
-            client := &http.Client{Timeout: 10 * time.Second}
-            resp, err := client.Do(req)
-            if err != nil {
-                fmt.Println("Error:", err)
-                return
-            }
-            defer resp.Body.Close()
-
-            if resp.StatusCode == http.StatusNoContent {
-                fmt.Println("Deleted successfully")
-            } else {
-                fmt.Printf("Unexpected status: %s\n", resp.Status)
-            }
-          annotations:
-            - type: idiom
-              label: DELETE Pattern
-              text: DELETE requests typically have no body and return 204 (No Content) on success.
-    - id: warmup_4
-      concept: HTTP Server
-      variants:
-        - id: v1
-          title: Health Check Endpoint
-          description: >-
-            Register an HTTP handler at <code>/health</code> that returns <code>200 OK</code> with body
-            <code>"OK"</code>.
-          hints:
-            - Use <code>http.HandleFunc("/health", handler)</code>.
-            - The handler signature is <code>func(w http.ResponseWriter, r *http.Request)</code>.
-            - "Write response: <code>w.Write([]byte(\"OK\"))</code>."
-          solution: |-
-            http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-                w.WriteHeader(http.StatusOK)
-                w.Write([]byte("OK"))
-            })
-
-            fmt.Println("Listening on :8080")
-            http.ListenAndServe(":8080", nil)
-          annotations:
-            - type: idiom
-              label: Health Endpoint
-              text: >-
-                A <code>/health</code> endpoint is standard in production services. Load balancers and monitoring tools
-                use it to check if the service is running.
-            - type: gotcha
-              label: WriteHeader Order
-              text: >-
-                Call <code>w.WriteHeader()</code> before <code>w.Write()</code>. Writing the body implicitly sends a 200
-                status if you haven't set one yet.
-        - id: v2
-          title: JSON API Endpoint
-          description: >-
-            Create an endpoint at <code>/api/greet</code> that reads a <code>name</code> query parameter and returns
-            JSON like <code>{"message": "Hello, Alice"}</code>.
-          hints:
-            - "Read query param: <code>r.URL.Query().Get(\"name\")</code>."
-            - "Set content type: <code>w.Header().Set(\"Content-Type\", \"application/json\")</code>."
-            - "Encode response: <code>json.NewEncoder(w).Encode(resp)</code>."
-          solution: |-
-            type Response struct {
-                Message string `json:"message"`
-            }
-
-            http.HandleFunc("/api/greet", func(w http.ResponseWriter, r *http.Request) {
-                name := r.URL.Query().Get("name")
-                if name == "" {
-                    name = "World"
-                }
-                w.Header().Set("Content-Type", "application/json")
-                json.NewEncoder(w).Encode(Response{Message: "Hello, " + name})
-            })
-          annotations:
-            - type: idiom
-              label: Stream Encode
-              text: >-
-                <code>json.NewEncoder(w).Encode()</code> writes JSON directly to the ResponseWriter — no intermediate
-                buffer needed.
-            - type: idiom
-              label: Content-Type
-              text: >-
-                Always set <code>Content-Type: application/json</code> for JSON responses. Clients rely on this header
-                to parse the response correctly.
-        - id: v3
-          title: Method-Aware Handler
-          description: >-
-            Create a handler at <code>/api/items</code> that returns items for GET requests and returns <code>405 Method
-            Not Allowed</code> for anything else.
-          hints:
-            - Check <code>r.Method</code> against <code>http.MethodGet</code>.
-            - Use <code>http.Error(w, message, http.StatusMethodNotAllowed)</code> for 405.
-            - Go's <code>http.HandleFunc</code> matches all methods — you must filter in the handler.
-          solution: |-
-            http.HandleFunc("/api/items", func(w http.ResponseWriter, r *http.Request) {
-                if r.Method != http.MethodGet {
-                    http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-                    return
-                }
-                w.Header().Set("Content-Type", "application/json")
-                json.NewEncoder(w).Encode([]string{"item1", "item2", "item3"})
-            })
-          annotations:
-            - type: gotcha
-              label: No Method Routing
-              text: >-
-                The standard library's <code>HandleFunc</code> matches ALL HTTP methods. You must check
-                <code>r.Method</code> yourself.
-            - type: idiom
-              label: http.Error
-              text: >-
-                <code>http.Error(w, msg, code)</code> sets the status code and writes a plain text error body. It also
-                sets Content-Type to text/plain.
-  challenges:
-    - id: challenge_1
-      concept: API Client
-      docLinks:
-        - url: https://pkg.go.dev/net/http#Client
-          title: Package http.Client
-          note: configuring HTTP clients
-        - url: https://pkg.go.dev/net/http#NewRequest
-          title: Package http.NewRequest
-          note: building custom requests
-        - url: https://pkg.go.dev/encoding/json#NewDecoder
-          title: Package json.NewDecoder
-          note: streaming JSON decoding
-      variants:
-        - id: v1
-          title: Reusable API Client Struct
-          description: >-
-            Build a reusable API client struct with <code>baseURL</code>, <code>token</code>, and
-            <code>httpClient</code> fields. Write a <code>NewClient</code> constructor and a private
-            <code>request</code> method that adds auth headers to every request.
-          hints:
-            - Store <code>*http.Client</code> in the struct with a timeout.
-            - >-
-              The <code>request</code> method should create a <code>http.NewRequest</code>, set headers, and call
-              <code>c.httpClient.Do(req)</code>.
-            - Make it lowercase (<code>request</code>) since it's an internal helper.
-          solution: |-
-            type APIClient struct {
-                baseURL    string
-                token      string
-                httpClient *http.Client
-            }
-
-            func NewClient(baseURL, token string) *APIClient {
-                return &APIClient{
-                    baseURL:    baseURL,
-                    token:      token,
-                    httpClient: &http.Client{Timeout: 30 * time.Second},
-                }
-            }
-
-            func (c *APIClient) request(method, path string, body io.Reader) (*http.Response, error) {
-                req, err := http.NewRequest(method, c.baseURL+path, body)
-                if err != nil {
-                    return nil, err
-                }
-                req.Header.Set("Authorization", "Bearer "+c.token)
-                req.Header.Set("Accept", "application/json")
-                if body != nil {
-                    req.Header.Set("Content-Type", "application/json")
-                }
-                return c.httpClient.Do(req)
-            }
-          annotations:
-            - type: pattern
-              label: API Client Pattern
-              text: >-
-                A client struct encapsulates base URL, auth, timeout, and common headers. Public methods like
-                <code>GetUser()</code> call the private <code>request()</code> helper.
-            - type: idiom
-              label: Constructor
-              text: >-
-                <code>NewClient()</code> is Go's convention for constructors. It returns a pointer to the initialized
-                struct.
-        - id: v2
-          title: Client GET Method
-          description: >-
-            Add a public <code>Get(path string, result any) error</code> method to the API client that makes a GET
-            request, checks the status, and decodes the JSON response into <code>result</code>.
-          hints:
-            - Call the private <code>c.request("GET", path, nil)</code>.
-            - Check <code>resp.StatusCode != http.StatusOK</code>.
-            - Use <code>json.NewDecoder(resp.Body).Decode(result)</code>.
-          solution: |-
-            func (c *APIClient) Get(path string, result any) error {
-                resp, err := c.request("GET", path, nil)
-                if err != nil {
-                    return err
-                }
-                defer resp.Body.Close()
-
-                if resp.StatusCode != http.StatusOK {
-                    return fmt.Errorf("API error: %s", resp.Status)
-                }
-
-                return json.NewDecoder(resp.Body).Decode(result)
-            }
-
-            // Usage:
-            var user User
-            err := client.Get("/users/octocat", &user)
-          annotations:
-            - type: pattern
-              label: Generic Decode
-              text: >-
-                Using <code>any</code> (or <code>interface{}</code>) for the result parameter lets one method decode
-                into any struct type.
-        - id: v3
-          title: Client POST Method
-          description: >-
-            Add a public <code>Post(path string, payload any, result any) error</code> method that marshals the payload
-            to JSON, sends a POST, and decodes the response.
-          hints:
-            - Marshal with <code>json.Marshal(payload)</code>, wrap in <code>bytes.NewReader</code>.
-            - Call <code>c.request("POST", path, bodyReader)</code>.
-            - Check for <code>StatusCreated</code> (201) — the typical POST success code.
-          solution: |-
-            func (c *APIClient) Post(path string, payload any, result any) error {
-                data, err := json.Marshal(payload)
-                if err != nil {
-                    return err
-                }
-
-                resp, err := c.request("POST", path, bytes.NewReader(data))
-                if err != nil {
-                    return err
-                }
-                defer resp.Body.Close()
-
-                if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
-                    body, _ := io.ReadAll(resp.Body)
-                    return fmt.Errorf("API error %s: %s", resp.Status, string(body))
-                }
-
-                if result != nil {
-                    return json.NewDecoder(resp.Body).Decode(result)
-                }
+            func (m model) Init() tea.Cmd {
                 return nil
             }
           annotations:
-            - type: pattern
-              label: POST Response
-              text: >-
-                POST endpoints typically return 201 (Created) with the created resource in the body, or 200 with a
-                result.
             - type: idiom
-              label: Optional Result
-              text: Checking <code>result != nil</code> lets callers skip decoding when they don't need the response body.
-    - id: challenge_2
-      concept: Middleware
-      docLinks:
-        - url: https://pkg.go.dev/net/http#Handler
-          title: Package http.Handler
-          note: the Handler interface
-        - url: https://pkg.go.dev/net/http#HandlerFunc
-          title: Package http.HandlerFunc
-          note: adapter for functions as handlers
-      variants:
-        - id: v1
-          title: Logging Middleware
-          description: >-
-            Write a logging middleware that prints the HTTP method, path, and duration for every request. It should wrap
-            an <code>http.Handler</code> and return a new <code>http.Handler</code>.
-          hints:
-            - Capture <code>start := time.Now()</code> before calling <code>next.ServeHTTP(w, r)</code>.
-            - After the call, compute duration with <code>time.Since(start)</code>.
-            - Use <code>http.HandlerFunc</code> to convert a function into an <code>http.Handler</code>.
-          solution: |-
-            func LoggingMiddleware(next http.Handler) http.Handler {
-                return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-                    start := time.Now()
-                    next.ServeHTTP(w, r)
-                    fmt.Printf("%s %s %v\n", r.Method, r.URL.Path, time.Since(start))
-                })
-            }
-          annotations:
+              label: Model = State
+              text: In Bubble Tea, the model struct holds your entire application state. Keep it simple and focused.
             - type: pattern
-              label: Middleware Signature
-              text: >-
-                Go middleware is <code>func(http.Handler) http.Handler</code>. It wraps the next handler, does work
-                before/after, and calls <code>next.ServeHTTP</code>.
-            - type: idiom
-              label: HandlerFunc Adapter
-              text: >-
-                <code>http.HandlerFunc</code> converts a function with the right signature into an
-                <code>http.Handler</code> interface value.
+              label: Elm Architecture
+              text: Bubble Tea follows Model → Update → View. The model is the single source of truth for your app's state.
         - id: v2
-          title: Auth Middleware
+          title: Counter with Choices
           description: >-
-            Write an auth middleware that checks for an <code>Authorization</code> header. If missing, return <code>401
-            Unauthorized</code>. If present, call the next handler.
+            Define a model for a list selector with <code>choices []string</code>, <code>cursor int</code>, and
+            <code>selected map[int]struct{}</code> fields. Write an <code>initialModel()</code> function that returns a
+            model with three choices.
           hints:
-            - "Read header: <code>r.Header.Get(\"Authorization\")</code>."
-            - If empty, use <code>http.Error(w, "Unauthorized", http.StatusUnauthorized)</code> and return.
-            - If present, call <code>next.ServeHTTP(w, r)</code> to continue.
+            - Initialize the map with <code>make(map[int]struct{})</code>.
+            - Set cursor to <code>0</code> (first item selected by default).
+            - "The choices can be anything: <code>[]string{\"Option A\", \"Option B\", \"Option C\"}</code>."
           solution: |-
-            func AuthMiddleware(next http.Handler) http.Handler {
-                return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-                    token := r.Header.Get("Authorization")
-                    if token == "" {
-                        http.Error(w, "Unauthorized", http.StatusUnauthorized)
-                        return
-                    }
-                    next.ServeHTTP(w, r)
-                })
-            }
-          annotations:
-            - type: pattern
-              label: Guard Middleware
-              text: >-
-                Auth middleware acts as a guard: it short-circuits the request if the check fails, preventing the
-                handler from running.
-            - type: gotcha
-              label: Return After Error
-              text: >-
-                After calling <code>http.Error()</code>, you MUST return. Otherwise the next handler will still run and
-                may write conflicting headers.
-        - id: v3
-          title: Middleware Chain
-          description: >-
-            Write a <code>Chain</code> function that applies multiple middleware to a handler. The first middleware in
-            the list should be the outermost wrapper.
-          hints:
-            - "Type: <code>func Chain(h http.Handler, mw ...func(http.Handler) http.Handler) http.Handler</code>."
-            - "Loop through middleware and wrap: <code>h = mw(h)</code>."
-            - The last middleware applied runs first (outermost).
-          solution: |-
-            func Chain(h http.Handler, middlewares ...func(http.Handler) http.Handler) http.Handler {
-                for _, mw := range middlewares {
-                    h = mw(h)
-                }
-                return h
+            type model struct {
+                choices  []string
+                cursor   int
+                selected map[int]struct{}
             }
 
-            // Usage:
-            handler := Chain(
-                myHandler,
-                LoggingMiddleware,
-                AuthMiddleware,
-            )
-            http.ListenAndServe(":8080", handler)
+            func initialModel() model {
+                return model{
+                    choices:  []string{"Build", "Test", "Deploy"},
+                    cursor:   0,
+                    selected: make(map[int]struct{}),
+                }
+            }
+          annotations:
+            - type: idiom
+              label: Empty Struct Set
+              text: >-
+                <code>map[int]struct{}</code> is Go's idiomatic way to implement a set. The empty struct
+                <code>struct{}{}</code> uses zero bytes.
+            - type: pattern
+              label: Initial Model
+              text: >-
+                A factory function like <code>initialModel()</code> sets up the starting state cleanly and can be called
+                from <code>main()</code>.
+        - id: v3
+          title: Model with Text Input
+          description: >-
+            Define a model that embeds a <code>textinput.Model</code> from the <code>bubbles</code> library. Write
+            <code>initialModel()</code> that creates a text input with placeholder <code>"Type here..."</code> and
+            focuses it.
+          hints:
+            - Import <code>github.com/charmbracelet/bubbles/textinput</code>.
+            - >-
+              Create with <code>textinput.New()</code>, then set <code>.Placeholder</code> and call
+              <code>.Focus()</code>.
+            - "Store it in the model struct: <code>type model struct { input textinput.Model }</code>."
+          solution: |-
+            type model struct {
+                input textinput.Model
+            }
+
+            func initialModel() model {
+                ti := textinput.New()
+                ti.Placeholder = "Type here..."
+                ti.Focus()
+                ti.CharLimit = 100
+                return model{input: ti}
+            }
+          annotations:
+            - type: idiom
+              label: Bubbles Components
+              text: >-
+                Bubbles are pre-built Bubble Tea models. Embed them in your model and delegate Update/View calls to
+                them.
+            - type: gotcha
+              label: Focus Required
+              text: Text inputs start unfocused. You must call <code>.Focus()</code> for the input to accept keystrokes.
+    - id: warmup_2
+      concept: Update
+      variants:
+        - id: v1
+          title: Handle Quit Key
+          description: >-
+            Write an <code>Update</code> method that handles <code>q</code> and <code>ctrl+c</code> to quit the program.
+            Return <code>tea.Quit</code> for those keys, otherwise return the model unchanged.
+          hints:
+            - "Type-switch on <code>msg</code>: <code>switch msg := msg.(type)</code>."
+            - Match <code>tea.KeyMsg</code> and check <code>msg.String()</code>.
+            - Return <code>m, tea.Quit</code> for quit, or <code>m, nil</code> otherwise.
+          solution: |-
+            func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+                switch msg := msg.(type) {
+                case tea.KeyMsg:
+                    switch msg.String() {
+                    case "q", "ctrl+c":
+                        return m, tea.Quit
+                    }
+                }
+                return m, nil
+            }
+          annotations:
+            - type: idiom
+              label: Type Switch
+              text: >-
+                Bubble Tea uses Go's type switch to dispatch different message types. <code>tea.KeyMsg</code> is the
+                most common.
+            - type: idiom
+              label: tea.Quit
+              text: <code>tea.Quit</code> is a command that tells Bubble Tea to exit the program gracefully.
+        - id: v2
+          title: Navigate a List
+          description: >-
+            Write an <code>Update</code> method for a list model with a <code>cursor int</code> and <code>choices
+            []string</code>. Handle <code>up</code>/<code>k</code> to move cursor up and
+            <code>down</code>/<code>j</code> to move cursor down. Clamp to bounds.
+          hints:
+            - Check <code>m.cursor > 0</code> before decrementing.
+            - Check <code>m.cursor < len(m.choices)-1</code> before incrementing.
+            - Handle both vim keys (j/k) and arrow keys (up/down).
+          solution: |-
+            func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+                switch msg := msg.(type) {
+                case tea.KeyMsg:
+                    switch msg.String() {
+                    case "q", "ctrl+c":
+                        return m, tea.Quit
+                    case "up", "k":
+                        if m.cursor > 0 {
+                            m.cursor--
+                        }
+                    case "down", "j":
+                        if m.cursor < len(m.choices)-1 {
+                            m.cursor++
+                        }
+                    }
+                }
+                return m, nil
+            }
+          annotations:
+            - type: idiom
+              label: Vim + Arrow Keys
+              text: Supporting both arrow keys and vim keys (h/j/k/l) is a TUI convention that power users expect.
+            - type: pattern
+              label: Bounds Clamping
+              text: Always check bounds before moving the cursor. Going below 0 or above the list length would be a bug.
+        - id: v3
+          title: Toggle Selection
+          description: >-
+            Add <code>enter</code>/<code>space</code> handling to toggle the current item in <code>m.selected</code> (a
+            <code>map[int]struct{}</code>). If the item is selected, deselect it; otherwise, select it.
+          hints:
+            - "Check if selected: <code>_, ok := m.selected[m.cursor]; ok</code>."
+            - Remove with <code>delete(m.selected, m.cursor)</code>.
+            - Add with <code>m.selected[m.cursor] = struct{}{}</code>.
+          solution: |-
+            case "enter", " ":
+                if _, ok := m.selected[m.cursor]; ok {
+                    delete(m.selected, m.cursor)
+                } else {
+                    m.selected[m.cursor] = struct{}{}
+                }
+          annotations:
+            - type: idiom
+              label: Toggle Pattern
+              text: Check-then-delete/add is the standard toggle pattern for sets in Go.
+            - type: idiom
+              label: Space Key
+              text: In Bubble Tea, the space key is represented as <code>" "</code> (a string with one space).
+    - id: warmup_3
+      concept: View
+      variants:
+        - id: v1
+          title: Render a Counter
+          description: >-
+            Write a <code>View</code> method for a counter model that displays <code>"Count: 5"</code> (using the actual
+            count) and a help line <code>"Press q to quit."</code>.
+          hints:
+            - <code>View()</code> returns a <code>string</code>.
+            - Use <code>fmt.Sprintf</code> to build the string.
+            - Add <code>"\n"</code> between lines.
+          solution: |-
+            func (m model) View() string {
+                return fmt.Sprintf("Count: %d\n\nPress q to quit.\n", m.count)
+            }
+          annotations:
+            - type: idiom
+              label: View Returns String
+              text: The View method always returns a string. Bubble Tea renders this string to the terminal on every update.
+            - type: pattern
+              label: Help Text
+              text: Always include a help line showing available keys. Users need to know how to quit.
+        - id: v2
+          title: Render a List with Cursor
+          description: >-
+            Write a <code>View</code> method that renders a list of choices with a <code>></code> cursor on the selected
+            item. Non-selected items get a space prefix.
+          hints:
+            - Loop through <code>m.choices</code> with index.
+            - If <code>m.cursor == i</code>, prefix with <code>"> "</code>, otherwise <code>"  "</code>.
+            - Build the string incrementally with <code>s += ...</code>.
+          solution: |-
+            func (m model) View() string {
+                s := "Select an option:\n\n"
+                for i, choice := range m.choices {
+                    cursor := "  "
+                    if m.cursor == i {
+                        cursor = "> "
+                    }
+                    s += fmt.Sprintf("%s%s\n", cursor, choice)
+                }
+                s += "\nPress q to quit.\n"
+                return s
+            }
+          annotations:
+            - type: idiom
+              label: String Building
+              text: >-
+                For simple TUIs, building strings with <code>+=</code> is fine. For complex layouts, use
+                <code>strings.Builder</code> or Lipgloss.
+        - id: v3
+          title: Render with Checkboxes
+          description: >-
+            Write a <code>View</code> method that shows items as <code>[x] Item</code> (selected) or <code>[ ]
+            Item</code> (not selected), with a cursor indicator <code>></code> on the current item.
+          hints:
+            - "Cursor: <code>if m.cursor == i</code> then <code>\">\"</code> else <code>\" \"</code>."
+            - "Checked: <code>if _, ok := m.selected[i]; ok</code> then <code>\"x\"</code> else <code>\" \"</code>."
+            - "Combine: <code>fmt.Sprintf(\"%s [%s] %s\", cursor, checked, choice)</code>."
+          solution: |-
+            func (m model) View() string {
+                s := "What do you want to do?\n\n"
+                for i, choice := range m.choices {
+                    cursor := " "
+                    if m.cursor == i {
+                        cursor = ">"
+                    }
+                    checked := " "
+                    if _, ok := m.selected[i]; ok {
+                        checked = "x"
+                    }
+                    s += fmt.Sprintf("%s [%s] %s\n", cursor, checked, choice)
+                }
+                s += "\nPress q to quit.\n"
+                return s
+            }
           annotations:
             - type: pattern
-              label: Middleware Chain
-              text: Chaining middleware creates a pipeline. Each layer wraps the previous one, like layers of an onion.
-            - type: gotcha
-              label: Order Matters
+              label: Checkbox UI
               text: >-
-                The last middleware applied wraps the outermost layer. If you want logging first, list it first — it
-                gets applied last and wraps everything.
+                The bracket checkbox pattern <code>[x]</code> / <code>[ ]</code> is a universal TUI convention for
+                multi-select interfaces.
+    - id: warmup_4
+      concept: Lipgloss
+      variants:
+        - id: v1
+          title: Define a Bold Green Style
+          description: >-
+            Create a Lipgloss style that renders text as bold with a green foreground color (<code>#00ff9d</code>). Use
+            it to render the string <code>"Success!"</code>.
+          hints:
+            - Import <code>github.com/charmbracelet/lipgloss</code>.
+            - "Chain methods: <code>lipgloss.NewStyle().Bold(true).Foreground(...)</code>."
+            - Colors are <code>lipgloss.Color("#00ff9d")</code>.
+          solution: |-
+            style := lipgloss.NewStyle().
+                Bold(true).
+                Foreground(lipgloss.Color("#00ff9d"))
+
+            fmt.Println(style.Render("Success!"))
+          annotations:
+            - type: idiom
+              label: Method Chaining
+              text: Lipgloss uses builder-pattern method chaining. Each method returns a new Style so you can chain calls.
+            - type: idiom
+              label: Hex Colors
+              text: >-
+                Lipgloss accepts hex colors as strings: <code>lipgloss.Color("#00ff9d")</code>. It also supports ANSI
+                256 colors.
+        - id: v2
+          title: Box with Border
+          description: >-
+            Create a Lipgloss style with a rounded border, border color <code>#00ff9d</code>, and padding of 1 vertical
+            and 2 horizontal. Render the text <code>"Hello, TUI!"</code> inside it.
+          hints:
+            - Use <code>.Border(lipgloss.RoundedBorder())</code>.
+            - Set border color with <code>.BorderForeground(lipgloss.Color(...))</code>.
+            - Padding is <code>.Padding(1, 2)</code> — vertical then horizontal.
+          solution: |-
+            boxStyle := lipgloss.NewStyle().
+                Border(lipgloss.RoundedBorder()).
+                BorderForeground(lipgloss.Color("#00ff9d")).
+                Padding(1, 2)
+
+            fmt.Println(boxStyle.Render("Hello, TUI!"))
+          annotations:
+            - type: idiom
+              label: Border Styles
+              text: >-
+                Lipgloss offers <code>RoundedBorder()</code>, <code>NormalBorder()</code>, <code>DoubleBorder()</code>,
+                and <code>ThickBorder()</code>.
+        - id: v3
+          title: Conditional Styling
+          description: >-
+            Write a function that renders an item string. If <code>isSelected</code> is true, render it with purple bold
+            text. Otherwise, render with dim gray text.
+          hints:
+            - Define two styles as package-level vars.
+            - Use an if/else to pick which style to apply.
+            - Call <code>style.Render(text)</code> to apply the style.
+          solution: |-
+            var (
+                selectedStyle = lipgloss.NewStyle().
+                    Foreground(lipgloss.Color("#9d00ff")).
+                    Bold(true)
+                normalStyle = lipgloss.NewStyle().
+                    Foreground(lipgloss.Color("#888888"))
+            )
+
+            func renderItem(text string, isSelected bool) string {
+                if isSelected {
+                    return selectedStyle.Render("❯ " + text)
+                }
+                return normalStyle.Render("  " + text)
+            }
+          annotations:
+            - type: idiom
+              label: Package-Level Styles
+              text: >-
+                Define styles as package-level <code>var</code>s. They're reusable and avoid recreating styles on every
+                render.
+            - type: pattern
+              label: Conditional Rendering
+              text: Switching styles based on state (selected, focused, error) is the core pattern for interactive TUIs.
+  challenges:
+    - id: challenge_1
+      concept: Full Bubble Tea App
+      docLinks:
+        - url: https://pkg.go.dev/github.com/charmbracelet/bubbletea
+          title: Package bubbletea
+          note: The Elm Architecture for terminals
+        - url: https://pkg.go.dev/github.com/charmbracelet/lipgloss
+          title: Package lipgloss
+          note: terminal styling and layout
+      variants:
+        - id: v1
+          title: Counter App
+          description: >-
+            Build a complete Bubble Tea counter app. Press <code>up</code>/<code>k</code> to increment,
+            <code>down</code>/<code>j</code> to decrement, <code>r</code> to reset to 0, and <code>q</code> to quit.
+            Display the count with a help line.
+          hints:
+            - Model struct needs just <code>count int</code>.
+            - "In Update, handle four key cases: up/k, down/j, r, q."
+            - In View, show the count and key bindings.
+          solution: |-
+            type model struct {
+                count int
+            }
+
+            func (m model) Init() tea.Cmd { return nil }
+
+            func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+                switch msg := msg.(type) {
+                case tea.KeyMsg:
+                    switch msg.String() {
+                    case "q", "ctrl+c":
+                        return m, tea.Quit
+                    case "up", "k":
+                        m.count++
+                    case "down", "j":
+                        m.count--
+                    case "r":
+                        m.count = 0
+                    }
+                }
+                return m, nil
+            }
+
+            func (m model) View() string {
+                return fmt.Sprintf(
+                    "\n  Count: %d\n\n  ↑/k: increment  ↓/j: decrement  r: reset  q: quit\n",
+                    m.count,
+                )
+            }
+
+            func main() {
+                p := tea.NewProgram(model{})
+                if _, err := p.Run(); err != nil {
+                    fmt.Println("Error:", err)
+                }
+            }
+          annotations:
+            - type: pattern
+              label: Complete TUI App
+              text: >-
+                Every Bubble Tea app needs: a model struct, Init(), Update(), and View(). Plus
+                <code>tea.NewProgram(model).Run()</code> in main.
+        - id: v2
+          title: Todo List App
+          description: >-
+            Build a Bubble Tea app with a list of todo items. Support navigation (up/down), toggling items
+            (enter/space), adding items (a key opens an input), and quitting (q). Track completed state per item.
+          hints:
+            - "Model needs: <code>items []string</code>, <code>done map[int]bool</code>, <code>cursor int</code>."
+            - Render done items as <code>[x]</code> and pending as <code>[ ]</code>.
+            - "Toggle with enter: flip <code>m.done[m.cursor]</code>."
+          solution: |-
+            type model struct {
+                items  []string
+                done   map[int]bool
+                cursor int
+            }
+
+            func initialModel() model {
+                return model{
+                    items: []string{"Buy groceries", "Write code", "Go for a walk"},
+                    done:  make(map[int]bool),
+                }
+            }
+
+            func (m model) Init() tea.Cmd { return nil }
+
+            func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+                switch msg := msg.(type) {
+                case tea.KeyMsg:
+                    switch msg.String() {
+                    case "q", "ctrl+c":
+                        return m, tea.Quit
+                    case "up", "k":
+                        if m.cursor > 0 {
+                            m.cursor--
+                        }
+                    case "down", "j":
+                        if m.cursor < len(m.items)-1 {
+                            m.cursor++
+                        }
+                    case "enter", " ":
+                        m.done[m.cursor] = !m.done[m.cursor]
+                    }
+                }
+                return m, nil
+            }
+
+            func (m model) View() string {
+                s := "Todo List:\n\n"
+                for i, item := range m.items {
+                    cursor := "  "
+                    if m.cursor == i {
+                        cursor = "> "
+                    }
+                    check := " "
+                    if m.done[i] {
+                        check = "x"
+                    }
+                    s += fmt.Sprintf("%s[%s] %s\n", cursor, check, item)
+                }
+                s += "\n↑/↓: navigate  enter: toggle  q: quit\n"
+                return s
+            }
+          annotations:
+            - type: pattern
+              label: Interactive List
+              text: Navigation + selection is the foundational TUI pattern. Most real TUI apps are variations of this.
+            - type: idiom
+              label: map[int]bool
+              text: >-
+                Using <code>map[int]bool</code> is simpler than <code>map[int]struct{}</code> when you need to toggle —
+                <code>!m.done[i]</code> works directly.
+        - id: v3
+          title: Styled Menu
+          description: >-
+            Build a Bubble Tea menu with Lipgloss styling. The title should be bold green, the selected item should be
+            purple with a <code>❯</code> prefix, and unselected items should be dim. Wrap everything in a rounded border
+            box.
+          hints:
+            - Define styles as package-level vars using <code>lipgloss.NewStyle()</code>.
+            - In View, apply different styles based on <code>m.cursor == i</code>.
+            - Use <code>boxStyle.Render(content)</code> to wrap the final output.
+          solution: |-
+            var (
+                titleStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#00ff9d"))
+                selStyle   = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#9d00ff"))
+                dimStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#555555"))
+                boxStyle   = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).
+                                BorderForeground(lipgloss.Color("#00ff9d")).Padding(1, 2)
+            )
+
+            func (m model) View() string {
+                s := titleStyle.Render("Select an Option") + "\n\n"
+                for i, choice := range m.choices {
+                    if m.cursor == i {
+                        s += selStyle.Render("❯ "+choice) + "\n"
+                    } else {
+                        s += dimStyle.Render("  "+choice) + "\n"
+                    }
+                }
+                s += "\n" + dimStyle.Render("↑/↓: navigate • enter: select • q: quit")
+                return boxStyle.Render(s)
+            }
+          annotations:
+            - type: pattern
+              label: Styled TUI
+              text: >-
+                Lipgloss turns plain text TUIs into polished interfaces. Define style constants and apply them in View
+                based on state.

@@ -1,618 +1,419 @@
-## Big O Notation
+## Test File Basics
 
-Before diving into patterns, you need to talk about how fast things are. Big O describes how runtime or memory grows as input grows.
+Go has testing built in. No external frameworks needed.
 
-*Common complexities*
+*math.go*
 
 ```go
-// O(1) — Constant: doesn't depend on input size
-func getFirst(nums []int) int {
-    return nums[0]
+package math
+
+func Add(a, b int) int {
+    return a + b
 }
 
-// O(log n) — Logarithmic: halves the problem each step
-func binarySearch(sorted []int, target int) int {
-    lo, hi := 0, len(sorted)-1
-    for lo <= hi {
-        mid := lo + (hi-lo)/2
-        if sorted[mid] == target {
-            return mid
-        } else if sorted[mid] < target {
-            lo = mid + 1
-        } else {
-            hi = mid - 1
-        }
+func Divide(a, b int) (int, error) {
+    if b == 0 {
+        return 0, fmt.Errorf("division by zero")
     }
-    return -1
+    return a / b, nil
 }
+```
 
-// O(n) — Linear: visits each element once
-func sum(nums []int) int {
-    total := 0
-    for _, n := range nums {
-        total += n
+*math_test.go*
+
+```go
+package math
+
+import "testing"
+
+// Test functions MUST:
+// - Be in a file ending with _test.go
+// - Start with Test (capital T)
+// - Take *testing.T as only parameter
+
+func TestAdd(t *testing.T) {
+    result := Add(2, 3)
+    if result != 5 {
+        t.Errorf("Add(2, 3) = %d; want 5", result)
     }
-    return total
 }
 
-// O(n log n) — Linearithmic: typical for good sorting
-// sort.Ints uses this internally
+func TestDivide(t *testing.T) {
+    result, err := Divide(10, 2)
+    if err != nil {
+        t.Fatalf("unexpected error: %v", err)
+    }
+    if result != 5 {
+        t.Errorf("Divide(10, 2) = %d; want 5", result)
+    }
+}
 
-// O(n²) — Quadratic: nested loops over the same data
-func hasDuplicate(nums []int) bool {
-    for i := 0; i < len(nums); i++ {
-        for j := i + 1; j < len(nums); j++ {
-            if nums[i] == nums[j] {
-                return true
+func TestDivideByZero(t *testing.T) {
+    _, err := Divide(10, 0)
+    if err == nil {
+        t.Error("expected error for division by zero")
+    }
+}
+```
+
+*Running tests*
+
+```bash
+# Run all tests in current package
+$ go test
+
+# Verbose output (see each test)
+$ go test -v
+
+# Run all tests in all packages
+$ go test ./...
+
+# Run specific test by name (regex)
+$ go test -run TestDivide
+$ go test -run "TestDivide.*"
+```
+
+## t.Error vs t.Fatal
+
+*When to use which*
+
+```go
+func TestSomething(t *testing.T) {
+    // t.Error / t.Errorf — marks test as failed, continues running
+    // Use when you want to see ALL failures
+    if got != want {
+        t.Errorf("got %v, want %v", got, want)
+    }
+    
+    // t.Fatal / t.Fatalf — marks test as failed, STOPS immediately
+    // Use when continuing would cause panic or meaningless errors
+    result, err := DoThing()
+    if err != nil {
+        t.Fatalf("setup failed: %v", err)  // No point continuing
+    }
+    
+    // t.Skip / t.Skipf — skip this test
+    if os.Getenv("CI") == "" {
+        t.Skip("skipping integration test in local dev")
+    }
+}
+```
+
+## Table-Driven Tests
+
+The idiomatic way to test multiple cases. You'll see this everywhere in Go code.
+
+*math_test.go*
+
+```go
+func TestAdd(t *testing.T) {
+    tests := []struct {
+        name     string
+        a, b     int
+        expected int
+    }{
+        {"positive", 2, 3, 5},
+        {"negative", -1, -2, -3},
+        {"zero", 0, 0, 0},
+        {"mixed", -5, 10, 5},
+    }
+    
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            result := Add(tt.a, tt.b)
+            if result != tt.expected {
+                t.Errorf("Add(%d, %d) = %d; want %d", 
+                    tt.a, tt.b, result, tt.expected)
             }
-        }
+        })
     }
-    return false
 }
 ```
 
-*Space complexity*
+*Output*
 
-```go
-// O(1) space — modifies in place
-func reverseInPlace(nums []int) {
-    for i, j := 0, len(nums)-1; i < j; i, j = i+1, j-1 {
-        nums[i], nums[j] = nums[j], nums[i]
-    }
-}
-
-// O(n) space — creates a new structure proportional to input
-func frequencies(nums []int) map[int]int {
-    freq := make(map[int]int)
-    for _, n := range nums {
-        freq[n]++
-    }
-    return freq
-}
+```bash
+$ go test -v
+=== RUN   TestAdd
+=== RUN   TestAdd/positive
+=== RUN   TestAdd/negative
+=== RUN   TestAdd/zero
+=== RUN   TestAdd/mixed
+--- PASS: TestAdd (0.00s)
+    --- PASS: TestAdd/positive (0.00s)
+    --- PASS: TestAdd/negative (0.00s)
+    --- PASS: TestAdd/zero (0.00s)
+    --- PASS: TestAdd/mixed (0.00s)
 ```
 
-> **The key insight:** Big O isn't about exact speed — it's about *scaling*. An O(n) solution that processes 1 million items in 10ms would take 10 seconds at O(n²). That's the difference between usable and broken.
+> **Why t.Run()?:** Subtests with `t.Run()` let you run individual cases: `go test -run TestAdd/negative`. Also makes failure output clearer.
 
-## Hash Maps
+## Testing Errors
 
-The most common pattern in algorithm problems. Use a map to turn O(n²) lookups into O(n).
-
-*Pattern: frequency counting*
+*Error test patterns*
 
 ```go
-// Count occurrences of each element
-func topKFrequent(nums []int, k int) []int {
-    freq := make(map[int]int)
-    for _, n := range nums {
-        freq[n]++
+func TestDivide(t *testing.T) {
+    tests := []struct {
+        name      string
+        a, b      int
+        want      int
+        wantErr   bool
+    }{
+        {"valid", 10, 2, 5, false},
+        {"divide by zero", 10, 0, 0, true},
     }
-
-    // Bucket sort by frequency
-    buckets := make([][]int, len(nums)+1)
-    for num, count := range freq {
-        buckets[count] = append(buckets[count], num)
-    }
-
-    var result []int
-    for i := len(buckets) - 1; i >= 0 && len(result) < k; i-- {
-        result = append(result, buckets[i]...)
-    }
-    return result[:k]
-}
-```
-
-*Pattern: complement lookup*
-
-```go
-// Find two numbers that sum to target — O(n) instead of O(n²)
-func twoSum(nums []int, target int) (int, int) {
-    seen := make(map[int]int) // value -> index
-    for i, n := range nums {
-        complement := target - n
-        if j, ok := seen[complement]; ok {
-            return j, i
-        }
-        seen[n] = i
-    }
-    return -1, -1
-}
-```
-
-> **When to use:** Whenever you need fast lookups, counting, or duplicate detection. Maps give O(1) average lookup vs O(n) for slice scanning.
-
-## Two Pointers
-
-Use two indices moving through a sorted array or from both ends. Eliminates nested loops.
-
-*Pattern: opposite ends*
-
-```go
-// Check if a string is a palindrome
-func isPalindrome(s string) bool {
-    runes := []rune(s)
-    left, right := 0, len(runes)-1
-    for left < right {
-        if runes[left] != runes[right] {
-            return false
-        }
-        left++
-        right--
-    }
-    return true
-}
-```
-
-*Pattern: sorted pair search*
-
-```go
-// Find pair summing to target in a SORTED array — O(n) time, O(1) space
-func twoSumSorted(nums []int, target int) (int, int) {
-    left, right := 0, len(nums)-1
-    for left < right {
-        sum := nums[left] + nums[right]
-        if sum == target {
-            return left, right
-        } else if sum < target {
-            left++
-        } else {
-            right--
-        }
-    }
-    return -1, -1
-}
-```
-
-> **When to use:** Sorted data, palindrome checks, comparing elements from both ends, removing duplicates in-place. The key signal is "sorted array" or "compare from edges".
-
-## Sliding Window
-
-Maintain a window (subarray/substring) that slides across the data. Avoids recomputing from scratch.
-
-*Pattern: fixed-size window*
-
-```go
-// Maximum sum of k consecutive elements
-func maxSumWindow(nums []int, k int) int {
-    if len(nums) < k {
-        return 0
-    }
-
-    // Compute initial window sum
-    windowSum := 0
-    for i := 0; i < k; i++ {
-        windowSum += nums[i]
-    }
-
-    maxSum := windowSum
-    // Slide: add right, remove left
-    for i := k; i < len(nums); i++ {
-        windowSum += nums[i] - nums[i-k]
-        if windowSum > maxSum {
-            maxSum = windowSum
-        }
-    }
-    return maxSum
-}
-```
-
-*Pattern: variable-size window*
-
-```go
-// Longest substring without repeating characters
-func lengthOfLongestSubstring(s string) int {
-    seen := make(map[byte]int)
-    maxLen := 0
-    left := 0
-
-    for right := 0; right < len(s); right++ {
-        if idx, ok := seen[s[right]]; ok && idx >= left {
-            left = idx + 1
-        }
-        seen[s[right]] = right
-        if right-left+1 > maxLen {
-            maxLen = right - left + 1
-        }
-    }
-    return maxLen
-}
-```
-
-> **When to use:** Subarray/substring problems asking for "longest", "shortest", "maximum sum". The signal is a contiguous sequence with a constraint.
-
-## Stacks
-
-Last-in, first-out. In Go, a slice is your stack.
-
-*Pattern: matching pairs*
-
-```go
-// Validate balanced parentheses
-func isValid(s string) bool {
-    stack := []rune{}
-    pairs := map[rune]rune{')': '(', ']': '[', '}': '{'}
-
-    for _, ch := range s {
-        if ch == '(' || ch == '[' || ch == '{' {
-            stack = append(stack, ch)
-        } else {
-            if len(stack) == 0 || stack[len(stack)-1] != pairs[ch] {
-                return false
+    
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            got, err := Divide(tt.a, tt.b)
+            
+            // Check error expectation
+            if (err != nil) != tt.wantErr {
+                t.Errorf("error = %v, wantErr = %v", err, tt.wantErr)
+                return
             }
-            stack = stack[:len(stack)-1] // pop
-        }
-    }
-    return len(stack) == 0
-}
-```
-
-*Stack operations in Go*
-
-```go
-// Push
-stack = append(stack, value)
-
-// Peek (top element)
-top := stack[len(stack)-1]
-
-// Pop
-top := stack[len(stack)-1]
-stack = stack[:len(stack)-1]
-
-// IsEmpty
-empty := len(stack) == 0
-```
-
-> **When to use:** Matching brackets, undo operations, expression evaluation, monotonic sequences. The signal is "most recent" or "nesting".
-
-## Binary Search
-
-Repeatedly halve the search space. Only works on sorted data.
-
-*Pattern: standard binary search*
-
-```go
-func binarySearch(nums []int, target int) int {
-    lo, hi := 0, len(nums)-1
-    for lo <= hi {
-        mid := lo + (hi-lo)/2 // avoids overflow vs (lo+hi)/2
-        if nums[mid] == target {
-            return mid
-        } else if nums[mid] < target {
-            lo = mid + 1
-        } else {
-            hi = mid - 1
-        }
-    }
-    return -1
-}
-```
-
-*Pattern: search for insertion point*
-
-```go
-// Find leftmost position where target could be inserted
-func searchInsert(nums []int, target int) int {
-    lo, hi := 0, len(nums)
-    for lo < hi {
-        mid := lo + (hi-lo)/2
-        if nums[mid] < target {
-            lo = mid + 1
-        } else {
-            hi = mid
-        }
-    }
-    return lo
-}
-```
-
-> **When to use:** Sorted arrays, finding boundaries, minimizing/maximizing a value where you can binary search the answer space. Go's `sort.Search` implements this pattern.
-
-## Linked Lists
-
-Pointer manipulation. Go doesn't have a built-in singly-linked list for algorithms — you define the node.
-
-*Node definition*
-
-```go
-type ListNode struct {
-    Val  int
-    Next *ListNode
-}
-```
-
-*Pattern: reverse a linked list*
-
-```go
-func reverseList(head *ListNode) *ListNode {
-    var prev *ListNode
-    curr := head
-    for curr != nil {
-        next := curr.Next  // save next
-        curr.Next = prev   // reverse pointer
-        prev = curr        // advance prev
-        curr = next        // advance curr
-    }
-    return prev
-}
-```
-
-*Pattern: fast/slow pointers (cycle detection)*
-
-```go
-func hasCycle(head *ListNode) bool {
-    slow, fast := head, head
-    for fast != nil && fast.Next != nil {
-        slow = slow.Next
-        fast = fast.Next.Next
-        if slow == fast {
-            return true
-        }
-    }
-    return false
-}
-```
-
-> **When to use:** Reversals, cycle detection, finding middle element, merging sorted lists. The fast/slow pointer trick shows up constantly.
-
-## Trees
-
-Recursive structures. Most tree problems have elegant recursive solutions.
-
-*Node definition*
-
-```go
-type TreeNode struct {
-    Val   int
-    Left  *TreeNode
-    Right *TreeNode
-}
-```
-
-*Pattern: tree traversals*
-
-```go
-// Inorder: Left → Node → Right (gives sorted order for BSTs)
-func inorder(root *TreeNode) []int {
-    if root == nil {
-        return nil
-    }
-    var result []int
-    result = append(result, inorder(root.Left)...)
-    result = append(result, root.Val)
-    result = append(result, inorder(root.Right)...)
-    return result
-}
-
-// Preorder: Node → Left → Right (useful for copying/serializing)
-func preorder(root *TreeNode) []int {
-    if root == nil {
-        return nil
-    }
-    result := []int{root.Val}
-    result = append(result, preorder(root.Left)...)
-    result = append(result, preorder(root.Right)...)
-    return result
-}
-
-// Max depth (classic recursive pattern)
-func maxDepth(root *TreeNode) int {
-    if root == nil {
-        return 0
-    }
-    left := maxDepth(root.Left)
-    right := maxDepth(root.Right)
-    if left > right {
-        return left + 1
-    }
-    return right + 1
-}
-```
-
-> **When to use:** Hierarchical data, BST operations, path problems. The base case is almost always `if root == nil`. Think recursively: solve for left subtree, solve for right subtree, combine.
-
-## Graphs & BFS
-
-Graphs are nodes connected by edges. BFS explores level by level using a queue.
-
-*Pattern: BFS with a queue*
-
-```go
-// BFS traversal of an adjacency list graph
-func bfs(graph map[int][]int, start int) []int {
-    visited := make(map[int]bool)
-    queue := []int{start}
-    visited[start] = true
-    var order []int
-
-    for len(queue) > 0 {
-        node := queue[0]
-        queue = queue[1:]
-        order = append(order, node)
-
-        for _, neighbor := range graph[node] {
-            if !visited[neighbor] {
-                visited[neighbor] = true
-                queue = append(queue, neighbor)
+            
+            // Only check result if no error expected
+            if !tt.wantErr && got != tt.want {
+                t.Errorf("got %d, want %d", got, tt.want)
             }
-        }
+        })
     }
-    return order
+}
+
+// Testing for specific error types
+func TestSpecificError(t *testing.T) {
+    _, err := OpenFile("nonexistent.txt")
+    
+    if !errors.Is(err, os.ErrNotExist) {
+        t.Errorf("expected ErrNotExist, got %v", err)
+    }
+}
+
+// Testing for custom error types
+func TestCustomError(t *testing.T) {
+    _, err := Validate(data)
+    
+    var validErr *ValidationError
+    if !errors.As(err, &validErr) {
+        t.Fatalf("expected ValidationError, got %T", err)
+    }
+    
+    if validErr.Field != "email" {
+        t.Errorf("wrong field: got %s, want email", validErr.Field)
+    }
 }
 ```
 
-*Pattern: DFS with recursion*
+## Test Helpers
+
+Extract common setup/assertions into helpers. Mark them with `t.Helper()`.
+
+*Helper functions*
 
 ```go
-func dfs(graph map[int][]int, node int, visited map[int]bool) {
-    visited[node] = true
-    for _, neighbor := range graph[node] {
-        if !visited[neighbor] {
-            dfs(graph, neighbor, visited)
-        }
+// t.Helper() makes errors report the caller's line, not the helper's
+func assertEqual(t *testing.T, got, want int) {
+    t.Helper()  // IMPORTANT: marks this as helper
+    if got != want {
+        t.Errorf("got %d, want %d", got, want)
     }
 }
-```
 
-> **When to use:** Shortest path (BFS), connected components, cycle detection in graphs, flood fill. BFS finds shortest unweighted paths; DFS explores full branches.
-
-## Sorting Algorithms
-
-Understanding how sorting works under the hood.
-
-*Merge Sort — O(n log n), stable*
-
-```go
-func mergeSort(nums []int) []int {
-    if len(nums) <= 1 {
-        return nums
+func assertNoError(t *testing.T, err error) {
+    t.Helper()
+    if err != nil {
+        t.Fatalf("unexpected error: %v", err)
     }
-    mid := len(nums) / 2
-    left := mergeSort(nums[:mid])
-    right := mergeSort(nums[mid:])
-    return merge(left, right)
 }
 
-func merge(left, right []int) []int {
-    result := make([]int, 0, len(left)+len(right))
-    i, j := 0, 0
-    for i < len(left) && j < len(right) {
-        if left[i] <= right[j] {
-            result = append(result, left[i])
-            i++
-        } else {
-            result = append(result, right[j])
-            j++
-        }
+func assertError(t *testing.T, err error) {
+    t.Helper()
+    if err == nil {
+        t.Fatal("expected error, got nil")
     }
-    result = append(result, left[i:]...)
-    result = append(result, right[j:]...)
-    return result
-}
-```
-
-> **Key insight:** Go's `sort.Slice` uses a hybrid algorithm (introsort). You won't rewrite sorting in production — but understanding merge sort teaches divide-and-conquer, and it's a common interview question.
-
-## Heaps & Priority Queues
-
-A heap gives you the min (or max) element in O(log n). Go provides `container/heap`.
-
-*Using container/heap*
-
-```go
-import "container/heap"
-
-// IntHeap implements heap.Interface for a min-heap of ints
-type IntHeap []int
-
-func (h IntHeap) Len() int           { return len(h) }
-func (h IntHeap) Less(i, j int) bool { return h[i] < h[j] }
-func (h IntHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
-
-func (h *IntHeap) Push(x interface{}) {
-    *h = append(*h, x.(int))
 }
 
-func (h *IntHeap) Pop() interface{} {
-    old := *h
-    n := len(old)
-    x := old[n-1]
-    *h = old[:n-1]
-    return x
+// Setup helper that returns cleanup function
+func setupTestDB(t *testing.T) (*DB, func()) {
+    t.Helper()
+    
+    db, err := NewTestDB()
+    if err != nil {
+        t.Fatalf("failed to create test db: %v", err)
+    }
+    
+    cleanup := func() {
+        db.Close()
+    }
+    
+    return db, cleanup
 }
 
 // Usage
-func kthSmallest(nums []int, k int) int {
-    h := &IntHeap{}
-    heap.Init(h)
-    for _, n := range nums {
-        heap.Push(h, n)
-    }
-    var result int
-    for i := 0; i < k; i++ {
-        result = heap.Pop(h).(int)
-    }
-    return result
+func TestWithDB(t *testing.T) {
+    db, cleanup := setupTestDB(t)
+    defer cleanup()
+    
+    // ... test code ...
 }
 ```
 
-> **When to use:** "K-th largest/smallest", "top K elements", "merge K sorted lists", scheduling problems. The signal is needing repeated access to the extreme element.
+## t.Cleanup (Go 1.14+)
 
-## Tries (Prefix Trees)
+Modern alternative to returning cleanup functions.
 
-A tree where each node represents a character. Fast prefix lookups.
-
-*Pattern: basic trie*
+*Using t.Cleanup*
 
 ```go
-type TrieNode struct {
-    children map[rune]*TrieNode
-    isEnd    bool
-}
-
-type Trie struct {
-    root *TrieNode
-}
-
-func NewTrie() *Trie {
-    return &Trie{root: &TrieNode{children: make(map[rune]*TrieNode)}}
-}
-
-func (t *Trie) Insert(word string) {
-    node := t.root
-    for _, ch := range word {
-        if _, ok := node.children[ch]; !ok {
-            node.children[ch] = &TrieNode{children: make(map[rune]*TrieNode)}
-        }
-        node = node.children[ch]
+func setupTestDB(t *testing.T) *DB {
+    t.Helper()
+    
+    db, err := NewTestDB()
+    if err != nil {
+        t.Fatalf("failed to create test db: %v", err)
     }
-    node.isEnd = true
+    
+    // Automatically called when test finishes
+    t.Cleanup(func() {
+        db.Close()
+    })
+    
+    return db
 }
 
-func (t *Trie) Search(word string) bool {
-    node := t.root
-    for _, ch := range word {
-        if _, ok := node.children[ch]; !ok {
-            return false
-        }
-        node = node.children[ch]
-    }
-    return node.isEnd
-}
-
-func (t *Trie) StartsWith(prefix string) bool {
-    node := t.root
-    for _, ch := range prefix {
-        if _, ok := node.children[ch]; !ok {
-            return false
-        }
-        node = node.children[ch]
-    }
-    return true
+// Cleaner usage
+func TestWithDB(t *testing.T) {
+    db := setupTestDB(t)  // No defer needed!
+    
+    // ... test code ...
 }
 ```
 
-> **When to use:** Autocomplete, spell checking, prefix matching, word search problems. The signal is "all words starting with..." or building a dictionary.
+## Testing with Interfaces (Mocking)
 
-## Choosing the Right Pattern
+Design for testability: depend on interfaces, not concrete types.
 
-| Problem Signal | Pattern | Example |
-|---|---|---|
-| "Find pair/complement" | Hash Map | Two Sum |
-| "Count occurrences" | Hash Map | Frequency count |
-| "Sorted array + pair" | Two Pointers | Two Sum II |
-| "Palindrome" | Two Pointers | Valid Palindrome |
-| "Longest/shortest subarray" | Sliding Window | Max subarray sum |
-| "Matching/nesting" | Stack | Valid Parentheses |
-| "Sorted + find element" | Binary Search | Search Insert Position |
-| "Reverse/cycle in list" | Linked List pointers | Reverse Linked List |
-| "Tree structure" | Recursion/DFS | Max Depth |
-| "Shortest path" | BFS | Word Ladder |
-| "Top K / Kth element" | Heap | Kth Largest |
-| "Prefix matching" | Trie | Autocomplete |
+*service.go*
 
-## Algorithm Practice Arena
+```go
+// Define interface for what you need
+type UserStore interface {
+    GetUser(id string) (*User, error)
+    SaveUser(u *User) error
+}
 
-The exercises below teach you the building blocks — implementing the data structures and mechanics themselves. Once you're comfortable with them, head to the **[Algorithm Practice](/algorithms.html)** arena to apply these patterns to real problems like Two Sum, Valid Parentheses, and more.
+// Service depends on interface, not concrete DB
+type UserService struct {
+    store UserStore
+}
+
+func NewUserService(store UserStore) *UserService {
+    return &UserService{store: store}
+}
+
+func (s *UserService) GetUserName(id string) (string, error) {
+    user, err := s.store.GetUser(id)
+    if err != nil {
+        return "", err
+    }
+    return user.Name, nil
+}
+```
+
+*service_test.go*
+
+```go
+// Mock implementation for testing
+type mockUserStore struct {
+    users map[string]*User
+    err   error  // Force error if set
+}
+
+func (m *mockUserStore) GetUser(id string) (*User, error) {
+    if m.err != nil {
+        return nil, m.err
+    }
+    user, ok := m.users[id]
+    if !ok {
+        return nil, fmt.Errorf("user not found")
+    }
+    return user, nil
+}
+
+func (m *mockUserStore) SaveUser(u *User) error {
+    if m.err != nil {
+        return m.err
+    }
+    m.users[u.ID] = u
+    return nil
+}
+
+func TestGetUserName(t *testing.T) {
+    // Setup mock with test data
+    store := &mockUserStore{
+        users: map[string]*User{
+            "123": {ID: "123", Name: "Alice"},
+        },
+    }
+    
+    svc := NewUserService(store)
+    
+    name, err := svc.GetUserName("123")
+    if err != nil {
+        t.Fatalf("unexpected error: %v", err)
+    }
+    if name != "Alice" {
+        t.Errorf("got %q, want %q", name, "Alice")
+    }
+}
+
+func TestGetUserName_NotFound(t *testing.T) {
+    store := &mockUserStore{users: map[string]*User{}}
+    svc := NewUserService(store)
+    
+    _, err := svc.GetUserName("unknown")
+    if err == nil {
+        t.Error("expected error for unknown user")
+    }
+}
+
+func TestGetUserName_StoreError(t *testing.T) {
+    store := &mockUserStore{err: fmt.Errorf("db down")}
+    svc := NewUserService(store)
+    
+    _, err := svc.GetUserName("123")
+    if err == nil {
+        t.Error("expected error when store fails")
+    }
+}
+```
+
+## Test Coverage
+
+*Coverage commands*
+
+```bash
+# Show coverage percentage
+$ go test -cover
+PASS
+coverage: 80.0% of statements
+
+# Generate coverage profile
+$ go test -coverprofile=coverage.out
+
+# View coverage in browser (visual!)
+$ go tool cover -html=coverage.out
+
+# View coverage by function
+$ go tool cover -func=coverage.out
+github.com/you/pkg/math.go:5:    Add         100.0%
+github.com/you/pkg/math.go:9:    Divide      75.0%
+total:                           (statements) 80.0%
+```
+
+> **Coverage isn't everything:** 100% coverage doesn't mean bug-free. Test behavior, not lines. Focus on edge cases and error paths.
 
 ## Exercises
 
@@ -632,17 +433,14 @@ Combine concepts and learn patterns. Each challenge has multiple variants at dif
             <noscript><p class="js-required">JavaScript is required for the interactive exercises.</p></noscript>
             </div>
 
-## Module 18 Summary
+## Module 16 Summary
 
-- **Big O notation** — how runtime/space scales with input size
-- **Hash Maps** — O(1) lookups for counting, complements, deduplication
-- **Two Pointers** — opposite ends or same direction on sorted data
-- **Sliding Window** — fixed or variable windows over contiguous sequences
-- **Stacks** — LIFO for matching, nesting, undo operations
-- **Binary Search** — halving sorted search space in O(log n)
-- **Linked Lists** — pointer manipulation, reversal, cycle detection
-- **Trees** — recursive traversals, depth calculations, BST operations
-- **Graphs & BFS** — level-order exploration, shortest paths
-- **Sorting** — merge sort and divide-and-conquer
-- **Heaps** — priority queues via container/heap
-- **Tries** — prefix trees for string operations
+- **_test.go files** — tests live alongside code
+- **TestXxx(t *testing.T)** — test function signature
+- **t.Error vs t.Fatal** — continue vs stop
+- **Table-driven tests** — the Go way to test multiple cases
+- **t.Run()** — subtests for better output and selective running
+- **t.Helper()** — mark helper functions for better error reporting
+- **t.Cleanup()** — automatic cleanup after test
+- **Interface mocking** — inject test doubles
+- **go test -cover** — measure coverage

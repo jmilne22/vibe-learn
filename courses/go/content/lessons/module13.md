@@ -1,223 +1,189 @@
-## Same Package, Multiple Files
+## HTTP Client Basics
 
-This is the first thing that confuses people from Python. In Go, all files in the same directory with the same `package` declaration are ONE unit. They share everything automatically.
-
-*main.go*
+*Making HTTP requests*
 
 ```go
 package main
+
+import (
+    "encoding/json"
+    "io"
+    "net/http"
+)
+
+// Simple GET
+resp, err := http.Get("https://api.github.com/users/golang")
+if err != nil {
+    panic(err)
+}
+defer resp.Body.Close()
+
+body, _ := io.ReadAll(resp.Body)
+fmt.Println(string(body))
+
+// JSON response into struct
+type User struct {
+    Login     string `json:"login"`
+    Name      string `json:"name"`
+    Followers int    `json:"followers"`
+}
+
+var user User
+json.NewDecoder(resp.Body).Decode(&user)
+
+// Custom request with headers
+req, _ := http.NewRequest("GET", "https://api.github.com/user", nil)
+req.Header.Set("Authorization", "Bearer "+token)
+req.Header.Set("Accept", "application/json")
+
+client := &http.Client{Timeout: 10 * time.Second}
+resp, err = client.Do(req)
+```
+
+## Building an API Client
+
+*GitHub API client*
+
+```go
+type GitHubClient struct {
+    baseURL    string
+    token      string
+    httpClient *http.Client
+}
+
+func NewGitHubClient(token string) *GitHubClient {
+    return &GitHubClient{
+        baseURL:    "https://api.github.com",
+        token:      token,
+        httpClient: &http.Client{Timeout: 30 * time.Second},
+    }
+}
+
+func (c *GitHubClient) request(method, path string, body any) (*http.Response, error) {
+    var bodyReader io.Reader
+    if body != nil {
+        data, _ := json.Marshal(body)
+        bodyReader = bytes.NewReader(data)
+    }
+    
+    req, err := http.NewRequest(method, c.baseURL+path, bodyReader)
+    if err != nil {
+        return nil, err
+    }
+    
+    req.Header.Set("Authorization", "Bearer "+c.token)
+    req.Header.Set("Accept", "application/vnd.github+json")
+    if body != nil {
+        req.Header.Set("Content-Type", "application/json")
+    }
+    
+    return c.httpClient.Do(req)
+}
+
+func (c *GitHubClient) GetUser(username string) (*User, error) {
+    resp, err := c.request("GET", "/users/"+username, nil)
+    if err != nil {
+        return nil, err
+    }
+    defer resp.Body.Close()
+    
+    if resp.StatusCode != http.StatusOK {
+        return nil, fmt.Errorf("API error: %s", resp.Status)
+    }
+    
+    var user User
+    if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
+        return nil, err
+    }
+    return &user, nil
+}
+```
+
+## Building HTTP Servers
+
+*Simple HTTP server*
+
+```go
+package main
+
+import (
+    "encoding/json"
+    "net/http"
+)
+
+type Response struct {
+    Message string `json:"message"`
+}
 
 func main() {
-    cfg := LoadConfig()  // Defined in config.go
-    Process(cfg)         // Defined in process.go
+    http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+        w.WriteHeader(http.StatusOK)
+        w.Write([]byte("OK"))
+    })
+    
+    http.HandleFunc("/api/greet", func(w http.ResponseWriter, r *http.Request) {
+        name := r.URL.Query().Get("name")
+        if name == "" {
+            name = "World"
+        }
+        
+        resp := Response{Message: "Hello, " + name}
+        
+        w.Header().Set("Content-Type", "application/json")
+        json.NewEncoder(w).Encode(resp)
+    })
+    
+    fmt.Println("Server running on :8080")
+    http.ListenAndServe(":8080", nil)
 }
 ```
 
-*config.go*
+## Middleware Pattern
+
+*Middleware*
 
 ```go
-package main
+// Middleware wraps a handler
+type Middleware func(http.Handler) http.Handler
 
-type Config struct {
-    Name string
+// Logging middleware
+func LoggingMiddleware(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        start := time.Now()
+        next.ServeHTTP(w, r)
+        fmt.Printf("%s %s %v\n", r.Method, r.URL.Path, time.Since(start))
+    })
 }
 
-func LoadConfig() *Config {
-    return &Config{Name: "test"}
+// Auth middleware
+func AuthMiddleware(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        token := r.Header.Get("Authorization")
+        if token == "" {
+            http.Error(w, "Unauthorized", http.StatusUnauthorized)
+            return
+        }
+        next.ServeHTTP(w, r)
+    })
 }
-```
 
-*process.go*
-
-```go
-package main
-
-func Process(cfg *Config) {  // Can use Config from config.go
-    fmt.Println(cfg.Name)
+// Chain middleware
+func Chain(h http.Handler, middlewares ...Middleware) http.Handler {
+    for _, m := range middlewares {
+        h = m(h)
+    }
+    return h
 }
+
+// Usage
+handler := Chain(myHandler, LoggingMiddleware, AuthMiddleware)
 ```
 
-No imports between them. They just... work together. The compiler sees them as one blob.
+### 🔨 Project: GitHub CLI Tool
 
-*Running it*
+Put your skills to work! Build a CLI that interacts with the GitHub API.
 
-```bash
-# Compiles ALL .go files in current directory
-$ go run .
-
-# Or explicitly
-$ go run main.go config.go process.go
-```
-
-## When to Split Files
-
-There's no hard rule, but here's what works:
-
-- **By type** — one file per major struct/type and its methods
-- **By responsibility** — config stuff in config.go, HTTP stuff in http.go
-- **When it gets long** — if you're scrolling forever, split it
-
-Don't over-split. A 200-line file is fine. Ten 20-line files is annoying.
-
-## Packages = Directories
-
-When your project gets bigger, you'll want separate packages. Each directory is a package.
-
-*Directory structure*
-
-```go
-myproject/
-├── go.mod              # module github.com/you/myproject
-├── main.go             # package main
-└── stuff/
-    └── stuff.go        # package stuff
-```
-
-*stuff/stuff.go*
-
-```go
-package stuff
-
-func DoThing() string {
-    return "did the thing"
-}
-```
-
-*main.go*
-
-```go
-package main
-
-import "github.com/you/myproject/stuff"
-
-func main() {
-    result := stuff.DoThing()
-    fmt.Println(result)
-}
-```
-
-> **Import Path:** The import path is your module name (from go.mod) + the directory path. Not the file path. Not the package name. The directory.
-
-## Uppercase = Exported (Public)
-
-This is Go's visibility system. Dead simple once you get it.
-
-*Visibility rules*
-
-```go
-package stuff
-
-// Exported — visible outside this package
-func PublicFunc() {}      // ✓ Uppercase first letter
-type PublicType struct{} // ✓
-var PublicVar = 42       // ✓
-
-// Unexported — only visible inside this package
-func privateFunc() {}     // ✗ Lowercase first letter
-type privateType struct{} // ✗
-var privateVar = 42      // ✗
-```
-
-From another package, you can only access the uppercase stuff:
-
-*main.go*
-
-```go
-import "github.com/you/myproject/stuff"
-
-stuff.PublicFunc()   // ✓ Works
-stuff.privateFunc()  // ✗ Compile error
-```
-
-## The internal/ Directory
-
-Go has one magic directory name: `internal/`
-
-Code inside `internal/` can only be imported by code in the parent directory tree. The compiler enforces this.
-
-*internal/ example*
-
-```go
-myproject/
-├── go.mod
-├── main.go                 # Can import internal/secret
-├── cmd/
-│   └── tool/
-│       └── main.go         # Can import internal/secret
-└── internal/
-    └── secret/
-        └── secret.go       # package secret
-```
-
-If someone else imports your module, they **cannot** import anything from your internal/ directory. Compiler stops them.
-
-> **When to use internal/:** Put implementation details you don't want to be part of your public API. You can refactor internal code freely without breaking anyone.
-
-## Common Project Layouts
-
-### Small CLI tool
-
-*Simple layout*
-
-```go
-mytool/
-├── go.mod
-├── main.go         # Everything in one package
-├── config.go
-└── commands.go
-```
-
-### Medium project
-
-*With packages*
-
-```go
-mytool/
-├── go.mod
-├── main.go
-├── cmd/            # CLI command definitions
-│   ├── root.go
-│   └── serve.go
-└── internal/       # Private implementation
-    ├── config/
-    └── server/
-```
-
-### Library + CLI
-
-*Dual-purpose*
-
-```go
-mylib/
-├── go.mod
-├── mylib.go        # Public library API (package mylib)
-├── cmd/
-│   └── mylib/
-│       └── main.go # CLI that uses the library
-└── internal/       # Shared private code
-```
-
-## Circular Import = Compile Error
-
-Go doesn't allow circular imports. If package A imports B, B cannot import A.
-
-*This won't compile*
-
-```go
-// a/a.go
-package a
-import "myproject/b"  // A imports B
-
-// b/b.go
-package b
-import "myproject/a"  // B imports A — ERROR!
-```
-
-**Solutions:**
-
-- Merge the packages if they're that intertwined
-- Extract shared types into a third package both can import
-- Use interfaces to break the dependency
+Start Project →
 
 ## Exercises
 
@@ -237,10 +203,10 @@ Combine concepts and learn patterns. Each challenge has multiple variants at dif
             <noscript><p class="js-required">JavaScript is required for the interactive exercises.</p></noscript>
             </div>
 
-## Module 13 Summary
+## Module 11 Summary
 
-- **Same package, multiple files** — share everything, no imports needed
-- **Package = directory** — import path is module + directory
-- **Uppercase = exported** — visible outside package
-- **internal/** — compiler-enforced private packages
-- **No circular imports** — design around it
+- **http.Get/Post** — simple requests
+- **http.NewRequest** — custom requests with headers
+- **json.Decoder** — stream JSON from response
+- **http.HandleFunc** — register routes
+- **Middleware** — wrap handlers for cross-cutting concerns

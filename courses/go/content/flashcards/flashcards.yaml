@@ -68,7 +68,7 @@
       In Go, errors are ordinary values implementing the `error` interface (which has a single `Error() string` method).
       There are no exceptions or try/catch. You return errors and check them: `result, err := doWork(); if err != nil {
       return err }`. This makes error flow explicit.
-"2":
+"3":
   - topic: Pointer Basics
     q: What is a pointer in Go?
     a: >-
@@ -125,7 +125,6 @@
     a: >-
       Go automatically dereferences struct pointers for field access. `p.Name` is valid even if `p` is `*MyStruct` — you
       don't need `(*p).Name`. This syntactic sugar makes working with struct pointers feel natural.
-"3":
   - topic: Defining Structs
     q: How do you define a struct in Go?
     a: >-
@@ -296,7 +295,7 @@
       Declare: `matrix := make([][]int, rows)`. Then initialize each row: `for i := range matrix { matrix[i] =
       make([]int, cols) }`. There's no built-in 2D slice literal shorthand. Each inner slice can have different lengths
       (jagged array).
-"6":
+"7":
   - topic: os.Args
     q: How do you access command-line arguments in Go?
     a: >-
@@ -342,7 +341,7 @@
       Use `strconv.Atoi(s)` which returns `(int, error)`: `n, err := strconv.Atoi("42")`. For more control, use
       `strconv.ParseInt(s, base, bitSize)`. The reverse is `strconv.Itoa(n)`. Unlike Python, `int("42")` does NOT work
       in Go — `int()` only converts between numeric types.
-"7":
+"8":
   - topic: Reading Files
     q: How do you read an entire file into memory in Go?
     a: >-
@@ -390,7 +389,68 @@
       Use `os.Stat(path)` and check the error: `if _, err := os.Stat(path); os.IsNotExist(err) { /* doesn't exist */ }`.
       Go prefers attempting the operation and handling errors, rather than checking existence first (EAFP-like, but
       explicit).
-"8":
+"9":
+  - topic: Creating Errors
+    q: How do you create a simple error in Go?
+    a: >-
+      Use `errors.New("something went wrong")` for static error messages, or `fmt.Errorf("failed to load %s: %w", name,
+      err)` to format and optionally wrap another error. Both return a value implementing the `error` interface.
+  - topic: Error Wrapping %w
+    q: What does `%w` do in `fmt.Errorf`?
+    a: >-
+      The `%w` verb wraps an error, creating an error chain: `fmt.Errorf("open config: %w", err)`. The wrapped error can
+      be retrieved with `errors.Unwrap()` and matched with `errors.Is()` or `errors.As()`. Use `%v` if you don't want
+      wrapping.
+  - topic: errors.Is
+    q: What does `errors.Is` do?
+    a: >-
+      `errors.Is(err, target)` checks if `err` or any error in its chain matches `target`. It unwraps recursively.
+      Example: `if errors.Is(err, os.ErrNotExist) { ... }`. This replaces `err == os.ErrNotExist` which doesn't check
+      wrapped errors.
+  - topic: errors.As
+    q: What does `errors.As` do?
+    a: >-
+      `errors.As(err, &target)` checks if `err` or any error in its chain can be assigned to `target` (by type).
+      Example: `var pathErr *os.PathError; if errors.As(err, &pathErr) { fmt.Println(pathErr.Path) }`. Use it to extract
+      specific error types.
+  - topic: Custom Error Types
+    q: How do you create a custom error type in Go?
+    a: >-
+      Define a struct implementing the `Error() string` method: `type NotFoundError struct { Name string }; func (e
+      *NotFoundError) Error() string { return e.Name + " not found" }`. Custom errors can carry extra context and be
+      matched with `errors.As()`.
+"10":
+  - topic: testing.T
+    q: What is `testing.T` in Go?
+    a: >-
+      `*testing.T` is passed to test functions as a parameter: `func TestFoo(t *testing.T)`. It provides methods for
+      reporting failures (`t.Error`, `t.Fatal`, `t.Log`), running subtests (`t.Run`), and managing test state. It's the
+      core of Go's testing framework.
+  - topic: Subtests t.Run
+    q: How do you use `t.Run` for subtests?
+    a: >-
+      `t.Run("subtest name", func(t *testing.T) { ... })` creates a named subtest. Subtests can be run individually: `go
+      test -run TestFoo/subtest_name`. They enable table-driven tests and provide clear failure messages showing which
+      case failed.
+  - topic: Table-Driven Tests
+    q: What is the table-driven test pattern in Go?
+    a: >-
+      Define test cases as a slice of structs: `tests := []struct{ name string; input int; want int }{{ ... }}`. Loop
+      with `for _, tt := range tests { t.Run(tt.name, func(t *testing.T) { got := fn(tt.input); if got != tt.want {
+      t.Errorf(...) } }) }`. This is the most common Go test pattern.
+  - topic: Fatal vs Error
+    q: What is the difference between `t.Fatal` and `t.Error`?
+    a: >-
+      `t.Error(args...)` reports failure but continues the test. `t.Fatal(args...)` reports failure and stops the test
+      immediately (calls `runtime.Goexit()`). Use `Fatal` when subsequent assertions would be meaningless after a
+      failure. Both have `f` variants for formatting.
+  - topic: Test File Naming
+    q: What naming convention do Go test files follow?
+    a: >-
+      Test files must end in `_test.go` (e.g., `user_test.go`). They are excluded from normal builds. Test functions
+      must start with `Test` and take `*testing.T`: `func TestAdd(t *testing.T)`. Benchmark functions start with
+      `Benchmark` and take `*testing.B`.
+"11":
   - topic: Model Interface
     q: What three methods does the Bubble Tea `Model` interface require?
     a: >-
@@ -426,67 +486,7 @@
       Alt screen mode (`tea.NewProgram(model, tea.WithAltScreen())`) uses an alternate terminal buffer, like Vim or
       htop. When the program exits, the original terminal content is restored. Use it for full-screen TUI apps; skip it
       for inline tools.
-"9":
-  - topic: Creating Errors
-    q: How do you create a simple error in Go?
-    a: >-
-      Use `errors.New("something went wrong")` for static error messages, or `fmt.Errorf("failed to load %s: %w", name,
-      err)` to format and optionally wrap another error. Both return a value implementing the `error` interface.
-  - topic: Error Wrapping %w
-    q: What does `%w` do in `fmt.Errorf`?
-    a: >-
-      The `%w` verb wraps an error, creating an error chain: `fmt.Errorf("open config: %w", err)`. The wrapped error can
-      be retrieved with `errors.Unwrap()` and matched with `errors.Is()` or `errors.As()`. Use `%v` if you don't want
-      wrapping.
-  - topic: errors.Is
-    q: What does `errors.Is` do?
-    a: >-
-      `errors.Is(err, target)` checks if `err` or any error in its chain matches `target`. It unwraps recursively.
-      Example: `if errors.Is(err, os.ErrNotExist) { ... }`. This replaces `err == os.ErrNotExist` which doesn't check
-      wrapped errors.
-  - topic: errors.As
-    q: What does `errors.As` do?
-    a: >-
-      `errors.As(err, &target)` checks if `err` or any error in its chain can be assigned to `target` (by type).
-      Example: `var pathErr *os.PathError; if errors.As(err, &pathErr) { fmt.Println(pathErr.Path) }`. Use it to extract
-      specific error types.
-  - topic: Custom Error Types
-    q: How do you create a custom error type in Go?
-    a: >-
-      Define a struct implementing the `Error() string` method: `type NotFoundError struct { Name string }; func (e
-      *NotFoundError) Error() string { return e.Name + " not found" }`. Custom errors can carry extra context and be
-      matched with `errors.As()`.
-  - topic: testing.T
-    q: What is `testing.T` in Go?
-    a: >-
-      `*testing.T` is passed to test functions as a parameter: `func TestFoo(t *testing.T)`. It provides methods for
-      reporting failures (`t.Error`, `t.Fatal`, `t.Log`), running subtests (`t.Run`), and managing test state. It's the
-      core of Go's testing framework.
-  - topic: Subtests t.Run
-    q: How do you use `t.Run` for subtests?
-    a: >-
-      `t.Run("subtest name", func(t *testing.T) { ... })` creates a named subtest. Subtests can be run individually: `go
-      test -run TestFoo/subtest_name`. They enable table-driven tests and provide clear failure messages showing which
-      case failed.
-  - topic: Table-Driven Tests
-    q: What is the table-driven test pattern in Go?
-    a: >-
-      Define test cases as a slice of structs: `tests := []struct{ name string; input int; want int }{{ ... }}`. Loop
-      with `for _, tt := range tests { t.Run(tt.name, func(t *testing.T) { got := fn(tt.input); if got != tt.want {
-      t.Errorf(...) } }) }`. This is the most common Go test pattern.
-  - topic: Fatal vs Error
-    q: What is the difference between `t.Fatal` and `t.Error`?
-    a: >-
-      `t.Error(args...)` reports failure but continues the test. `t.Fatal(args...)` reports failure and stops the test
-      immediately (calls `runtime.Goexit()`). Use `Fatal` when subsequent assertions would be meaningless after a
-      failure. Both have `f` variants for formatting.
-  - topic: Test File Naming
-    q: What naming convention do Go test files follow?
-    a: >-
-      Test files must end in `_test.go` (e.g., `user_test.go`). They are excluded from normal builds. Test functions
-      must start with `Test` and take `*testing.T`: `func TestAdd(t *testing.T)`. Benchmark functions start with
-      `Benchmark` and take `*testing.B`.
-"10":
+"12":
   - topic: Functional Options
     q: What is the functional options pattern in Go?
     a: >-
@@ -535,7 +535,7 @@
       A type's method set determines which interfaces it satisfies. A value of type `T` has methods with value receivers
       only. A value of type `*T` has methods with both value and pointer receivers. So `*T` can satisfy more interfaces
       than `T`. This is why pointer receivers are more common.
-"11":
+"13":
   - topic: HTTP HandleFunc
     q: How do you register an HTTP handler function in Go?
     a: >-
@@ -595,7 +595,7 @@
       `req, err := http.NewRequest("POST", url, bytes.NewReader(body))`. Set headers: `req.Header.Set("Content-Type",
       "application/json")`. Send: `resp, err := client.Do(req)`. Use `http.NewRequestWithContext(ctx, ...)` for context
       support.
-"12":
+"14":
   - topic: Goroutines
     q: How do you start a goroutine in Go?
     a: >-
@@ -667,7 +667,7 @@
       "Don't communicate by sharing memory; share memory by communicating." Instead of protecting shared variables with
       mutexes, pass data between goroutines using channels. Channels make ownership transfer explicit and prevent data
       races by design.
-"13":
+"15":
   - topic: go.mod
     q: What is `go.mod` and what does it contain?
     a: >-
@@ -704,7 +704,7 @@
       Uppercase first letter = exported (public): accessible from other packages. Lowercase = unexported (private): only
       accessible within the same package. This applies to functions, types, variables, constants, struct fields, and
       methods. There are no access modifier keywords.
-"14":
+"16":
   - topic: Command Output
     q: How do you run an external command and capture its output in Go?
     a: >-
@@ -747,7 +747,7 @@
       `filepath.Join("dir", "sub", "file.txt")` joins path elements using the OS-specific separator. On Linux:
       `dir/sub/file.txt`. On Windows: `dir\sub\file.txt`. It also cleans the path. Never concatenate paths with `+` or
       `/` manually.
-"15":
+"17":
   - topic: Set Implementation
     q: How do you implement a set in Go?
     a: >-
@@ -782,7 +782,7 @@
       No. Map iteration order in Go is deliberately randomized. Each `for k, v := range myMap` may visit keys in a
       different order. This is intentional to prevent code from depending on order. If you need sorted keys, extract
       them to a slice and sort.
-"16":
+"18":
   - topic: Running Tests
     q: How do you run tests in Go?
     a: >-
@@ -828,7 +828,7 @@
     a: >-
       Call `t.Skip("reason")` to skip the current test. Common pattern: `if testing.Short() { t.Skip("skipping in short
       mode") }`. Run short tests with `go test -short`. Also useful: `if runtime.GOOS == "windows" { t.Skip(...) }`.
-"17":
+"19":
   - topic: httptest.NewServer
     q: What is `httptest.NewServer` and how do you use it?
     a: >-

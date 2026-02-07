@@ -1,925 +1,1267 @@
 conceptLinks:
-  Which Clone: "#lesson-exec-lookpath"
-  System Info: "#lesson-os-user"
-  Process List: "#lesson-exec-command"
-  Git Status Parser: "#lesson-command-output"
+  Parallel Sum: "#lesson-goroutines"
+  Timeout Pattern: "#lesson-select"
+  Fan-Out Fan-In: "#lesson-fan-out-fan-in"
+  Rate Limiter: "#lesson-ticker"
+  Graceful Shutdown: "#lesson-signals"
 sharedContent: {}
 variants:
   warmups:
     - id: warmup_1
-      concept: Which Clone
+      concept: Parallel Sum
       variants:
         - id: v1
-          title: Which Clone
+          title: Parallel Sum
           description: >-
-            Write a program that takes a command name as <code>os.Args[1]</code> and prints its full path using
-            <code>exec.LookPath</code>. If not found, print an error to stderr and exit with code 1. If no argument is
-            given, print usage and exit with code 1.
+            Write <code>func parallelSum(nums []int, workers int) int</code> that splits a slice into
+            <code>workers</code> chunks, sums each chunk in a separate goroutine, and combines the partial sums via a
+            channel. Return the total sum.
           hints:
-            - Use <code>exec.LookPath(os.Args[1])</code> to find the binary.
-            - Check <code>len(os.Args) < 2</code> for missing arguments.
-            - Use <code>fmt.Fprintln(os.Stderr, ...)</code> for error output.
+            - Create a buffered channel <code>make(chan int, workers)</code> for partial sums.
+            - Calculate <code>chunkSize := len(nums) / workers</code> and handle the last chunk getting any remainder.
+            - Launch <code>workers</code> goroutines, then receive <code>workers</code> results.
           solution: |-
-            func main() {
-                if len(os.Args) < 2 {
-                    fmt.Fprintln(os.Stderr, "usage: which command")
-                    os.Exit(1)
+            func parallelSum(nums []int, workers int) int {
+                ch := make(chan int, workers)
+                chunkSize := len(nums) / workers
+
+                for i := 0; i < workers; i++ {
+                    start := i * chunkSize
+                    end := start + chunkSize
+                    if i == workers-1 {
+                        end = len(nums)
+                    }
+                    go func(chunk []int) {
+                        sum := 0
+                        for _, n := range chunk {
+                            sum += n
+                        }
+                        ch <- sum
+                    }(nums[start:end])
                 }
 
-                path, err := exec.LookPath(os.Args[1])
-                if err != nil {
-                    fmt.Fprintf(os.Stderr, "%s: command not found\n", os.Args[1])
-                    os.Exit(1)
+                total := 0
+                for i := 0; i < workers; i++ {
+                    total += <-ch
                 }
-                fmt.Println(path)
+                return total
             }
           annotations:
-            - type: stdlib
-              label: exec.LookPath
-              text: >-
-                exec.LookPath searches for an executable in the directories listed in the PATH environment variable. It
-                returns the full path or an error.
             - type: idiom
-              label: Exit Codes
+              label: Buffered Channel
               text: >-
-                os.Exit(1) signals failure to the calling shell. Convention: 0 = success, 1 = general error, 2 = misuse.
-                Match the behavior of the tool you are cloning.
+                Using a buffered channel sized to the number of workers prevents goroutines from blocking on send. Each
+                goroutine sends once and exits.
+            - type: gotcha
+              label: Slice Sharing
+              text: >-
+                Pass the sub-slice as a function argument to the goroutine closure. Capturing loop variables directly
+                causes a data race.
         - id: v2
-          title: Which All
+          title: Parallel Max
           description: >-
-            Write a program that finds ALL matching executables for a command name (not just the first). Split the
-            <code>PATH</code> environment variable, check each directory for the executable, and print all matches.
+            Write <code>func parallelMax(nums []int, workers int) int</code> that splits a slice into
+            <code>workers</code> chunks, finds the maximum in each chunk using a goroutine, and returns the overall
+            maximum.
           hints:
-            - Use <code>os.Getenv("PATH")</code> and <code>strings.Split(..., ":")</code> to get directories.
-            - Use <code>filepath.Join(dir, name)</code> to construct the path.
-            - Check if the file exists and is executable with <code>os.Stat</code>.
+            - Each goroutine finds the max of its chunk and sends it on a channel.
+            - The main goroutine receives all partial max values and finds the global max.
+            - Initialize your result with the first received value, then compare.
           solution: |-
-            func main() {
-                if len(os.Args) < 2 {
-                    fmt.Fprintln(os.Stderr, "usage: which-all command")
-                    os.Exit(1)
-                }
+            func parallelMax(nums []int, workers int) int {
+                ch := make(chan int, workers)
+                chunkSize := len(nums) / workers
 
-                name := os.Args[1]
-                pathDirs := strings.Split(os.Getenv("PATH"), ":")
-                found := false
-
-                for _, dir := range pathDirs {
-                    full := filepath.Join(dir, name)
-                    info, err := os.Stat(full)
-                    if err != nil {
-                        continue
+                for i := 0; i < workers; i++ {
+                    start := i * chunkSize
+                    end := start + chunkSize
+                    if i == workers-1 {
+                        end = len(nums)
                     }
-                    if info.Mode()&0111 != 0 {
-                        fmt.Println(full)
-                        found = true
-                    }
-                }
-
-                if !found {
-                    os.Exit(1)
-                }
-            }
-          annotations:
-            - type: idiom
-              label: File Permissions
-              text: >-
-                Check executable bits with info.Mode()&0111 != 0. The octal 0111 checks user, group, and other execute
-                bits. This is how the shell determines if a file is runnable.
-            - type: stdlib
-              label: filepath.Join
-              text: >-
-                filepath.Join correctly joins path components using the OS-specific separator. Always prefer it over
-                manual string concatenation for file paths.
-        - id: v3
-          title: Command Checker
-          description: >-
-            Write <code>func commandExists(name string) bool</code> that returns true if the given command is available
-            on the system. Then write a main function that checks a list of required tools (<code>go</code>,
-            <code>git</code>, <code>docker</code>, <code>kubectl</code>) and prints which are available and which are
-            missing.
-          hints:
-            - Use <code>exec.LookPath</code> and check the error.
-            - Loop over a slice of tool names and print status for each.
-            - Use a boolean return instead of printing directly for testability.
-          solution: |-
-            func commandExists(name string) bool {
-                _, err := exec.LookPath(name)
-                return err == nil
-            }
-
-            func main() {
-                tools := []string{"go", "git", "docker", "kubectl"}
-                for _, tool := range tools {
-                    if commandExists(tool) {
-                        fmt.Printf("[OK]    %s\n", tool)
-                    } else {
-                        fmt.Printf("[MISS]  %s\n", tool)
-                    }
-                }
-            }
-          annotations:
-            - type: idiom
-              label: Boolean Wrapper
-              text: >-
-                Wrapping exec.LookPath in a bool function is a common Go pattern. It simplifies the calling code and
-                makes the intent clear: does this command exist?
-            - type: alternative
-              label: Error Details
-              text: >-
-                For more detail, return (string, error) instead of bool. The string can be the path, and the error
-                explains why the lookup failed.
-        - id: v4
-          title: PATH Inspector
-          description: >-
-            Write a program that prints each directory in the <code>PATH</code> environment variable on its own line,
-            along with how many executables it contains. Skip directories that do not exist.
-          hints:
-            - Use <code>os.ReadDir(dir)</code> to list directory contents.
-            - Count files where <code>info.Type().IsRegular()</code> and executable bits are set.
-            - Use <code>strings.Split(os.Getenv("PATH"), ":")</code> to get directories.
-          solution: |-
-            func main() {
-                pathDirs := strings.Split(os.Getenv("PATH"), ":")
-                for _, dir := range pathDirs {
-                    entries, err := os.ReadDir(dir)
-                    if err != nil {
-                        continue
-                    }
-                    count := 0
-                    for _, entry := range entries {
-                        if !entry.IsDir() {
-                            info, err := entry.Info()
-                            if err == nil && info.Mode()&0111 != 0 {
-                                count++
+                    go func(chunk []int) {
+                        mx := chunk[0]
+                        for _, n := range chunk[1:] {
+                            if n > mx {
+                                mx = n
                             }
                         }
-                    }
-                    fmt.Printf("%s (%d executables)\n", dir, count)
+                        ch <- mx
+                    }(nums[start:end])
                 }
+
+                result := <-ch
+                for i := 1; i < workers; i++ {
+                    if v := <-ch; v > result {
+                        result = v
+                    }
+                }
+                return result
+            }
+          annotations:
+            - type: complexity
+              label: O(n)
+              text: >-
+                Each element is visited exactly once across all goroutines, plus O(workers) to combine results. Total is
+                O(n).
+            - type: gotcha
+              label: Empty Chunk
+              text: >-
+                If len(nums) < workers, some chunks will be empty. Guard against indexing chunk[0] on an empty slice to
+                avoid a panic.
+        - id: v3
+          title: Parallel Word Count
+          description: >-
+            Write <code>func parallelWordCount(texts []string, workers int) int</code> that splits a slice of text
+            strings into <code>workers</code> chunks, counts words in each chunk in a goroutine (using
+            <code>strings.Fields</code>), and returns the total word count.
+          hints:
+            - Use <code>strings.Fields(text)</code> to split text into words.
+            - Each goroutine sums <code>len(strings.Fields(text))</code> for its chunk of texts.
+            - Combine partial counts the same way as parallel sum.
+          solution: |-
+            func parallelWordCount(texts []string, workers int) int {
+                ch := make(chan int, workers)
+                chunkSize := len(texts) / workers
+
+                for i := 0; i < workers; i++ {
+                    start := i * chunkSize
+                    end := start + chunkSize
+                    if i == workers-1 {
+                        end = len(texts)
+                    }
+                    go func(chunk []string) {
+                        count := 0
+                        for _, text := range chunk {
+                            count += len(strings.Fields(text))
+                        }
+                        ch <- count
+                    }(texts[start:end])
+                }
+
+                total := 0
+                for i := 0; i < workers; i++ {
+                    total += <-ch
+                }
+                return total
             }
           annotations:
             - type: stdlib
-              label: os.ReadDir
+              label: strings.Fields
               text: >-
-                os.ReadDir reads a directory and returns sorted DirEntry values. It is more efficient than os.ReadFile
-                for listing directories and was added in Go 1.16.
+                strings.Fields splits a string around whitespace and is more robust than strings.Split(s, " ") because
+                it handles multiple spaces and leading/trailing whitespace.
+            - type: idiom
+              label: Map-Reduce
+              text: >-
+                This is a basic map-reduce: map each text to a word count in parallel, then reduce by summing. Go's
+                goroutines and channels make this pattern natural.
+        - id: v4
+          title: Parallel Filter
+          description: >-
+            Write <code>func parallelFilter(nums []int, workers int) []int</code> that splits a slice into
+            <code>workers</code> chunks, filters for even numbers in each chunk using a goroutine, and merges the
+            results into a single slice.
+          hints:
+            - Each goroutine sends a <code>[]int</code> of even numbers (not individual ints).
+            - Use a buffered channel of type <code>chan []int</code>.
+            - Append each partial result to the final slice.
+          solution: |-
+            func parallelFilter(nums []int, workers int) []int {
+                ch := make(chan []int, workers)
+                chunkSize := len(nums) / workers
+
+                for i := 0; i < workers; i++ {
+                    start := i * chunkSize
+                    end := start + chunkSize
+                    if i == workers-1 {
+                        end = len(nums)
+                    }
+                    go func(chunk []int) {
+                        var evens []int
+                        for _, n := range chunk {
+                            if n%2 == 0 {
+                                evens = append(evens, n)
+                            }
+                        }
+                        ch <- evens
+                    }(nums[start:end])
+                }
+
+                var result []int
+                for i := 0; i < workers; i++ {
+                    result = append(result, <-ch...)
+                }
+                return result
+            }
+          annotations:
             - type: gotcha
-              label: Permission Errors
+              label: Order Not Guaranteed
               text: >-
-                Some PATH directories may not be readable. Always check errors from os.ReadDir and skip inaccessible
-                directories gracefully.
+                Goroutines may complete in any order. The result slice may not match the original order. If order
+                matters, use indexed results or sort afterward.
+            - type: idiom
+              label: Slice of Slices
+              text: >-
+                Sending []int per goroutine is more efficient than sending individual ints. It reduces channel
+                operations and contention.
     - id: warmup_2
-      concept: System Info
+      concept: Timeout Pattern
       variants:
         - id: v1
-          title: System Info
+          title: Timeout Pattern
           description: >-
-            Write a program that prints: hostname, current user, home directory, shell (from <code>SHELL</code> env
-            var), and whether the current user is root (<code>os.Geteuid() == 0</code>).
+            Write <code>func doWithTimeout(timeout time.Duration) (string, error)</code> that launches a slow operation
+            in a goroutine. Use <code>select</code> with <code>time.After</code> to return the result if it completes in
+            time, or an error if it times out.
           hints:
-            - Use <code>os.Hostname()</code> for hostname.
-            - Use <code>user.Current()</code> to get user info.
-            - Use <code>os.Getenv("SHELL")</code> for the shell.
+            - Create a buffered channel <code>ch := make(chan string, 1)</code> so the goroutine does not leak.
+            - >-
+              Use <code>select</code> with two cases: <code>case result := &lt;-ch</code> and <code>case
+              &lt;-time.After(timeout)</code>.
+            - Return <code>fmt.Errorf("operation timed out")</code> in the timeout case.
           solution: |-
-            func main() {
-                hostname, _ := os.Hostname()
-                u, _ := user.Current()
-                shell := os.Getenv("SHELL")
-                isRoot := os.Geteuid() == 0
+            func doWithTimeout(timeout time.Duration) (string, error) {
+                ch := make(chan string, 1)
+                go func() {
+                    result := slowOperation()
+                    ch <- result
+                }()
 
-                fmt.Println("Hostname:", hostname)
-                fmt.Println("User:", u.Username)
-                fmt.Println("Home:", u.HomeDir)
-                fmt.Println("Shell:", shell)
-                fmt.Println("Root:", isRoot)
+                select {
+                case result := <-ch:
+                    return result, nil
+                case <-time.After(timeout):
+                    return "", fmt.Errorf("operation timed out")
+                }
             }
           annotations:
-            - type: stdlib
-              label: os/user
+            - type: idiom
+              label: Select + time.After
               text: >-
-                The os/user package provides user.Current() for the current user's info including Username, HomeDir,
-                Uid, and Gid.
+                The select statement with time.After is the standard Go timeout pattern. It cleanly handles the race
+                between completion and deadline.
             - type: gotcha
-              label: Cross-Platform
+              label: Goroutine Leak
               text: >-
-                os.Geteuid() is Unix-only. On Windows, use a different approach. The SHELL env var is also
-                Unix-specific; Windows uses COMSPEC.
+                Use a buffered channel (size 1) so the goroutine can send even after timeout. Otherwise it blocks
+                forever, leaking the goroutine.
         - id: v2
-          title: Environment Dump
+          title: Context Timeout
           description: >-
-            Write a program that prints all environment variables sorted alphabetically. Format each as
-            <code>KEY=VALUE</code>. Also print the total count of environment variables.
+            Write <code>func fetchWithContext(ctx context.Context) (string, error)</code> that launches a slow operation
+            in a goroutine. Use <code>select</code> to return the result or return an error if the context is cancelled
+            or times out.
           hints:
-            - Use <code>os.Environ()</code> to get all env vars as <code>[]string</code>.
-            - Use <code>sort.Strings</code> to sort them.
-            - Each entry is already in <code>KEY=VALUE</code> format.
+            - Use <code>ctx.Done()</code> in the select to detect cancellation.
+            - Use <code>ctx.Err()</code> to get the reason (deadline exceeded or cancelled).
+            - >-
+              The caller creates the context: <code>ctx, cancel := context.WithTimeout(context.Background(),
+              2*time.Second)</code>.
           solution: |-
-            func main() {
-                envs := os.Environ()
-                sort.Strings(envs)
-                for _, env := range envs {
-                    fmt.Println(env)
+            func fetchWithContext(ctx context.Context) (string, error) {
+                ch := make(chan string, 1)
+                go func() {
+                    result := slowOperation()
+                    ch <- result
+                }()
+
+                select {
+                case result := <-ch:
+                    return result, nil
+                case <-ctx.Done():
+                    return "", ctx.Err()
                 }
-                fmt.Printf("\nTotal: %d environment variables\n", len(envs))
             }
           annotations:
-            - type: stdlib
-              label: os.Environ
-              text: >-
-                os.Environ() returns a copy of all environment variables as a []string in KEY=VALUE format. Modifying
-                the returned slice does not affect the environment.
             - type: idiom
-              label: Sort Before Display
+              label: Context for Cancellation
               text: >-
-                Sorting environment variables makes output reproducible and easier to read. sort.Strings sorts in-place,
-                which is fine since os.Environ returns a copy.
+                Using context.Context is the preferred Go pattern for timeouts and cancellation. It propagates through
+                call chains and supports both deadlines and manual cancellation.
+            - type: stdlib
+              label: context Package
+              text: >-
+                context.WithTimeout and context.WithCancel create derived contexts. Always call the cancel function
+                (usually via defer) to release resources.
         - id: v3
-          title: Runtime Info
+          title: First Response Wins
           description: >-
-            Write a program that prints Go runtime information: Go version, OS, architecture, number of CPUs, and number
-            of goroutines currently running.
+            Write <code>func fetchFirst(urls []string, timeout time.Duration) (string, error)</code> that launches a
+            goroutine for each URL (simulated by sleeping a random duration and returning the URL). Return whichever
+            result arrives first, or an error if all timeout.
           hints:
-            - Use <code>runtime.Version()</code>, <code>runtime.GOOS</code>, <code>runtime.GOARCH</code>.
-            - Use <code>runtime.NumCPU()</code> for CPU count.
-            - Use <code>runtime.NumGoroutine()</code> for active goroutines.
+            - Create a single channel and have all goroutines send to it.
+            - The first <code>select</code> case that fires is the fastest response.
+            - Use <code>time.After(timeout)</code> as the fallback.
           solution: |-
-            func main() {
-                fmt.Println("Go Version:", runtime.Version())
-                fmt.Println("OS:", runtime.GOOS)
-                fmt.Println("Arch:", runtime.GOARCH)
-                fmt.Println("CPUs:", runtime.NumCPU())
-                fmt.Println("Goroutines:", runtime.NumGoroutine())
-            }
-          annotations:
-            - type: stdlib
-              label: runtime Package
-              text: >-
-                The runtime package exposes Go runtime internals. GOOS and GOARCH are compile-time constants reflecting
-                the target platform.
-            - type: idiom
-              label: Build Constraints
-              text: >-
-                runtime.GOOS and runtime.GOARCH are set at compile time based on GOOS/GOARCH environment variables or
-                build tags. They cannot change at runtime.
-        - id: v4
-          title: Disk Usage
-          description: >-
-            Write a program that prints the current working directory and the total size of all files in it
-            (non-recursive). Use <code>os.Getwd()</code> and <code>os.ReadDir</code>.
-          hints:
-            - Use <code>os.Getwd()</code> for the current directory.
-            - Use <code>os.ReadDir(".")</code> to list files.
-            - Call <code>entry.Info()</code> to get size via <code>info.Size()</code>.
-          solution: |-
-            func main() {
-                cwd, _ := os.Getwd()
-                fmt.Println("Directory:", cwd)
-
-                entries, err := os.ReadDir(".")
-                if err != nil {
-                    fmt.Fprintln(os.Stderr, err)
-                    os.Exit(1)
+            func fetchFirst(urls []string, timeout time.Duration) (string, error) {
+                ch := make(chan string, len(urls))
+                for _, url := range urls {
+                    go func(u string) {
+                        // simulate variable latency
+                        time.Sleep(time.Duration(rand.Intn(100)) * time.Millisecond)
+                        ch <- u
+                    }(url)
                 }
 
-                var totalSize int64
-                fileCount := 0
-                for _, entry := range entries {
-                    if !entry.IsDir() {
-                        info, err := entry.Info()
-                        if err == nil {
-                            totalSize += info.Size()
-                            fileCount++
+                select {
+                case result := <-ch:
+                    return result, nil
+                case <-time.After(timeout):
+                    return "", fmt.Errorf("all requests timed out")
+                }
+            }
+          annotations:
+            - type: pattern
+              label: First Response Wins
+              text: >-
+                Sending redundant requests to multiple backends and taking the first response is a latency optimization
+                pattern. Go's select makes this trivial.
+            - type: gotcha
+              label: Goroutine Cleanup
+              text: >-
+                The losing goroutines still complete and send to the buffered channel. The buffer prevents them from
+                leaking, but they still consume resources until they finish.
+        - id: v4
+          title: Retry with Timeout
+          description: >-
+            Write <code>func retryWithTimeout(maxRetries int, timeout time.Duration, fn func() (string, error)) (string,
+            error)</code> that retries <code>fn</code> up to <code>maxRetries</code> times. Each attempt has the given
+            timeout. Return the first successful result or the last error.
+          hints:
+            - Loop up to <code>maxRetries</code>.
+            - For each attempt, run <code>fn</code> in a goroutine with a <code>select</code> timeout.
+            - If it succeeds, return immediately. If all retries fail, return the last error.
+          solution: |-
+            func retryWithTimeout(maxRetries int, timeout time.Duration, fn func() (string, error)) (string, error) {
+                var lastErr error
+                for i := 0; i < maxRetries; i++ {
+                    type result struct {
+                        val string
+                        err error
+                    }
+                    ch := make(chan result, 1)
+                    go func() {
+                        v, err := fn()
+                        ch <- result{v, err}
+                    }()
+
+                    select {
+                    case r := <-ch:
+                        if r.err == nil {
+                            return r.val, nil
                         }
+                        lastErr = r.err
+                    case <-time.After(timeout):
+                        lastErr = fmt.Errorf("attempt %d timed out", i+1)
                     }
                 }
-                fmt.Printf("Files: %d\n", fileCount)
-                fmt.Printf("Total size: %d bytes\n", totalSize)
+                return "", fmt.Errorf("all %d retries failed: %w", maxRetries, lastErr)
             }
           annotations:
-            - type: stdlib
-              label: os.Getwd
+            - type: pattern
+              label: Retry Pattern
               text: >-
-                os.Getwd returns the current working directory. It corresponds to the shell's pwd command. The returned
-                path is always absolute.
-            - type: alternative
-              label: filepath.WalkDir
+                Combining retry loops with per-attempt timeouts is a resilience pattern. Each attempt gets a fresh
+                timeout rather than sharing a global deadline.
+            - type: idiom
+              label: Anonymous Struct
               text: >-
-                For recursive directory traversal, use filepath.WalkDir instead of os.ReadDir. It handles nested
-                directories and provides the path to each entry.
+                Using a local anonymous struct <code>type result struct{...}</code> inside the function is idiomatic Go
+                for grouping return values through a channel.
   challenges:
     - id: challenge_1
       block: 1
       difficulty: 3
-      concept: Process List
+      concept: Fan-Out Fan-In
       docLinks:
-        - url: https://pkg.go.dev/os/exec#Command
-          title: Package exec.Command
-          note: running external commands
-        - url: https://pkg.go.dev/strings#Fields
-          title: Package strings.Fields
-          note: splitting whitespace-delimited output
-        - url: https://pkg.go.dev/strconv#ParseFloat
-          title: Package strconv.ParseFloat
-          note: parsing numeric columns
+        - url: https://pkg.go.dev/sync#WaitGroup
+          title: Package sync.WaitGroup
+          note: coordinating goroutines
+        - url: https://go.dev/blog/pipelines
+          title: "Go Blog: Pipelines and cancellation"
+          note: fan-out fan-in pattern
       variants:
         - id: v1
-          title: High CPU Processes
+          title: Merge Channels
           description: >-
-            Write a program that runs <code>ps aux</code>, parses the output, and prints the PID and command name for
-            any process using more than 1% CPU. Use <code>strings.Fields</code> to split columns and
-            <code>strconv.ParseFloat</code> for CPU%.
-          functionSignature: func main()
+            Write <code>func merge(channels ...&lt;-chan int) &lt;-chan int</code> that takes multiple input channels
+            and merges all their values into a single output channel. The output channel should close when all inputs
+            are exhausted. Use a <code>sync.WaitGroup</code> to track completion.
+          functionSignature: func merge(channels ...<-chan int) <-chan int
           testCases:
-            - input: ps aux output with chrome at 5.2% CPU
-              output: "PID: 1234  CPU: 5.2%  CMD: chrome"
-            - input: ps aux output with no high-CPU process
-              output: (no output)
-          hints:
-            - title: 🤔 Think about it
-              content: What does each column in ps aux output represent? Which column index is CPU%, PID, and command?
-            - title: 💡 Hint
-              content: >-
-                Fields: [0]=USER, [1]=PID, [2]=%CPU, [3]=%MEM, ... [10]=COMMAND. Skip the header line (first line).
-                Parse field[2] as float64.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>1. exec.Command("ps", "aux").Output()
-                2. Split by newline, skip header
-                3. For each line: strings.Fields, parse CPU% at index 2
-                4. If > 1.0: print PID and CMD</pre>
-          solution: |-
-            func main() {
-                out, err := exec.Command("ps", "aux").Output()
-                if err != nil {
-                    fmt.Fprintln(os.Stderr, err)
-                    os.Exit(1)
-                }
-                lines := strings.Split(string(out), "\n")
-
-                for _, line := range lines[1:] {
-                    fields := strings.Fields(line)
-                    if len(fields) < 11 {
-                        continue
-                    }
-                    cpu, err := strconv.ParseFloat(fields[2], 64)
-                    if err != nil {
-                        continue
-                    }
-                    if cpu > 1.0 {
-                        fmt.Printf("PID: %s  CPU: %.1f%%  CMD: %s\n",
-                            fields[1], cpu, fields[10])
-                    }
-                }
-            }
-          difficulty: 3
-          annotations:
-            - type: stdlib
-              label: exec.Command
-              text: >-
-                exec.Command creates a command to run. Output() runs it and returns combined stdout. For stderr too, use
-                CombinedOutput().
-            - type: gotcha
-              label: Field Parsing
-              text: >-
-                strings.Fields handles multiple spaces between columns, unlike strings.Split(line, " ") which would
-                create empty entries. Always use Fields for columnar output.
-        - id: v2
-          title: Memory Hogs
-          description: >-
-            Write a program that runs <code>ps aux</code>, parses output, and prints the top 5 processes by memory usage
-            (%MEM column). Sort them in descending order and display PID, %MEM, and command.
-          functionSignature: func main()
-          testCases:
-            - input: ps aux output with various processes
-              output: Top 5 processes by memory, sorted descending
-            - input: Fewer than 5 processes
-              output: All processes sorted by memory
+            - input: ch1 sends 1,2; ch2 sends 3,4; ch3 sends 5,6
+              output: merged channel produces all 6 values (order may vary)
+            - input: ch1 sends 10; ch2 sends 20
+              output: merged channel produces 10 and 20
           hints:
             - title: 🤔 Think about it
               content: >-
-                How do you sort processes by a parsed numeric field? What data structure can hold the parsed data for
-                sorting?
+                How do you know when all input channels are done? How do you safely close the output channel exactly
+                once?
             - title: 💡 Hint
               content: >-
-                Parse into a struct slice: {pid string, mem float64, cmd string}. Use sort.Slice with a custom less
-                function. Take the first 5 (or fewer).
+                Use sync.WaitGroup: Add(1) for each input channel, Done() when a reader goroutine finishes. A separate
+                goroutine waits on wg.Wait() then closes the output.
             - title: 🔧 Pattern
-              content: |-
-                <pre>1. Parse ps aux into []ProcessInfo structs
-                2. sort.Slice by mem descending
-                3. Print top min(5, len) entries</pre>
-          solution: |-
-            type ProcessInfo struct {
-                pid string
-                mem float64
-                cmd string
-            }
-
-            func main() {
-                out, err := exec.Command("ps", "aux").Output()
-                if err != nil {
-                    fmt.Fprintln(os.Stderr, err)
-                    os.Exit(1)
-                }
-
-                var procs []ProcessInfo
-                lines := strings.Split(string(out), "\n")
-                for _, line := range lines[1:] {
-                    fields := strings.Fields(line)
-                    if len(fields) < 11 {
-                        continue
-                    }
-                    mem, err := strconv.ParseFloat(fields[3], 64)
-                    if err != nil {
-                        continue
-                    }
-                    procs = append(procs, ProcessInfo{
-                        pid: fields[1], mem: mem, cmd: fields[10],
-                    })
-                }
-
-                sort.Slice(procs, func(i, j int) bool {
-                    return procs[i].mem > procs[j].mem
-                })
-
-                limit := 5
-                if len(procs) < limit {
-                    limit = len(procs)
-                }
-                for _, p := range procs[:limit] {
-                    fmt.Printf("PID: %s  MEM: %.1f%%  CMD: %s\n", p.pid, p.mem, p.cmd)
-                }
-            }
-          difficulty: 3
-          annotations:
-            - type: stdlib
-              label: sort.Slice
-              text: >-
-                sort.Slice sorts a slice using a custom less function. It modifies the slice in place. For stable
-                sorting (preserving equal-element order), use sort.SliceStable.
-            - type: complexity
-              label: O(n log n)
-              text: >-
-                Parsing is O(n), sorting is O(n log n). For top-K problems, a heap (container/heap) would be O(n log k)
-                but sort.Slice is simpler for small k.
-        - id: v3
-          title: Process Tree
-          description: >-
-            Write a program that runs <code>ps -eo pid,ppid,comm</code> and builds a parent-child tree. Print processes
-            in a tree format with indentation showing the hierarchy. Start from PID 1 (init/systemd).
-          functionSignature: func main()
-          testCases:
-            - input: ps output with systemd -> sshd -> bash
-              output: 1 systemd\n  123 sshd\n    456 bash
-            - input: ps output with multiple children
-              output: indented tree showing parent-child relationships
-          hints:
-            - title: 🤔 Think about it
-              content: What data structure represents a tree? How do you map parent PIDs to their children?
-            - title: 💡 Hint
               content: >-
-                Use map[string][]string to map PPID to list of child PIDs. Use another map for PID to command name.
-                Recursively print from PID 1 with increasing indent.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>1. Parse ps -eo pid,ppid,comm
-                2. Build children map: ppid -> []pid
-                3. Build names map: pid -> comm
-                4. Recursive print: printTree(pid, indent)
-                5. Start from PID "1"</pre>
+                <pre>1. Create output channel
+
+                2. For each input: wg.Add(1), launch goroutine that ranges over input and sends to output, defer
+                wg.Done()
+
+                3. Launch goroutine: wg.Wait(), close(output)
+
+                4. Return output</pre>
           solution: |-
-            func main() {
-                out, err := exec.Command("ps", "-eo", "pid,ppid,comm").Output()
-                if err != nil {
-                    fmt.Fprintln(os.Stderr, err)
-                    os.Exit(1)
+            func merge(channels ...<-chan int) <-chan int {
+                out := make(chan int)
+                var wg sync.WaitGroup
+
+                for _, ch := range channels {
+                    wg.Add(1)
+                    go func(c <-chan int) {
+                        defer wg.Done()
+                        for n := range c {
+                            out <- n
+                        }
+                    }(ch)
                 }
 
-                children := make(map[string][]string)
-                names := make(map[string]string)
+                go func() {
+                    wg.Wait()
+                    close(out)
+                }()
 
-                lines := strings.Split(string(out), "\n")
-                for _, line := range lines[1:] {
-                    fields := strings.Fields(line)
-                    if len(fields) < 3 {
-                        continue
-                    }
-                    pid, ppid, comm := fields[0], fields[1], fields[2]
-                    names[pid] = comm
-                    children[ppid] = append(children[ppid], pid)
-                }
-
-                var printTree func(pid string, indent int)
-                printTree = func(pid string, indent int) {
-                    fmt.Printf("%s%s %s\n", strings.Repeat("  ", indent), pid, names[pid])
-                    for _, child := range children[pid] {
-                        printTree(child, indent+1)
-                    }
-                }
-                printTree("1", 0)
+                return out
             }
           difficulty: 3
           annotations:
             - type: pattern
-              label: Tree Building
+              label: Fan-In
               text: >-
-                Building a tree from flat parent-child data is a common pattern. Use a map from parent to children list,
-                then traverse recursively from the root.
+                Fan-in merges multiple channels into one. This is a core Go concurrency pattern used in pipelines, event
+                systems, and multiplexing.
             - type: idiom
-              label: Recursive Closure
+              label: WaitGroup + Close
               text: >-
-                Declaring a function variable before the closure allows recursion: var f func(); f = func() { f() }.
-                This is how Go handles anonymous recursive functions.
-        - id: v4
-          title: Process Monitor
+                The WaitGroup/close pattern ensures the output channel closes exactly once after all inputs are drained.
+                Never close a channel from the receiver side.
+            - type: gotcha
+              label: Channel Direction
+              text: >-
+                Use <-chan int (receive-only) in the function signature to prevent the merge function from accidentally
+                sending to input channels.
+        - id: v2
+          title: Pipeline Stages
           description: >-
-            Write a program that monitors a specific process name. Run <code>ps aux</code> every 2 seconds, find the
-            process, and print its CPU and memory usage. Stop after 5 iterations or if the process disappears.
-          functionSignature: func main()
+            Build a three-stage pipeline: <code>func generate(nums ...int) &lt;-chan int</code> sends numbers,
+            <code>func square(in &lt;-chan int) &lt;-chan int</code> squares each, <code>func filter(in &lt;-chan int,
+            min int) &lt;-chan int</code> keeps only values >= min. Each stage runs in its own goroutine and closes its
+            output when done.
+          functionSignature: func generate(nums ...int) <-chan int
           testCases:
-            - input: Monitor 'bash' for 5 iterations
-              output: 5 lines showing CPU/MEM for bash
-            - input: Monitor 'nonexistent'
-              output: "'Process not found' and exit"
+            - input: generate(1,2,3,4,5) -> square -> filter(_, 10)
+              output: "channel produces: 16, 25"
+            - input: generate(2,3) -> square -> filter(_, 5)
+              output: "channel produces: 9"
           hints:
             - title: 🤔 Think about it
-              content: How do you repeatedly check for a process? How do you match the process name in ps output?
+              content: How does each stage know when to stop? What happens when you range over a closed channel?
             - title: 💡 Hint
               content: >-
-                Use a for loop with time.Sleep(2 * time.Second). In each iteration, run ps aux, scan for the process
-                name in the command column. Print CPU/MEM or break if not found.
+                Each stage reads from its input channel using range (which stops when the channel closes), processes the
+                value, and sends to its output channel. Close the output when the range loop ends.
             - title: 🔧 Pattern
               content: |-
-                <pre>1. Get process name from os.Args[1]
-                2. Loop 5 times with 2s sleep
-                3. Run ps aux, parse lines
-                4. Find matching command, print stats
-                5. If not found, print message and break</pre>
+                <pre>1. generate: send each num, close output
+                2. square: range over input, send n*n, close output
+                3. filter: range over input, send if >= min, close output
+                4. Wire: filter(square(generate(nums...)), min)</pre>
           solution: |-
-            func main() {
-                if len(os.Args) < 2 {
-                    fmt.Fprintln(os.Stderr, "usage: monitor <process-name>")
-                    os.Exit(1)
-                }
-                target := os.Args[1]
-
-                for i := 0; i < 5; i++ {
-                    out, err := exec.Command("ps", "aux").Output()
-                    if err != nil {
-                        fmt.Fprintln(os.Stderr, err)
-                        os.Exit(1)
+            func generate(nums ...int) <-chan int {
+                out := make(chan int)
+                go func() {
+                    for _, n := range nums {
+                        out <- n
                     }
+                    close(out)
+                }()
+                return out
+            }
 
-                    found := false
-                    lines := strings.Split(string(out), "\n")
-                    for _, line := range lines[1:] {
-                        fields := strings.Fields(line)
-                        if len(fields) < 11 {
-                            continue
+            func square(in <-chan int) <-chan int {
+                out := make(chan int)
+                go func() {
+                    for n := range in {
+                        out <- n * n
+                    }
+                    close(out)
+                }()
+                return out
+            }
+
+            func filter(in <-chan int, min int) <-chan int {
+                out := make(chan int)
+                go func() {
+                    for n := range in {
+                        if n >= min {
+                            out <- n
                         }
-                        if strings.Contains(fields[10], target) {
-                            cpu, _ := strconv.ParseFloat(fields[2], 64)
-                            mem, _ := strconv.ParseFloat(fields[3], 64)
-                            fmt.Printf("[%d] %s - CPU: %.1f%% MEM: %.1f%%\n",
-                                i+1, target, cpu, mem)
-                            found = true
-                            break
-                        }
                     }
-
-                    if !found {
-                        fmt.Printf("Process '%s' not found\n", target)
-                        break
-                    }
-                    if i < 4 {
-                        time.Sleep(2 * time.Second)
-                    }
-                }
+                    close(out)
+                }()
+                return out
             }
           difficulty: 3
           annotations:
-            - type: alternative
-              label: Ticker-Based
+            - type: pattern
+              label: Pipeline Pattern
               text: >-
-                For production monitoring, use time.NewTicker instead of time.Sleep. Tickers account for execution time,
-                keeping intervals more consistent.
+                Go pipelines connect stages via channels. Each stage is a goroutine that reads, processes, and writes.
+                Closing channels propagates completion through the pipeline.
+            - type: idiom
+              label: Range Over Channel
+              text: >-
+                Using for n := range ch reads until the channel is closed. This is the idiomatic way to consume a
+                channel and avoids infinite loops.
+        - id: v3
+          title: Worker Pool
+          description: >-
+            Write <code>func workerPool(jobs []int, numWorkers int) []int</code> that processes jobs through a pool of
+            workers. Each worker reads from a shared jobs channel, doubles the value, and sends the result to a results
+            channel. Return all results.
+          functionSignature: func workerPool(jobs []int, numWorkers int) []int
+          testCases:
+            - input: "[]int{1, 2, 3, 4, 5}, 3"
+              output: "[]int{2, 4, 6, 8, 10} (order may vary)"
+            - input: "[]int{10, 20}, 2"
+              output: "[]int{20, 40} (order may vary)"
+          hints:
+            - title: 🤔 Think about it
+              content: How do multiple workers share work? Who closes the jobs channel, and who closes the results channel?
+            - title: 💡 Hint
+              content: >-
+                Send all jobs to a jobs channel, then close it. Workers range over the jobs channel. Use a WaitGroup to
+                know when all workers are done, then close the results channel.
+            - title: 🔧 Pattern
+              content: |-
+                <pre>1. Create jobs and results channels
+                2. Launch numWorkers goroutines that range over jobs
+                3. Send all jobs, close jobs channel
+                4. WaitGroup: wg.Wait() then close results
+                5. Collect results with range</pre>
+          solution: |-
+            func workerPool(jobs []int, numWorkers int) []int {
+                jobsCh := make(chan int, len(jobs))
+                resultsCh := make(chan int, len(jobs))
+
+                var wg sync.WaitGroup
+                for i := 0; i < numWorkers; i++ {
+                    wg.Add(1)
+                    go func() {
+                        defer wg.Done()
+                        for job := range jobsCh {
+                            resultsCh <- job * 2
+                        }
+                    }()
+                }
+
+                for _, job := range jobs {
+                    jobsCh <- job
+                }
+                close(jobsCh)
+
+                go func() {
+                    wg.Wait()
+                    close(resultsCh)
+                }()
+
+                var results []int
+                for r := range resultsCh {
+                    results = append(results, r)
+                }
+                return results
+            }
+          difficulty: 3
+          annotations:
+            - type: pattern
+              label: Worker Pool
+              text: >-
+                The worker pool pattern bounds concurrency. N workers share a jobs channel, limiting how many tasks run
+                simultaneously. This prevents resource exhaustion.
             - type: gotcha
-              label: Self-Matching
+              label: Channel Close Order
               text: >-
-                Be aware that the ps command itself or the monitor program may appear in ps output. Real tools use PID
-                files or more specific matching to avoid false positives.
+                Close the jobs channel after sending all jobs (so workers stop). Close the results channel after all
+                workers finish (so the collector stops). Wrong order causes deadlock or panic.
+        - id: v4
+          title: Fan-Out Map
+          description: >-
+            Write <code>func fanOutMap(inputs []string, workers int, fn func(string) string) []string</code> that
+            distributes strings to <code>workers</code> goroutines, applies <code>fn</code> to each, and collects
+            results preserving original order.
+          functionSignature: func fanOutMap(inputs []string, workers int, fn func(string) string) []string
+          testCases:
+            - input: "[]string{\"hello\", \"world\"}, 2, strings.ToUpper"
+              output: "[\"HELLO\", \"WORLD\"]"
+            - input: "[]string{\"a\", \"b\", \"c\"}, 2, func(s string) string { return s + \"!\" }"
+              output: "[\"a!\", \"b!\", \"c!\"]"
+          hints:
+            - title: 🤔 Think about it
+              content: >-
+                How do you preserve order when goroutines complete at different times? What extra information do you
+                need to send with each result?
+            - title: 💡 Hint
+              content: >-
+                Send indexed jobs (index + input) to workers. Workers return indexed results (index + output).
+                Pre-allocate the result slice and place each result at its original index.
+            - title: 🔧 Pattern
+              content: |-
+                <pre>1. Create indexed job struct {index int, value string}
+                2. Workers read jobs, apply fn, send indexed results
+                3. Pre-allocate results := make([]string, len(inputs))
+                4. Place each result at results[index]</pre>
+          solution: |-
+            func fanOutMap(inputs []string, workers int, fn func(string) string) []string {
+                type job struct {
+                    index int
+                    value string
+                }
+                type result struct {
+                    index int
+                    value string
+                }
+
+                jobsCh := make(chan job, len(inputs))
+                resultsCh := make(chan result, len(inputs))
+
+                var wg sync.WaitGroup
+                for i := 0; i < workers; i++ {
+                    wg.Add(1)
+                    go func() {
+                        defer wg.Done()
+                        for j := range jobsCh {
+                            resultsCh <- result{index: j.index, value: fn(j.value)}
+                        }
+                    }()
+                }
+
+                for i, input := range inputs {
+                    jobsCh <- job{index: i, value: input}
+                }
+                close(jobsCh)
+
+                go func() {
+                    wg.Wait()
+                    close(resultsCh)
+                }()
+
+                results := make([]string, len(inputs))
+                for r := range resultsCh {
+                    results[r.index] = r.value
+                }
+                return results
+            }
+          difficulty: 3
+          annotations:
+            - type: pattern
+              label: Ordered Fan-Out
+              text: >-
+                By pairing each job with its index, you can reconstruct the original order despite concurrent
+                processing. This is essential when output order must match input order.
+            - type: complexity
+              label: O(n)
+              text: >-
+                Each input is processed exactly once. The worker pool bounds parallelism to 'workers' goroutines while
+                still processing all n items.
     - id: challenge_2
       block: 2
       difficulty: 3
-      concept: Git Status Parser
+      concept: Rate Limiter
       docLinks:
-        - url: https://pkg.go.dev/os/exec#Cmd.Output
-          title: Package exec.Cmd.Output
-          note: capturing command output
-        - url: https://pkg.go.dev/bufio#Scanner
-          title: Package bufio.Scanner
-          note: line-by-line output processing
+        - url: https://pkg.go.dev/time#Ticker
+          title: Package time.Ticker
+          note: periodic ticks for rate limiting
+        - url: https://pkg.go.dev/golang.org/x/time/rate
+          title: Package rate (x/time)
+          note: production-grade rate limiter
       variants:
         - id: v1
-          title: Git Status Counter
+          title: Ticker Rate Limiter
           description: >-
-            Write a program that runs <code>git status --porcelain</code> and prints counts of modified, added, and
-            deleted files. Handle the porcelain format where the first two characters indicate status:
-            <code>M</code>=modified, <code>A</code> or <code>??</code>=added/new, <code>D</code>=deleted.
-          functionSignature: func main()
+            Build a <code>RateLimiter</code> struct that uses <code>time.Ticker</code> to allow at most N operations per
+            second. Implement <code>NewRateLimiter(perSecond int) *RateLimiter</code>, <code>Wait()</code> (blocks until
+            allowed), and <code>Stop()</code>.
+          functionSignature: func NewRateLimiter(perSecond int) *RateLimiter
           testCases:
-            - input: git repo with 2 modified, 1 new, 1 deleted
-              output: "Modified: 2, Added: 1, Deleted: 1"
-            - input: clean git repo
-              output: "Modified: 0, Added: 0, Deleted: 0"
-            - input: not a git repo
-              output: Not a git repo
+            - input: NewRateLimiter(5) // 5 ops/sec
+              output: Wait() blocks ~200ms between calls
+            - input: NewRateLimiter(10) // 10 ops/sec
+              output: Wait() blocks ~100ms between calls
           hints:
             - title: 🤔 Think about it
-              content: >-
-                What does each two-character status code mean in porcelain format? How do you distinguish staged vs
-                unstaged changes?
+              content: If you want N operations per second, what is the interval between each allowed operation?
             - title: 💡 Hint
               content: >-
-                Porcelain first two chars: 'M ' or ' M' or 'MM' = modified, 'A ' or '??' = added, 'D ' or ' D' =
-                deleted. Check with line[0:2] switch.
+                Interval is time.Second / time.Duration(perSecond). Create a time.Ticker with that interval. Wait()
+                reads from ticker.C.
             - title: 🔧 Pattern
               content: |-
-                <pre>1. Run git status --porcelain
-                2. Check error (not a git repo)
-                3. Split output by newline
-                4. For each line: switch on first 2 chars
-                5. Increment counters, print results</pre>
+                <pre>1. RateLimiter has a *time.Ticker field
+                2. NewRateLimiter calculates interval, creates ticker
+                3. Wait() blocks on <-ticker.C
+                4. Stop() calls ticker.Stop()</pre>
           solution: |-
-            func main() {
-                out, err := exec.Command("git", "status", "--porcelain").Output()
-                if err != nil {
-                    fmt.Println("Not a git repo")
-                    return
-                }
+            type RateLimiter struct {
+                ticker *time.Ticker
+            }
 
-                var modified, added, deleted int
-                for _, line := range strings.Split(string(out), "\n") {
-                    if len(line) < 2 {
-                        continue
-                    }
-                    switch line[0:2] {
-                    case " M", "M ", "MM":
-                        modified++
-                    case "A ", "??":
-                        added++
-                    case " D", "D ":
-                        deleted++
-                    }
+            func NewRateLimiter(perSecond int) *RateLimiter {
+                return &RateLimiter{
+                    ticker: time.NewTicker(time.Second / time.Duration(perSecond)),
                 }
-                fmt.Printf("Modified: %d, Added: %d, Deleted: %d\n",
-                    modified, added, deleted)
+            }
+
+            func (r *RateLimiter) Wait() {
+                <-r.ticker.C
+            }
+
+            func (r *RateLimiter) Stop() {
+                r.ticker.Stop()
             }
           difficulty: 3
           annotations:
             - type: stdlib
-              label: exec.Command
+              label: time.Ticker
               text: >-
-                git status --porcelain gives machine-readable output that is stable across Git versions. Always use
-                --porcelain for scripting, never the default human-readable format.
-            - type: gotcha
-              label: Two-Character Status
+                time.NewTicker sends values on its channel at regular intervals. Always call Stop() when done to release
+                the ticker's resources.
+            - type: idiom
+              label: Blocking Channel Read
               text: >-
-                The porcelain format uses TWO characters: index status and working tree status. 'M ' means staged
-                modification, ' M' means unstaged. Both are valid modifications.
+                <-ticker.C blocks the caller until the next tick. This naturally throttles the calling code without
+                busy-waiting.
         - id: v2
-          title: Git Branch Info
+          title: Token Bucket Limiter
           description: >-
-            Write a program that parses <code>git status --porcelain -b</code> to extract the current branch name and
-            ahead/behind counts. Also list all changed files grouped by status.
-          functionSignature: func main()
+            Build a <code>TokenBucket</code> rate limiter. It starts with <code>capacity</code> tokens and refills at
+            <code>rate</code> tokens per second. <code>Allow()</code> returns true if a token is available (consuming
+            it), false otherwise. Use a goroutine for refilling.
+          functionSignature: func NewTokenBucket(capacity int, rate int) *TokenBucket
           testCases:
-            - input: On branch main, 2 ahead, 1 modified file
-              output: "Branch: main (ahead 2)\\nModified: file.go"
-            - input: On branch feature, clean
-              output: "Branch: feature\\nNo changes"
+            - input: NewTokenBucket(3, 1) // 3 burst, 1/sec refill
+              output: First 3 Allow() return true, 4th returns false
+            - input: NewTokenBucket(1, 10) // 1 burst, 10/sec refill
+              output: Allow() returns true, then false, then true after 100ms
           hints:
             - title: 🤔 Think about it
-              content: What does the -b flag add to porcelain output? What does the branch line look like?
+              content: How do you safely modify the token count from both the refill goroutine and the Allow method?
             - title: 💡 Hint
               content: >-
-                With -b, the first line is: ## branch...origin/branch [ahead N, behind M]. Parse this line separately.
-                Remaining lines are status lines.
+                Use a mutex to protect the tokens field. A background goroutine adds tokens at the refill rate using a
+                ticker. Allow() locks, checks tokens > 0, decrements, and returns.
             - title: 🔧 Pattern
               content: |-
-                <pre>1. Run git status --porcelain -b
-                2. First line: parse branch and ahead/behind
-                3. Remaining lines: parse status codes
-                4. Group files by status
-                5. Print branch info and file groups</pre>
+                <pre>1. TokenBucket: tokens, capacity int, mu sync.Mutex, stop chan
+                2. Background goroutine: ticker at rate, add token if below capacity
+                3. Allow(): lock, if tokens > 0 decrement and return true
+                4. Stop(): close stop channel, stop ticker</pre>
           solution: |-
-            func main() {
-                out, err := exec.Command("git", "status", "--porcelain", "-b").Output()
-                if err != nil {
-                    fmt.Println("Not a git repo")
-                    return
-                }
+            type TokenBucket struct {
+                tokens   int
+                capacity int
+                mu       sync.Mutex
+                stop     chan struct{}
+                ticker   *time.Ticker
+            }
 
-                lines := strings.Split(strings.TrimSpace(string(out)), "\n")
-                if len(lines) == 0 {
-                    return
+            func NewTokenBucket(capacity int, rate int) *TokenBucket {
+                tb := &TokenBucket{
+                    tokens:   capacity,
+                    capacity: capacity,
+                    stop:     make(chan struct{}),
+                    ticker:   time.NewTicker(time.Second / time.Duration(rate)),
                 }
-
-                // Parse branch line: ## main...origin/main [ahead 2]
-                branchLine := lines[0][3:] // skip "## "
-                branch := branchLine
-                if idx := strings.Index(branchLine, "..."); idx != -1 {
-                    branch = branchLine[:idx]
-                }
-                info := branch
-                if idx := strings.Index(branchLine, "["); idx != -1 {
-                    end := strings.Index(branchLine, "]")
-                    info += " (" + branchLine[idx+1:end] + ")"
-                }
-                fmt.Println("Branch:", info)
-
-                modified := []string{}
-                added := []string{}
-                deleted := []string{}
-                for _, line := range lines[1:] {
-                    if len(line) < 3 {
-                        continue
+                go func() {
+                    for {
+                        select {
+                        case <-tb.ticker.C:
+                            tb.mu.Lock()
+                            if tb.tokens < tb.capacity {
+                                tb.tokens++
+                            }
+                            tb.mu.Unlock()
+                        case <-tb.stop:
+                            tb.ticker.Stop()
+                            return
+                        }
                     }
-                    file := strings.TrimSpace(line[3:])
-                    switch line[0:2] {
-                    case " M", "M ", "MM":
-                        modified = append(modified, file)
-                    case "A ", "??":
-                        added = append(added, file)
-                    case " D", "D ":
-                        deleted = append(deleted, file)
-                    }
-                }
+                }()
+                return tb
+            }
 
-                if len(modified)+len(added)+len(deleted) == 0 {
-                    fmt.Println("No changes")
-                    return
+            func (tb *TokenBucket) Allow() bool {
+                tb.mu.Lock()
+                defer tb.mu.Unlock()
+                if tb.tokens > 0 {
+                    tb.tokens--
+                    return true
                 }
-                for _, f := range modified { fmt.Println("Modified:", f) }
-                for _, f := range added { fmt.Println("Added:", f) }
-                for _, f := range deleted { fmt.Println("Deleted:", f) }
+                return false
+            }
+
+            func (tb *TokenBucket) Stop() {
+                close(tb.stop)
             }
           difficulty: 3
           annotations:
+            - type: pattern
+              label: Token Bucket
+              text: >-
+                The token bucket algorithm allows bursts up to capacity while maintaining an average rate. It is widely
+                used in API rate limiting and network traffic shaping.
             - type: gotcha
-              label: Branch Line Format
+              label: Mutex + Channel
               text: >-
-                The -b branch line format varies: '## main' (no remote), '## main...origin/main' (with remote), '##
-                main...origin/main [ahead 1]' (with tracking info).
-            - type: idiom
-              label: String Slicing
-              text: >-
-                Go strings can be sliced like line[0:2] or line[3:]. This is efficient as it shares the underlying
-                bytes. Be careful with Unicode; use []rune for multi-byte characters.
+                The mutex protects the tokens field from concurrent access. The stop channel signals the background
+                goroutine to exit. Mixing both is fine when they protect different things.
         - id: v3
-          title: Git Diff Stats
+          title: Sliding Window Limiter
           description: >-
-            Write a program that runs <code>git diff --stat</code> and parses the output to extract file names and the
-            number of insertions/deletions for each. Print a summary showing total files changed, insertions, and
-            deletions.
-          functionSignature: func main()
+            Build a <code>SlidingWindow</code> rate limiter that allows at most <code>maxRequests</code> in the last
+            <code>window</code> duration. <code>Allow()</code> returns true if under the limit. Track request timestamps
+            and evict expired ones.
+          functionSignature: func NewSlidingWindow(maxRequests int, window time.Duration) *SlidingWindow
           testCases:
-            - input: git diff --stat with 3 files, +20 -5
-              output: 3 files changed, 20 insertions, 5 deletions
-            - input: no changes
-              output: No changes
+            - input: NewSlidingWindow(3, time.Second)
+              output: 3 rapid Allow() return true, 4th returns false, true again after 1s
+            - input: NewSlidingWindow(1, 500*time.Millisecond)
+              output: Allow() true, then false, then true after 500ms
           hints:
             - title: 🤔 Think about it
-              content: What does git diff --stat output look like? Where are the numbers for insertions and deletions?
+              content: How do you track when each request happened? How do you efficiently remove old entries?
             - title: 💡 Hint
               content: >-
-                The last line of --stat is a summary like: '3 files changed, 20 insertions(+), 5 deletions(-)'. Parse
-                this line, or parse each file line which shows ' file | N +++---'.
+                Store timestamps in a slice. On each Allow(), remove timestamps older than now-window. If
+                len(timestamps) < maxRequests, add now and return true.
             - title: 🔧 Pattern
               content: |-
-                <pre>1. Run git diff --stat
-                2. Parse the summary line (last non-empty line)
-                3. Extract numbers using string parsing or regexp
-                4. Print formatted summary</pre>
+                <pre>1. SlidingWindow: timestamps []time.Time, max, window, mu
+                2. Allow(): lock, evict old timestamps
+                3. If len < max: append now, return true
+                4. Else return false</pre>
           solution: |-
-            func main() {
-                out, err := exec.Command("git", "diff", "--stat").Output()
-                if err != nil {
-                    fmt.Fprintln(os.Stderr, err)
-                    os.Exit(1)
-                }
+            type SlidingWindow struct {
+                timestamps  []time.Time
+                maxRequests int
+                window      time.Duration
+                mu          sync.Mutex
+            }
 
-                output := strings.TrimSpace(string(out))
-                if output == "" {
-                    fmt.Println("No changes")
-                    return
+            func NewSlidingWindow(maxRequests int, window time.Duration) *SlidingWindow {
+                return &SlidingWindow{
+                    maxRequests: maxRequests,
+                    window:      window,
                 }
+            }
 
-                lines := strings.Split(output, "\n")
-                // Parse individual file lines
-                for _, line := range lines[:len(lines)-1] {
-                    parts := strings.Split(line, "|")
-                    if len(parts) == 2 {
-                        file := strings.TrimSpace(parts[0])
-                        changes := strings.TrimSpace(parts[1])
-                        fmt.Printf("  %s: %s\n", file, changes)
+            func (sw *SlidingWindow) Allow() bool {
+                sw.mu.Lock()
+                defer sw.mu.Unlock()
+
+                now := time.Now()
+                cutoff := now.Add(-sw.window)
+
+                // Evict expired timestamps
+                valid := sw.timestamps[:0]
+                for _, ts := range sw.timestamps {
+                    if ts.After(cutoff) {
+                        valid = append(valid, ts)
                     }
                 }
+                sw.timestamps = valid
 
-                // Print summary line as-is
-                summary := lines[len(lines)-1]
-                fmt.Println(strings.TrimSpace(summary))
+                if len(sw.timestamps) < sw.maxRequests {
+                    sw.timestamps = append(sw.timestamps, now)
+                    return true
+                }
+                return false
             }
           difficulty: 3
           annotations:
-            - type: stdlib
-              label: git diff --stat
+            - type: pattern
+              label: Sliding Window
               text: >-
-                git diff --stat produces a human-readable summary of changes. For machine-readable output, use --numstat
-                which gives tab-separated insertions/deletions/filename.
-            - type: alternative
-              label: Use --numstat
+                The sliding window tracks individual request times, giving more accurate rate limiting than fixed
+                windows. It prevents burst-at-boundary attacks.
+            - type: complexity
+              label: O(n)
               text: >-
-                git diff --numstat outputs 'insertions\tdeletions\tfile' per line, which is easier to parse
-                programmatically than --stat's visual bars.
+                Each Allow() scans all stored timestamps to evict expired ones. For high-throughput systems, consider a
+                ring buffer or sorted structure for O(1) eviction.
         - id: v4
-          title: Git Log Parser
+          title: Per-Key Rate Limiter
           description: >-
-            Write a program that runs <code>git log --oneline -10</code> and parses each line into a commit hash and
-            message. Group commits by the first word of the message (e.g., "fix", "add", "update") and print the grouped
-            results.
-          functionSignature: func main()
+            Build a <code>PerKeyLimiter</code> that rate-limits per key (e.g., per user or per IP). <code>Allow(key
+            string)</code> returns true if the key has not exceeded <code>maxPerSecond</code> requests. Use a map of
+            last-allowed timestamps.
+          functionSignature: func NewPerKeyLimiter(maxPerSecond int) *PerKeyLimiter
           testCases:
-            - input: "git log with 'fix: bug', 'add: feature', 'fix: typo'"
-              output: "fix (2):\\n  abc1234 fix: bug\\n  def5678 fix: typo\\nadd (1):\\n  ghi9012 add: feature"
-            - input: empty repo
-              output: No commits
+            - input: limiter.Allow("user1") // first call
+              output: "true"
+            - input: limiter.Allow("user1") // immediate second call, maxPerSecond=1
+              output: "false"
+            - input: limiter.Allow("user2") // different key
+              output: "true"
           hints:
             - title: 🤔 Think about it
-              content: How do you extract the first word from a commit message? What data structure groups items by a key?
+              content: How do you track rate limits independently for each key? What data structure maps keys to their state?
             - title: 💡 Hint
               content: >-
-                Each oneline line is: 'hash message'. Split to get hash and message. Use strings.Fields(message)[0] for
-                the first word. Group with map[string][]string.
+                Use a map[string]time.Time to store the last-allowed time per key. If now - lastAllowed >= interval,
+                allow and update. Use a mutex for thread safety.
             - title: 🔧 Pattern
               content: |-
-                <pre>1. Run git log --oneline -10
-                2. For each line: split into hash and message
-                3. Extract first word of message (lowercase)
-                4. Group in map[string][]string
-                5. Print groups with counts</pre>
+                <pre>1. PerKeyLimiter: limits map[string]time.Time, interval, mu
+                2. interval = time.Second / maxPerSecond
+                3. Allow(key): lock, check last time for key
+                4. If enough time passed or new key: update and return true</pre>
           solution: |-
-            func main() {
-                out, err := exec.Command("git", "log", "--oneline", "-10").Output()
-                if err != nil {
-                    fmt.Println("Not a git repo or no commits")
-                    return
-                }
+            type PerKeyLimiter struct {
+                limits   map[string]time.Time
+                interval time.Duration
+                mu       sync.Mutex
+            }
 
-                output := strings.TrimSpace(string(out))
-                if output == "" {
-                    fmt.Println("No commits")
-                    return
-                }
-
-                groups := make(map[string][]string)
-                var order []string
-
-                for _, line := range strings.Split(output, "\n") {
-                    parts := strings.SplitN(line, " ", 2)
-                    if len(parts) < 2 {
-                        continue
-                    }
-                    hash := parts[0]
-                    message := parts[1]
-                    keyword := strings.ToLower(strings.Fields(message)[0])
-                    // Remove trailing colon if present
-                    keyword = strings.TrimRight(keyword, ":")
-
-                    if _, exists := groups[keyword]; !exists {
-                        order = append(order, keyword)
-                    }
-                    groups[keyword] = append(groups[keyword], hash+" "+message)
-                }
-
-                for _, key := range order {
-                    commits := groups[key]
-                    fmt.Printf("%s (%d):\n", key, len(commits))
-                    for _, c := range commits {
-                        fmt.Printf("  %s\n", c)
-                    }
+            func NewPerKeyLimiter(maxPerSecond int) *PerKeyLimiter {
+                return &PerKeyLimiter{
+                    limits:   make(map[string]time.Time),
+                    interval: time.Second / time.Duration(maxPerSecond),
                 }
             }
+
+            func (l *PerKeyLimiter) Allow(key string) bool {
+                l.mu.Lock()
+                defer l.mu.Unlock()
+
+                now := time.Now()
+                last, exists := l.limits[key]
+                if !exists || now.Sub(last) >= l.interval {
+                    l.limits[key] = now
+                    return true
+                }
+                return false
+            }
           difficulty: 3
+          annotations:
+            - type: pattern
+              label: Per-Key Limiting
+              text: >-
+                Per-key rate limiting is essential for multi-tenant systems. Each user or IP gets its own rate limit,
+                preventing one user from starving others.
+            - type: gotcha
+              label: Memory Growth
+              text: >-
+                The limits map grows unboundedly. In production, add a background cleanup goroutine that evicts entries
+                older than the window to prevent memory leaks.
+    - id: challenge_3
+      block: 3
+      difficulty: 4
+      concept: Graceful Shutdown
+      docLinks:
+        - url: https://pkg.go.dev/os/signal#Notify
+          title: Package signal.Notify
+          note: receiving OS signals
+        - url: https://pkg.go.dev/context#WithCancel
+          title: Package context.WithCancel
+          note: cancellation propagation
+        - url: https://pkg.go.dev/net/http#Server.Shutdown
+          title: Package http.Server.Shutdown
+          note: graceful HTTP shutdown
+      variants:
+        - id: v1
+          title: Signal-Based Shutdown
+          description: >-
+            Write a program that starts a worker goroutine printing "working..." every 100ms. On receiving
+            <code>os.Interrupt</code> (Ctrl+C), signal the worker to stop via a channel, wait for it to finish, then
+            print "Done" and exit.
+          functionSignature: func main()
+          testCases:
+            - input: Run program, press Ctrl+C after ~500ms
+              output: Several 'working...' lines, then 'Worker stopping...', 'Done'
+            - input: Run program, press Ctrl+C immediately
+              output: "'Worker stopping...', 'Done'"
+          hints:
+            - title: 🤔 Think about it
+              content: How does the main goroutine tell the worker to stop? How does it know the worker has actually finished?
+            - title: 💡 Hint
+              content: >-
+                Use two channels: 'stop' (main tells worker to stop) and 'done' (worker confirms it stopped). The worker
+                uses select to check for stop signals between work iterations.
+            - title: 🔧 Pattern
+              content: |-
+                <pre>1. Create stop and done channels
+                2. Worker: select on stop or default (do work)
+                3. signal.Notify(sigCh, os.Interrupt)
+                4. <-sigCh, close(stop), <-done, print Done</pre>
+          solution: |-
+            func main() {
+                stop := make(chan struct{})
+                done := make(chan struct{})
+
+                go func() {
+                    defer close(done)
+                    for {
+                        select {
+                        case <-stop:
+                            fmt.Println("Worker stopping...")
+                            return
+                        default:
+                            fmt.Println("working...")
+                            time.Sleep(100 * time.Millisecond)
+                        }
+                    }
+                }()
+
+                sigCh := make(chan os.Signal, 1)
+                signal.Notify(sigCh, os.Interrupt)
+                <-sigCh
+
+                fmt.Println("Shutting down...")
+                close(stop)
+                <-done
+                fmt.Println("Done")
+            }
+          difficulty: 4
           annotations:
             - type: idiom
-              label: Insertion Order Map
+              label: Close to Broadcast
               text: >-
-                Go maps do not preserve insertion order. To print groups in the order they were first seen, maintain a
-                separate slice of keys.
+                Closing a channel wakes all goroutines blocked on it. This is the Go way to broadcast a cancellation
+                signal to multiple workers.
             - type: stdlib
-              label: strings.SplitN
+              label: os/signal
               text: >-
-                strings.SplitN(s, sep, n) splits into at most n parts. SplitN(line, " ", 2) splits on the first space
-                only, keeping the rest of the message intact.
+                signal.Notify registers for OS signals. Use a buffered channel (size 1) to avoid missing the signal if
+                the receiver is not ready.
+        - id: v2
+          title: Context-Based Shutdown
+          description: >-
+            Rewrite graceful shutdown using <code>context.Context</code>. Create a cancellable context, pass it to the
+            worker. On Ctrl+C, cancel the context. The worker checks <code>ctx.Done()</code> in its select loop.
+          functionSignature: func worker(ctx context.Context, done chan struct{})
+          testCases:
+            - input: Run program, press Ctrl+C after ~300ms
+              output: Several 'working...' lines, then 'context canceled', 'Done'
+            - input: Run program, press Ctrl+C immediately
+              output: "'context canceled', 'Done'"
+          hints:
+            - title: 🤔 Think about it
+              content: How does context.WithCancel propagate cancellation? What channel does the worker monitor?
+            - title: 💡 Hint
+              content: >-
+                Create ctx, cancel := context.WithCancel(context.Background()). Pass ctx to the worker. Worker selects
+                on ctx.Done(). Main calls cancel() on signal.
+            - title: 🔧 Pattern
+              content: |-
+                <pre>1. ctx, cancel := context.WithCancel(context.Background())
+                2. Worker: select on ctx.Done() or default
+                3. On signal: cancel()
+                4. <-done to wait for worker</pre>
+          solution: |-
+            func worker(ctx context.Context, done chan struct{}) {
+                defer close(done)
+                for {
+                    select {
+                    case <-ctx.Done():
+                        fmt.Println(ctx.Err())
+                        return
+                    default:
+                        fmt.Println("working...")
+                        time.Sleep(100 * time.Millisecond)
+                    }
+                }
+            }
+
+            func main() {
+                ctx, cancel := context.WithCancel(context.Background())
+                done := make(chan struct{})
+
+                go worker(ctx, done)
+
+                sigCh := make(chan os.Signal, 1)
+                signal.Notify(sigCh, os.Interrupt)
+                <-sigCh
+
+                fmt.Println("Shutting down...")
+                cancel()
+                <-done
+                fmt.Println("Done")
+            }
+          difficulty: 4
+          annotations:
+            - type: idiom
+              label: Context Cancellation
+              text: >-
+                Using context for cancellation is idiomatic Go. It integrates with the standard library (net/http,
+                database/sql) and propagates through call chains.
+            - type: alternative
+              label: signal.NotifyContext
+              text: >-
+                Go 1.16+ provides signal.NotifyContext which combines signal handling and context cancellation in one
+                call, simplifying the pattern.
+        - id: v3
+          title: Multi-Worker Shutdown
+          description: >-
+            Start 3 worker goroutines, each with an ID. On Ctrl+C, signal all workers to stop, wait for all to finish
+            using a <code>sync.WaitGroup</code>, then exit. Each worker should print its ID when stopping.
+          functionSignature: func main()
+          testCases:
+            - input: Run program, press Ctrl+C
+              output: All 3 workers print stopping messages, then 'All workers done'
+            - input: Workers have IDs 1, 2, 3
+              output: Each worker prints 'Worker N stopping...'
+          hints:
+            - title: 🤔 Think about it
+              content: How do you signal all workers at once? How do you wait for all of them to finish?
+            - title: 💡 Hint
+              content: >-
+                Close a shared 'stop' channel to broadcast to all workers. Use sync.WaitGroup with Add(3), and each
+                worker calls Done() when finished.
+            - title: 🔧 Pattern
+              content: |-
+                <pre>1. stop channel, WaitGroup
+                2. Launch 3 workers: wg.Add(1) each, defer wg.Done()
+                3. Workers select on stop
+                4. On signal: close(stop), wg.Wait()
+                5. Print 'All workers done'</pre>
+          solution: |-
+            func main() {
+                stop := make(chan struct{})
+                var wg sync.WaitGroup
+
+                for i := 1; i <= 3; i++ {
+                    wg.Add(1)
+                    go func(id int) {
+                        defer wg.Done()
+                        for {
+                            select {
+                            case <-stop:
+                                fmt.Printf("Worker %d stopping...\n", id)
+                                return
+                            default:
+                                fmt.Printf("Worker %d working...\n", id)
+                                time.Sleep(100 * time.Millisecond)
+                            }
+                        }
+                    }(i)
+                }
+
+                sigCh := make(chan os.Signal, 1)
+                signal.Notify(sigCh, os.Interrupt)
+                <-sigCh
+
+                fmt.Println("Shutting down...")
+                close(stop)
+                wg.Wait()
+                fmt.Println("All workers done")
+            }
+          difficulty: 4
+          annotations:
+            - type: idiom
+              label: WaitGroup for Completion
+              text: >-
+                sync.WaitGroup tracks N goroutines. Each calls Done() when finished. Wait() blocks until all are done.
+                This is simpler than counting 'done' channels.
+            - type: gotcha
+              label: Loop Variable Capture
+              text: >-
+                Pass the loop variable 'i' as a function argument: go func(id int){...}(i). Capturing 'i' directly in
+                the closure would give all goroutines the same value.
+        - id: v4
+          title: Shutdown with Drain
+          description: >-
+            Start a worker that processes jobs from a channel. On Ctrl+C, stop sending new jobs but let the worker
+            finish all queued jobs before exiting. Print the count of processed jobs at the end.
+          functionSignature: func main()
+          testCases:
+            - input: Queue 10 jobs, Ctrl+C after 3 processed
+              output: All 10 jobs processed, then 'Processed 10 jobs'
+            - input: Queue 5 jobs, Ctrl+C before any processed
+              output: All 5 jobs processed, then 'Processed 5 jobs'
+          hints:
+            - title: 🤔 Think about it
+              content: >-
+                How does the worker know there are no more jobs coming? What is the difference between stopping
+                immediately and draining?
+            - title: 💡 Hint
+              content: >-
+                Close the jobs channel to signal no more jobs. The worker ranges over the channel and processes all
+                remaining items. This naturally drains the queue.
+            - title: 🔧 Pattern
+              content: |-
+                <pre>1. Buffered jobs channel, done channel
+                2. Producer goroutine sends jobs (checks for stop)
+                3. Worker ranges over jobs channel
+                4. On signal: close(stop), producer closes jobs
+                5. <-done waits for worker to drain all jobs</pre>
+          solution: |-
+            func main() {
+                jobs := make(chan int, 20)
+                done := make(chan int)
+                stop := make(chan struct{})
+
+                // Producer
+                go func() {
+                    i := 0
+                    for {
+                        select {
+                        case <-stop:
+                            close(jobs)
+                            return
+                        default:
+                            i++
+                            jobs <- i
+                            time.Sleep(50 * time.Millisecond)
+                        }
+                    }
+                }()
+
+                // Worker
+                go func() {
+                    count := 0
+                    for job := range jobs {
+                        fmt.Printf("Processing job %d\n", job)
+                        time.Sleep(100 * time.Millisecond)
+                        count++
+                    }
+                    done <- count
+                }()
+
+                sigCh := make(chan os.Signal, 1)
+                signal.Notify(sigCh, os.Interrupt)
+                <-sigCh
+
+                fmt.Println("Shutting down, draining queue...")
+                close(stop)
+                count := <-done
+                fmt.Printf("Processed %d jobs\n", count)
+            }
+          difficulty: 4
+          annotations:
+            - type: pattern
+              label: Graceful Drain
+              text: >-
+                Draining a queue before shutdown ensures no work is lost. This is critical for message queues, task
+                processors, and database write buffers.
+            - type: idiom
+              label: Range Over Channel
+              text: >-
+                Using range on the jobs channel processes all buffered items until the channel is closed. This is the
+                cleanest way to drain a work queue in Go.
+            - type: gotcha
+              label: Buffered Channel Drain
+              text: >-
+                A buffered channel can hold items even after close(). The worker's range loop will process all buffered
+                items before ending. This is by design.

@@ -1,1147 +1,972 @@
 conceptLinks:
-  Pointer Basics: "#lesson-pointers"
-  Dereferencing: "#lesson-dereferencing"
-  Pointer Parameters: "#lesson-pointer-params"
-  Nil Pointers: "#lesson-nil"
-  Pointer Receivers: "#lesson-pointer-receivers"
-  Structs & Pointers: "#lesson-structs-pointers"
-  Linked Structures: "#lesson-linked-structures"
+  Building Slices: "#lesson-slices"
+  Slice Operations: "#lesson-slices"
+  Map Basics: "#lesson-maps"
+  Comma-Ok Pattern: "#lesson-comma-ok"
+  Strings & Runes: "#lesson-variables"
+  Go Fundamentals Combined: "#lesson-variables"
+
 sharedContent: {}
+
 variants:
   warmups:
+    # ── warmup_1: Building Slices ────────────────────────────────────────
     - id: warmup_1
-      concept: Pointer Basics
+      concept: Building Slices
       variants:
         - id: v1
-          title: Get an Address
+          title: Print Log Levels
           description: >-
-            Create an integer variable, get its address using <code>&amp;</code>, and print both the value and the
-            address.
+            Declare a slice literal containing the strings <code>"INFO"</code>,
+            <code>"WARN"</code>, <code>"ERROR"</code>, <code>"DEBUG"</code>.
+            Iterate over it with <code>range</code> and print each level.
           hints:
-            - Use <code>&amp;x</code> to get the address of variable <code>x</code>
-            - The pointer will print as a hex memory address like <code>0xc0000b6010</code>
+            - "Use <code>levels := []string{\"INFO\", \"WARN\", \"ERROR\", \"DEBUG\"}</code>"
+            - "Use <code>for _, level := range levels</code> to iterate"
           solution: |-
-            x := 42
-            ptr := &x
-            fmt.Println("Value:", x)
-            fmt.Println("Address:", ptr)
-          annotations:
-            - type: idiom
-              label: Address-of Operator
-              text: >-
-                The <code>&</code> operator returns a pointer to the variable's memory location. In Go, you cannot take
-                the address of a constant or literal.
-            - type: gotcha
-              label: Pointer Formatting
-              text: >-
-                Printing a pointer with <code>fmt.Println</code> displays the hex address. Use <code>%p</code> with
-                <code>fmt.Printf</code> for explicit formatting.
+            levels := []string{"INFO", "WARN", "ERROR", "DEBUG"}
+            for _, level := range levels {
+                fmt.Println(level)
+            }
+
         - id: v2
-          title: Address of a String
+          title: Collect Even Numbers
           description: >-
-            Create a string variable holding your name. Get a pointer to it and print the pointer's type using
-            <code>fmt.Sprintf("%T", ptr)</code>.
+            Write a program that loops from 1 to 20 and uses <code>append</code> to collect
+            all even numbers into a slice. Print the final slice.
           hints:
-            - Use <code>&amp;name</code> to get the pointer
-            - <code>%T</code> prints the type, which should be <code>*string</code>
+            - "Start with an empty slice: <code>var evens []int</code>"
+            - "Inside the loop, use <code>if i % 2 == 0 { evens = append(evens, i) }</code>"
           solution: |-
-            name := "Gopher"
-            ptr := &name
-            fmt.Printf("Type: %T\n", ptr)   // *string
-            fmt.Printf("Value: %s\n", name) // Gopher
-          annotations:
-            - type: idiom
-              label: Pointer Types
-              text: >-
-                A pointer to a <code>string</code> has type <code>*string</code>. The asterisk prefix denotes a pointer
-                type in Go's type system.
+            var evens []int
+            for i := 1; i <= 20; i++ {
+                if i%2 == 0 {
+                    evens = append(evens, i)
+                }
+            }
+            fmt.Println(evens)
+
         - id: v3
-          title: Two Pointers, One Variable
+          title: Last Three Lines
           description: >-
-            Create an integer variable and two pointers that both point to it. Print the value through both pointers to
-            show they reference the same data.
+            Given <code>lines := []string{"line1", "line2", "line3", "line4", "line5"}</code>,
+            use slice syntax to grab the last 3 elements and print them.
           hints:
-            - Both <code>p1 := &amp;x</code> and <code>p2 := &amp;x</code> will point to the same memory
-            - Dereference with <code>*p1</code> and <code>*p2</code>
+            - "Use <code>lines[len(lines)-3:]</code> to get the last 3 elements"
           solution: |-
-            x := 100
-            p1 := &x
-            p2 := &x
-            fmt.Println(*p1, *p2) // 100 100
-            fmt.Println(p1 == p2) // true
-          annotations:
-            - type: idiom
-              label: Pointer Equality
-              text: >-
-                Two pointers are equal (<code>==</code>) when they point to the same memory address. This is identity
-                comparison, not value comparison.
+            lines := []string{"line1", "line2", "line3", "line4", "line5"}
+            last3 := lines[len(lines)-3:]
+            fmt.Println(last3)
+
         - id: v4
-          title: Pointer to a Boolean
+          title: Pre-Allocate with make
           description: >-
-            Create a <code>bool</code> variable set to <code>false</code>. Get a pointer to it, print the dereferenced
-            value, then explain what <code>*ptr</code> gives you.
+            Use <code>make([]int, 5)</code> to create a slice of 5 integers.
+            Fill each element with its index squared (<code>i*i</code>), then print the slice.
           hints:
-            - "Declare: <code>flag := false</code>"
-            - Use <code>*ptr</code> to read the value through the pointer
+            - "Use <code>squares := make([]int, 5)</code> to pre-allocate"
+            - "Fill with <code>for i := 0; i &lt; len(squares); i++ { squares[i] = i * i }</code>"
           solution: |-
-            flag := false
-            ptr := &flag
-            fmt.Println(*ptr) // false
-            *ptr = true
-            fmt.Println(flag) // true
-          annotations:
-            - type: gotcha
-              label: Zero Values
-              text: >-
-                In Go, <code>bool</code> defaults to <code>false</code>, <code>int</code> defaults to <code>0</code>,
-                and <code>string</code> defaults to <code>""</code>. A pointer itself defaults to <code>nil</code>.
+            squares := make([]int, 5)
+            for i := 0; i < len(squares); i++ {
+                squares[i] = i * i
+            }
+            fmt.Println(squares)
+
+    # ── warmup_2: Map Basics ────────────────────────────────────────────
     - id: warmup_2
-      concept: Dereferencing
+      concept: Map Basics
       variants:
         - id: v1
-          title: Modify Through Pointer
+          title: Iterate a Map
           description: >-
-            Create a variable, get a pointer to it, then change the value using <code>*ptr = newValue</code>. Print
-            before and after.
+            Create a map literal mapping HTTP methods to descriptions:
+            <code>"GET"</code> → <code>"read"</code>,
+            <code>"POST"</code> → <code>"create"</code>,
+            <code>"DELETE"</code> → <code>"remove"</code>.
+            Iterate with <code>range</code> and print each key-value pair.
           hints:
-            - Use <code>*ptr = 50</code> to write through the pointer
-            - The original variable changes because the pointer references its memory
+            - "Use <code>methods := map[string]string{\"GET\": \"read\", ...}</code>"
+            - "Use <code>for k, v := range methods</code> to iterate"
           solution: |-
-            x := 10
-            fmt.Println("Before:", x)
-            ptr := &x
-            *ptr = 50
-            fmt.Println("After:", x) // 50
-          annotations:
-            - type: idiom
-              label: Dereference Assignment
-              text: >-
-                Writing <code>*ptr = value</code> modifies the variable the pointer points to. This is how Go achieves
-                pass-by-reference semantics.
+            methods := map[string]string{
+                "GET":    "read",
+                "POST":   "create",
+                "DELETE": "remove",
+            }
+            for k, v := range methods {
+                fmt.Printf("%s: %s\n", k, v)
+            }
+
         - id: v2
-          title: Increment Via Pointer
+          title: Build a Map from Slices
           description: >-
-            Create an integer set to <code>0</code>. Get a pointer and use it to increment the value 3 times. Print the
-            final result.
+            Given <code>keys := []string{"a", "b", "c"}</code> and
+            <code>values := []int{1, 2, 3}</code>, build a
+            <code>map[string]int</code> by looping over the slices, then print the map.
           hints:
-            - Use <code>*ptr++</code> or <code>*ptr = *ptr + 1</code> to increment
-            - After 3 increments, the value should be 3
+            - "Create the map first: <code>m := make(map[string]int)</code>"
+            - "Use <code>for i := 0; i &lt; len(keys); i++ { m[keys[i]] = values[i] }</code>"
           solution: |-
-            count := 0
-            ptr := &count
-            *ptr++
-            *ptr++
-            *ptr++
-            fmt.Println(count) // 3
-          annotations:
-            - type: gotcha
-              label: Operator Precedence
-              text: >-
-                In Go, <code>*ptr++</code> works as <code>(*ptr)++</code> because the dereference binds tighter. This
-                differs from C where you might need explicit parentheses.
+            keys := []string{"a", "b", "c"}
+            values := []int{1, 2, 3}
+            m := make(map[string]int)
+            for i := 0; i < len(keys); i++ {
+                m[keys[i]] = values[i]
+            }
+            fmt.Println(m)
+
         - id: v3
-          title: Swap Two Variables
+          title: Comma-Ok Lookup
           description: >-
-            Create two variables <code>a</code> and <code>b</code>. Using only pointers, swap their values. Print to
-            verify.
+            Given <code>config := map[string]string{"host": "localhost", "port": "8080"}</code>,
+            look up the key <code>"timeout"</code> using the comma-ok pattern. If missing,
+            print <code>"not set"</code>; otherwise print the value.
           hints:
-            - "Get pointers to both: <code>pa, pb := &amp;a, &amp;b</code>"
-            - "Swap with: <code>*pa, *pb = *pb, *pa</code>"
+            - "Use <code>val, ok := config[\"timeout\"]</code>"
+            - "Check <code>if !ok { fmt.Println(\"not set\") }</code>"
           solution: |-
-            a, b := 10, 20
-            pa, pb := &a, &b
-            *pa, *pb = *pb, *pa
-            fmt.Println(a, b) // 20 10
-          annotations:
-            - type: idiom
-              label: Parallel Assignment
-              text: >-
-                Go supports parallel assignment: <code>*a, *b = *b, *a</code>. No temporary variable needed because Go
-                evaluates the right side fully before assigning.
+            config := map[string]string{"host": "localhost", "port": "8080"}
+            val, ok := config["timeout"]
+            if !ok {
+                fmt.Println("not set")
+            } else {
+                fmt.Println(val)
+            }
+
         - id: v4
-          title: Double a Float
+          title: Count Word Frequency
           description: >-
-            Create a <code>float64</code> variable set to <code>3.14</code>. Get a pointer and use it to double the
-            value. Print the result.
+            Given <code>words := []string{"go", "is", "fun", "go", "is", "great", "go"}</code>,
+            count the frequency of each word using a map. Print the resulting map.
           hints:
-            - "Dereference to read and write: <code>*ptr = *ptr * 2</code>"
-            - Or use <code>*ptr *= 2</code>
+            - "Create <code>freq := make(map[string]int)</code>"
+            - "For each word, <code>freq[word]++</code> increments the count (zero value for int is 0)"
           solution: |-
-            pi := 3.14
-            ptr := &pi
-            *ptr *= 2
-            fmt.Println(pi) // 6.28
-          annotations:
-            - type: idiom
-              label: Compound Assignment
-              text: >-
-                Go supports compound assignment through pointers: <code>*ptr *= 2</code> is shorthand for <code>*ptr =
-                *ptr * 2</code>.
+            words := []string{"go", "is", "fun", "go", "is", "great", "go"}
+            freq := make(map[string]int)
+            for _, word := range words {
+                freq[word]++
+            }
+            fmt.Println(freq)
+
+    # ── warmup_3: Strings & Runes ──────────────────────────────────────
     - id: warmup_3
-      concept: Pointer Parameters
+      concept: Strings & Runes
       variants:
         - id: v1
-          title: Double Function
-          description: Write <code>func double(n *int)</code> that doubles the value at the pointer.
-          hints:
-            - "Dereference the pointer to get and set the value: <code>*n = *n * 2</code>"
-            - Call it with <code>double(&amp;x)</code>
-          solution: |-
-            func double(n *int) {
-                *n = *n * 2
-            }
-
-            // Test:
-            x := 5
-            double(&x)
-            fmt.Println(x) // 10
-          annotations:
-            - type: idiom
-              label: Pointer Parameters
-              text: >-
-                Passing a pointer parameter lets functions modify the caller's variable. This is Go's way of simulating
-                pass-by-reference.
-            - type: gotcha
-              label: Don't Forget &
-              text: >-
-                When calling a function that takes <code>*int</code>, you must pass <code>&x</code> (the address), not
-                <code>x</code> itself.
-        - id: v2
-          title: Negate In Place
-          description: Write <code>func negate(n *int)</code> that negates the integer (positive becomes negative, and vice versa).
-          hints:
-            - Use <code>*n = -*n</code> to flip the sign
-            - Call with <code>negate(&amp;x)</code>
-          solution: |-
-            func negate(n *int) {
-                *n = -*n
-            }
-
-            // Test:
-            x := 7
-            negate(&x)
-            fmt.Println(x) // -7
-            negate(&x)
-            fmt.Println(x) // 7
-          annotations:
-            - type: idiom
-              label: In-Place Mutation
-              text: >-
-                Functions that modify values in place via pointers typically return nothing. The side effect IS the
-                result.
-        - id: v3
-          title: Set to Zero
-          description: Write <code>func reset(n *int)</code> that sets the pointed-to value to zero.
-          hints:
-            - "Simply assign: <code>*n = 0</code>"
-          solution: |-
-            func reset(n *int) {
-                *n = 0
-            }
-
-            // Test:
-            x := 999
-            reset(&x)
-            fmt.Println(x) // 0
-          annotations:
-            - type: alternative
-              label: Value vs Pointer
-              text: >-
-                Without pointers, <code>func reset(n int)</code> would only modify a local copy. The pointer version
-                modifies the original.
-        - id: v4
-          title: Add To Variable
+          title: Bytes vs Characters
           description: >-
-            Write <code>func addTo(n *int, amount int)</code> that adds <code>amount</code> to the value pointed to by
-            <code>n</code>.
+            Given <code>s := "café"</code>, print <code>len(s)</code> (byte length) and
+            <code>len([]rune(s))</code> (character count). They're different! Then print
+            each rune using <code>range</code> to see the byte index jumps.
           hints:
-            - Use <code>*n += amount</code> to add in place
-            - The second parameter is a plain int, not a pointer
+            - "<code>len(\"café\")</code> is 5 (bytes), not 4 — the <code>é</code> is 2 bytes in UTF-8"
+            - "<code>range</code> over a string yields runes, not bytes: <code>for i, ch := range s</code>"
           solution: |-
-            func addTo(n *int, amount int) {
-                *n += amount
+            s := "café"
+            fmt.Println("bytes:", len(s))           // 5
+            fmt.Println("runes:", len([]rune(s)))    // 4
+            for i, ch := range s {
+                fmt.Printf("index %d: %c\n", i, ch)
             }
-
-            // Test:
-            balance := 100
-            addTo(&balance, 50)
-            fmt.Println(balance) // 150
-            addTo(&balance, -30)
-            fmt.Println(balance) // 120
-          annotations:
-            - type: idiom
-              label: Mixed Parameters
-              text: It is common to mix pointer and value parameters. Only use pointers for values you intend to modify.
-    - id: warmup_4
-      concept: Nil Pointers
-      variants:
-        - id: v1
-          title: Check for Nil
-          description: >-
-            Write a function <code>func printValue(p *int)</code> that prints the value if p is not nil, or prints
-            "pointer is nil" if it is.
-          hints:
-            - Check <code>if p != nil</code> before dereferencing
-            - Dereferencing a nil pointer causes a runtime panic
-          solution: |-
-            func printValue(p *int) {
-                if p != nil {
-                    fmt.Println("Value:", *p)
-                } else {
-                    fmt.Println("pointer is nil")
-                }
-            }
+            // index 0: c, index 1: a, index 2: f, index 3: é
           annotations:
             - type: gotcha
-              label: Nil Panic
+              label: Strings Are Bytes
               text: >-
-                Dereferencing a nil pointer (<code>*p</code> when <code>p == nil</code>) causes a runtime panic. Always
-                check for nil before dereferencing.
-            - type: idiom
-              label: Guard Clause
-              text: Checking for nil at the top of a function is a common Go pattern called a guard clause.
+                Go strings are byte sequences, not character sequences. <code>len(s)</code> returns
+                bytes, and <code>s[i]</code> gives a byte. Use <code>[]rune(s)</code> or <code>range</code>
+                for Unicode-safe character work.
+
         - id: v2
-          title: Safe String Length
+          title: Safe Character Slicing
           description: >-
-            Write <code>func safeLen(s *string) int</code> that returns the length of the string if s is not nil, or
-            <code>-1</code> if it is nil.
+            Write a program that safely extracts the first 3 <em>characters</em> from
+            <code>"日本語テスト"</code> (Japanese for "Japanese test"). Using <code>s[:3]</code>
+            would slice bytes and produce garbage. Convert to <code>[]rune</code>, slice, and
+            convert back to a string.
           hints:
-            - Check <code>if s == nil</code> and return <code>-1</code>
-            - Otherwise return <code>len(*s)</code>
+            - "Convert first: <code>runes := []rune(s)</code>"
+            - "Slice runes, then convert back: <code>string(runes[:3])</code>"
           solution: |-
-            func safeLen(s *string) int {
-                if s == nil {
-                    return -1
-                }
-                return len(*s)
-            }
-          annotations:
-            - type: idiom
-              label: Sentinel Values
-              text: >-
-                Returning <code>-1</code> as a sentinel for 'no value' is common in Go. Alternatively, return
-                <code>(int, bool)</code> or <code>(int, error)</code>.
-        - id: v3
-          title: Default Value on Nil
-          description: >-
-            Write <code>func valueOrDefault(p *int, fallback int) int</code> that returns <code>*p</code> if p is not
-            nil, or <code>fallback</code> otherwise.
-          hints:
-            - This is a simple nil check with a fallback
-            - Return <code>*p</code> only when <code>p != nil</code>
-          solution: |-
-            func valueOrDefault(p *int, fallback int) int {
-                if p != nil {
-                    return *p
-                }
-                return fallback
-            }
+            s := "日本語テスト"
+            runes := []rune(s)
+            first3 := string(runes[:3])
+            fmt.Println(first3)  // 日本語
           annotations:
             - type: pattern
-              label: Default Pattern
+              label: Rune Round-Trip
               text: >-
-                The 'value-or-default' pattern is used throughout the Go standard library, especially in configuration
-                structs where nil means 'use default'.
-        - id: v4
-          title: Compare Optional Values
+                The pattern <code>[]rune(s)</code> → manipulate → <code>string(runes)</code> is how
+                you safely work with characters in Go. Use it whenever you need to index or slice
+                by character position rather than byte position.
+
+        - id: v3
+          title: Count Non-ASCII Characters
           description: >-
-            Write <code>func bothEqual(a, b *int) bool</code> that returns true if both pointers are non-nil and point
-            to equal values, or both are nil.
+            Write a program that counts how many characters in <code>"Hello, 世界! 🌍"</code>
+            are non-ASCII (byte value > 127). Use <code>range</code> to iterate by rune and
+            check if each rune is greater than 127.
           hints:
-            - Handle the case where both are nil first
-            - Then check if exactly one is nil
-            - Finally compare <code>*a == *b</code>
+            - "Use <code>for _, ch := range s</code> — <code>ch</code> is a <code>rune</code> (int32)"
+            - "Check <code>if ch > 127</code> to detect non-ASCII characters"
           solution: |-
-            func bothEqual(a, b *int) bool {
-                if a == nil && b == nil {
-                    return true
+            s := "Hello, 世界! 🌍"
+            count := 0
+            for _, ch := range s {
+                if ch > 127 {
+                    count++
                 }
-                if a == nil || b == nil {
-                    return false
-                }
-                return *a == *b
             }
-          annotations:
-            - type: gotcha
-              label: Pointer vs Value Equality
-              text: >-
-                Comparing pointers with <code>==</code> checks if they point to the same address. To compare the values
-                they point to, you must dereference: <code>*a == *b</code>.
-            - type: pattern
-              label: Nil-safe Comparison
-              text: >-
-                This three-step pattern (both nil, one nil, compare values) is the standard way to safely compare
-                optional/nullable values.
+            fmt.Println(count)  // 3 (世, 界, 🌍)
+
   challenges:
+    # ── challenge_1: Slice Operations (Log Parser) ────────────────────────
     - id: challenge_1
-      block: 1
-      difficulty: 2
-      concept: Pointer Parameters
-      docLinks:
-        - url: https://go.dev/ref/spec#Pointer_types
-          title: "Go Spec: Pointer types"
-          note: pointer type declarations
-        - url: https://go.dev/doc/effective_go#pointers_vs_values
-          title: "Effective Go: Pointers vs. Values"
-          note: when to use pointer parameters
-      variants:
-        - id: v1
-          title: Swap Two Integers
-          description: Write a function <code>func swap(a, b *int)</code> that swaps two integers using pointers.
-          functionSignature: func swap(a, b *int)
-          testCases:
-            - input: x, y := 5, 10; swap(&x, &y)
-              output: x == 10, y == 5
-            - input: x, y := -1, 1; swap(&x, &y)
-              output: x == 1, y == -1
-            - input: x, y := 0, 0; swap(&x, &y)
-              output: x == 0, y == 0
-          hints:
-            - title: 🤔 Think about it
-              content: >-
-                How do you swap two values in any language? You usually need a temporary variable -- but Go has a
-                shortcut.
-            - title: 💡 Hint
-              content: >-
-                Go supports parallel assignment: <code>*a, *b = *b, *a</code>. Both sides are evaluated before
-                assignment.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>1. Dereference both pointers
-                2. Assign in parallel: *a, *b = *b, *a
-                   (or use a temp variable)</pre>
-          solution: |-
-            func swap(a, b *int) {
-                *a, *b = *b, *a
-            }
-          difficulty: 1
-          annotations:
-            - type: idiom
-              label: Parallel Assignment
-              text: >-
-                Go evaluates the entire right-hand side before assigning, making swaps a one-liner without a temp
-                variable.
-            - type: complexity
-              label: O(1)
-              text: Constant time and space. Only pointer dereferences and assignments.
-        - id: v2
-          title: Swap Two Strings
-          description: Write a function <code>func swapStrings(a, b *string)</code> that swaps two strings using pointers.
-          functionSignature: func swapStrings(a, b *string)
-          testCases:
-            - input: a, b := "hello", "world"; swapStrings(&a, &b)
-              output: a == "world", b == "hello"
-            - input: a, b := "", "Go"; swapStrings(&a, &b)
-              output: a == "Go", b == ""
-          hints:
-            - title: 🤔 Think about it
-              content: Swapping strings works exactly the same as swapping ints with pointers.
-            - title: 💡 Hint
-              content: "Use parallel assignment: <code>*a, *b = *b, *a</code>"
-            - title: 🔧 Pattern
-              content: |-
-                <pre>1. Dereference both string pointers
-                2. Parallel assign: *a, *b = *b, *a</pre>
-          solution: |-
-            func swapStrings(a, b *string) {
-                *a, *b = *b, *a
-            }
-          difficulty: 1
-          annotations:
-            - type: idiom
-              label: Generic Pattern
-              text: >-
-                The pointer swap pattern works identically for any type. Before Go generics, you needed separate
-                functions per type.
-        - id: v3
-          title: Conditional Swap
-          description: >-
-            Write <code>func sortPair(a, b *int)</code> that ensures <code>*a &lt;= *b</code> after the call. Swap only
-            if needed.
-          functionSignature: func sortPair(a, b *int)
-          testCases:
-            - input: a, b := 10, 5; sortPair(&a, &b)
-              output: a == 5, b == 10
-            - input: a, b := 3, 7; sortPair(&a, &b)
-              output: a == 3, b == 7
-            - input: a, b := 4, 4; sortPair(&a, &b)
-              output: a == 4, b == 4
-          hints:
-            - title: 🤔 Think about it
-              content: When should you swap? Only when the first value is greater than the second.
-            - title: 💡 Hint
-              content: Check <code>if *a > *b</code> before swapping.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>1. Compare *a and *b
-                2. If *a > *b, swap them
-                3. Otherwise do nothing</pre>
-          solution: |-
-            func sortPair(a, b *int) {
-                if *a > *b {
-                    *a, *b = *b, *a
-                }
-            }
-          difficulty: 2
-          annotations:
-            - type: pattern
-              label: Conditional Mutation
-              text: >-
-                Only mutate through pointers when a condition is met. This is the building block of in-place sorting
-                algorithms.
-            - type: complexity
-              label: O(1)
-              text: Single comparison and at most one swap.
-        - id: v4
-          title: Rotate Three Values
-          description: >-
-            Write <code>func rotateRight(a, b, c *int)</code> that rotates three values to the right: a gets c's value,
-            b gets a's value, c gets b's value.
-          functionSignature: func rotateRight(a, b, c *int)
-          testCases:
-            - input: a, b, c := 1, 2, 3; rotateRight(&a, &b, &c)
-              output: a == 3, b == 1, c == 2
-            - input: a, b, c := 10, 20, 30; rotateRight(&a, &b, &c)
-              output: a == 30, b == 10, c == 20
-          hints:
-            - title: 🤔 Think about it
-              content: A right rotation means each element takes the value of the one before it (wrapping around).
-            - title: 💡 Hint
-              content: "Use Go's parallel assignment with three variables: <code>*a, *b, *c = *c, *a, *b</code>"
-            - title: 🔧 Pattern
-              content: |-
-                <pre>Right rotate: each gets its left neighbor
-                *a, *b, *c = *c, *a, *b</pre>
-          solution: |-
-            func rotateRight(a, b, c *int) {
-                *a, *b, *c = *c, *a, *b
-            }
-          difficulty: 2
-          annotations:
-            - type: idiom
-              label: Multi-way Parallel Assignment
-              text: Go's parallel assignment extends to any number of variables, making rotations elegant one-liners.
-            - type: gotcha
-              label: Direction Matters
-              text: >-
-                Right rotation vs left rotation is easy to confuse. Right rotation: each position gets the value from
-                its left neighbor.
-    - id: challenge_2
-      block: 1
-      difficulty: 2
-      concept: Pointer Receivers
-      docLinks:
-        - url: https://go.dev/doc/effective_go#pointers_vs_values
-          title: "Effective Go: Pointers vs. Values"
-          note: pointer receivers modify the receiver
-        - url: https://go.dev/ref/spec#Method_declarations
-          title: "Go Spec: Method declarations"
-          note: method syntax with receivers
-      variants:
-        - id: v1
-          title: Counter Struct
-          description: >-
-            Create a <code>Counter</code> struct with an <code>int</code> value. Add methods <code>Increment()</code>,
-            <code>Decrement()</code>, and <code>Value() int</code>.
-          functionSignature: |-
-            func (c *Counter) Increment()
-            func (c *Counter) Decrement()
-            func (c Counter) Value() int
-          testCases:
-            - input: c := Counter{}; c.Increment(); c.Increment(); c.Decrement()
-              output: c.Value() == 1
-            - input: c := Counter{}; c.Decrement()
-              output: c.Value() == -1
-          hints:
-            - title: 🤔 Think about it
-              content: Which methods need to modify the struct? Those need pointer receivers.
-            - title: 💡 Hint
-              content: Increment and Decrement need <code>*Counter</code> receivers. Value can use a value receiver.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>type Counter struct { value int }
-                func (c *Counter) Increment() { c.value++ }
-                func (c *Counter) Decrement() { c.value-- }
-                func (c Counter) Value() int { return c.value }</pre>
-          solution: |-
-            type Counter struct {
-                value int
-            }
-
-            func (c *Counter) Increment() {
-                c.value++
-            }
-
-            func (c *Counter) Decrement() {
-                c.value--
-            }
-
-            func (c Counter) Value() int {
-                return c.value
-            }
-          difficulty: 2
-          annotations:
-            - type: idiom
-              label: Pointer Receivers
-              text: >-
-                Methods that modify struct state must use pointer receivers (<code>*Counter</code>). Value receivers get
-                a copy and cannot mutate the original.
-            - type: gotcha
-              label: Value Receiver Trap
-              text: >-
-                If <code>Increment</code> used a value receiver <code>(c Counter)</code>, it would increment a copy. The
-                original counter would never change.
-        - id: v2
-          title: Stack Struct
-          description: >-
-            Create a <code>Stack</code> struct backed by a slice of <code>int</code>. Add <code>Push(val int)</code>,
-            <code>Pop() (int, bool)</code>, and <code>Size() int</code>.
-          functionSignature: |-
-            func (s *Stack) Push(val int)
-            func (s *Stack) Pop() (int, bool)
-            func (s Stack) Size() int
-          testCases:
-            - input: s := Stack{}; s.Push(10); s.Push(20); val, ok := s.Pop()
-              output: val == 20, ok == true, s.Size() == 1
-            - input: s := Stack{}; val, ok := s.Pop()
-              output: val == 0, ok == false
-          hints:
-            - title: 🤔 Think about it
-              content: A stack is last-in-first-out (LIFO). Which end of a slice is cheapest to add/remove from?
-            - title: 💡 Hint
-              content: >-
-                Use <code>append</code> for Push. For Pop, grab the last element and reslice: <code>s.items =
-                s.items[:len(s.items)-1]</code>
-            - title: 🔧 Pattern
-              content: |-
-                <pre>Push: s.items = append(s.items, val)
-                Pop: get last, shrink slice
-                Return (0, false) if empty</pre>
-          solution: |-
-            type Stack struct {
-                items []int
-            }
-
-            func (s *Stack) Push(val int) {
-                s.items = append(s.items, val)
-            }
-
-            func (s *Stack) Pop() (int, bool) {
-                if len(s.items) == 0 {
-                    return 0, false
-                }
-                val := s.items[len(s.items)-1]
-                s.items = s.items[:len(s.items)-1]
-                return val, true
-            }
-
-            func (s Stack) Size() int {
-                return len(s.items)
-            }
-          difficulty: 2
-          annotations:
-            - type: idiom
-              label: Comma-ok Pattern
-              text: >-
-                Returning <code>(int, bool)</code> from Pop follows Go's comma-ok idiom: the second return signals
-                whether the operation succeeded.
-            - type: gotcha
-              label: Slice Append Receiver
-              text: >-
-                Push must use a pointer receiver because <code>append</code> may allocate a new underlying array,
-                changing the slice header.
-        - id: v3
-          title: Toggle Switch
-          description: >-
-            Create a <code>Toggle</code> struct with a <code>bool</code> state. Add <code>Flip()</code> to toggle the
-            state and <code>IsOn() bool</code> to read it.
-          functionSignature: |-
-            func (t *Toggle) Flip()
-            func (t Toggle) IsOn() bool
-          testCases:
-            - input: t := Toggle{}; t.Flip()
-              output: t.IsOn() == true
-            - input: t := Toggle{}; t.Flip(); t.Flip()
-              output: t.IsOn() == false
-          hints:
-            - title: 🤔 Think about it
-              content: How do you toggle a boolean? Think about the NOT operator.
-            - title: 💡 Hint
-              content: Use <code>t.on = !t.on</code> in the Flip method with a pointer receiver.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>type Toggle struct { on bool }
-                func (t *Toggle) Flip() { t.on = !t.on }
-                func (t Toggle) IsOn() bool { return t.on }</pre>
-          solution: |-
-            type Toggle struct {
-                on bool
-            }
-
-            func (t *Toggle) Flip() {
-                t.on = !t.on
-            }
-
-            func (t Toggle) IsOn() bool {
-                return t.on
-            }
-          difficulty: 1
-          annotations:
-            - type: idiom
-              label: Encapsulation
-              text: >-
-                Lowercase field <code>on</code> is unexported. Only the struct's methods can access it, providing
-                encapsulation.
-        - id: v4
-          title: Accumulator Struct
-          description: >-
-            Create an <code>Accumulator</code> struct that tracks a running sum. Add <code>Add(n int)</code>,
-            <code>Reset()</code>, and <code>Total() int</code>.
-          functionSignature: |-
-            func (a *Accumulator) Add(n int)
-            func (a *Accumulator) Reset()
-            func (a Accumulator) Total() int
-          testCases:
-            - input: a := Accumulator{}; a.Add(5); a.Add(3)
-              output: a.Total() == 8
-            - input: a := Accumulator{}; a.Add(10); a.Reset()
-              output: a.Total() == 0
-          hints:
-            - title: 🤔 Think about it
-              content: This is like Counter but with arbitrary additions and a reset capability.
-            - title: 💡 Hint
-              content: Add increments by n, Reset sets to 0, Total returns the current sum.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>type Accumulator struct { sum int }
-                Add: a.sum += n
-                Reset: a.sum = 0
-                Total: return a.sum</pre>
-          solution: |-
-            type Accumulator struct {
-                sum int
-            }
-
-            func (a *Accumulator) Add(n int) {
-                a.sum += n
-            }
-
-            func (a *Accumulator) Reset() {
-                a.sum = 0
-            }
-
-            func (a Accumulator) Total() int {
-                return a.sum
-            }
-          difficulty: 2
-          annotations:
-            - type: idiom
-              label: Consistent Receivers
-              text: >-
-                Go convention: if any method needs a pointer receiver, use pointer receivers for all methods on that
-                type for consistency.
-            - type: alternative
-              label: Functional Approach
-              text: >-
-                An alternative is a closure: <code>func NewAccumulator() func(int) int</code>. Structs with methods are
-                more idiomatic in Go.
-    - id: challenge_3
       block: 2
       difficulty: 2
-      concept: Nil Pointers
+      concept: Slice Operations
       docLinks:
-        - url: https://go.dev/ref/spec#The_zero_value
-          title: "Go Spec: The zero value"
-          note: nil is the zero value for pointers
-        - url: https://go.dev/doc/effective_go#pointers_vs_values
-          title: "Effective Go: Pointers vs. Values"
-          note: nil checks and safe dereferencing
+        - url: https://go.dev/blog/slices-intro
+          title: "Go Slices: usage and internals"
+          note: how slices work under the hood
+        - url: https://pkg.go.dev/strings#Contains
+          title: "strings.Contains"
+          note: check if a string contains a substring
       variants:
         - id: v1
-          title: Safe Dereference
+          title: Count Errors
           description: >-
-            Write <code>func safeDeref(p *string) string</code> that returns the string value if p is not nil, or
-            <code>"&lt;nil&gt;"</code> if it is.
-          functionSignature: func safeDeref(p *string) string
-          testCases:
-            - input: s := "hello"; safeDeref(&s)
-              output: "\"hello\""
-            - input: safeDeref(nil)
-              output: "\"<nil>\""
-          hints:
-            - title: 🤔 Think about it
-              content: What happens if you dereference a nil pointer? You need to guard against that.
-            - title: 💡 Hint
-              content: Check <code>p == nil</code> before dereferencing. Return the fallback string if nil.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>1. Check if p == nil
-                2. If nil, return "<nil>"
-                3. Otherwise return *p</pre>
-          solution: |-
-            func safeDeref(p *string) string {
-                if p == nil {
-                    return "<nil>"
-                }
-                return *p
-            }
+            Write <code>func countErrors(lines []string) int</code>. Loop through the log lines
+            and count how many contain the substring <code>"ERROR"</code>. Use
+            <code>strings.Contains</code>.
+          functionSignature: func countErrors(lines []string) int
           difficulty: 1
-          annotations:
-            - type: idiom
-              label: Nil Guard
-              text: Always check for nil before dereferencing. This is the most basic pointer safety pattern in Go.
-            - type: stdlib
-              label: Optional Values
-              text: Go doesn't have an Option/Maybe type. Nil pointers serve as the 'absent value' convention.
-        - id: v2
-          title: Coalesce Values
-          description: >-
-            Write <code>func coalesce(ptrs ...*int) (int, bool)</code> that returns the first non-nil value among the
-            given pointers, or <code>(0, false)</code> if all are nil.
-          functionSignature: func coalesce(ptrs ...*int) (int, bool)
           testCases:
-            - input: a := 5; coalesce(nil, &a, nil)
-              output: 5, true
-            - input: coalesce(nil, nil)
-              output: 0, false
-            - input: a, b := 1, 2; coalesce(&a, &b)
-              output: 1, true
-          hints:
-            - title: 🤔 Think about it
-              content: You need to iterate through the pointers and find the first non-nil one.
-            - title: 💡 Hint
-              content: Use a range loop over the variadic parameter. Check each for nil.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>1. For each pointer in ptrs:
-                   - If not nil, return *ptr, true
-                2. All nil: return 0, false</pre>
-          solution: |-
-            func coalesce(ptrs ...*int) (int, bool) {
-                for _, p := range ptrs {
-                    if p != nil {
-                        return *p, true
-                    }
-                }
-                return 0, false
-            }
-          difficulty: 2
-          annotations:
-            - type: idiom
-              label: Variadic + Pointers
-              text: >-
-                Variadic pointer parameters let you pass a flexible number of optional values, similar to SQL's COALESCE
-                function.
-            - type: complexity
-              label: O(n)
-              text: Linear in the number of pointers. Exits early on first non-nil value.
-        - id: v3
-          title: Safe Add
-          description: >-
-            Write <code>func safeAdd(a, b *int) (int, error)</code> that adds the values if both are non-nil. Return an
-            error if either is nil.
-          functionSignature: func safeAdd(a, b *int) (int, error)
-          testCases:
-            - input: x, y := 3, 4; safeAdd(&x, &y)
-              output: 7, nil
-            - input: x := 3; safeAdd(&x, nil)
-              output: 0, error
-            - input: safeAdd(nil, nil)
-              output: 0, error
-          hints:
-            - title: 🤔 Think about it
-              content: You need to validate both inputs before operating on them.
-            - title: 💡 Hint
-              content: Check <code>a == nil || b == nil</code> and return an error using <code>fmt.Errorf</code>.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>1. Check if either pointer is nil
-                2. If yes, return 0 and an error
-                3. Otherwise return *a + *b, nil</pre>
-          solution: |-
-            func safeAdd(a, b *int) (int, error) {
-                if a == nil || b == nil {
-                    return 0, fmt.Errorf("nil pointer argument")
-                }
-                return *a + *b, nil
-            }
-          difficulty: 2
-          annotations:
-            - type: idiom
-              label: Error Returns
-              text: >-
-                Returning <code>(value, error)</code> is the canonical Go error handling pattern. The caller decides how
-                to handle the error.
-            - type: gotcha
-              label: Check Both
-              text: >-
-                A common mistake is checking only one pointer. Both <code>a</code> and <code>b</code> could
-                independently be nil.
-        - id: v4
-          title: Nil-safe Max
-          description: >-
-            Write <code>func safeMax(a, b *int) *int</code> that returns a pointer to the larger value. If one is nil,
-            return the other. If both nil, return nil.
-          functionSignature: func safeMax(a, b *int) *int
-          testCases:
-            - input: x, y := 5, 10; safeMax(&x, &y)
-              output: "*result == 10"
-            - input: x := 5; safeMax(&x, nil)
-              output: "*result == 5"
-            - input: safeMax(nil, nil)
-              output: result == nil
-          hints:
-            - title: 🤔 Think about it
-              content: Handle the nil cases first, then compare the dereferenced values.
-            - title: 💡 Hint
-              content: If a is nil, return b (and vice versa). If neither is nil, compare <code>*a</code> and <code>*b</code>.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>1. If a == nil, return b
-                2. If b == nil, return a
-                3. If *a >= *b, return a
-                4. Else return b</pre>
-          solution: |-
-            func safeMax(a, b *int) *int {
-                if a == nil {
-                    return b
-                }
-                if b == nil {
-                    return a
-                }
-                if *a >= *b {
-                    return a
-                }
-                return b
-            }
-          difficulty: 3
-          annotations:
-            - type: pattern
-              label: Returning Pointers
-              text: >-
-                Returning one of the input pointers means the caller gets a reference to the original variable, not a
-                copy.
-            - type: gotcha
-              label: Pointer Aliasing
-              text: >-
-                The returned pointer aliases one of the inputs. Modifying through the returned pointer changes the
-                original variable.
-    - id: challenge_4
-      block: 2
-      difficulty: 3
-      concept: Linked Structures
-      docLinks:
-        - url: https://go.dev/ref/spec#Pointer_types
-          title: "Go Spec: Pointer types"
-          note: self-referential struct pointers
-        - url: https://go.dev/ref/spec#Struct_types
-          title: "Go Spec: Struct types"
-          note: defining linked node structs
-        - url: https://pkg.go.dev/container/list
-          title: Package container/list
-          note: stdlib doubly linked list for reference
-      variants:
-        - id: v1
-          title: "Linked List: Build and Traverse"
-          description: >-
-            Define a <code>Node</code> struct with <code>Value int</code> and <code>Next *Node</code>. Write <code>func
-            buildList(values []int) *Node</code> and <code>func traverse(head *Node) []int</code>.
-          functionSignature: |-
-            func buildList(values []int) *Node
-            func traverse(head *Node) []int
-          testCases:
-            - input: traverse(buildList([]int{1, 2, 3}))
-              output: "[]int{1, 2, 3}"
-            - input: traverse(buildList([]int{}))
-              output: "[]int{}"
-            - input: traverse(buildList([]int{42}))
-              output: "[]int{42}"
-          hints:
-            - title: 🤔 Think about it
-              content: >-
-                To build a list preserving order, consider building from the back. To traverse, follow Next pointers
-                until nil.
-            - title: 💡 Hint
-              content: >-
-                Build in reverse: start from the last element. Each new node's Next points to the previous head.
-                Traverse with <code>for node != nil</code>.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>Build:
-                  var head *Node
-                  for i := len(values)-1; i >= 0; i--
-                    head = &Node{values[i], head}
-
-                Traverse:
-                  for node := head; node != nil; node = node.Next
-                    append to result</pre>
-          solution: |-
-            type Node struct {
-                Value int
-                Next  *Node
-            }
-
-            func buildList(values []int) *Node {
-                var head *Node
-                for i := len(values) - 1; i >= 0; i-- {
-                    head = &Node{Value: values[i], Next: head}
-                }
-                return head
-            }
-
-            func traverse(head *Node) []int {
-                var result []int
-                for node := head; node != nil; node = node.Next {
-                    result = append(result, node.Value)
-                }
-                return result
-            }
-          difficulty: 2
-          annotations:
-            - type: idiom
-              label: Self-referential Structs
-              text: >-
-                A struct can contain a pointer to its own type (<code>Next *Node</code>). This enables linked data
-                structures like lists and trees.
-            - type: complexity
-              label: O(n)
-              text: Both build and traverse are O(n) where n is the number of elements.
-        - id: v2
-          title: "Linked List: Length"
-          description: >-
-            Given the <code>Node</code> struct, write <code>func listLength(head *Node) int</code> that returns the
-            number of nodes in the linked list.
-          functionSignature: func listLength(head *Node) int
-          testCases:
-            - input: listLength(buildList([]int{1, 2, 3}))
-              output: "3"
-            - input: listLength(nil)
+            - input: "countErrors([]string{\"2024-01-15 10:30:45 ERROR timeout\", \"2024-01-15 10:30:46 INFO ok\", \"2024-01-15 10:30:47 ERROR disk full\"})"
+              output: "2"
+            - input: "countErrors([]string{\"2024-01-15 10:30:45 INFO ok\"})"
               output: "0"
-            - input: listLength(buildList([]int{42}))
-              output: "1"
           hints:
-            - title: 🤔 Think about it
-              content: Walk the list, counting each node until you hit nil.
-            - title: 💡 Hint
-              content: Initialize a counter. Loop with <code>for node != nil</code>, incrementing each iteration.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>count := 0
-                for node := head; node != nil; node = node.Next {
-                    count++
-                }
-                return count</pre>
+            - title: "\U0001F914 Think about it"
+              content: >-
+                Initialize a counter to 0. Loop through lines with range. For each line, check if it contains "ERROR" and increment the counter.
+            - title: "\U0001F4A1 Hint"
+              content: >-
+                Use <code>strings.Contains(line, "ERROR")</code> inside the loop.
           solution: |-
-            func listLength(head *Node) int {
+            func countErrors(lines []string) int {
                 count := 0
-                for node := head; node != nil; node = node.Next {
-                    count++
+                for _, line := range lines {
+                    if strings.Contains(line, "ERROR") {
+                        count++
+                    }
                 }
                 return count
             }
-          difficulty: 1
-          annotations:
-            - type: idiom
-              label: Nil-terminated Traversal
-              text: >-
-                Linked list traversal uses <code>node != nil</code> as the loop condition. The nil at the end acts as a
-                natural terminator.
-        - id: v3
-          title: "Linked List: Search"
+
+        - id: v2
+          title: Filter by Level
           description: >-
-            Write <code>func contains(head *Node, target int) bool</code> that returns true if any node in the list has
-            the given value.
-          functionSignature: func contains(head *Node, target int) bool
+            Write <code>func filterByLevel(lines []string, level string) []string</code>. Return
+            only the log lines that contain the given level string. Use <code>strings.Contains</code>.
+          functionSignature: func filterByLevel(lines []string, level string) []string
+          difficulty: 2
           testCases:
-            - input: contains(buildList([]int{1, 2, 3}), 2)
-              output: "true"
-            - input: contains(buildList([]int{1, 2, 3}), 5)
-              output: "false"
-            - input: contains(nil, 1)
-              output: "false"
+            - input: "filterByLevel([]string{\"2024-01-15 10:30:45 ERROR timeout\", \"2024-01-15 10:30:46 INFO ok\", \"2024-01-15 10:30:47 ERROR disk full\"}, \"ERROR\")"
+              output: "[\"2024-01-15 10:30:45 ERROR timeout\", \"2024-01-15 10:30:47 ERROR disk full\"]"
+            - input: "filterByLevel([]string{\"2024-01-15 10:30:45 INFO ok\"}, \"ERROR\")"
+              output: "[]"
           hints:
-            - title: 🤔 Think about it
-              content: Traverse the list, comparing each node's value to the target.
-            - title: 💡 Hint
-              content: Return true immediately when you find a match. If the loop ends, the value wasn't found.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>for node := head; node != nil; node = node.Next {
-                    if node.Value == target { return true }
-                }
-                return false</pre>
+            - title: "\U0001F914 Think about it"
+              content: >-
+                This is the filter-and-collect pattern: create an empty result slice, loop, and append matching items.
+            - title: "\U0001F4A1 Hint"
+              content: >-
+                <code>var result []string</code>, then in the loop: <code>if strings.Contains(line, level) { result = append(result, line) }</code>
           solution: |-
-            func contains(head *Node, target int) bool {
-                for node := head; node != nil; node = node.Next {
-                    if node.Value == target {
-                        return true
+            func filterByLevel(lines []string, level string) []string {
+                var result []string
+                for _, line := range lines {
+                    if strings.Contains(line, level) {
+                        result = append(result, line)
                     }
                 }
-                return false
+                return result
             }
-          difficulty: 2
-          annotations:
-            - type: idiom
-              label: Early Return
-              text: >-
-                Returning early when the condition is met avoids unnecessary traversal. This is idiomatic Go -- don't
-                use a found variable.
-            - type: complexity
-              label: O(n)
-              text: Worst case traverses all nodes. Average case exits early when found.
-        - id: v4
-          title: "Linked List: Reverse"
-          description: >-
-            Write <code>func reverse(head *Node) *Node</code> that reverses a linked list in place and returns the new
-            head.
-          functionSignature: func reverse(head *Node) *Node
-          testCases:
-            - input: traverse(reverse(buildList([]int{1, 2, 3})))
-              output: "[]int{3, 2, 1}"
-            - input: traverse(reverse(buildList([]int{1})))
-              output: "[]int{1}"
-            - input: reverse(nil)
-              output: nil
-          hints:
-            - title: 🤔 Think about it
-              content: You need to reverse all the Next pointers. What pointers do you need to track to avoid losing nodes?
-            - title: 💡 Hint
-              content: >-
-                Use three pointers: <code>prev</code> (starts nil), <code>current</code>, and <code>next</code>. For
-                each node, save next, point current.Next to prev, advance prev and current.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>var prev *Node
-                current := head
-                for current != nil {
-                    next := current.Next
-                    current.Next = prev
-                    prev = current
-                    current = next
-                }
-                return prev</pre>
-          solution: |-
-            func reverse(head *Node) *Node {
-                var prev *Node
-                current := head
-                for current != nil {
-                    next := current.Next
-                    current.Next = prev
-                    prev = current
-                    current = next
-                }
-                return prev
-            }
-          difficulty: 3
           annotations:
             - type: pattern
-              label: Three-pointer Reversal
+              label: Filter & Collect
               text: >-
-                The prev/current/next pattern is the classic iterative linked list reversal. It's O(n) time and O(1)
-                space.
-            - type: complexity
-              label: O(n) time, O(1) space
-              text: Traverses each node exactly once. Only uses a constant number of extra pointer variables.
+                The filter-and-collect pattern — <code>var result []T</code> + loop + conditional <code>append</code> —
+                is one of Go's most common idioms. It's clear, efficient, and hard to get wrong.
+
+        - id: v3
+          title: Last N Entries
+          description: >-
+            Write <code>func lastN(lines []string, n int) []string</code>. Return the last
+            <code>n</code> log entries. If <code>n</code> is greater than the number of lines,
+            return all lines.
+          functionSignature: func lastN(lines []string, n int) []string
+          difficulty: 2
+          testCases:
+            - input: "lastN([]string{\"a\", \"b\", \"c\", \"d\", \"e\"}, 3)"
+              output: "[\"c\", \"d\", \"e\"]"
+            - input: "lastN([]string{\"a\", \"b\"}, 5)"
+              output: "[\"a\", \"b\"]"
+          hints:
+            - title: "\U0001F914 Think about it"
+              content: >-
+                Use slice syntax <code>lines[start:]</code>. Calculate the start index as <code>len(lines) - n</code>,
+                but make sure it doesn't go below 0.
+            - title: "\U0001F4A1 Hint"
+              content: >-
+                <code>if n > len(lines) { n = len(lines) }</code> then <code>return lines[len(lines)-n:]</code>
+          solution: |-
+            func lastN(lines []string, n int) []string {
+                if n > len(lines) {
+                    n = len(lines)
+                }
+                return lines[len(lines)-n:]
+            }
+          annotations:
+            - type: idiom
+              label: Defensive Slicing
+              text: >-
+                Always clamp your index before slicing. <code>lines[len(lines)-n:]</code> panics if
+                <code>n > len(lines)</code>. A simple bounds check prevents runtime panics.
+
+        - id: v4
+          title: Unique Levels
+          description: >-
+            Write <code>func uniqueLevels(lines []string) []string</code>. Extract the log level
+            from each line (third field via <code>strings.Fields</code>) and return a deduplicated
+            slice of all levels found.
+          functionSignature: func uniqueLevels(lines []string) []string
+          difficulty: 3
+          testCases:
+            - input: "uniqueLevels([]string{\"2024-01-15 10:30:45 ERROR timeout\", \"2024-01-15 10:30:46 INFO ok\", \"2024-01-15 10:30:47 ERROR disk full\"})"
+              output: "[\"ERROR\", \"INFO\"] (order may vary)"
+          hints:
+            - title: "\U0001F914 Think about it"
+              content: >-
+                Use a <code>map[string]bool</code> as a set to track which levels you've already seen.
+                Then collect the map keys into a slice.
+            - title: "\U0001F4A1 Hint"
+              content: >-
+                For each line, split with <code>strings.Fields</code>, take the third field as the level,
+                add it to a <code>seen</code> map. After the loop, collect the keys.
+          solution: |-
+            func uniqueLevels(lines []string) []string {
+                seen := make(map[string]bool)
+                for _, line := range lines {
+                    fields := strings.Fields(line)
+                    if len(fields) >= 3 {
+                        seen[fields[2]] = true
+                    }
+                }
+                var levels []string
+                for level := range seen {
+                    levels = append(levels, level)
+                }
+                return levels
+            }
+          annotations:
+            - type: pattern
+              label: Map as Set
+              text: >-
+                Go doesn't have a built-in set type. The idiomatic approach is <code>map[T]bool</code> —
+                use <code>m[key] = true</code> to add, and <code>if m[key]</code> to check membership.
+
+        - id: v5
+          title: First and Last
+          description: >-
+            Write <code>func firstAndLast(items []string) (string, string)</code>. Return the first
+            and last elements of a slice. If the slice is empty, return two empty strings.
+            If the slice has one element, return it as both first and last.
+          functionSignature: func firstAndLast(items []string) (string, string)
+          difficulty: 1
+          testCases:
+            - input: "firstAndLast([]string{\"a\", \"b\", \"c\", \"d\"})"
+              output: "\"a\", \"d\""
+            - input: "firstAndLast([]string{\"only\"})"
+              output: "\"only\", \"only\""
+            - input: "firstAndLast([]string{})"
+              output: "\"\", \"\""
+          hints:
+            - title: "\U0001F914 Think about it"
+              content: >-
+                The first element is <code>items[0]</code>. The last element is
+                <code>items[len(items)-1]</code>. But what if the slice is empty?
+            - title: "\U0001F4A1 Hint"
+              content: >-
+                Check <code>if len(items) == 0</code> first. Otherwise, access
+                <code>items[0]</code> and <code>items[len(items)-1]</code>.
+          solution: |-
+            func firstAndLast(items []string) (string, string) {
+                if len(items) == 0 {
+                    return "", ""
+                }
+                return items[0], items[len(items)-1]
+            }
+          annotations:
             - type: gotcha
-              label: Save Next First
-              text: You must save <code>current.Next</code> before overwriting it, or you lose the rest of the list.
+              label: No Negative Indexing
+              text: >-
+                Go has no <code>items[-1]</code>. Use <code>items[len(items)-1]</code> for the last
+                element. Always check <code>len(items) == 0</code> first — accessing index 0 or
+                <code>len-1</code> on an empty slice panics.
+
+        - id: v6
+          title: Second to Last
+          description: >-
+            Write <code>func secondToLast(items []string) (string, bool)</code>. Return the
+            second-to-last element and <code>true</code>. If the slice has fewer than 2 elements,
+            return <code>""</code> and <code>false</code>.
+          functionSignature: func secondToLast(items []string) (string, bool)
+          difficulty: 1
+          testCases:
+            - input: "secondToLast([]string{\"a\", \"b\", \"c\", \"d\"})"
+              output: "\"c\", true"
+            - input: "secondToLast([]string{\"only\"})"
+              output: "\"\", false"
+            - input: "secondToLast([]string{})"
+              output: "\"\", false"
+          hints:
+            - title: "\U0001F914 Think about it"
+              content: >-
+                The second-to-last element is at index <code>len(items)-2</code>. When is that
+                index invalid?
+            - title: "\U0001F4A1 Hint"
+              content: >-
+                Check <code>if len(items) &lt; 2</code> first. Then return
+                <code>items[len(items)-2], true</code>.
+          solution: |-
+            func secondToLast(items []string) (string, bool) {
+                if len(items) < 2 {
+                    return "", false
+                }
+                return items[len(items)-2], true
+            }
+
+        - id: v7
+          title: Reverse a Slice
+          description: >-
+            Write <code>func reverseStrings(items []string) []string</code>. Return a new slice
+            with the elements in reverse order. Use index math from both ends —
+            access elements with <code>items[len(items)-1-i]</code>.
+          functionSignature: func reverseStrings(items []string) []string
+          difficulty: 2
+          testCases:
+            - input: "reverseStrings([]string{\"a\", \"b\", \"c\", \"d\"})"
+              output: "[\"d\", \"c\", \"b\", \"a\"]"
+            - input: "reverseStrings([]string{})"
+              output: "[]"
+            - input: "reverseStrings([]string{\"only\"})"
+              output: "[\"only\"]"
+          hints:
+            - title: "\U0001F914 Think about it"
+              content: >-
+                Create a new slice with <code>make</code>. The element at index <code>i</code> in the
+                result should be the element at index <code>len(items)-1-i</code> in the original.
+            - title: "\U0001F4A1 Hint"
+              content: >-
+                <code>result := make([]string, len(items))</code>, then loop with
+                <code>result[i] = items[len(items)-1-i]</code>.
+          solution: |-
+            func reverseStrings(items []string) []string {
+                result := make([]string, len(items))
+                for i := 0; i < len(items); i++ {
+                    result[i] = items[len(items)-1-i]
+                }
+                return result
+            }
+          annotations:
+            - type: pattern
+              label: Mirror Index
+              text: >-
+                <code>len(s)-1-i</code> gives you the mirror position from the end. When <code>i=0</code>
+                you get the last element, when <code>i=1</code> the second-to-last, etc.
+
+        - id: v8
+          title: Find Adjacent Duplicates
+          description: >-
+            Write <code>func adjacentDuplicates(lines []string) []string</code>. Return lines that
+            are identical to the line immediately before them. Use a classic index loop starting
+            at <code>i=1</code> and compare <code>lines[i]</code> with <code>lines[i-1]</code>.
+          functionSignature: func adjacentDuplicates(lines []string) []string
+          difficulty: 2
+          testCases:
+            - input: "adjacentDuplicates([]string{\"ERROR timeout\", \"ERROR timeout\", \"INFO ok\", \"INFO ok\", \"INFO ok\", \"ERROR disk full\"})"
+              output: "[\"ERROR timeout\", \"INFO ok\", \"INFO ok\"]"
+            - input: "adjacentDuplicates([]string{\"a\", \"b\", \"c\"})"
+              output: "[]"
+            - input: "adjacentDuplicates([]string{})"
+              output: "[]"
+          hints:
+            - title: "\U0001F914 Think about it"
+              content: >-
+                Start the loop at index 1, not 0. Compare each element with the one before it.
+                What would happen if you started at 0 and tried to access <code>lines[-1]</code>?
+            - title: "\U0001F4A1 Hint"
+              content: >-
+                <code>for i := 1; i &lt; len(lines); i++ { if lines[i] == lines[i-1] { ... } }</code>.
+                Starting at 1 guarantees <code>i-1</code> is always valid.
+          solution: |-
+            func adjacentDuplicates(lines []string) []string {
+                var result []string
+                for i := 1; i < len(lines); i++ {
+                    if lines[i] == lines[i-1] {
+                        result = append(result, lines[i])
+                    }
+                }
+                return result
+            }
+          annotations:
+            - type: gotcha
+              label: Off-By-One
+              text: >-
+                When comparing adjacent elements, start your loop at index 1 (not 0) to avoid
+                an out-of-bounds access on <code>lines[i-1]</code>. This is the most common
+                source of index panics in Go.
+
+        - id: v9
+          title: Safe Slice Access
+          description: >-
+            Write <code>func safeGet(items []string, index int) (string, bool)</code>. Return the
+            element at the given index and <code>true</code>, or <code>""</code> and <code>false</code>
+            if the index is out of bounds. Handle negative indices, zero-length slices, and indices
+            beyond the end.
+          functionSignature: func safeGet(items []string, index int) (string, bool)
+          difficulty: 2
+          testCases:
+            - input: "safeGet([]string{\"a\", \"b\", \"c\"}, 1)"
+              output: "\"b\", true"
+            - input: "safeGet([]string{\"a\", \"b\", \"c\"}, 5)"
+              output: "\"\", false"
+            - input: "safeGet([]string{\"a\", \"b\", \"c\"}, -1)"
+              output: "\"\", false"
+            - input: "safeGet([]string{}, 0)"
+              output: "\"\", false"
+          hints:
+            - title: "\U0001F914 Think about it"
+              content: >-
+                What are all the ways an index can be invalid? It could be negative, or it could be
+                >= the length of the slice. Check both before accessing.
+            - title: "\U0001F4A1 Hint"
+              content: >-
+                <code>if index &lt; 0 || index >= len(items) { return "", false }</code>
+          solution: |-
+            func safeGet(items []string, index int) (string, bool) {
+                if index < 0 || index >= len(items) {
+                    return "", false
+                }
+                return items[index], true
+            }
+          annotations:
+            - type: pattern
+              label: Bounds Checking
+              text: >-
+                Go panics on out-of-bounds access — there's no fallback like Python's negative indexing.
+                Always validate indices with <code>index &lt; 0 || index >= len(s)</code> before accessing.
+                This is especially important when indices come from user input or calculations.
+
+        - id: v10
+          title: Window Over Log Lines
+          description: >-
+            Write <code>func windows(lines []string, size int) [][]string</code>. Return all
+            contiguous sub-slices of the given size. For example, with size 3 and 5 lines, return
+            3 windows: lines[0:3], lines[1:4], lines[2:5]. Return an empty slice if the input is
+            shorter than the window size.
+          functionSignature: func windows(lines []string, size int) [][]string
+          difficulty: 3
+          testCases:
+            - input: "windows([]string{\"a\", \"b\", \"c\", \"d\", \"e\"}, 3)"
+              output: "[[\"a\",\"b\",\"c\"], [\"b\",\"c\",\"d\"], [\"c\",\"d\",\"e\"]]"
+            - input: "windows([]string{\"a\", \"b\"}, 3)"
+              output: "[]"
+          hints:
+            - title: "\U0001F914 Think about it"
+              content: >-
+                How many windows of size <code>k</code> fit in a slice of length <code>n</code>?
+                The answer is <code>n - k + 1</code>. Your loop runs from <code>i = 0</code> to
+                <code>i &lt;= len(lines) - size</code>.
+            - title: "\U0001F4A1 Hint"
+              content: >-
+                <code>for i := 0; i &lt;= len(lines)-size; i++ { result = append(result, lines[i:i+size]) }</code>.
+                If <code>len(lines) &lt; size</code>, the loop body never executes.
+          solution: |-
+            func windows(lines []string, size int) [][]string {
+                var result [][]string
+                for i := 0; i <= len(lines)-size; i++ {
+                    result = append(result, lines[i:i+size])
+                }
+                return result
+            }
+          annotations:
+            - type: pattern
+              label: Sliding Window
+              text: >-
+                The sliding window pattern — <code>lines[i:i+size]</code> for <code>i</code> from
+                0 to <code>len-size</code> — is fundamental for analyzing sequential data. The
+                bounds math (<code>len - size + 1</code> iterations) comes up constantly.
+
+    # ── challenge_2: Maps & Aggregation (Log Parser) ────────────────────
+    - id: challenge_2
+      block: 2
+      difficulty: 2
+      concept: Map Basics
+      docLinks:
+        - url: https://go.dev/blog/maps
+          title: "Go maps in action"
+          note: map usage patterns
+        - url: https://go.dev/tour/moretypes/19
+          title: "Go Tour: Maps"
+          note: map basics
+      variants:
+        - id: v1
+          title: Count by Level
+          description: >-
+            Write <code>func countByLevel(lines []string) map[string]int</code>. Extract the log
+            level from each line (third field) and return a map counting occurrences of each level.
+          functionSignature: func countByLevel(lines []string) map[string]int
+          difficulty: 1
+          testCases:
+            - input: "countByLevel([]string{\"2024-01-15 10:30:45 ERROR timeout\", \"2024-01-15 10:30:46 INFO ok\", \"2024-01-15 10:30:47 ERROR disk full\"})"
+              output: "map[ERROR:2 INFO:1]"
+          hints:
+            - title: "\U0001F914 Think about it"
+              content: >-
+                Create a <code>map[string]int</code>. For each line, extract the level and increment:
+                <code>counts[level]++</code>. The zero value of int makes this work without initialization.
+            - title: "\U0001F4A1 Hint"
+              content: >-
+                Split each line with <code>strings.Fields</code>, take <code>fields[2]</code> as the level,
+                and <code>counts[level]++</code>.
+          solution: |-
+            func countByLevel(lines []string) map[string]int {
+                counts := make(map[string]int)
+                for _, line := range lines {
+                    fields := strings.Fields(line)
+                    if len(fields) >= 3 {
+                        counts[fields[2]]++
+                    }
+                }
+                return counts
+            }
+          annotations:
+            - type: idiom
+              label: Frequency Map
+              text: >-
+                <code>m[key]++</code> works because Go map values default to their zero value.
+                For <code>int</code>, that's 0 — so the first increment gives 1. No need to check if the key exists.
+
+        - id: v2
+          title: Most Common Level
+          description: >-
+            Write <code>func mostCommonLevel(lines []string) string</code>. Find and return the log
+            level that appears most frequently. If there are no lines, return an empty string.
+          functionSignature: func mostCommonLevel(lines []string) string
+          difficulty: 2
+          testCases:
+            - input: "mostCommonLevel([]string{\"2024-01-15 10:30:45 ERROR timeout\", \"2024-01-15 10:30:46 INFO ok\", \"2024-01-15 10:30:47 ERROR disk full\", \"2024-01-15 10:30:48 INFO started\", \"2024-01-15 10:30:49 ERROR retry\"})"
+              output: "\"ERROR\""
+            - input: "mostCommonLevel([]string{})"
+              output: "\"\""
+          hints:
+            - title: "\U0001F914 Think about it"
+              content: >-
+                First build a frequency map (like challenge_6 v1), then iterate the map to find the key with the highest count.
+            - title: "\U0001F4A1 Hint"
+              content: >-
+                Track <code>maxCount</code> and <code>maxLevel</code> while iterating the frequency map.
+                Update them when you find a count larger than the current max.
+          solution: |-
+            func mostCommonLevel(lines []string) string {
+                counts := make(map[string]int)
+                for _, line := range lines {
+                    fields := strings.Fields(line)
+                    if len(fields) >= 3 {
+                        counts[fields[2]]++
+                    }
+                }
+                maxLevel := ""
+                maxCount := 0
+                for level, count := range counts {
+                    if count > maxCount {
+                        maxCount = count
+                        maxLevel = level
+                    }
+                }
+                return maxLevel
+            }
+
+        - id: v3
+          title: Error Message Counts
+          description: >-
+            Write <code>func errorMessages(lines []string) map[string]int</code>. For lines with
+            level <code>"ERROR"</code>, extract the message (everything after the level) and count
+            how many times each unique error message appears.
+          functionSignature: func errorMessages(lines []string) map[string]int
+          difficulty: 2
+          testCases:
+            - input: "errorMessages([]string{\"2024-01-15 10:30:45 ERROR timeout\", \"2024-01-15 10:30:46 INFO ok\", \"2024-01-15 10:30:47 ERROR timeout\", \"2024-01-15 10:30:48 ERROR disk full\"})"
+              output: "map[timeout:2 disk full:1]"
+          hints:
+            - title: "\U0001F914 Think about it"
+              content: >-
+                Split each line into fields. Check if <code>fields[2] == "ERROR"</code>. If so, reconstruct the message
+                from <code>fields[3:]</code> and count it.
+            - title: "\U0001F4A1 Hint"
+              content: >-
+                Use <code>strings.Join(fields[3:], " ")</code> to get the message, then <code>counts[msg]++</code>.
+          solution: |-
+            func errorMessages(lines []string) map[string]int {
+                counts := make(map[string]int)
+                for _, line := range lines {
+                    fields := strings.Fields(line)
+                    if len(fields) >= 4 && fields[2] == "ERROR" {
+                        msg := strings.Join(fields[3:], " ")
+                        counts[msg]++
+                    }
+                }
+                return counts
+            }
+
+        - id: v4
+          title: Hourly Breakdown
+          description: >-
+            Write <code>func hourlyBreakdown(lines []string) map[string]int</code>. Extract the
+            hour from each log line's timestamp (characters 11-12, e.g., <code>"10"</code> from
+            <code>"2024-01-15 10:30:45"</code>) and return a map counting entries per hour.
+          functionSignature: func hourlyBreakdown(lines []string) map[string]int
+          difficulty: 3
+          testCases:
+            - input: "hourlyBreakdown([]string{\"2024-01-15 10:30:45 ERROR timeout\", \"2024-01-15 10:45:00 INFO ok\", \"2024-01-15 14:00:00 WARN slow\"})"
+              output: "map[10:2 14:1]"
+          hints:
+            - title: "\U0001F914 Think about it"
+              content: >-
+                The timestamp starts at position 0 and the hour is at positions 11-12 (inclusive).
+                Use <code>line[11:13]</code> to extract the two-digit hour.
+            - title: "\U0001F4A1 Hint"
+              content: >-
+                Check <code>len(line) >= 13</code> first, then <code>hour := line[11:13]</code> and <code>counts[hour]++</code>.
+          solution: |-
+            func hourlyBreakdown(lines []string) map[string]int {
+                counts := make(map[string]int)
+                for _, line := range lines {
+                    if len(line) >= 13 {
+                        hour := line[11:13]
+                        counts[hour]++
+                    }
+                }
+                return counts
+            }
+          annotations:
+            - type: gotcha
+              label: String Indexing
+              text: >-
+                <code>line[11:13]</code> gives bytes, not characters. This works for ASCII digits but would
+                break with multi-byte UTF-8 characters. For timestamps with ASCII digits, byte indexing is fine.
+
+    # ── challenge_3: Go Fundamentals Combined (Log Parser Capstone) ─────
+    - id: challenge_3
+      block: 3
+      difficulty: 3
+      concept: Go Fundamentals Combined
+      docLinks:
+        - url: https://go.dev/doc/effective_go
+          title: "Effective Go"
+          note: idiomatic Go patterns
+        - url: https://pkg.go.dev/fmt#Sprintf
+          title: "fmt.Sprintf"
+          note: string formatting
+      variants:
+        - id: v1
+          title: Log Summary Counts
+          description: >-
+            Write <code>func logSummary(lines []string) (int, int, int)</code>. Return the count of
+            <code>INFO</code>, <code>WARN</code>, and <code>ERROR</code> entries (in that order).
+            Extract the level from the third field of each log line.
+          functionSignature: func logSummary(lines []string) (int, int, int)
+          difficulty: 2
+          testCases:
+            - input: "logSummary([]string{\"2024-01-15 10:30:45 ERROR timeout\", \"2024-01-15 10:30:46 INFO ok\", \"2024-01-15 10:30:47 WARN slow\", \"2024-01-15 10:30:48 INFO started\", \"2024-01-15 10:30:49 ERROR retry\"})"
+              output: "2, 1, 2"
+          hints:
+            - title: "\U0001F914 Think about it"
+              content: >-
+                Declare three counters. Loop through lines, extract the level, and increment the appropriate counter.
+            - title: "\U0001F4A1 Hint"
+              content: >-
+                Use a switch or if/else chain on <code>fields[2]</code> to increment the right counter.
+          solution: |-
+            func logSummary(lines []string) (int, int, int) {
+                infoCount, warnCount, errorCount := 0, 0, 0
+                for _, line := range lines {
+                    fields := strings.Fields(line)
+                    if len(fields) < 3 {
+                        continue
+                    }
+                    switch fields[2] {
+                    case "INFO":
+                        infoCount++
+                    case "WARN":
+                        warnCount++
+                    case "ERROR":
+                        errorCount++
+                    }
+                }
+                return infoCount, warnCount, errorCount
+            }
+          annotations:
+            - type: idiom
+              label: Switch Statement
+              text: >-
+                Go's <code>switch</code> doesn't need <code>break</code> — each case automatically breaks.
+                Use switch for clean multi-way branching on a single value.
+
+        - id: v2
+          title: Log Report
+          description: >-
+            Write <code>func logReport(lines []string) string</code>. Build a formatted report
+            string containing: the total number of entries, the count per level, and the most common level.
+            Format:<br><code>Total: 5<br>INFO: 2<br>WARN: 1<br>ERROR: 2<br>Most common: ERROR</code><br>
+            If multiple levels tie, return any one of them.
+          functionSignature: func logReport(lines []string) string
+          difficulty: 3
+          testCases:
+            - input: "logReport([]string{\"2024-01-15 10:30:45 ERROR timeout\", \"2024-01-15 10:30:46 INFO ok\", \"2024-01-15 10:30:47 WARN slow\", \"2024-01-15 10:30:48 INFO started\", \"2024-01-15 10:30:49 ERROR retry\"})"
+              output: "\"Total: 5\\nINFO: 2\\nWARN: 1\\nERROR: 2\\nMost common: INFO\""
+              note: "If INFO and ERROR tie, either is acceptable"
+          hints:
+            - title: "\U0001F914 Think about it"
+              content: >-
+                Build a frequency map first, then find the max, then format the output string.
+                This combines maps, loops, and string formatting.
+            - title: "\U0001F4A1 Hint"
+              content: >-
+                Use <code>fmt.Sprintf</code> to build each line of the report and concatenate with <code>\n</code>.
+          solution: |-
+            func logReport(lines []string) string {
+                counts := make(map[string]int)
+                for _, line := range lines {
+                    fields := strings.Fields(line)
+                    if len(fields) >= 3 {
+                        counts[fields[2]]++
+                    }
+                }
+                maxLevel := ""
+                maxCount := 0
+                for level, count := range counts {
+                    if count > maxCount {
+                        maxCount = count
+                        maxLevel = level
+                    }
+                }
+                report := fmt.Sprintf("Total: %d", len(lines))
+                for _, level := range []string{"INFO", "WARN", "ERROR"} {
+                    report += fmt.Sprintf("\n%s: %d", level, counts[level])
+                }
+                report += fmt.Sprintf("\nMost common: %s", maxLevel)
+                return report
+            }
+          annotations:
+            - type: pattern
+              label: Ordered Iteration
+              text: >-
+                Map iteration order is random in Go. When you need a specific order (like INFO, WARN, ERROR),
+                iterate over a predefined slice of keys instead of ranging over the map directly.
+
+        - id: v3
+          title: Find Anomalies
+          description: >-
+            Write <code>func findAnomalies(lines []string, threshold int) []string</code>. Find
+            error messages that appear more than <code>threshold</code> times. Return a slice of
+            those messages (just the message text, not the full log line).
+          functionSignature: func findAnomalies(lines []string, threshold int) []string
+          difficulty: 3
+          testCases:
+            - input: "findAnomalies([]string{\"2024-01-15 10:30:45 ERROR timeout\", \"2024-01-15 10:30:46 ERROR timeout\", \"2024-01-15 10:30:47 ERROR timeout\", \"2024-01-15 10:30:48 ERROR disk full\", \"2024-01-15 10:30:49 INFO ok\"}, 2)"
+              output: "[\"timeout\"]"
+          hints:
+            - title: "\U0001F914 Think about it"
+              content: >-
+                First build a frequency map of error messages (like challenge_6 v3). Then filter the map
+                for entries exceeding the threshold.
+            - title: "\U0001F4A1 Hint"
+              content: >-
+                Two passes: (1) count error messages, (2) collect messages where <code>count > threshold</code>.
+          solution: |-
+            func findAnomalies(lines []string, threshold int) []string {
+                counts := make(map[string]int)
+                for _, line := range lines {
+                    fields := strings.Fields(line)
+                    if len(fields) >= 4 && fields[2] == "ERROR" {
+                        msg := strings.Join(fields[3:], " ")
+                        counts[msg]++
+                    }
+                }
+                var anomalies []string
+                for msg, count := range counts {
+                    if count > threshold {
+                        anomalies = append(anomalies, msg)
+                    }
+                }
+                return anomalies
+            }
+          annotations:
+            - type: pattern
+              label: Two-Pass Processing
+              text: >-
+                Many aggregation problems need two passes: one to collect data, one to analyze it.
+                This is cleaner than trying to do everything in a single loop.
+
+        - id: v4
+          title: Parse and Filter
+          description: >-
+            Write <code>func parseAndFilter(lines []string, level string, keyword string) []string</code>.
+            Filter log lines that match both the given level AND contain the keyword in the message.
+            Return the matching lines formatted as <code>"[LEVEL] message"</code> (without the timestamp).
+          functionSignature: func parseAndFilter(lines []string, level string, keyword string) []string
+          difficulty: 3
+          testCases:
+            - input: "parseAndFilter([]string{\"2024-01-15 10:30:45 ERROR connection timeout\", \"2024-01-15 10:30:46 ERROR disk full\", \"2024-01-15 10:30:47 INFO connection ok\", \"2024-01-15 10:30:48 ERROR connection refused\"}, \"ERROR\", \"connection\")"
+              output: "[\"[ERROR] connection timeout\", \"[ERROR] connection refused\"]"
+          hints:
+            - title: "\U0001F914 Think about it"
+              content: >-
+                Split each line, check the level matches, reconstruct the message, check for the keyword,
+                then format the output. This combines parsing, filtering, and formatting.
+            - title: "\U0001F4A1 Hint"
+              content: >-
+                Use <code>strings.Fields</code> to split, check <code>fields[2] == level</code>,
+                join <code>fields[3:]</code> for the message, check <code>strings.Contains(msg, keyword)</code>,
+                then format with <code>fmt.Sprintf("[%s] %s", level, msg)</code>.
+          solution: |-
+            func parseAndFilter(lines []string, level string, keyword string) []string {
+                var result []string
+                for _, line := range lines {
+                    fields := strings.Fields(line)
+                    if len(fields) < 4 {
+                        continue
+                    }
+                    if fields[2] != level {
+                        continue
+                    }
+                    msg := strings.Join(fields[3:], " ")
+                    if !strings.Contains(msg, keyword) {
+                        continue
+                    }
+                    result = append(result, fmt.Sprintf("[%s] %s", level, msg))
+                }
+                return result
+            }
+          annotations:
+            - type: idiom
+              label: Early Continue
+              text: >-
+                Use <code>continue</code> to skip non-matching items early. This keeps the "happy path"
+                at the lowest indentation level, making the code easier to read than nested if statements.

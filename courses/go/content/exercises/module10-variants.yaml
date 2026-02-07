@@ -1,1131 +1,929 @@
 conceptLinks:
-  Functional Options: "#lesson-functional-options"
-  Factory Pattern: "#lesson-factory-pattern"
-  Strategy Pattern: "#lesson-strategy-pattern"
-  Builder Pattern: "#lesson-builder-pattern"
+  Table-Driven Tests: "#lesson-table-tests"
+  t.Run: "#lesson-subtests"
+  Test Coverage: "#lesson-coverage"
+  Interfaces: "#lesson-interfaces"
+  Mock Testing: "#lesson-mocks"
 sharedContent: {}
 variants:
   warmups:
     - id: warmup_1
-      concept: Functional Options
+      concept: Table-Driven Tests
       variants:
         - id: v1
-          title: HTTP Client with Options
+          title: Table-Driven Test for Reverse
           description: >-
-            Create an <code>HTTPClient</code> struct with fields <code>timeout</code> (<code>time.Duration</code>),
-            <code>retries</code> (<code>int</code>), and <code>baseURL</code> (<code>string</code>). Implement the
-            functional options pattern with <code>WithTimeout</code>, <code>WithRetries</code>, and
-            <code>WithBaseURL</code>. Write a constructor <code>NewHTTPClient(opts ...Option) *HTTPClient</code> that
-            applies all options with a default timeout of 30 seconds.
+            Write a table-driven test for a <code>reverse(s string) string</code> function. Include test cases for:
+            empty string, single character, regular string, and Unicode string.
           hints:
-            - Define <code>type Option func(*HTTPClient)</code> as your option function type.
-            - Each <code>With</code> function returns a closure that modifies the client.
+            - Define a struct with <code>input</code> and <code>want</code> fields.
+            - Use <code>t.Run(tt.input, func(t *testing.T) { ... })</code> for subtests.
+            - Use <code>t.Errorf</code> to report mismatches with both expected and actual values.
           solution: |-
-            type HTTPClient struct {
-                timeout time.Duration
-                retries int
-                baseURL string
-            }
-
-            type Option func(*HTTPClient)
-
-            func WithTimeout(d time.Duration) Option {
-                return func(c *HTTPClient) { c.timeout = d }
-            }
-
-            func WithRetries(n int) Option {
-                return func(c *HTTPClient) { c.retries = n }
-            }
-
-            func WithBaseURL(url string) Option {
-                return func(c *HTTPClient) { c.baseURL = url }
-            }
-
-            func NewHTTPClient(opts ...Option) *HTTPClient {
-                c := &HTTPClient{timeout: 30 * time.Second}
-                for _, opt := range opts {
-                    opt(c)
+            func TestReverse(t *testing.T) {
+                tests := []struct {
+                    input, want string
+                }{
+                    {"", ""},
+                    {"a", "a"},
+                    {"hello", "olleh"},
+                    {"世界", "界世"},
                 }
-                return c
+                for _, tt := range tests {
+                    t.Run(tt.input, func(t *testing.T) {
+                        if got := reverse(tt.input); got != tt.want {
+                            t.Errorf("reverse(%q) = %q, want %q", tt.input, got, tt.want)
+                        }
+                    })
+                }
             }
           annotations:
             - type: idiom
-              label: Functional Options
+              label: Table-Driven Tests
               text: >-
-                The functional options pattern uses variadic closures to configure structs. This is idiomatic Go and
-                avoids large config structs or multiple constructors.
-            - type: gotcha
-              label: Default Values
+                Table-driven tests are the canonical Go testing pattern. Define test cases as a slice of structs, then
+                loop and run each with <code>t.Run()</code>.
+            - type: idiom
+              label: tt Convention
               text: >-
-                Always set sensible defaults before applying options. A zero-value timeout means no timeout, which can
-                cause hanging requests.
+                The variable name <code>tt</code> (for 'test table') is a widely used convention in Go table-driven
+                tests.
         - id: v2
-          title: Database Connection with Options
+          title: Table-Driven Test for FizzBuzz
           description: >-
-            Create a <code>DBConn</code> struct with fields <code>host</code> (<code>string</code>), <code>port</code>
-            (<code>int</code>), and <code>maxConns</code> (<code>int</code>). Implement functional options
-            <code>WithHost</code>, <code>WithPort</code>, and <code>WithMaxConns</code>. Write <code>NewDBConn(opts
-            ...DBOption) *DBConn</code> with defaults: host <code>"localhost"</code>, port <code>5432</code>, maxConns
-            <code>10</code>.
+            Write a table-driven test for a <code>fizzBuzz(n int) string</code> function that returns "Fizz" for
+            multiples of 3, "Buzz" for 5, "FizzBuzz" for both, or the number as a string.
           hints:
-            - Define <code>type DBOption func(*DBConn)</code>.
-            - Set defaults in the constructor before applying options.
+            - "Include test cases for: regular numbers, multiples of 3, multiples of 5, and multiples of 15."
+            - Use <code>fmt.Sprintf("%d", tt.input)</code> as the subtest name for clarity.
+            - Test edge cases like 0 and 1.
           solution: |-
-            type DBConn struct {
-                host     string
-                port     int
-                maxConns int
-            }
-
-            type DBOption func(*DBConn)
-
-            func WithHost(h string) DBOption {
-                return func(c *DBConn) { c.host = h }
-            }
-
-            func WithPort(p int) DBOption {
-                return func(c *DBConn) { c.port = p }
-            }
-
-            func WithMaxConns(n int) DBOption {
-                return func(c *DBConn) { c.maxConns = n }
-            }
-
-            func NewDBConn(opts ...DBOption) *DBConn {
-                c := &DBConn{host: "localhost", port: 5432, maxConns: 10}
-                for _, opt := range opts {
-                    opt(c)
+            func TestFizzBuzz(t *testing.T) {
+                tests := []struct {
+                    input int
+                    want  string
+                }{
+                    {1, "1"},
+                    {3, "Fizz"},
+                    {5, "Buzz"},
+                    {15, "FizzBuzz"},
+                    {7, "7"},
+                    {30, "FizzBuzz"},
                 }
-                return c
+                for _, tt := range tests {
+                    t.Run(fmt.Sprintf("%d", tt.input), func(t *testing.T) {
+                        if got := fizzBuzz(tt.input); got != tt.want {
+                            t.Errorf("fizzBuzz(%d) = %q, want %q", tt.input, got, tt.want)
+                        }
+                    })
+                }
             }
           annotations:
             - type: idiom
-              label: Sensible Defaults
+              label: Subtest Names
               text: >-
-                Idiomatic Go constructors provide zero-configuration usability. NewDBConn() with no arguments should
-                return a working connection to localhost.
-            - type: alternative
-              label: Config Struct
-              text: >-
-                An alternative is passing a Config struct, but functional options scale better when adding new settings
-                without breaking existing callers.
-        - id: v3
-          title: Server with Options
-          description: >-
-            Create a <code>Server</code> struct with fields <code>addr</code> (<code>string</code>),
-            <code>readTimeout</code> (<code>time.Duration</code>), and <code>maxBodySize</code> (<code>int64</code>).
-            Implement functional options <code>WithAddr</code>, <code>WithReadTimeout</code>, and
-            <code>WithMaxBodySize</code>. Write <code>NewServer(opts ...ServerOption) *Server</code> with defaults: addr
-            <code>":8080"</code>, readTimeout <code>5*time.Second</code>, maxBodySize <code>1 &lt;&lt; 20</code> (1MB).
-          hints:
-            - Define <code>type ServerOption func(*Server)</code>.
-            - Use <code>1 &lt;&lt; 20</code> for 1MB in bytes.
-          solution: |-
-            type Server struct {
-                addr        string
-                readTimeout time.Duration
-                maxBodySize int64
-            }
-
-            type ServerOption func(*Server)
-
-            func WithAddr(a string) ServerOption {
-                return func(s *Server) { s.addr = a }
-            }
-
-            func WithReadTimeout(d time.Duration) ServerOption {
-                return func(s *Server) { s.readTimeout = d }
-            }
-
-            func WithMaxBodySize(n int64) ServerOption {
-                return func(s *Server) { s.maxBodySize = n }
-            }
-
-            func NewServer(opts ...ServerOption) *Server {
-                s := &Server{addr: ":8080", readTimeout: 5 * time.Second, maxBodySize: 1 << 20}
-                for _, opt := range opts {
-                    opt(s)
-                }
-                return s
-            }
-          annotations:
-            - type: idiom
-              label: Bit Shifting for Sizes
-              text: Using 1 << 20 for 1MB is idiomatic in Go. The standard library itself uses this pattern for byte sizes.
-            - type: pattern
-              label: Functional Options
-              text: >-
-                This pattern was popularized by Dave Cheney and Rob Pike. It allows API evolution without breaking
-                backward compatibility.
-        - id: v4
-          title: Cache with Options
-          description: >-
-            Create a <code>Cache</code> struct with fields <code>maxSize</code> (<code>int</code>), <code>ttl</code>
-            (<code>time.Duration</code>), and <code>onEvict</code> (<code>func(string)</code>). Implement functional
-            options <code>WithMaxSize</code>, <code>WithTTL</code>, and <code>WithOnEvict</code>. Write
-            <code>NewCache(opts ...CacheOption) *Cache</code> with defaults: maxSize <code>100</code>, ttl
-            <code>5*time.Minute</code>, nil onEvict.
-          hints:
-            - Define <code>type CacheOption func(*Cache)</code>.
-            - The <code>onEvict</code> callback is a function value; it can be nil by default.
-          solution: |-
-            type Cache struct {
-                maxSize int
-                ttl     time.Duration
-                onEvict func(string)
-            }
-
-            type CacheOption func(*Cache)
-
-            func WithMaxSize(n int) CacheOption {
-                return func(c *Cache) { c.maxSize = n }
-            }
-
-            func WithTTL(d time.Duration) CacheOption {
-                return func(c *Cache) { c.ttl = d }
-            }
-
-            func WithOnEvict(fn func(string)) CacheOption {
-                return func(c *Cache) { c.onEvict = fn }
-            }
-
-            func NewCache(opts ...CacheOption) *Cache {
-                c := &Cache{maxSize: 100, ttl: 5 * time.Minute}
-                for _, opt := range opts {
-                    opt(c)
-                }
-                return c
-            }
-          annotations:
-            - type: idiom
-              label: Callback Options
-              text: >-
-                Functional options can accept function values as callbacks. This is common in Go libraries for hooks
-                like eviction handlers, middleware, and error handlers.
+                Use <code>t.Run(name, ...)</code> so that each test case can be run independently with <code>go test
+                -run TestFizzBuzz/15</code>.
             - type: gotcha
-              label: Nil Function Check
+              label: Order Matters in FizzBuzz
               text: >-
-                Always check if a callback is non-nil before calling it: <code>if c.onEvict != nil { c.onEvict(key)
-                }</code>. Calling a nil function panics.
-    - id: warmup_2
-      concept: Factory Pattern
-      variants:
-        - id: v1
-          title: Logger Factory
-          description: >-
-            Create a <code>Logger</code> interface with a <code>Log(msg string)</code> method. Implement
-            <code>ConsoleLogger</code> (prints to stdout), <code>FileLogger</code> (has a <code>file</code> field), and
-            <code>NullLogger</code> (discards). Write <code>NewLogger(logType string) Logger</code> that returns the
-            right implementation for <code>"console"</code>, <code>"file"</code>, or <code>"null"</code>.
-          hints:
-            - Use a <code>switch</code> statement on the <code>logType</code> string.
-            - Each struct must have a <code>Log(msg string)</code> method to satisfy the interface.
-          solution: |-
-            type Logger interface {
-                Log(msg string)
-            }
-
-            type ConsoleLogger struct{}
-            func (l *ConsoleLogger) Log(msg string) { fmt.Println(msg) }
-
-            type FileLogger struct{ file string }
-            func (l *FileLogger) Log(msg string) { /* write to l.file */ }
-
-            type NullLogger struct{}
-            func (l *NullLogger) Log(msg string) {}
-
-            func NewLogger(logType string) Logger {
-                switch logType {
-                case "console":
-                    return &ConsoleLogger{}
-                case "file":
-                    return &FileLogger{file: "app.log"}
-                case "null":
-                    return &NullLogger{}
-                default:
-                    return &ConsoleLogger{}
-                }
-            }
-          annotations:
-            - type: idiom
-              label: Interface Return
-              text: >-
-                Factory functions in Go return interfaces, not concrete types. This allows callers to depend on
-                behavior, not implementation.
-            - type: pattern
-              label: Factory Method
-              text: >-
-                The factory pattern centralizes object creation. Callers don't need to know about concrete types like
-                ConsoleLogger or FileLogger.
-        - id: v2
-          title: Storage Factory
-          description: >-
-            Create a <code>Storage</code> interface with <code>Save(key, value string) error</code> and <code>Load(key
-            string) (string, error)</code>. Implement <code>MemoryStorage</code> (uses a map), <code>FileStorage</code>
-            (has a <code>dir</code> field), and <code>NullStorage</code> (returns empty). Write
-            <code>NewStorage(storageType string) Storage</code>.
-          hints:
-            - >-
-              The <code>MemoryStorage</code> needs a <code>map[string]string</code> field initialized with
-              <code>make</code>.
-            - Return a sensible default (like <code>MemoryStorage</code>) for unknown types.
-          solution: |-
-            type Storage interface {
-                Save(key, value string) error
-                Load(key string) (string, error)
-            }
-
-            type MemoryStorage struct {
-                data map[string]string
-            }
-
-            func (s *MemoryStorage) Save(key, value string) error {
-                s.data[key] = value
-                return nil
-            }
-
-            func (s *MemoryStorage) Load(key string) (string, error) {
-                v, ok := s.data[key]
-                if !ok {
-                    return "", fmt.Errorf("key not found: %s", key)
-                }
-                return v, nil
-            }
-
-            type FileStorage struct{ dir string }
-            func (s *FileStorage) Save(key, value string) error { return nil }
-            func (s *FileStorage) Load(key string) (string, error) { return "", nil }
-
-            type NullStorage struct{}
-            func (s *NullStorage) Save(key, value string) error { return nil }
-            func (s *NullStorage) Load(key string) (string, error) { return "", nil }
-
-            func NewStorage(storageType string) Storage {
-                switch storageType {
-                case "memory":
-                    return &MemoryStorage{data: make(map[string]string)}
-                case "file":
-                    return &FileStorage{dir: "/tmp"}
-                case "null":
-                    return &NullStorage{}
-                default:
-                    return &MemoryStorage{data: make(map[string]string)}
-                }
-            }
-          annotations:
-            - type: gotcha
-              label: Map Initialization
-              text: >-
-                Always initialize maps with make() before use. A nil map will panic on write. The factory is the right
-                place to ensure proper initialization.
-            - type: idiom
-              label: Error Returns
-              text: >-
-                Go interfaces that do I/O should return errors. Even in-memory implementations return error to satisfy
-                the interface contract.
+                Check divisibility by 15 first (or check 3 and 5 separately). A common bug is checking 3 and 5
+                independently without handling the 15 case.
         - id: v3
-          title: Notifier Factory
+          title: Table-Driven Test with Errors
           description: >-
-            Create a <code>Notifier</code> interface with <code>Send(to, message string) error</code>. Implement
-            <code>EmailNotifier</code>, <code>SMSNotifier</code>, and <code>SlackNotifier</code>. Write
-            <code>NewNotifier(channel string) Notifier</code> that returns the correct implementation for
-            <code>"email"</code>, <code>"sms"</code>, or <code>"slack"</code>.
+            Write a table-driven test for a <code>divide(a, b float64) (float64, error)</code> function. Include cases
+            for normal division and division by zero.
           hints:
-            - Each notifier struct can have relevant fields (e.g., <code>apiKey</code> for Slack).
-            - Switch on the <code>channel</code> parameter.
-          solution: |-
-            type Notifier interface {
-                Send(to, message string) error
-            }
-
-            type EmailNotifier struct{}
-            func (n *EmailNotifier) Send(to, message string) error {
-                fmt.Printf("Email to %s: %s\n", to, message)
-                return nil
-            }
-
-            type SMSNotifier struct{}
-            func (n *SMSNotifier) Send(to, message string) error {
-                fmt.Printf("SMS to %s: %s\n", to, message)
-                return nil
-            }
-
-            type SlackNotifier struct{ webhook string }
-            func (n *SlackNotifier) Send(to, message string) error {
-                fmt.Printf("Slack to %s: %s\n", to, message)
-                return nil
-            }
-
-            func NewNotifier(channel string) Notifier {
-                switch channel {
-                case "email":
-                    return &EmailNotifier{}
-                case "sms":
-                    return &SMSNotifier{}
-                case "slack":
-                    return &SlackNotifier{webhook: "https://hooks.slack.com/..."}
-                default:
-                    return &EmailNotifier{}
-                }
-            }
-          annotations:
-            - type: pattern
-              label: Factory Method
-              text: >-
-                Factories decouple creation from usage. The caller only needs to know the interface, making it easy to
-                add new notification channels later.
-            - type: alternative
-              label: Registry Pattern
-              text: >-
-                For extensibility, consider a map-based registry: <code>var factories = map[string]func()
-                Notifier{}</code> with a Register function.
-        - id: v4
-          title: Parser Factory
-          description: >-
-            Create a <code>Parser</code> interface with <code>Parse(data []byte) (map[string]any, error)</code>.
-            Implement <code>JSONParser</code>, <code>YAMLParser</code>, and <code>TOMLParser</code>. Write
-            <code>NewParser(format string) Parser</code> that returns the correct parser for <code>"json"</code>,
-            <code>"yaml"</code>, or <code>"toml"</code>.
-          hints:
+            - Add a <code>wantErr bool</code> field to your test struct.
             - >-
-              For the <code>JSONParser</code>, use <code>encoding/json</code> to unmarshal into
-              <code>map[string]any</code>.
-            - Return an error for unknown formats instead of a default.
+              When <code>wantErr</code> is true, check that error is non-nil. When false, check that error is nil and
+              the value is correct.
+            - Use a small epsilon for float comparison or compare formatted strings.
           solution: |-
-            type Parser interface {
-                Parse(data []byte) (map[string]any, error)
-            }
-
-            type JSONParser struct{}
-            func (p *JSONParser) Parse(data []byte) (map[string]any, error) {
-                var result map[string]any
-                err := json.Unmarshal(data, &result)
-                return result, err
-            }
-
-            type YAMLParser struct{}
-            func (p *YAMLParser) Parse(data []byte) (map[string]any, error) {
-                return nil, fmt.Errorf("YAML parsing not implemented")
-            }
-
-            type TOMLParser struct{}
-            func (p *TOMLParser) Parse(data []byte) (map[string]any, error) {
-                return nil, fmt.Errorf("TOML parsing not implemented")
-            }
-
-            func NewParser(format string) (Parser, error) {
-                switch format {
-                case "json":
-                    return &JSONParser{}, nil
-                case "yaml":
-                    return &YAMLParser{}, nil
-                case "toml":
-                    return &TOMLParser{}, nil
-                default:
-                    return nil, fmt.Errorf("unsupported format: %s", format)
+            func TestDivide(t *testing.T) {
+                tests := []struct {
+                    name    string
+                    a, b    float64
+                    want    float64
+                    wantErr bool
+                }{
+                    {"normal", 10, 2, 5, false},
+                    {"decimal result", 7, 2, 3.5, false},
+                    {"divide by zero", 10, 0, 0, true},
+                    {"zero numerator", 0, 5, 0, false},
+                }
+                for _, tt := range tests {
+                    t.Run(tt.name, func(t *testing.T) {
+                        got, err := divide(tt.a, tt.b)
+                        if tt.wantErr {
+                            if err == nil {
+                                t.Error("expected error, got nil")
+                            }
+                            return
+                        }
+                        if err != nil {
+                            t.Fatalf("unexpected error: %v", err)
+                        }
+                        if got != tt.want {
+                            t.Errorf("divide(%v, %v) = %v, want %v", tt.a, tt.b, got, tt.want)
+                        }
+                    })
                 }
             }
           annotations:
             - type: idiom
-              label: Error on Unknown
+              label: wantErr Pattern
               text: >-
-                When a factory cannot create a valid object, return an error instead of a default. This follows Go's
-                explicit error handling philosophy.
+                Adding a <code>wantErr bool</code> field to test structs is the standard Go pattern for testing
+                functions that return errors.
+            - type: gotcha
+              label: Float Comparison
+              text: >-
+                Floating point comparison with <code>==</code> can fail due to rounding. For precise work, compare with
+                an epsilon: <code>math.Abs(got - want) < 1e-9</code>.
+        - id: v4
+          title: Table-Driven Test for Word Count
+          description: >-
+            Write a table-driven test for a <code>wordCount(s string) map[string]int</code> function. Include cases for
+            empty strings, single words, multiple words, and repeated words.
+          hints:
+            - Use <code>reflect.DeepEqual</code> to compare maps.
+            - "Include edge cases: empty string, extra whitespace, mixed case (if your function is case-sensitive)."
+            - Give each test case a descriptive name.
+          solution: |-
+            func TestWordCount(t *testing.T) {
+                tests := []struct {
+                    name  string
+                    input string
+                    want  map[string]int
+                }{
+                    {
+                        name:  "empty string",
+                        input: "",
+                        want:  map[string]int{},
+                    },
+                    {
+                        name:  "single word",
+                        input: "hello",
+                        want:  map[string]int{"hello": 1},
+                    },
+                    {
+                        name:  "multiple words",
+                        input: "go is fun",
+                        want:  map[string]int{"go": 1, "is": 1, "fun": 1},
+                    },
+                    {
+                        name:  "repeated words",
+                        input: "go go go",
+                        want:  map[string]int{"go": 3},
+                    },
+                }
+                for _, tt := range tests {
+                    t.Run(tt.name, func(t *testing.T) {
+                        got := wordCount(tt.input)
+                        if !reflect.DeepEqual(got, tt.want) {
+                            t.Errorf("wordCount(%q) = %v, want %v", tt.input, got, tt.want)
+                        }
+                    })
+                }
+            }
+          annotations:
             - type: stdlib
-              label: encoding/json
+              label: reflect.DeepEqual
               text: >-
-                The standard library's json.Unmarshal can decode into map[string]any for dynamic JSON. This is useful
-                when the structure is not known at compile time.
+                <code>reflect.DeepEqual</code> compares maps, slices, and nested structures by value. It is the standard
+                way to compare complex types in tests.
+            - type: gotcha
+              label: Nil vs Empty Map
+              text: >-
+                <code>reflect.DeepEqual(nil, map[string]int{})</code> is false. Make sure your function and test agree
+                on whether to return nil or an empty map for no input.
   challenges:
     - id: challenge_1
       block: 1
       difficulty: 2
-      concept: Strategy Pattern
+      concept: Test Coverage
       docLinks:
-        - url: https://go.dev/doc/effective_go#interfaces
-          title: "Effective Go: Interfaces"
-          note: interfaces enable strategy swapping
-        - url: https://pkg.go.dev/sort#Interface
-          title: Package sort.Interface
-          note: stdlib strategy pattern example
+        - url: https://pkg.go.dev/testing
+          title: Package testing
+          note: Go testing framework
+        - url: https://go.dev/blog/cover
+          title: "Go Blog: The cover story"
+          note: test coverage analysis
       variants:
         - id: v1
-          title: Sort Strategy
+          title: Full Coverage for Absolute Value
           description: >-
-            Define a <code>Sorter</code> interface with <code>Sort([]int) []int</code>. Implement
-            <code>BubbleSort</code> and <code>QuickSort</code>. Create a <code>DataProcessor</code> struct that accepts
-            any <code>Sorter</code> and has a <code>Process(data []int) []int</code> method that delegates to the
-            strategy.
-          functionSignature: func NewDataProcessor(s Sorter) *DataProcessor
+            Write a function <code>func abs(n int) int</code> that returns the absolute value. Then write tests to
+            achieve 100% coverage. Use <code>go test -cover</code> to verify.
+          functionSignature: func abs(n int) int
           testCases:
-            - input: NewDataProcessor(&BubbleSort{}), []int{3, 1, 2}
-              output: "[]int{1, 2, 3}"
-            - input: NewDataProcessor(&QuickSort{}), []int{5, 3, 8, 1}
-              output: "[]int{1, 3, 5, 8}"
+            - input: abs(5)
+              output: "5"
+            - input: abs(-3)
+              output: "3"
+            - input: abs(0)
+              output: "0"
           hints:
-            - title: 🤔 Think about it
-              content: How can you allow a struct to use different algorithms without knowing which one at compile time?
-            - title: 💡 Hint
+            - title: "\U0001F914 Think about it"
+              content: How many code paths does an if/else have? What inputs trigger each path?
+            - title: "\U0001F4A1 Hint"
               content: >-
-                Store the Sorter interface as a field on DataProcessor. The Process method just calls the sorter's Sort
-                method.
-            - title: 🔧 Pattern
+                The function has two branches: <code>n < 0</code> (return <code>-n</code>) and the else case (return
+                <code>n</code>). Test both a positive and negative number to cover both branches.
+            - title: "\U0001F527 Pattern"
               content: |-
-                <pre>1. Define Sorter interface with Sort([]int) []int
-                2. Implement BubbleSort and QuickSort
-                3. DataProcessor holds a Sorter field
-                4. Process() delegates to the stored strategy</pre>
+                <pre>1. Write the function with an if/else
+                2. Test with a positive number (covers else branch)
+                3. Test with a negative number (covers if branch)
+                4. Test with zero (edge case)
+                5. Run: go test -cover</pre>
           solution: |-
-            type Sorter interface {
-                Sort([]int) []int
+            func abs(n int) int {
+                if n < 0 {
+                    return -n
+                }
+                return n
             }
 
-            type BubbleSort struct{}
-            func (b *BubbleSort) Sort(data []int) []int {
-                n := len(data)
-                result := make([]int, n)
-                copy(result, data)
-                for i := 0; i < n-1; i++ {
-                    for j := 0; j < n-i-1; j++ {
-                        if result[j] > result[j+1] {
-                            result[j], result[j+1] = result[j+1], result[j]
+            func TestAbs(t *testing.T) {
+                tests := []struct {
+                    input, want int
+                }{
+                    {5, 5},
+                    {-3, 3},
+                    {0, 0},
+                }
+                for _, tt := range tests {
+                    t.Run(fmt.Sprintf("%d", tt.input), func(t *testing.T) {
+                        if got := abs(tt.input); got != tt.want {
+                            t.Errorf("abs(%d) = %d, want %d", tt.input, got, tt.want)
                         }
-                    }
+                    })
                 }
-                return result
-            }
-
-            type QuickSort struct{}
-            func (q *QuickSort) Sort(data []int) []int {
-                result := make([]int, len(data))
-                copy(result, data)
-                sort.Ints(result)
-                return result
-            }
-
-            type DataProcessor struct {
-                sorter Sorter
-            }
-
-            func NewDataProcessor(s Sorter) *DataProcessor {
-                return &DataProcessor{sorter: s}
-            }
-
-            func (dp *DataProcessor) Process(data []int) []int {
-                return dp.sorter.Sort(data)
             }
           difficulty: 2
           annotations:
-            - type: pattern
-              label: Strategy Pattern
-              text: >-
-                The strategy pattern encapsulates algorithms behind an interface, letting you swap them at runtime
-                without changing the client code.
             - type: idiom
-              label: Accept Interfaces
+              label: go test -cover
               text: >-
-                Go proverb: 'Accept interfaces, return structs.' DataProcessor accepts a Sorter interface, not a
-                concrete type.
-            - type: complexity
-              label: Varies
+                Run <code>go test -cover</code> to see the coverage percentage. Use <code>-coverprofile=c.out</code> and
+                <code>go tool cover -html=c.out</code> for a visual report.
+            - type: pattern
+              label: Branch Coverage
               text: >-
-                BubbleSort is O(n^2), QuickSort is O(n log n) average. The strategy pattern lets you choose the right
-                algorithm for your data.
+                To achieve 100% coverage, you need at least one test input that triggers each branch in your code (if,
+                else, switch cases).
         - id: v2
-          title: Compression Strategy
+          title: Coverage for Grade Calculator
           description: >-
-            Define a <code>Compressor</code> interface with <code>Compress(data []byte) []byte</code>. Implement
-            <code>GzipCompressor</code> and <code>NoopCompressor</code>. Create a <code>FileProcessor</code> struct that
-            accepts a <code>Compressor</code> and has <code>ProcessFile(data []byte) []byte</code>.
-          functionSignature: func NewFileProcessor(c Compressor) *FileProcessor
+            Write <code>func grade(score int) (string, error)</code> that returns a letter grade: A (90-100), B (80-89),
+            C (70-79), D (60-69), F (0-59), or error for out-of-range. Achieve 100% coverage.
+          functionSignature: func grade(score int) (string, error)
           testCases:
-            - input: NewFileProcessor(&NoopCompressor{}), []byte("hello")
-              output: "[]byte(\"hello\")"
-            - input: NewFileProcessor(&GzipCompressor{}), []byte("hello")
-              output: compressed bytes (shorter or gzip header)
+            - input: grade(95)
+              output: "\"A\", nil"
+            - input: grade(85)
+              output: "\"B\", nil"
+            - input: grade(42)
+              output: "\"F\", nil"
+            - input: grade(-1)
+              output: "\"\", error"
+            - input: grade(101)
+              output: "\"\", error"
           hints:
-            - title: 🤔 Think about it
-              content: What if you want to swap compression algorithms without changing the file processing logic?
-            - title: 💡 Hint
+            - title: "\U0001F914 Think about it"
               content: >-
-                The FileProcessor stores a Compressor interface. ProcessFile delegates to it. NoopCompressor just
-                returns data unchanged.
-            - title: 🔧 Pattern
+                How many distinct code paths does this function have? Each grade range plus the error case is a separate
+                path.
+            - title: "\U0001F4A1 Hint"
+              content: >-
+                Use a switch with range checks or cascading if/else. You need at least one test for each grade letter
+                plus both error conditions (negative and over 100).
+            - title: "\U0001F527 Pattern"
               content: |-
-                <pre>1. Define Compressor interface
-                2. Implement GzipCompressor using compress/gzip
-                3. Implement NoopCompressor returning input unchanged
-                4. FileProcessor holds Compressor and delegates</pre>
+                <pre>1. Validate range (0-100), return error if invalid
+                2. Use switch/case for grade ranges
+                3. Test one value per grade: 95, 85, 75, 65, 42
+                4. Test both boundaries: -1 and 101
+                5. Run: go test -cover</pre>
           solution: |-
-            type Compressor interface {
-                Compress(data []byte) []byte
+            func grade(score int) (string, error) {
+                if score < 0 || score > 100 {
+                    return "", fmt.Errorf("score %d out of range 0-100", score)
+                }
+                switch {
+                case score >= 90:
+                    return "A", nil
+                case score >= 80:
+                    return "B", nil
+                case score >= 70:
+                    return "C", nil
+                case score >= 60:
+                    return "D", nil
+                default:
+                    return "F", nil
+                }
             }
 
-            type GzipCompressor struct{}
-            func (g *GzipCompressor) Compress(data []byte) []byte {
-                var buf bytes.Buffer
-                w := gzip.NewWriter(&buf)
-                w.Write(data)
-                w.Close()
-                return buf.Bytes()
-            }
-
-            type NoopCompressor struct{}
-            func (n *NoopCompressor) Compress(data []byte) []byte {
-                return data
-            }
-
-            type FileProcessor struct {
-                compressor Compressor
-            }
-
-            func NewFileProcessor(c Compressor) *FileProcessor {
-                return &FileProcessor{compressor: c}
-            }
-
-            func (fp *FileProcessor) ProcessFile(data []byte) []byte {
-                return fp.compressor.Compress(data)
+            func TestGrade(t *testing.T) {
+                tests := []struct {
+                    name    string
+                    score   int
+                    want    string
+                    wantErr bool
+                }{
+                    {"A grade", 95, "A", false},
+                    {"B grade", 85, "B", false},
+                    {"C grade", 75, "C", false},
+                    {"D grade", 65, "D", false},
+                    {"F grade", 42, "F", false},
+                    {"too low", -1, "", true},
+                    {"too high", 101, "", true},
+                }
+                for _, tt := range tests {
+                    t.Run(tt.name, func(t *testing.T) {
+                        got, err := grade(tt.score)
+                        if tt.wantErr {
+                            if err == nil {
+                                t.Error("expected error")
+                            }
+                            return
+                        }
+                        if err != nil {
+                            t.Fatalf("unexpected error: %v", err)
+                        }
+                        if got != tt.want {
+                            t.Errorf("grade(%d) = %q, want %q", tt.score, got, tt.want)
+                        }
+                    })
+                }
             }
           difficulty: 2
           annotations:
-            - type: pattern
-              label: Strategy Pattern
+            - type: idiom
+              label: Tagless Switch
               text: >-
-                Swapping GzipCompressor for NoopCompressor changes behavior without touching FileProcessor. This is the
-                Open/Closed Principle in action.
-            - type: stdlib
-              label: compress/gzip
-              text: >-
-                Go's compress/gzip package provides gzip compression. Always call Close() on the writer to flush and
-                finalize the compressed data.
+                A <code>switch</code> without a tag expression (just <code>switch {</code>) evaluates each case as a
+                boolean, acting like cascading if/else. Idiomatic for range checks.
+            - type: complexity
+              label: O(1)
+              text: A fixed number of comparisons regardless of input. The function has constant time complexity.
         - id: v3
-          title: Pricing Strategy
+          title: Coverage for Password Validator
           description: >-
-            Define a <code>PricingStrategy</code> interface with <code>Calculate(basePrice float64) float64</code>.
-            Implement <code>RegularPricing</code> (no discount), <code>MemberPricing</code> (10% off), and
-            <code>VIPPricing</code> (25% off). Create an <code>Order</code> struct that uses a strategy for
-            <code>Total(basePrice float64) float64</code>.
-          functionSignature: func NewOrder(strategy PricingStrategy) *Order
+            Write <code>func validatePassword(pw string) []string</code> that returns a list of validation failures.
+            Check: minimum 8 characters, at least one uppercase, one lowercase, and one digit. Achieve 100% coverage.
+          functionSignature: func validatePassword(pw string) []string
           testCases:
-            - input: NewOrder(&RegularPricing{}), 100.0
-              output: "100.0"
-            - input: NewOrder(&MemberPricing{}), 100.0
-              output: "90.0"
-            - input: NewOrder(&VIPPricing{}), 100.0
-              output: "75.0"
+            - input: validatePassword("Abc12345")
+              output: "[]string{} (empty)"
+            - input: validatePassword("short")
+              output: "[\"at least 8 characters\", \"one uppercase\", \"one digit\"]"
+            - input: validatePassword("alllowercase1")
+              output: "[\"one uppercase\"]"
           hints:
-            - title: 🤔 Think about it
-              content: How can the same Order type compute different totals depending on who is buying?
-            - title: 💡 Hint
-              content: Store the PricingStrategy in Order. The Total method calls strategy.Calculate(basePrice).
-            - title: 🔧 Pattern
-              content: |-
-                <pre>1. Define PricingStrategy interface
-                2. RegularPricing returns price unchanged
-                3. MemberPricing returns price * 0.9
-                4. VIPPricing returns price * 0.75
-                5. Order delegates to its strategy</pre>
-          solution: |-
-            type PricingStrategy interface {
-                Calculate(basePrice float64) float64
-            }
-
-            type RegularPricing struct{}
-            func (r *RegularPricing) Calculate(basePrice float64) float64 {
-                return basePrice
-            }
-
-            type MemberPricing struct{}
-            func (m *MemberPricing) Calculate(basePrice float64) float64 {
-                return basePrice * 0.9
-            }
-
-            type VIPPricing struct{}
-            func (v *VIPPricing) Calculate(basePrice float64) float64 {
-                return basePrice * 0.75
-            }
-
-            type Order struct {
-                strategy PricingStrategy
-            }
-
-            func NewOrder(strategy PricingStrategy) *Order {
-                return &Order{strategy: strategy}
-            }
-
-            func (o *Order) Total(basePrice float64) float64 {
-                return o.strategy.Calculate(basePrice)
-            }
-          difficulty: 2
-          annotations:
-            - type: pattern
-              label: Strategy Pattern
-              text: >-
-                The pricing strategy can be changed at runtime, e.g., when a user upgrades to VIP. No changes to Order
-                are needed.
-            - type: gotcha
-              label: Float Precision
-              text: >-
-                Floating-point math can produce unexpected results (e.g., 0.1 + 0.2 != 0.3). For real money
-                calculations, use integers (cents) or a decimal library.
-        - id: v4
-          title: Validation Strategy
-          description: >-
-            Define a <code>Validator</code> interface with <code>Validate(value string) error</code>. Implement
-            <code>EmailValidator</code> (checks for @), <code>PhoneValidator</code> (checks all digits, length 10), and
-            <code>NotEmptyValidator</code>. Create a <code>FormField</code> struct that accepts a <code>Validator</code>
-            and has <code>SetValue(v string) error</code>.
-          functionSignature: func NewFormField(name string, v Validator) *FormField
-          testCases:
-            - input: NewFormField("email", &EmailValidator{}), "user@test.com"
-              output: nil (valid)
-            - input: NewFormField("email", &EmailValidator{}), "invalid"
-              output: "error: invalid email"
-            - input: NewFormField("phone", &PhoneValidator{}), "1234567890"
-              output: nil (valid)
-          hints:
-            - title: 🤔 Think about it
-              content: How can the same form field type validate differently depending on what data it holds?
-            - title: 💡 Hint
+            - title: "\U0001F914 Think about it"
+              content: Each validation rule is a separate code path. How do you test each rule independently?
+            - title: "\U0001F4A1 Hint"
               content: >-
-                FormField stores a Validator. SetValue calls Validate first. If valid, store the value; if not, return
-                the error.
-            - title: 🔧 Pattern
+                Use <code>unicode.IsUpper</code>, <code>unicode.IsLower</code>, <code>unicode.IsDigit</code> to check
+                character classes. Each check is independent, so test passwords that fail each rule individually.
+            - title: "\U0001F527 Pattern"
               content: |-
-                <pre>1. Define Validator interface with Validate(string) error
-                2. EmailValidator checks strings.Contains(value, "@")
-                3. PhoneValidator checks length and all digits
-                4. FormField delegates validation before storing</pre>
+                <pre>1. Check length >= 8
+                2. Loop through runes, track hasUpper, hasLower, hasDigit
+                3. Collect failure messages in a slice
+                4. Test: valid password, too short, missing uppercase,
+                   missing lowercase, missing digit</pre>
           solution: |-
-            type Validator interface {
-                Validate(value string) error
-            }
-
-            type EmailValidator struct{}
-            func (e *EmailValidator) Validate(value string) error {
-                if !strings.Contains(value, "@") {
-                    return fmt.Errorf("invalid email: missing @")
+            func validatePassword(pw string) []string {
+                var errors []string
+                if len(pw) < 8 {
+                    errors = append(errors, "at least 8 characters")
                 }
-                return nil
-            }
-
-            type PhoneValidator struct{}
-            func (p *PhoneValidator) Validate(value string) error {
-                if len(value) != 10 {
-                    return fmt.Errorf("phone must be 10 digits")
-                }
-                for _, c := range value {
-                    if c < '0' || c > '9' {
-                        return fmt.Errorf("phone must contain only digits")
+                var hasUpper, hasLower, hasDigit bool
+                for _, ch := range pw {
+                    if unicode.IsUpper(ch) {
+                        hasUpper = true
+                    }
+                    if unicode.IsLower(ch) {
+                        hasLower = true
+                    }
+                    if unicode.IsDigit(ch) {
+                        hasDigit = true
                     }
                 }
-                return nil
-            }
-
-            type NotEmptyValidator struct{}
-            func (n *NotEmptyValidator) Validate(value string) error {
-                if strings.TrimSpace(value) == "" {
-                    return fmt.Errorf("value cannot be empty")
+                if !hasUpper {
+                    errors = append(errors, "one uppercase")
                 }
-                return nil
-            }
-
-            type FormField struct {
-                name      string
-                value     string
-                validator Validator
-            }
-
-            func NewFormField(name string, v Validator) *FormField {
-                return &FormField{name: name, validator: v}
-            }
-
-            func (f *FormField) SetValue(v string) error {
-                if err := f.validator.Validate(v); err != nil {
-                    return fmt.Errorf("field %s: %w", f.name, err)
+                if !hasLower {
+                    errors = append(errors, "one lowercase")
                 }
-                f.value = v
-                return nil
+                if !hasDigit {
+                    errors = append(errors, "one digit")
+                }
+                return errors
+            }
+
+            func TestValidatePassword(t *testing.T) {
+                tests := []struct {
+                    name string
+                    pw   string
+                    want int
+                }{
+                    {"valid", "Abc12345", 0},
+                    {"too short", "Ab1", 1},
+                    {"no upper", "abcdefg1", 1},
+                    {"no lower", "ABCDEFG1", 1},
+                    {"no digit", "Abcdefgh", 1},
+                    {"all fail", "", 4},
+                }
+                for _, tt := range tests {
+                    t.Run(tt.name, func(t *testing.T) {
+                        got := validatePassword(tt.pw)
+                        if len(got) != tt.want {
+                            t.Errorf("validatePassword(%q) returned %d errors, want %d: %v",
+                                tt.pw, len(got), tt.want, got)
+                        }
+                    })
+                }
+            }
+          difficulty: 3
+          annotations:
+            - type: stdlib
+              label: unicode Package
+              text: >-
+                The <code>unicode</code> package provides character classification functions: <code>IsUpper</code>,
+                <code>IsLower</code>, <code>IsDigit</code>, <code>IsLetter</code>, and more.
+            - type: pattern
+              label: Error Accumulation
+              text: >-
+                Collecting all validation errors instead of returning on the first failure gives users a complete
+                picture of what needs fixing.
+        - id: v4
+          title: Coverage for Clamp Function
+          description: >-
+            Write <code>func clamp(val, min, max int) (int, error)</code> that clamps a value to the range [min, max].
+            Return an error if min > max. Achieve 100% coverage.
+          functionSignature: func clamp(val, min, max int) (int, error)
+          testCases:
+            - input: clamp(5, 0, 10)
+              output: 5, nil
+            - input: clamp(-1, 0, 10)
+              output: 0, nil
+            - input: clamp(15, 0, 10)
+              output: 10, nil
+            - input: clamp(5, 10, 0)
+              output: 0, error
+          hints:
+            - title: "\U0001F914 Think about it"
+              content: >-
+                There are four paths: error (invalid range), below min, above max, and within range. Each needs a test
+                case.
+            - title: "\U0001F4A1 Hint"
+              content: >-
+                First validate that min <= max. Then check: if val < min, return min. If val > max, return max.
+                Otherwise return val.
+            - title: "\U0001F527 Pattern"
+              content: |-
+                <pre>1. Check min <= max (error if not)
+                2. If val < min, return min
+                3. If val > max, return max
+                4. Otherwise return val
+                5. Tests: in range, below, above, invalid range</pre>
+          solution: |-
+            func clamp(val, min, max int) (int, error) {
+                if min > max {
+                    return 0, fmt.Errorf("min (%d) must not exceed max (%d)", min, max)
+                }
+                if val < min {
+                    return min, nil
+                }
+                if val > max {
+                    return max, nil
+                }
+                return val, nil
+            }
+
+            func TestClamp(t *testing.T) {
+                tests := []struct {
+                    name        string
+                    val, min, max int
+                    want        int
+                    wantErr     bool
+                }{
+                    {"in range", 5, 0, 10, 5, false},
+                    {"below min", -1, 0, 10, 0, false},
+                    {"above max", 15, 0, 10, 10, false},
+                    {"at min", 0, 0, 10, 0, false},
+                    {"at max", 10, 0, 10, 10, false},
+                    {"invalid range", 5, 10, 0, 0, true},
+                }
+                for _, tt := range tests {
+                    t.Run(tt.name, func(t *testing.T) {
+                        got, err := clamp(tt.val, tt.min, tt.max)
+                        if tt.wantErr {
+                            if err == nil {
+                                t.Error("expected error")
+                            }
+                            return
+                        }
+                        if err != nil {
+                            t.Fatalf("unexpected error: %v", err)
+                        }
+                        if got != tt.want {
+                            t.Errorf("clamp(%d, %d, %d) = %d, want %d",
+                                tt.val, tt.min, tt.max, got, tt.want)
+                        }
+                    })
+                }
             }
           difficulty: 2
           annotations:
-            - type: pattern
-              label: Strategy Pattern
-              text: >-
-                Each form field can have a different validation strategy. You can even compose validators by creating a
-                CompositeValidator that runs multiple checks.
             - type: idiom
-              label: Error Wrapping
+              label: Validate Then Process
               text: >-
-                Using fmt.Errorf with %w wraps the inner error, preserving the error chain. Callers can use errors.Is or
-                errors.As to inspect wrapped errors.
+                Validate inputs at the top of the function and return errors early. This 'guard clause' pattern keeps
+                the happy path unindented.
+            - type: complexity
+              label: O(1)
+              text: Simple comparisons with constant time. The clamp operation is O(1) regardless of input values.
     - id: challenge_2
       block: 2
       difficulty: 3
-      concept: Builder Pattern
+      concept: Interfaces
       docLinks:
-        - url: https://go.dev/doc/effective_go#methods
-          title: "Effective Go: Methods"
-          note: method chaining on pointer receivers
-        - url: https://pkg.go.dev/strings#Builder
-          title: Package strings.Builder
-          note: stdlib builder pattern example
+        - url: https://go.dev/doc/effective_go#interfaces
+          title: "Effective Go: Interfaces"
+          note: designing testable interfaces
+        - url: https://pkg.go.dev/errors
+          title: Package errors
+          note: error wrapping and inspection
       variants:
         - id: v1
-          title: SQL Query Builder
+          title: Mock a Fetcher Interface
           description: >-
-            Build a fluent SQL query builder. <code>NewQuery(table)</code> creates a query. Chain
-            <code>.Select(cols...)</code>, <code>.Where(cond, args...)</code>, and <code>.Limit(n)</code>. Call
-            <code>.String()</code> to get the SQL string. Example: <code>NewQuery("users").Select("name",
-            "email").Where("active = %t", true).Limit(10).String()</code> returns <code>"SELECT name, email FROM users
-            WHERE active = true LIMIT 10"</code>.
-          functionSignature: func NewQuery(table string) *Query
+            Define a <code>Fetcher</code> interface with <code>Fetch(url string) ([]byte, error)</code>. Write
+            <code>func GetTitle(f Fetcher, url string) (string, error)</code> that fetches a URL and extracts a title.
+            Test with a mock that returns canned data.
+          functionSignature: func GetTitle(f Fetcher, url string) (string, error)
           testCases:
-            - input: NewQuery("users").Select("name").Where("active = %t", true).Limit(5).String()
-              output: "\"SELECT name FROM users WHERE active = true LIMIT 5\""
-            - input: NewQuery("orders").Select("*").String()
-              output: "\"SELECT * FROM orders\""
-            - input: NewQuery("products").Select("name", "price").Where("price > %d", 100).Limit(20).String()
-              output: "\"SELECT name, price FROM products WHERE price > 100 LIMIT 20\""
+            - input: mock returns []byte("<title>Go</title>"); GetTitle(mock, "http://x")
+              output: "\"Go\", nil"
+            - input: mock returns error; GetTitle(mock, "http://x")
+              output: "\"\", error"
           hints:
-            - title: 🤔 Think about it
-              content: How do you make methods chainable? What must each method return?
-            - title: 💡 Hint
+            - title: "\U0001F914 Think about it"
+              content: How do you define a mock struct that satisfies an interface? How do you control what the mock returns?
+            - title: "\U0001F4A1 Hint"
               content: >-
-                Each method modifies the Query and returns *Query (pointer to self). This enables method chaining. Store
-                columns, where clauses, and limit as fields.
-            - title: 🔧 Pattern
+                Define a <code>mockFetcher</code> struct with <code>data []byte</code> and <code>err error</code>
+                fields. Its <code>Fetch</code> method just returns those fields. Create different mock instances for
+                success and failure tests.
+            - title: "\U0001F527 Pattern"
               content: |-
-                <pre>1. Query struct: table, cols []string, wheres []string, limit int
-                2. NewQuery sets table, default cols to ["*"]
-                3. Select/Where/Limit modify fields and return q
-                4. String() assembles the SQL from fields</pre>
+                <pre>1. Define Fetcher interface
+                2. Write GetTitle using only the interface
+                3. Create mockFetcher with configurable data/err
+                4. Test success: mock returns valid data
+                5. Test failure: mock returns an error</pre>
           solution: |-
-            type Query struct {
-                table  string
-                cols   []string
-                wheres []string
-                limit  int
+            type Fetcher interface {
+                Fetch(url string) ([]byte, error)
             }
 
-            func NewQuery(table string) *Query {
-                return &Query{table: table, cols: []string{"*"}}
-            }
-
-            func (q *Query) Select(cols ...string) *Query {
-                q.cols = cols
-                return q
-            }
-
-            func (q *Query) Where(cond string, args ...any) *Query {
-                q.wheres = append(q.wheres, fmt.Sprintf(cond, args...))
-                return q
-            }
-
-            func (q *Query) Limit(n int) *Query {
-                q.limit = n
-                return q
-            }
-
-            func (q *Query) String() string {
-                sql := fmt.Sprintf("SELECT %s FROM %s",
-                    strings.Join(q.cols, ", "), q.table)
-                if len(q.wheres) > 0 {
-                    sql += " WHERE " + strings.Join(q.wheres, " AND ")
+            func GetTitle(f Fetcher, url string) (string, error) {
+                data, err := f.Fetch(url)
+                if err != nil {
+                    return "", err
                 }
-                if q.limit > 0 {
-                    sql += fmt.Sprintf(" LIMIT %d", q.limit)
+                s := string(data)
+                start := strings.Index(s, "<title>")
+                end := strings.Index(s, "</title>")
+                if start == -1 || end == -1 {
+                    return "", fmt.Errorf("no title found")
                 }
-                return sql
-            }
-          difficulty: 3
-          annotations:
-            - type: pattern
-              label: Builder Pattern
-              text: >-
-                The builder pattern constructs complex objects step by step. Method chaining (returning *Query) creates
-                a fluent API that reads like natural language.
-            - type: gotcha
-              label: SQL Injection
-              text: >-
-                Using fmt.Sprintf for SQL parameters is unsafe in production. Real query builders use parameterized
-                queries ($1, $2) to prevent SQL injection.
-            - type: idiom
-              label: Pointer Receiver
-              text: >-
-                Methods return *Query (pointer), enabling chaining. If they returned Query (value), each method would
-                operate on a copy.
-        - id: v2
-          title: HTML Builder
-          description: >-
-            Build a fluent HTML element builder. <code>NewElement(tag)</code> creates an element. Chain <code>.Attr(key,
-            value)</code>, <code>.Class(cls)</code>, <code>.Text(content)</code>, and <code>.Child(elem)</code>. Call
-            <code>.Render()</code> to produce HTML. Example:
-            <code>NewElement("div").Class("container").Text("Hello").Render()</code> produces <code>&lt;div
-            class="container"&gt;Hello&lt;/div&gt;</code>.
-          functionSignature: func NewElement(tag string) *Element
-          testCases:
-            - input: NewElement("p").Text("Hello").Render()
-              output: "\"<p>Hello</p>\""
-            - input: NewElement("div").Class("box").Attr("id", "main").Text("Content").Render()
-              output: "\"<div class=\\\"box\\\" id=\\\"main\\\">Content</div>\""
-            - input: NewElement("a").Attr("href", "/home").Text("Home").Render()
-              output: "\"<a href=\\\"/home\\\">Home</a>\""
-          hints:
-            - title: 🤔 Think about it
-              content: What data does an HTML element consist of? How do you assemble the opening tag with attributes?
-            - title: 💡 Hint
-              content: >-
-                Store tag, attrs (map or slice of pairs), classes ([]string), text, and children. Render assembles them:
-                opening tag + attrs + text + children + closing tag.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>1. Element: tag, attrs map, classes []string, text, children
-                2. Each method modifies Element and returns *Element
-                3. Render() builds: &lt;tag attrs&gt;text + children&lt;/tag&gt;
-                4. Class() is syntactic sugar for Attr("class", ...)</pre>
-          solution: |-
-            type Element struct {
-                tag      string
-                attrs    [][2]string
-                classes  []string
-                text     string
-                children []*Element
+                return s[start+7 : end], nil
             }
 
-            func NewElement(tag string) *Element {
-                return &Element{tag: tag}
+            type mockFetcher struct {
+                data []byte
+                err  error
             }
 
-            func (e *Element) Attr(key, value string) *Element {
-                e.attrs = append(e.attrs, [2]string{key, value})
-                return e
+            func (m *mockFetcher) Fetch(url string) ([]byte, error) {
+                return m.data, m.err
             }
 
-            func (e *Element) Class(cls string) *Element {
-                e.classes = append(e.classes, cls)
-                return e
-            }
-
-            func (e *Element) Text(content string) *Element {
-                e.text = content
-                return e
-            }
-
-            func (e *Element) Child(child *Element) *Element {
-                e.children = append(e.children, child)
-                return e
-            }
-
-            func (e *Element) Render() string {
-                var b strings.Builder
-                b.WriteString("<" + e.tag)
-                if len(e.classes) > 0 {
-                    b.WriteString(fmt.Sprintf(` class="%s"`, strings.Join(e.classes, " ")))
-                }
-                for _, attr := range e.attrs {
-                    b.WriteString(fmt.Sprintf(` %s="%s"`, attr[0], attr[1]))
-                }
-                b.WriteString(">")
-                b.WriteString(e.text)
-                for _, child := range e.children {
-                    b.WriteString(child.Render())
-                }
-                b.WriteString("</" + e.tag + ">")
-                return b.String()
-            }
-          difficulty: 3
-          annotations:
-            - type: pattern
-              label: Builder Pattern
-              text: >-
-                The builder creates a tree structure. Each method adds data and returns the builder for chaining.
-                Render() is the terminal operation.
-            - type: stdlib
-              label: strings.Builder
-              text: >-
-                Use strings.Builder for efficient string concatenation. It avoids allocating new strings on every
-                append, unlike string += operations.
-        - id: v3
-          title: Request Builder
-          description: >-
-            Build a fluent HTTP request builder. <code>NewRequest(method, url)</code> creates a request. Chain
-            <code>.Header(key, value)</code>, <code>.QueryParam(key, value)</code>, <code>.Body(data)</code>, and
-            <code>.Timeout(d)</code>. Call <code>.Build()</code> to produce a description string showing method, full
-            URL with query params, headers, and body.
-          functionSignature: func NewRequest(method, url string) *RequestBuilder
-          testCases:
-            - input: >-
-                NewRequest("GET", "https://api.example.com/users").QueryParam("page", "1").Header("Accept",
-                "application/json").Build()
-              output: "\"GET https://api.example.com/users?page=1\\nAccept: application/json\""
-            - input: NewRequest("POST", "https://api.example.com/users").Body(`{"name":"Go"}`).Build()
-              output: "\"POST https://api.example.com/users\\n\\n{\\\"name\\\":\\\"Go\\\"}\""
-          hints:
-            - title: 🤔 Think about it
-              content: What parts make up a full HTTP request? How do query parameters attach to a URL?
-            - title: 💡 Hint
-              content: >-
-                Store method, base URL, query params as key-value pairs, headers as key-value pairs, body, and timeout.
-                Build() assembles the URL with query string and formats the output.
-            - title: 🔧 Pattern
-              content: |-
-                <pre>1. RequestBuilder: method, url, params, headers, body, timeout
-                2. QueryParam appends to params slice
-                3. Build() joins params with & and appends to URL with ?
-                4. Format: METHOD URL\nHeaders\n\nBody</pre>
-          solution: |-
-            type RequestBuilder struct {
-                method  string
-                url     string
-                params  [][2]string
-                headers [][2]string
-                body    string
-                timeout time.Duration
-            }
-
-            func NewRequest(method, url string) *RequestBuilder {
-                return &RequestBuilder{method: method, url: url}
-            }
-
-            func (r *RequestBuilder) Header(key, value string) *RequestBuilder {
-                r.headers = append(r.headers, [2]string{key, value})
-                return r
-            }
-
-            func (r *RequestBuilder) QueryParam(key, value string) *RequestBuilder {
-                r.params = append(r.params, [2]string{key, value})
-                return r
-            }
-
-            func (r *RequestBuilder) Body(data string) *RequestBuilder {
-                r.body = data
-                return r
-            }
-
-            func (r *RequestBuilder) Timeout(d time.Duration) *RequestBuilder {
-                r.timeout = d
-                return r
-            }
-
-            func (r *RequestBuilder) Build() string {
-                fullURL := r.url
-                if len(r.params) > 0 {
-                    parts := make([]string, len(r.params))
-                    for i, p := range r.params {
-                        parts[i] = p[0] + "=" + p[1]
+            func TestGetTitle(t *testing.T) {
+                t.Run("success", func(t *testing.T) {
+                    mock := &mockFetcher{data: []byte("<title>Go</title>")}
+                    got, err := GetTitle(mock, "http://example.com")
+                    if err != nil {
+                        t.Fatalf("unexpected error: %v", err)
                     }
-                    fullURL += "?" + strings.Join(parts, "&")
-                }
-                result := r.method + " " + fullURL
-                for _, h := range r.headers {
-                    result += "\n" + h[0] + ": " + h[1]
-                }
-                if r.body != "" {
-                    result += "\n\n" + r.body
-                }
-                return result
+                    if got != "Go" {
+                        t.Errorf("got %q, want %q", got, "Go")
+                    }
+                })
+                t.Run("fetch error", func(t *testing.T) {
+                    mock := &mockFetcher{err: fmt.Errorf("network error")}
+                    _, err := GetTitle(mock, "http://example.com")
+                    if err == nil {
+                        t.Error("expected error")
+                    }
+                })
             }
           difficulty: 3
           annotations:
+            - type: idiom
+              label: Implicit Interfaces
+              text: >-
+                Go interfaces are satisfied implicitly. A <code>mockFetcher</code> satisfies <code>Fetcher</code> just
+                by having the right method, no 'implements' keyword needed.
             - type: pattern
-              label: Builder Pattern
+              label: Dependency Injection
               text: >-
-                HTTP request builders are common in Go libraries. They ensure all parts of a request are set before
-                sending, avoiding partially-configured requests.
-            - type: alternative
-              label: net/http
-              text: >-
-                In production, use net/http.NewRequest and set headers directly. This builder is educational; real code
-                uses the standard library.
-            - type: gotcha
-              label: URL Encoding
-              text: >-
-                Query parameters should be URL-encoded in production. Use net/url.Values and its Encode() method to
-                handle special characters.
-        - id: v4
-          title: Config Builder
+                Accepting an interface parameter instead of a concrete type lets you swap implementations for testing.
+                This is Go's primary approach to testability.
+        - id: v2
+          title: Mock a Store Interface
           description: >-
-            Build a fluent configuration builder. <code>NewConfig()</code> creates a config. Chain <code>.Set(key, value
-            string)</code>, <code>.SetInt(key string, value int)</code>, <code>.SetBool(key string, value bool)</code>,
-            and <code>.From(map[string]string)</code>. Call <code>.Build()</code> to return a
-            <code>map[string]string</code> of all settings. Call <code>.Get(key)</code> on the result to retrieve
-            values.
-          functionSignature: func NewConfig() *ConfigBuilder
+            Define a <code>Store</code> interface with <code>Save(key, value string) error</code> and <code>Load(key
+            string) (string, error)</code>. Write <code>func CopyValue(s Store, from, to string) error</code>. Test with
+            a mock.
+          functionSignature: func CopyValue(s Store, from, to string) error
           testCases:
-            - input: NewConfig().Set("host", "localhost").SetInt("port", 8080).Build()
-              output: "map[string]string{\"host\": \"localhost\", \"port\": \"8080\"}"
-            - input: NewConfig().SetBool("debug", true).Set("env", "dev").Build()
-              output: "map[string]string{\"debug\": \"true\", \"env\": \"dev\"}"
-            - input: "NewConfig().From(map[string]string{\"a\": \"1\"}).Set(\"b\", \"2\").Build()"
-              output: "map[string]string{\"a\": \"1\", \"b\": \"2\"}"
+            - input: mock has key "a"="hello"; CopyValue(mock, "a", "b")
+              output: nil ("b" now has "hello")
+            - input: mock has no key "a"; CopyValue(mock, "a", "b")
+              output: error
           hints:
-            - title: 🤔 Think about it
-              content: How do you store values of different types in a uniform way? What is the simplest common representation?
-            - title: 💡 Hint
+            - title: "\U0001F914 Think about it"
+              content: CopyValue loads a value from one key and saves it to another. What can go wrong at each step?
+            - title: "\U0001F4A1 Hint"
               content: >-
-                Store everything as map[string]string internally. SetInt uses strconv.Itoa, SetBool uses
-                strconv.FormatBool. From merges an existing map.
-            - title: 🔧 Pattern
+                Use a <code>map[string]string</code> inside your mock. <code>Load</code> returns an error if the key is
+                missing. <code>Save</code> writes to the map. Test both the happy path and the 'key not found' path.
+            - title: "\U0001F527 Pattern"
               content: |-
-                <pre>1. ConfigBuilder has data map[string]string
-                2. Set stores string directly
-                3. SetInt converts int to string
-                4. SetBool converts bool to string
-                5. From copies all entries from input map
-                6. Build returns a copy of the map</pre>
+                <pre>1. Define Store interface with Save and Load
+                2. CopyValue: Load from source, Save to destination
+                3. Mock uses an internal map for storage
+                4. Test success: source key exists
+                5. Test failure: source key missing</pre>
           solution: |-
-            type ConfigBuilder struct {
+            type Store interface {
+                Save(key, value string) error
+                Load(key string) (string, error)
+            }
+
+            func CopyValue(s Store, from, to string) error {
+                val, err := s.Load(from)
+                if err != nil {
+                    return fmt.Errorf("load %s: %w", from, err)
+                }
+                if err := s.Save(to, val); err != nil {
+                    return fmt.Errorf("save %s: %w", to, err)
+                }
+                return nil
+            }
+
+            type mockStore struct {
                 data map[string]string
             }
 
-            func NewConfig() *ConfigBuilder {
-                return &ConfigBuilder{data: make(map[string]string)}
+            func (m *mockStore) Save(key, value string) error {
+                m.data[key] = value
+                return nil
             }
 
-            func (c *ConfigBuilder) Set(key, value string) *ConfigBuilder {
-                c.data[key] = value
-                return c
-            }
-
-            func (c *ConfigBuilder) SetInt(key string, value int) *ConfigBuilder {
-                c.data[key] = strconv.Itoa(value)
-                return c
-            }
-
-            func (c *ConfigBuilder) SetBool(key string, value bool) *ConfigBuilder {
-                c.data[key] = strconv.FormatBool(value)
-                return c
-            }
-
-            func (c *ConfigBuilder) From(m map[string]string) *ConfigBuilder {
-                for k, v := range m {
-                    c.data[k] = v
+            func (m *mockStore) Load(key string) (string, error) {
+                val, ok := m.data[key]
+                if !ok {
+                    return "", fmt.Errorf("key %q not found", key)
                 }
-                return c
+                return val, nil
             }
 
-            func (c *ConfigBuilder) Build() map[string]string {
-                result := make(map[string]string, len(c.data))
-                for k, v := range c.data {
-                    result[k] = v
+            func TestCopyValue(t *testing.T) {
+                t.Run("success", func(t *testing.T) {
+                    s := &mockStore{data: map[string]string{"a": "hello"}}
+                    err := CopyValue(s, "a", "b")
+                    if err != nil {
+                        t.Fatalf("unexpected error: %v", err)
+                    }
+                    if s.data["b"] != "hello" {
+                        t.Errorf("expected b=hello, got b=%s", s.data["b"])
+                    }
+                })
+                t.Run("source missing", func(t *testing.T) {
+                    s := &mockStore{data: map[string]string{}}
+                    err := CopyValue(s, "a", "b")
+                    if err == nil {
+                        t.Error("expected error")
+                    }
+                })
+            }
+          difficulty: 3
+          annotations:
+            - type: idiom
+              label: Error Wrapping
+              text: >-
+                Use <code>fmt.Errorf("context: %w", err)</code> to wrap errors with context while preserving the
+                original error for <code>errors.Is</code> and <code>errors.As</code>.
+            - type: pattern
+              label: In-Memory Mock
+              text: >-
+                Using a map inside a mock struct simulates real storage behavior. This lets tests verify state changes
+                (e.g., checking that Save actually stored the value).
+        - id: v3
+          title: Mock a Logger Interface
+          description: >-
+            Define a <code>Logger</code> interface with <code>Log(level, message string)</code>. Write <code>func
+            ProcessOrder(log Logger, orderID string) error</code> that logs its progress. Test that the correct log
+            messages are emitted using a mock that records calls.
+          functionSignature: func ProcessOrder(log Logger, orderID string) error
+          testCases:
+            - input: ProcessOrder(mockLog, "order-1")
+              output: "nil; mock recorded [\"INFO: processing order-1\", \"INFO: order-1 complete\"]"
+            - input: ProcessOrder(mockLog, "")
+              output: "error; mock recorded [\"ERROR: empty order ID\"]"
+          hints:
+            - title: "\U0001F914 Think about it"
+              content: >-
+                How do you verify that certain methods were called with certain arguments? What kind of mock records
+                calls?
+            - title: "\U0001F4A1 Hint"
+              content: >-
+                Create a <code>mockLogger</code> with a <code>calls []string</code> field. Each call to <code>Log</code>
+                appends a formatted string. After the test, inspect <code>mock.calls</code> to verify behavior.
+            - title: "\U0001F527 Pattern"
+              content: |-
+                <pre>1. Define Logger interface with Log(level, message)
+                2. ProcessOrder logs progress at key steps
+                3. Mock records all calls in a slice
+                4. Test: run function, then assert mock.calls
+                   contains expected messages</pre>
+          solution: |-
+            type Logger interface {
+                Log(level, message string)
+            }
+
+            func ProcessOrder(log Logger, orderID string) error {
+                if orderID == "" {
+                    log.Log("ERROR", "empty order ID")
+                    return fmt.Errorf("order ID required")
                 }
-                return result
+                log.Log("INFO", "processing "+orderID)
+                log.Log("INFO", orderID+" complete")
+                return nil
+            }
+
+            type mockLogger struct {
+                calls []string
+            }
+
+            func (m *mockLogger) Log(level, message string) {
+                m.calls = append(m.calls, level+": "+message)
+            }
+
+            func TestProcessOrder(t *testing.T) {
+                t.Run("success", func(t *testing.T) {
+                    mock := &mockLogger{}
+                    err := ProcessOrder(mock, "order-1")
+                    if err != nil {
+                        t.Fatalf("unexpected error: %v", err)
+                    }
+                    if len(mock.calls) != 2 {
+                        t.Fatalf("expected 2 log calls, got %d", len(mock.calls))
+                    }
+                    if mock.calls[0] != "INFO: processing order-1" {
+                        t.Errorf("unexpected first log: %s", mock.calls[0])
+                    }
+                })
+                t.Run("empty ID", func(t *testing.T) {
+                    mock := &mockLogger{}
+                    err := ProcessOrder(mock, "")
+                    if err == nil {
+                        t.Error("expected error")
+                    }
+                    if len(mock.calls) != 1 || mock.calls[0] != "ERROR: empty order ID" {
+                        t.Errorf("unexpected logs: %v", mock.calls)
+                    }
+                })
             }
           difficulty: 3
           annotations:
             - type: pattern
-              label: Builder Pattern
+              label: Recording Mock
               text: >-
-                The config builder accumulates settings and produces an immutable result. Build() returns a copy, so
-                further modifications to the builder do not affect the built config.
+                A recording mock captures method calls for later assertion. This is more flexible than a stub because
+                you can verify behavior (what was called) not just state.
             - type: idiom
-              label: Defensive Copy
+              label: Small Interfaces
               text: >-
-                Build() copies the internal map to prevent callers from mutating the builder's state. This is a common
-                Go pattern for returning safe data.
-            - type: stdlib
-              label: strconv
+                Go favors small interfaces (1-2 methods). The <code>Logger</code> interface with a single
+                <code>Log</code> method is easy to mock and easy to implement.
+        - id: v4
+          title: Mock a Notifier Interface
+          description: >-
+            Define a <code>Notifier</code> interface with <code>Send(to, subject, body string) error</code>. Write
+            <code>func NotifyUsers(n Notifier, users []string, subject, body string) (int, error)</code> that sends to
+            all users and returns the count of successful sends. Test with mocks that simulate both success and partial
+            failure.
+          functionSignature: func NotifyUsers(n Notifier, users []string, subject, body string) (int, error)
+          testCases:
+            - input: all succeed; NotifyUsers(mock, ["a","b","c"], "hi", "body")
+              output: 3, nil
+            - input: mock fails for "b"; NotifyUsers(mock, ["a","b","c"], "hi", "body")
+              output: 2, error
+          hints:
+            - title: "\U0001F914 Think about it"
+              content: >-
+                Should the function stop on the first error or continue and report all errors? How do you count
+                successes?
+            - title: "\U0001F4A1 Hint"
+              content: >-
+                Loop through users, call <code>Send</code> for each. Count successes. Collect errors. A mock can fail
+                for specific recipients by checking the <code>to</code> parameter.
+            - title: "\U0001F527 Pattern"
+              content: |-
+                <pre>1. For each user, call n.Send()
+                2. Count successes, collect errors
+                3. Return count and joined errors
+                4. Mock: use a failFor set to control which sends fail
+                5. Test: all succeed, some fail</pre>
+          solution: |-
+            type Notifier interface {
+                Send(to, subject, body string) error
+            }
+
+            func NotifyUsers(n Notifier, users []string, subject, body string) (int, error) {
+                sent := 0
+                var errs []string
+                for _, user := range users {
+                    if err := n.Send(user, subject, body); err != nil {
+                        errs = append(errs, fmt.Sprintf("%s: %v", user, err))
+                    } else {
+                        sent++
+                    }
+                }
+                if len(errs) > 0 {
+                    return sent, fmt.Errorf("failed to notify: %s", strings.Join(errs, "; "))
+                }
+                return sent, nil
+            }
+
+            type mockNotifier struct {
+                failFor map[string]bool
+            }
+
+            func (m *mockNotifier) Send(to, subject, body string) error {
+                if m.failFor[to] {
+                    return fmt.Errorf("send failed")
+                }
+                return nil
+            }
+
+            func TestNotifyUsers(t *testing.T) {
+                t.Run("all succeed", func(t *testing.T) {
+                    mock := &mockNotifier{failFor: map[string]bool{}}
+                    count, err := NotifyUsers(mock, []string{"a", "b", "c"}, "hi", "body")
+                    if err != nil {
+                        t.Fatalf("unexpected error: %v", err)
+                    }
+                    if count != 3 {
+                        t.Errorf("sent %d, want 3", count)
+                    }
+                })
+                t.Run("partial failure", func(t *testing.T) {
+                    mock := &mockNotifier{failFor: map[string]bool{"b": true}}
+                    count, err := NotifyUsers(mock, []string{"a", "b", "c"}, "hi", "body")
+                    if err == nil {
+                        t.Error("expected error")
+                    }
+                    if count != 2 {
+                        t.Errorf("sent %d, want 2", count)
+                    }
+                })
+            }
+          difficulty: 3
+          annotations:
+            - type: pattern
+              label: Configurable Mock
               text: >-
-                The strconv package converts between strings and basic types. Itoa (int to ASCII), FormatBool, and their
-                Parse counterparts are essential Go tools.
+                A mock with a <code>failFor</code> map lets you control exactly which calls fail, enabling precise
+                testing of partial failure scenarios.
+            - type: idiom
+              label: Continue on Error
+              text: >-
+                Continuing despite individual failures and returning a summary (count + aggregated errors) is common in
+                batch operations like notifications.
+            - type: alternative
+              label: errgroup
+              text: >-
+                For concurrent sends, consider <code>golang.org/x/sync/errgroup</code> which manages goroutines and
+                collects the first error.

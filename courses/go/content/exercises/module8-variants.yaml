@@ -1,533 +1,544 @@
 conceptLinks:
-  Elm Architecture: "#lesson-elm-architecture"
-  Model: "#lesson-model"
-  Update: "#lesson-update"
-  View: "#lesson-view"
-  Lipgloss: "#lesson-lipgloss"
-  Bubbles: "#lesson-bubbles"
+  os.ReadFile: "#lesson-reading-files"
+  os.WriteFile: "#lesson-writing-files"
+  YAML Parsing: "#lesson-yaml"
+  exec.Command: "#lesson-shell-commands"
+  Environment Variables: "#lesson-env-vars"
 sharedContent: {}
 variants:
   warmups:
     - id: warmup_1
-      concept: Elm Architecture
+      concept: os.ReadFile
       variants:
         - id: v1
-          title: Basic Model Struct
+          title: Read and Print File
           description: >-
-            Define a Bubble Tea <code>model</code> struct for a counter app. It should have a <code>count int</code>
-            field. Implement <code>Init()</code> to return <code>nil</code> (no initial command).
+            Use <code>os.ReadFile</code> to read a file called <code>"message.txt"</code> and print its contents. Handle
+            the error by printing it and returning early.
           hints:
-            - "The model is just a struct: <code>type model struct { count int }</code>."
-            - <code>Init()</code> returns a <code>tea.Cmd</code> — use <code>nil</code> for no startup command.
-            - The signature is <code>func (m model) Init() tea.Cmd</code>.
+            - <code>os.ReadFile</code> returns <code>([]byte, error)</code>.
+            - Convert the byte slice to a string with <code>string(data)</code>.
+            - Check <code>err != nil</code> before using the data.
           solution: |-
-            type model struct {
-                count int
+            data, err := os.ReadFile("message.txt")
+            if err != nil {
+                fmt.Println("Error:", err)
+                return
             }
-
-            func (m model) Init() tea.Cmd {
-                return nil
-            }
+            fmt.Println(string(data))
           annotations:
             - type: idiom
-              label: Model = State
-              text: In Bubble Tea, the model struct holds your entire application state. Keep it simple and focused.
-            - type: pattern
-              label: Elm Architecture
-              text: Bubble Tea follows Model → Update → View. The model is the single source of truth for your app's state.
-        - id: v2
-          title: Counter with Choices
-          description: >-
-            Define a model for a list selector with <code>choices []string</code>, <code>cursor int</code>, and
-            <code>selected map[int]struct{}</code> fields. Write an <code>initialModel()</code> function that returns a
-            model with three choices.
-          hints:
-            - Initialize the map with <code>make(map[int]struct{})</code>.
-            - Set cursor to <code>0</code> (first item selected by default).
-            - "The choices can be anything: <code>[]string{\"Option A\", \"Option B\", \"Option C\"}</code>."
-          solution: |-
-            type model struct {
-                choices  []string
-                cursor   int
-                selected map[int]struct{}
-            }
-
-            func initialModel() model {
-                return model{
-                    choices:  []string{"Build", "Test", "Deploy"},
-                    cursor:   0,
-                    selected: make(map[int]struct{}),
-                }
-            }
-          annotations:
-            - type: idiom
-              label: Empty Struct Set
+              label: ReadFile
               text: >-
-                <code>map[int]struct{}</code> is Go's idiomatic way to implement a set. The empty struct
-                <code>struct{}{}</code> uses zero bytes.
-            - type: pattern
-              label: Initial Model
-              text: >-
-                A factory function like <code>initialModel()</code> sets up the starting state cleanly and can be called
-                from <code>main()</code>.
-        - id: v3
-          title: Model with Text Input
-          description: >-
-            Define a model that embeds a <code>textinput.Model</code> from the <code>bubbles</code> library. Write
-            <code>initialModel()</code> that creates a text input with placeholder <code>"Type here..."</code> and
-            focuses it.
-          hints:
-            - Import <code>github.com/charmbracelet/bubbles/textinput</code>.
-            - >-
-              Create with <code>textinput.New()</code>, then set <code>.Placeholder</code> and call
-              <code>.Focus()</code>.
-            - "Store it in the model struct: <code>type model struct { input textinput.Model }</code>."
-          solution: |-
-            type model struct {
-                input textinput.Model
-            }
-
-            func initialModel() model {
-                ti := textinput.New()
-                ti.Placeholder = "Type here..."
-                ti.Focus()
-                ti.CharLimit = 100
-                return model{input: ti}
-            }
-          annotations:
-            - type: idiom
-              label: Bubbles Components
-              text: >-
-                Bubbles are pre-built Bubble Tea models. Embed them in your model and delegate Update/View calls to
-                them.
+                <code>os.ReadFile</code> reads the entire file into memory. For small config files this is the simplest
+                approach.
             - type: gotcha
-              label: Focus Required
-              text: Text inputs start unfocused. You must call <code>.Focus()</code> for the input to accept keystrokes.
+              label: Byte Slice
+              text: >-
+                <code>os.ReadFile</code> returns <code>[]byte</code>, not <code>string</code>. You must convert with
+                <code>string(data)</code> to print it as text.
+        - id: v2
+          title: Count Lines in File
+          description: >-
+            Read a file with <code>os.ReadFile</code> and count the number of lines. Print the count. (Hint: split on
+            newline.)
+          hints:
+            - Use <code>strings.Split(string(data), "\n")</code> to split into lines.
+            - The last element may be empty if the file ends with a newline — consider trimming.
+            - Use <code>len(lines)</code> to get the count.
+          solution: |-
+            data, err := os.ReadFile("input.txt")
+            if err != nil {
+                fmt.Println("Error:", err)
+                return
+            }
+            lines := strings.Split(strings.TrimRight(string(data), "\n"), "\n")
+            fmt.Println("Lines:", len(lines))
+          annotations:
+            - type: idiom
+              label: TrimRight
+              text: >-
+                Files often end with a trailing newline. <code>strings.TrimRight</code> removes it before splitting to
+                avoid an extra empty element.
+        - id: v3
+          title: Check File Exists
+          description: >-
+            Write a function <code>fileExists(path string) bool</code> that returns true if the file exists, false
+            otherwise. Use <code>os.Stat</code>.
+          hints:
+            - <code>os.Stat</code> returns <code>(os.FileInfo, error)</code>.
+            - Use <code>os.IsNotExist(err)</code> to check if the error means the file doesn't exist.
+            - If <code>err == nil</code>, the file exists.
+          solution: |-
+            func fileExists(path string) bool {
+                _, err := os.Stat(path)
+                return !os.IsNotExist(err)
+            }
+          annotations:
+            - type: idiom
+              label: os.Stat
+              text: >-
+                <code>os.Stat</code> is Go's way to check file existence and metadata. It returns an error if the file
+                can't be accessed.
+            - type: gotcha
+              label: Other Errors
+              text: >-
+                <code>os.IsNotExist</code> only checks for "file not found" errors. Permission errors will also make
+                <code>Stat</code> fail but <code>IsNotExist</code> returns false.
     - id: warmup_2
-      concept: Update
+      concept: os.WriteFile
       variants:
         - id: v1
-          title: Handle Quit Key
+          title: Write String to File
           description: >-
-            Write an <code>Update</code> method that handles <code>q</code> and <code>ctrl+c</code> to quit the program.
-            Return <code>tea.Quit</code> for those keys, otherwise return the model unchanged.
+            Use <code>os.WriteFile</code> to write the string <code>"Hello, Go!"</code> to a file called
+            <code>"output.txt"</code> with permission <code>0644</code>.
           hints:
-            - "Type-switch on <code>msg</code>: <code>switch msg := msg.(type)</code>."
-            - Match <code>tea.KeyMsg</code> and check <code>msg.String()</code>.
-            - Return <code>m, tea.Quit</code> for quit, or <code>m, nil</code> otherwise.
+            - <code>os.WriteFile</code> takes <code>(name string, data []byte, perm os.FileMode)</code>.
+            - Convert the string with <code>[]byte("Hello, Go!")</code>.
+            - <code>0644</code> means owner read/write, others read-only.
           solution: |-
-            func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-                switch msg := msg.(type) {
-                case tea.KeyMsg:
-                    switch msg.String() {
-                    case "q", "ctrl+c":
-                        return m, tea.Quit
-                    }
-                }
-                return m, nil
+            err := os.WriteFile("output.txt", []byte("Hello, Go!"), 0644)
+            if err != nil {
+                fmt.Println("Error:", err)
             }
           annotations:
             - type: idiom
-              label: Type Switch
+              label: File Permissions
               text: >-
-                Bubble Tea uses Go's type switch to dispatch different message types. <code>tea.KeyMsg</code> is the
-                most common.
-            - type: idiom
-              label: tea.Quit
-              text: <code>tea.Quit</code> is a command that tells Bubble Tea to exit the program gracefully.
+                <code>0644</code> is the standard permission for config/data files: owner can read and write, everyone
+                else can only read.
         - id: v2
-          title: Navigate a List
+          title: Copy File Contents
           description: >-
-            Write an <code>Update</code> method for a list model with a <code>cursor int</code> and <code>choices
-            []string</code>. Handle <code>up</code>/<code>k</code> to move cursor up and
-            <code>down</code>/<code>j</code> to move cursor down. Clamp to bounds.
+            Read the contents of <code>"source.txt"</code> and write them to <code>"dest.txt"</code>. Use
+            <code>os.ReadFile</code> and <code>os.WriteFile</code>.
           hints:
-            - Check <code>m.cursor > 0</code> before decrementing.
-            - Check <code>m.cursor < len(m.choices)-1</code> before incrementing.
-            - Handle both vim keys (j/k) and arrow keys (up/down).
+            - Read first with <code>os.ReadFile("source.txt")</code>.
+            - Pass the same <code>[]byte</code> data directly to <code>os.WriteFile</code>.
+            - No need to convert between string and bytes — it's already <code>[]byte</code>.
           solution: |-
-            func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-                switch msg := msg.(type) {
-                case tea.KeyMsg:
-                    switch msg.String() {
-                    case "q", "ctrl+c":
-                        return m, tea.Quit
-                    case "up", "k":
-                        if m.cursor > 0 {
-                            m.cursor--
-                        }
-                    case "down", "j":
-                        if m.cursor < len(m.choices)-1 {
-                            m.cursor++
-                        }
-                    }
-                }
-                return m, nil
+            data, err := os.ReadFile("source.txt")
+            if err != nil {
+                fmt.Println("Error reading:", err)
+                return
+            }
+            err = os.WriteFile("dest.txt", data, 0644)
+            if err != nil {
+                fmt.Println("Error writing:", err)
             }
           annotations:
             - type: idiom
-              label: Vim + Arrow Keys
-              text: Supporting both arrow keys and vim keys (h/j/k/l) is a TUI convention that power users expect.
-            - type: pattern
-              label: Bounds Clamping
-              text: Always check bounds before moving the cursor. Going below 0 or above the list length would be a bug.
+              label: Simple Copy
+              text: >-
+                For small files, ReadFile + WriteFile is the simplest copy pattern. For large files, use
+                <code>io.Copy</code> with open file handles.
         - id: v3
-          title: Toggle Selection
+          title: Write Lines to File
           description: >-
-            Add <code>enter</code>/<code>space</code> handling to toggle the current item in <code>m.selected</code> (a
-            <code>map[int]struct{}</code>). If the item is selected, deselect it; otherwise, select it.
+            Write a function <code>writeLines(path string, lines []string) error</code> that joins the lines with
+            newlines and writes them to the file.
           hints:
-            - "Check if selected: <code>_, ok := m.selected[m.cursor]; ok</code>."
-            - Remove with <code>delete(m.selected, m.cursor)</code>.
-            - Add with <code>m.selected[m.cursor] = struct{}{}</code>.
+            - Use <code>strings.Join(lines, "\n")</code> to combine the lines.
+            - "Add a trailing newline: <code>content + \"\\n\"</code>."
+            - Return the error from <code>os.WriteFile</code> directly.
           solution: |-
-            case "enter", " ":
-                if _, ok := m.selected[m.cursor]; ok {
-                    delete(m.selected, m.cursor)
-                } else {
-                    m.selected[m.cursor] = struct{}{}
-                }
+            func writeLines(path string, lines []string) error {
+                content := strings.Join(lines, "\n") + "\n"
+                return os.WriteFile(path, []byte(content), 0644)
+            }
           annotations:
             - type: idiom
-              label: Toggle Pattern
-              text: Check-then-delete/add is the standard toggle pattern for sets in Go.
-            - type: idiom
-              label: Space Key
-              text: In Bubble Tea, the space key is represented as <code>" "</code> (a string with one space).
+              label: Trailing Newline
+              text: Text files should end with a trailing newline. It's a POSIX convention and many tools expect it.
     - id: warmup_3
-      concept: View
+      concept: YAML Parsing
       variants:
         - id: v1
-          title: Render a Counter
+          title: Parse Simple YAML Config
           description: >-
-            Write a <code>View</code> method for a counter model that displays <code>"Count: 5"</code> (using the actual
-            count) and a help line <code>"Press q to quit."</code>.
+            Define a <code>Config</code> struct with <code>Name string</code> and <code>Port int</code> fields. Read
+            <code>"config.yaml"</code> and unmarshal it into the struct. Print the values.
           hints:
-            - <code>View()</code> returns a <code>string</code>.
-            - Use <code>fmt.Sprintf</code> to build the string.
-            - Add <code>"\n"</code> between lines.
+            - "Use YAML struct tags: <code>`yaml:\"name\"`</code>."
+            - Call <code>yaml.Unmarshal(data, &config)</code> to parse.
+            - Import <code>gopkg.in/yaml.v3</code>.
           solution: |-
-            func (m model) View() string {
-                return fmt.Sprintf("Count: %d\n\nPress q to quit.\n", m.count)
+            type Config struct {
+                Name string `yaml:"name"`
+                Port int    `yaml:"port"`
             }
+
+            data, err := os.ReadFile("config.yaml")
+            if err != nil {
+                panic(err)
+            }
+
+            var config Config
+            if err := yaml.Unmarshal(data, &config); err != nil {
+                panic(err)
+            }
+            fmt.Printf("Name: %s, Port: %d\n", config.Name, config.Port)
           annotations:
             - type: idiom
-              label: View Returns String
-              text: The View method always returns a string. Bubble Tea renders this string to the terminal on every update.
-            - type: pattern
-              label: Help Text
-              text: Always include a help line showing available keys. Users need to know how to quit.
+              label: Struct Tags
+              text: >-
+                YAML struct tags map Go field names to YAML keys. By convention, YAML keys are lowercase/snake_case
+                while Go fields are uppercase CamelCase.
+            - type: gotcha
+              label: Exported Fields
+              text: >-
+                Only exported (uppercase) struct fields are visible to <code>yaml.Unmarshal</code>. Lowercase fields
+                will be silently ignored.
         - id: v2
-          title: Render a List with Cursor
+          title: Parse YAML with Nested Map
           description: >-
-            Write a <code>View</code> method that renders a list of choices with a <code>></code> cursor on the selected
-            item. Non-selected items get a space prefix.
+            Define a <code>Config</code> struct with a <code>Tasks map[string]string</code> field. Parse YAML like
+            <code>tasks:\n  build: "go build"\n  test: "go test"</code>. Iterate and print each task.
           hints:
-            - Loop through <code>m.choices</code> with index.
-            - If <code>m.cursor == i</code>, prefix with <code>"> "</code>, otherwise <code>"  "</code>.
-            - Build the string incrementally with <code>s += ...</code>.
+            - Maps in YAML become <code>map[string]string</code> in Go.
+            - Use the struct tag <code>`yaml:"tasks"`</code>.
+            - Iterate with <code>for name, cmd := range config.Tasks</code>.
           solution: |-
-            func (m model) View() string {
-                s := "Select an option:\n\n"
-                for i, choice := range m.choices {
-                    cursor := "  "
-                    if m.cursor == i {
-                        cursor = "> "
-                    }
-                    s += fmt.Sprintf("%s%s\n", cursor, choice)
-                }
-                s += "\nPress q to quit.\n"
-                return s
+            type Config struct {
+                Tasks map[string]string `yaml:"tasks"`
+            }
+
+            data, err := os.ReadFile("tasks.yaml")
+            if err != nil {
+                panic(err)
+            }
+
+            var config Config
+            if err := yaml.Unmarshal(data, &config); err != nil {
+                panic(err)
+            }
+
+            for name, cmd := range config.Tasks {
+                fmt.Printf("%s: %s\n", name, cmd)
             }
           annotations:
             - type: idiom
-              label: String Building
+              label: Map Fields
               text: >-
-                For simple TUIs, building strings with <code>+=</code> is fine. For complex layouts, use
-                <code>strings.Builder</code> or Lipgloss.
+                YAML mappings naturally map to Go's <code>map[string]T</code>. Use this when keys are dynamic rather
+                than a fixed set of fields.
         - id: v3
-          title: Render with Checkboxes
+          title: Parse YAML with Slice Field
           description: >-
-            Write a <code>View</code> method that shows items as <code>[x] Item</code> (selected) or <code>[ ]
-            Item</code> (not selected), with a cursor indicator <code>></code> on the current item.
+            Define a struct with a <code>Tags []string</code> field. Parse YAML like <code>tags:\n  - go\n  - cli\n  -
+            tools</code>. Print each tag.
           hints:
-            - "Cursor: <code>if m.cursor == i</code> then <code>\">\"</code> else <code>\" \"</code>."
-            - "Checked: <code>if _, ok := m.selected[i]; ok</code> then <code>\"x\"</code> else <code>\" \"</code>."
-            - "Combine: <code>fmt.Sprintf(\"%s [%s] %s\", cursor, checked, choice)</code>."
+            - YAML lists become Go slices.
+            - Use <code>`yaml:"tags"`</code> as the struct tag.
+            - Iterate with <code>for _, tag := range config.Tags</code>.
           solution: |-
-            func (m model) View() string {
-                s := "What do you want to do?\n\n"
-                for i, choice := range m.choices {
-                    cursor := " "
-                    if m.cursor == i {
-                        cursor = ">"
-                    }
-                    checked := " "
-                    if _, ok := m.selected[i]; ok {
-                        checked = "x"
-                    }
-                    s += fmt.Sprintf("%s [%s] %s\n", cursor, checked, choice)
-                }
-                s += "\nPress q to quit.\n"
-                return s
+            type Config struct {
+                Tags []string `yaml:"tags"`
+            }
+
+            data, _ := os.ReadFile("config.yaml")
+            var config Config
+            yaml.Unmarshal(data, &config)
+
+            for _, tag := range config.Tags {
+                fmt.Println(tag)
             }
           annotations:
-            - type: pattern
-              label: Checkbox UI
+            - type: idiom
+              label: YAML Lists
               text: >-
-                The bracket checkbox pattern <code>[x]</code> / <code>[ ]</code> is a universal TUI convention for
-                multi-select interfaces.
+                YAML sequences (lines starting with <code>-</code>) deserialize into Go slices. The element type must
+                match the YAML values.
     - id: warmup_4
-      concept: Lipgloss
+      concept: exec.Command
       variants:
         - id: v1
-          title: Define a Bold Green Style
-          description: >-
-            Create a Lipgloss style that renders text as bold with a green foreground color (<code>#00ff9d</code>). Use
-            it to render the string <code>"Success!"</code>.
+          title: Run a Command and Capture Output
+          description: Use <code>exec.Command</code> to run <code>echo "hello"</code> and print the output. Handle the error.
           hints:
-            - Import <code>github.com/charmbracelet/lipgloss</code>.
-            - "Chain methods: <code>lipgloss.NewStyle().Bold(true).Foreground(...)</code>."
-            - Colors are <code>lipgloss.Color("#00ff9d")</code>.
+            - Use <code>exec.Command("echo", "hello")</code> — the args are separate strings.
+            - Call <code>.Output()</code> to get the stdout as <code>[]byte</code>.
+            - "Convert to string and print: <code>string(out)</code>."
           solution: |-
-            style := lipgloss.NewStyle().
-                Bold(true).
-                Foreground(lipgloss.Color("#00ff9d"))
-
-            fmt.Println(style.Render("Success!"))
+            out, err := exec.Command("echo", "hello").Output()
+            if err != nil {
+                fmt.Println("Error:", err)
+                return
+            }
+            fmt.Print(string(out))
           annotations:
             - type: idiom
-              label: Method Chaining
-              text: Lipgloss uses builder-pattern method chaining. Each method returns a new Style so you can chain calls.
-            - type: idiom
-              label: Hex Colors
+              label: Separate Args
               text: >-
-                Lipgloss accepts hex colors as strings: <code>lipgloss.Color("#00ff9d")</code>. It also supports ANSI
-                256 colors.
+                <code>exec.Command</code> takes the program and arguments as separate strings. Do NOT pass <code>"echo
+                hello"</code> as one string.
+            - type: gotcha
+              label: No Shell
+              text: >-
+                <code>exec.Command</code> runs the program directly — no shell features like pipes or globbing. Use
+                <code>bash -c</code> for shell features.
         - id: v2
-          title: Box with Border
+          title: Run Shell Command with Pipe
           description: >-
-            Create a Lipgloss style with a rounded border, border color <code>#00ff9d</code>, and padding of 1 vertical
-            and 2 horizontal. Render the text <code>"Hello, TUI!"</code> inside it.
+            Run <code>echo hello world | wc -w</code> through a shell using <code>exec.Command("bash", "-c",
+            ...)</code>. Print the word count.
           hints:
-            - Use <code>.Border(lipgloss.RoundedBorder())</code>.
-            - Set border color with <code>.BorderForeground(lipgloss.Color(...))</code>.
-            - Padding is <code>.Padding(1, 2)</code> — vertical then horizontal.
+            - Wrap the full command in <code>exec.Command("bash", "-c", "echo hello world | wc -w")</code>.
+            - The pipe <code>|</code> is a shell feature, so you must use <code>bash -c</code>.
+            - Trim whitespace from the output with <code>strings.TrimSpace</code>.
           solution: |-
-            boxStyle := lipgloss.NewStyle().
-                Border(lipgloss.RoundedBorder()).
-                BorderForeground(lipgloss.Color("#00ff9d")).
-                Padding(1, 2)
-
-            fmt.Println(boxStyle.Render("Hello, TUI!"))
+            out, err := exec.Command("bash", "-c", "echo hello world | wc -w").Output()
+            if err != nil {
+                fmt.Println("Error:", err)
+                return
+            }
+            fmt.Println(strings.TrimSpace(string(out)))
           annotations:
             - type: idiom
-              label: Border Styles
-              text: >-
-                Lipgloss offers <code>RoundedBorder()</code>, <code>NormalBorder()</code>, <code>DoubleBorder()</code>,
-                and <code>ThickBorder()</code>.
+              label: bash -c
+              text: When you need shell features (pipes, redirects, globs), wrap the command in <code>bash -c "..."</code>.
         - id: v3
-          title: Conditional Styling
+          title: Stream Command Output
           description: >-
-            Write a function that renders an item string. If <code>isSelected</code> is true, render it with purple bold
-            text. Otherwise, render with dim gray text.
+            Run <code>go version</code> and stream its output directly to stdout. Use <code>cmd.Stdout =
+            os.Stdout</code>.
           hints:
-            - Define two styles as package-level vars.
-            - Use an if/else to pick which style to apply.
-            - Call <code>style.Render(text)</code> to apply the style.
+            - "Create the command: <code>cmd := exec.Command(\"go\", \"version\")</code>."
+            - Set <code>cmd.Stdout = os.Stdout</code> and <code>cmd.Stderr = os.Stderr</code>.
+            - Call <code>cmd.Run()</code> instead of <code>.Output()</code>.
           solution: |-
-            var (
-                selectedStyle = lipgloss.NewStyle().
-                    Foreground(lipgloss.Color("#9d00ff")).
-                    Bold(true)
-                normalStyle = lipgloss.NewStyle().
-                    Foreground(lipgloss.Color("#888888"))
-            )
-
-            func renderItem(text string, isSelected bool) string {
-                if isSelected {
-                    return selectedStyle.Render("❯ " + text)
-                }
-                return normalStyle.Render("  " + text)
+            cmd := exec.Command("go", "version")
+            cmd.Stdout = os.Stdout
+            cmd.Stderr = os.Stderr
+            if err := cmd.Run(); err != nil {
+                fmt.Println("Error:", err)
             }
           annotations:
             - type: idiom
-              label: Package-Level Styles
+              label: Stream Output
               text: >-
-                Define styles as package-level <code>var</code>s. They're reusable and avoid recreating styles on every
-                render.
+                Setting <code>cmd.Stdout = os.Stdout</code> connects the subprocess output directly to the terminal. No
+                buffering, no conversion needed.
             - type: pattern
-              label: Conditional Rendering
-              text: Switching styles based on state (selected, focused, error) is the core pattern for interactive TUIs.
+              label: Run vs Output
+              text: >-
+                <code>cmd.Run()</code> streams to connected writers. <code>cmd.Output()</code> captures stdout into a
+                byte slice. Use <code>Run</code> when you want real-time output.
   challenges:
     - id: challenge_1
-      concept: Full Bubble Tea App
+      concept: YAML Config Runner
       docLinks:
-        - url: https://pkg.go.dev/github.com/charmbracelet/bubbletea
-          title: Package bubbletea
-          note: The Elm Architecture for terminals
-        - url: https://pkg.go.dev/github.com/charmbracelet/lipgloss
-          title: Package lipgloss
-          note: terminal styling and layout
+        - url: https://pkg.go.dev/os#ReadFile
+          title: Package os.ReadFile
+          note: reading file contents
+        - url: https://pkg.go.dev/os/exec#Command
+          title: Package exec.Command
+          note: running external commands
+        - url: https://pkg.go.dev/gopkg.in/yaml.v3
+          title: Package yaml.v3
+          note: YAML parsing into structs
       variants:
         - id: v1
-          title: Counter App
+          title: YAML Task Executor
           description: >-
-            Build a complete Bubble Tea counter app. Press <code>up</code>/<code>k</code> to increment,
-            <code>down</code>/<code>j</code> to decrement, <code>r</code> to reset to 0, and <code>q</code> to quit.
-            Display the count with a help line.
+            Read a YAML file with tasks (each has a <code>command</code> string). Execute each task's command using
+            <code>exec.Command</code> through <code>bash -c</code>. Print the task name before running it.
           hints:
-            - Model struct needs just <code>count int</code>.
-            - "In Update, handle four key cases: up/k, down/j, r, q."
-            - In View, show the count and key bindings.
+            - "Define a struct: <code>type Config struct { Tasks map[string]Task }</code> where Task has a Command field."
+            - Iterate tasks with <code>for name, task := range config.Tasks</code>.
+            - Run each with <code>exec.Command("bash", "-c", task.Command)</code>.
           solution: |-
-            type model struct {
-                count int
+            type Task struct {
+                Command string `yaml:"command"`
             }
 
-            func (m model) Init() tea.Cmd { return nil }
-
-            func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-                switch msg := msg.(type) {
-                case tea.KeyMsg:
-                    switch msg.String() {
-                    case "q", "ctrl+c":
-                        return m, tea.Quit
-                    case "up", "k":
-                        m.count++
-                    case "down", "j":
-                        m.count--
-                    case "r":
-                        m.count = 0
-                    }
-                }
-                return m, nil
+            type Config struct {
+                Tasks map[string]Task `yaml:"tasks"`
             }
 
-            func (m model) View() string {
-                return fmt.Sprintf(
-                    "\n  Count: %d\n\n  ↑/k: increment  ↓/j: decrement  r: reset  q: quit\n",
-                    m.count,
-                )
+            data, err := os.ReadFile("tasks.yaml")
+            if err != nil {
+                panic(err)
             }
 
-            func main() {
-                p := tea.NewProgram(model{})
-                if _, err := p.Run(); err != nil {
-                    fmt.Println("Error:", err)
+            var config Config
+            if err := yaml.Unmarshal(data, &config); err != nil {
+                panic(err)
+            }
+
+            for name, task := range config.Tasks {
+                fmt.Printf("Running: %s\n", name)
+                cmd := exec.Command("bash", "-c", task.Command)
+                cmd.Stdout = os.Stdout
+                cmd.Stderr = os.Stderr
+                if err := cmd.Run(); err != nil {
+                    fmt.Printf("  Error: %v\n", err)
                 }
             }
           annotations:
             - type: pattern
-              label: Complete TUI App
+              label: Config-Driven Execution
               text: >-
-                Every Bubble Tea app needs: a model struct, Init(), Update(), and View(). Plus
-                <code>tea.NewProgram(model).Run()</code> in main.
+                Reading commands from config files and executing them is a common pattern in task runners, CI systems,
+                and deployment tools.
+            - type: gotcha
+              label: Map Iteration Order
+              text: Go maps iterate in random order. If task execution order matters, use a slice instead of a map.
         - id: v2
-          title: Todo List App
+          title: Config File Loader with Defaults
           description: >-
-            Build a Bubble Tea app with a list of todo items. Support navigation (up/down), toggling items
-            (enter/space), adding items (a key opens an input), and quitting (q). Track completed state per item.
+            Write a function <code>loadConfig(path string) (*Config, error)</code> that reads a YAML config file. If the
+            file doesn't exist, return a default config with <code>Port: 8080</code> and <code>Name: "app"</code>.
           hints:
-            - "Model needs: <code>items []string</code>, <code>done map[int]bool</code>, <code>cursor int</code>."
-            - Render done items as <code>[x]</code> and pending as <code>[ ]</code>.
-            - "Toggle with enter: flip <code>m.done[m.cursor]</code>."
+            - >-
+              Check for file existence: if <code>os.ReadFile</code> returns an error, check with
+              <code>os.IsNotExist</code>.
+            - Return the default config when the file is missing.
+            - Return the actual error for other failures (e.g., permission denied).
           solution: |-
-            type model struct {
-                items  []string
-                done   map[int]bool
-                cursor int
+            type Config struct {
+                Name string `yaml:"name"`
+                Port int    `yaml:"port"`
             }
 
-            func initialModel() model {
-                return model{
-                    items: []string{"Buy groceries", "Write code", "Go for a walk"},
-                    done:  make(map[int]bool),
-                }
-            }
-
-            func (m model) Init() tea.Cmd { return nil }
-
-            func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-                switch msg := msg.(type) {
-                case tea.KeyMsg:
-                    switch msg.String() {
-                    case "q", "ctrl+c":
-                        return m, tea.Quit
-                    case "up", "k":
-                        if m.cursor > 0 {
-                            m.cursor--
-                        }
-                    case "down", "j":
-                        if m.cursor < len(m.items)-1 {
-                            m.cursor++
-                        }
-                    case "enter", " ":
-                        m.done[m.cursor] = !m.done[m.cursor]
+            func loadConfig(path string) (*Config, error) {
+                data, err := os.ReadFile(path)
+                if err != nil {
+                    if os.IsNotExist(err) {
+                        return &Config{Name: "app", Port: 8080}, nil
                     }
+                    return nil, err
                 }
-                return m, nil
-            }
 
-            func (m model) View() string {
-                s := "Todo List:\n\n"
-                for i, item := range m.items {
-                    cursor := "  "
-                    if m.cursor == i {
-                        cursor = "> "
-                    }
-                    check := " "
-                    if m.done[i] {
-                        check = "x"
-                    }
-                    s += fmt.Sprintf("%s[%s] %s\n", cursor, check, item)
+                var config Config
+                if err := yaml.Unmarshal(data, &config); err != nil {
+                    return nil, err
                 }
-                s += "\n↑/↓: navigate  enter: toggle  q: quit\n"
-                return s
+                return &config, nil
             }
           annotations:
             - type: pattern
-              label: Interactive List
-              text: Navigation + selection is the foundational TUI pattern. Most real TUI apps are variations of this.
-            - type: idiom
-              label: map[int]bool
+              label: Defaults Pattern
               text: >-
-                Using <code>map[int]bool</code> is simpler than <code>map[int]struct{}</code> when you need to toggle —
-                <code>!m.done[i]</code> works directly.
+                Loading config with fallback defaults is a common production pattern. Check for "not found" specifically
+                and return defaults; propagate all other errors.
         - id: v3
-          title: Styled Menu
+          title: Directory Lister
           description: >-
-            Build a Bubble Tea menu with Lipgloss styling. The title should be bold green, the selected item should be
-            purple with a <code>❯</code> prefix, and unselected items should be dim. Wrap everything in a rounded border
-            box.
+            Write a function <code>listGoFiles(dir string) ([]string, error)</code> that reads a directory and returns
+            only the <code>.go</code> file names (not directories).
           hints:
-            - Define styles as package-level vars using <code>lipgloss.NewStyle()</code>.
-            - In View, apply different styles based on <code>m.cursor == i</code>.
-            - Use <code>boxStyle.Render(content)</code> to wrap the final output.
+            - Use <code>os.ReadDir(dir)</code> to list entries.
+            - Check <code>!entry.IsDir()</code> and <code>strings.HasSuffix(entry.Name(), ".go")</code>.
+            - Collect matching names into a <code>[]string</code> slice.
           solution: |-
-            var (
-                titleStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#00ff9d"))
-                selStyle   = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#9d00ff"))
-                dimStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#555555"))
-                boxStyle   = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).
-                                BorderForeground(lipgloss.Color("#00ff9d")).Padding(1, 2)
-            )
+            func listGoFiles(dir string) ([]string, error) {
+                entries, err := os.ReadDir(dir)
+                if err != nil {
+                    return nil, err
+                }
 
-            func (m model) View() string {
-                s := titleStyle.Render("Select an Option") + "\n\n"
-                for i, choice := range m.choices {
-                    if m.cursor == i {
-                        s += selStyle.Render("❯ "+choice) + "\n"
-                    } else {
-                        s += dimStyle.Render("  "+choice) + "\n"
+                var files []string
+                for _, entry := range entries {
+                    if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".go") {
+                        files = append(files, entry.Name())
                     }
                 }
-                s += "\n" + dimStyle.Render("↑/↓: navigate • enter: select • q: quit")
-                return boxStyle.Render(s)
+                return files, nil
             }
           annotations:
-            - type: pattern
-              label: Styled TUI
+            - type: idiom
+              label: ReadDir
               text: >-
-                Lipgloss turns plain text TUIs into polished interfaces. Define style constants and apply them in View
-                based on state.
+                <code>os.ReadDir</code> returns entries sorted by name. Each entry has <code>Name()</code>,
+                <code>IsDir()</code>, and <code>Type()</code> methods.
+    - id: challenge_2
+      concept: Environment Variables
+      docLinks:
+        - url: https://pkg.go.dev/os#LookupEnv
+          title: Package os.LookupEnv
+          note: checking if env var exists
+        - url: https://pkg.go.dev/os#Setenv
+          title: Package os.Setenv
+          note: setting environment variables
+      variants:
+        - id: v1
+          title: Required Env Vars
+          description: >-
+            Write a function <code>requireEnv(key string) (string, error)</code> that returns the value of an
+            environment variable, or an error if it's not set.
+          hints:
+            - Use <code>os.LookupEnv(key)</code> which returns <code>(value, exists)</code>.
+            - If <code>!exists</code>, return an error with <code>fmt.Errorf</code>.
+            - Return the value and nil on success.
+          solution: |-
+            func requireEnv(key string) (string, error) {
+                val, exists := os.LookupEnv(key)
+                if !exists {
+                    return "", fmt.Errorf("required env var %s is not set", key)
+                }
+                return val, nil
+            }
+          annotations:
+            - type: idiom
+              label: LookupEnv
+              text: >-
+                <code>os.LookupEnv</code> distinguishes between "not set" and "set to empty string".
+                <code>os.Getenv</code> returns empty string for both.
+            - type: pattern
+              label: Required Config
+              text: Failing fast on missing required configuration prevents confusing runtime errors later.
+        - id: v2
+          title: Env with Default
+          description: >-
+            Write a function <code>envOrDefault(key, fallback string) string</code> that returns the environment
+            variable value, or the fallback if not set.
+          hints:
+            - Use <code>os.Getenv(key)</code> — it returns empty string if not set.
+            - Check if the result is empty, return fallback if so.
+            - Or use <code>os.LookupEnv</code> for a more precise check.
+          solution: |-
+            func envOrDefault(key, fallback string) string {
+                val, exists := os.LookupEnv(key)
+                if !exists {
+                    return fallback
+                }
+                return val
+            }
+          annotations:
+            - type: idiom
+              label: Default Pattern
+              text: >-
+                Using <code>LookupEnv</code> + fallback preserves intentionally empty values. With <code>Getenv</code>,
+                you can't tell if the var was set to empty or not set at all.
+        - id: v3
+          title: Run Command with Custom Env
+          description: >-
+            Write a function that runs a command with an extra environment variable <code>APP_MODE=production</code>
+            added to the current environment. Return the command output.
+          hints:
+            - Use <code>os.Environ()</code> to get the current environment as a <code>[]string</code>.
+            - "Append your extra var: <code>append(os.Environ(), \"APP_MODE=production\")</code>."
+            - Set <code>cmd.Env</code> before calling <code>cmd.Output()</code>.
+          solution: |-
+            func runWithEnv(program string, args ...string) (string, error) {
+                cmd := exec.Command(program, args...)
+                cmd.Env = append(os.Environ(), "APP_MODE=production")
+                out, err := cmd.Output()
+                if err != nil {
+                    return "", err
+                }
+                return string(out), nil
+            }
+          annotations:
+            - type: idiom
+              label: Custom Env
+              text: >-
+                Setting <code>cmd.Env</code> replaces the entire environment. Always start with
+                <code>os.Environ()</code> and append to preserve the existing environment.
+            - type: gotcha
+              label: Env Replacement
+              text: >-
+                If you set <code>cmd.Env</code> to just your custom vars without <code>os.Environ()</code>, the
+                subprocess won't have PATH, HOME, or any other standard variables.

@@ -1,316 +1,212 @@
-## Checking If Things Exist
+## Goroutines: Lightweight Threads
 
-### Files and Directories
+A goroutine is like a lightweight thread. Spawning millions is fine.
 
-*File existence*
-
-```go
-import (
-    "errors"
-    "os"
-)
-
-// Check if path exists (file or directory)
-func exists(path string) bool {
-    _, err := os.Stat(path)
-    return err == nil
-}
-
-// Check specifically for file vs directory
-func isFile(path string) bool {
-    info, err := os.Stat(path)
-    if err != nil {
-        return false
-    }
-    return !info.IsDir()
-}
-
-// Check specifically for "doesn't exist" vs other errors
-func existsStrict(path string) (bool, error) {
-    _, err := os.Stat(path)
-    if err == nil {
-        return true, nil
-    }
-    if errors.Is(err, os.ErrNotExist) {
-        return false, nil
-    }
-    return false, err  // Some other error (permissions, etc)
-}
-```
-
-### Commands in PATH
-
-*Command existence*
-
-```bash
-import "os/exec"
-
-// Check if a command is available
-func commandExists(name string) bool {
-    _, err := exec.LookPath(name)
-    return err == nil
-}
-
-// Get full path to command
-func whichCommand(name string) (string, error) {
-    return exec.LookPath(name)
-}
-
-// Usage
-if commandExists("git") {
-    fmt.Println("Git is installed")
-}
-
-path, err := whichCommand("python3")
-// path = "/usr/bin/python3"
-```
-
-## Running Commands
-
-The `os/exec` package is your friend here.
-
-### Capture Output
-
-*Getting command output*
-
-```bash
-import (
-    "os/exec"
-    "strings"
-)
-
-// Simple: run and get stdout
-out, err := exec.Command("whoami").Output()
-if err != nil {
-    panic(err)
-}
-username := strings.TrimSpace(string(out))
-
-// With arguments
-out, err = exec.Command("ls", "-la", "/tmp").Output()
-
-// Get output as lines
-func runLines(name string, args ...string) ([]string, error) {
-    out, err := exec.Command(name, args...).Output()
-    if err != nil {
-        return nil, err
-    }
-    text := strings.TrimSpace(string(out))
-    if text == "" {
-        return []string{}, nil
-    }
-    return strings.Split(text, "\n"), nil
-}
-```
-
-### Capture stdout AND stderr
-
-*Both streams*
+*Basic goroutine*
 
 ```go
-import "bytes"
-
-func runFull(name string, args ...string) (stdout, stderr string, err error) {
-    cmd := exec.Command(name, args...)
+func main() {
+    // Start a goroutine with 'go'
+    go func() {
+        fmt.Println("Hello from goroutine!")
+    }()
     
-    var outBuf, errBuf bytes.Buffer
-    cmd.Stdout = &outBuf
-    cmd.Stderr = &errBuf
+    // Or call a named function
+    go doWork("task1")
+    go doWork("task2")
     
-    err = cmd.Run()
-    return outBuf.String(), errBuf.String(), err
+    // Main must wait, or it exits and kills goroutines
+    time.Sleep(100 * time.Millisecond)
 }
 
-// CombinedOutput merges stdout and stderr
-out, err := exec.Command("make").CombinedOutput()
-```
-
-### Stream to Terminal (Interactive)
-
-*Interactive commands*
-
-```bash
-import "os"
-
-// Connect command to our terminal
-cmd := exec.Command("vim", "file.txt")
-cmd.Stdin = os.Stdin
-cmd.Stdout = os.Stdout
-cmd.Stderr = os.Stderr
-err := cmd.Run()
-
-// For commands that need user input (like sudo password)
-cmd := exec.Command("sudo", "apt", "update")
-cmd.Stdin = os.Stdin
-cmd.Stdout = os.Stdout
-cmd.Stderr = os.Stderr
-cmd.Run()
-```
-
-## Working Directory & Environment
-
-*Command context*
-
-```bash
-// Run command in specific directory
-cmd := exec.Command("git", "status")
-cmd.Dir = "/path/to/repo"
-out, err := cmd.Output()
-
-// Set environment variables
-cmd := exec.Command("./script.sh")
-cmd.Env = append(os.Environ(), "MY_VAR=value")
-
-// Or replace entire environment
-cmd.Env = []string{
-    "PATH=/usr/bin",
-    "HOME=/home/user",
+func doWork(name string) {
+    fmt.Printf("Starting %s\n", name)
+    time.Sleep(50 * time.Millisecond)
+    fmt.Printf("Finished %s\n", name)
 }
 ```
 
-## Exit Codes
+> **Don't use time.Sleep!:** Use proper synchronization (channels, WaitGroup). Sleep is just for demos.
 
-*Handling exit codes*
+## Channels: Goroutine Communication
+
+// Channel is a pipe between goroutines
+
+Goroutine A  ──[value]──>  Channel  ──[value]──>  Goroutine B
+
+*Basic channels*
 
 ```go
-import "os/exec"
+// Create a channel
+ch := make(chan string)
 
-cmd := exec.Command("grep", "pattern", "file.txt")
-err := cmd.Run()
+// Send to channel (blocks until received)
+go func() {
+    ch <- "hello"  // Send
+}()
 
-if err != nil {
-    // Try to get exit code
-    if exitErr, ok := err.(*exec.ExitError); ok {
-        code := exitErr.ExitCode()
-        fmt.Printf("Command exited with code %d\n", code)
-        
-        // For grep: 0 = found, 1 = not found, 2 = error
-        if code == 1 {
-            fmt.Println("Pattern not found")
+// Receive from channel (blocks until sent)
+msg := <-ch  // Receive
+fmt.Println(msg)
+
+// Buffered channel (non-blocking until full)
+buffered := make(chan int, 3)  // Buffer size 3
+buffered <- 1
+buffered <- 2
+buffered <- 3
+// buffered <- 4  // Would block!
+```
+
+## WaitGroup: Waiting for Goroutines
+
+*sync.WaitGroup*
+
+```go
+import "sync"
+
+func main() {
+    var wg sync.WaitGroup
+    
+    urls := []string{
+        "https://google.com",
+        "https://github.com",
+        "https://golang.org",
+    }
+    
+    for _, url := range urls {
+        wg.Add(1)  // Increment counter
+        go func(u string) {
+            defer wg.Done()  // Decrement when done
+            fetch(u)
+        }(url)
+    }
+    
+    wg.Wait()  // Block until counter is 0
+    fmt.Println("All done!")
+}
+```
+
+## Select: Multiplexing Channels
+
+*Select statement*
+
+```go
+func main() {
+    ch1 := make(chan string)
+    ch2 := make(chan string)
+    
+    go func() {
+        time.Sleep(100 * time.Millisecond)
+        ch1 <- "from ch1"
+    }()
+    
+    go func() {
+        time.Sleep(200 * time.Millisecond)
+        ch2 <- "from ch2"
+    }()
+    
+    // Select waits on multiple channels
+    for i := 0; i < 2; i++ {
+        select {
+        case msg := <-ch1:
+            fmt.Println(msg)
+        case msg := <-ch2:
+            fmt.Println(msg)
         }
-    } else {
-        // Some other error (command not found, etc)
-        fmt.Println("Failed to run:", err)
     }
+}
+
+// Select with timeout
+select {
+case result := <-ch:
+    fmt.Println(result)
+case <-time.After(5 * time.Second):
+    fmt.Println("Timeout!")
 }
 ```
 
-## Parsing Key-Value Files
+## Context: Cancellation & Timeouts
 
-Many config files on Linux use simple `KEY=value` format.
-
-*Parsing KEY=value files*
+*Context usage*
 
 ```go
-import (
-    "bufio"
-    "os"
-    "strings"
-)
+import "context"
 
-func parseKeyValueFile(path string) (map[string]string, error) {
-    file, err := os.Open(path)
+// With timeout
+ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+defer cancel()
+
+// Pass context to functions
+result, err := fetchWithContext(ctx, "https://api.example.com")
+
+func fetchWithContext(ctx context.Context, url string) ([]byte, error) {
+    req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
+    
+    resp, err := http.DefaultClient.Do(req)
     if err != nil {
         return nil, err
     }
-    defer file.Close()
+    defer resp.Body.Close()
     
-    result := make(map[string]string)
-    scanner := bufio.NewScanner(file)
-    
-    for scanner.Scan() {
-        line := strings.TrimSpace(scanner.Text())
-        
-        // Skip empty lines and comments
-        if line == "" || strings.HasPrefix(line, "#") {
-            continue
-        }
-        
-        // Split on first = only
-        parts := strings.SplitN(line, "=", 2)
-        if len(parts) == 2 {
-            key := parts[0]
-            value := strings.Trim(parts[1], "\"'")  // Remove quotes
-            result[key] = value
+    return io.ReadAll(resp.Body)
+}
+
+// Check if cancelled in long-running work
+func doWork(ctx context.Context) error {
+    for {
+        select {
+        case <-ctx.Done():
+            return ctx.Err()  // Cancelled or deadline exceeded
+        default:
+            // Do work...
         }
     }
+}
+```
+
+## Worker Pool Pattern
+
+*Worker pool*
+
+```go
+func worker(id int, jobs <-chan int, results chan<- int) {
+    for job := range jobs {
+        fmt.Printf("Worker %d processing job %d\n", id, job)
+        time.Sleep(100 * time.Millisecond)  // Simulate work
+        results <- job * 2
+    }
+}
+
+func main() {
+    numJobs := 10
+    numWorkers := 3
     
-    return result, scanner.Err()
-}
-```
-
-## Parsing Command Output
-
-Every command has different output. Learn to parse them.
-
-*Common parsing patterns*
-
-```go
-// Simple: one item per line
-lines, _ := runLines("ls")
-for _, line := range lines {
-    fmt.Println(line)
-}
-
-// Columns: split by whitespace
-lines, _ := runLines("ps", "aux")
-for _, line := range lines[1:] {  // Skip header
-    fields := strings.Fields(line)
-    if len(fields) >= 11 {
-        user := fields[0]
-        pid := fields[1]
-        command := fields[10]
-        fmt.Printf("%s %s %s\n", user, pid, command)
+    jobs := make(chan int, numJobs)
+    results := make(chan int, numJobs)
+    
+    // Start workers
+    for w := 1; w <= numWorkers; w++ {
+        go worker(w, jobs, results)
+    }
+    
+    // Send jobs
+    for j := 1; j <= numJobs; j++ {
+        jobs <- j
+    }
+    close(jobs)
+    
+    // Collect results
+    for r := 1; r <= numJobs; r++ {
+        <-results
     }
 }
-
-// Delimiter: split by specific char
-// /etc/passwd format: name:x:uid:gid:info:home:shell
-lines, _ := runLines("cat", "/etc/passwd")
-for _, line := range lines {
-    parts := strings.Split(line, ":")
-    if len(parts) >= 7 {
-        username := parts[0]
-        shell := parts[6]
-        fmt.Printf("%s uses %s\n", username, shell)
-    }
-}
-
-// Extracting part of a string
-// Version strings like "git version 2.34.1"
-out, _ := exec.Command("git", "--version").Output()
-version := strings.TrimPrefix(string(out), "git version ")
-version = strings.TrimSpace(version)
 ```
 
-## Checking Permissions
+### 🔨 Project: Parallel Downloader
 
-*User and permissions*
+Put your skills to work! Build a concurrent file downloader with worker pools and progress tracking.
 
-```go
-import "os"
-
-// Am I root?
-func isRoot() bool {
-    return os.Geteuid() == 0
-}
-
-// Get current user
-import "os/user"
-
-u, err := user.Current()
-if err == nil {
-    fmt.Println(u.Username)  // "alice"
-    fmt.Println(u.HomeDir)   // "/home/alice"
-}
-
-// Check if file is readable/writable
-info, err := os.Stat("/etc/shadow")
-if err == nil {
-    mode := info.Mode()
-    fmt.Printf("Permissions: %s\n", mode.Perm())
-}
-```
+Start Project →
 
 ## Exercises
 
@@ -330,12 +226,14 @@ Combine concepts and learn patterns. Each challenge has multiple variants at dif
             <noscript><p class="js-required">JavaScript is required for the interactive exercises.</p></noscript>
             </div>
 
-## Module 14 Summary
+## Module 12 Summary
 
-- **os.Stat()** — check if files/dirs exist
-- **exec.LookPath()** — check if command exists in PATH
-- **exec.Command().Output()** — run and capture stdout
-- **cmd.Stdin/Stdout/Stderr = os.Std*** — interactive commands
-- **ExitError.ExitCode()** — get exit status
-- **strings.Fields()** — split by whitespace
-- **strings.SplitN(s, "=", 2)** — split on first occurrence only
+- **go func()** — spawn goroutine
+- **chan T** — create channel
+- **ch <- / <-ch** — send / receive
+- **sync.WaitGroup** — wait for goroutines
+- **select** — multiplex channels
+- **context** — cancellation and timeouts
+- **Worker pool** — bounded parallelism
+
+> **The Go Proverb:** "Don't communicate by sharing memory; share memory by communicating." -- Use channels, not mutexes.

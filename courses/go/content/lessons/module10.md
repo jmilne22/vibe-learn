@@ -1,191 +1,121 @@
-## The Functional Options Pattern
+## Writing Tests
 
-The most "Go" pattern. Flexible configuration without breaking APIs.
-
-*Functional options*
+*math.go*
 
 ```go
-type Server struct {
-    host    string
-    port    int
-    timeout time.Duration
-    maxConn int
+package math
+
+func Add(a, b int) int {
+    return a + b
 }
-
-// Option is a function that configures Server
-type Option func(*Server)
-
-// Option functions
-func WithPort(port int) Option {
-    return func(s *Server) {
-        s.port = port
-    }
-}
-
-func WithTimeout(d time.Duration) Option {
-    return func(s *Server) {
-        s.timeout = d
-    }
-}
-
-func WithMaxConnections(n int) Option {
-    return func(s *Server) {
-        s.maxConn = n
-    }
-}
-
-// Constructor with variadic options
-func NewServer(host string, opts ...Option) *Server {
-    s := &Server{
-        host:    host,
-        port:    8080,          // defaults
-        timeout: 30 * time.Second,
-        maxConn: 100,
-    }
-    
-    for _, opt := range opts {
-        opt(s)
-    }
-    
-    return s
-}
-
-// Usage — clean and extensible!
-server := NewServer("localhost")
-server := NewServer("localhost", WithPort(9000))
-server := NewServer("localhost",
-    WithPort(9000),
-    WithTimeout(60*time.Second),
-    WithMaxConnections(500),
-)
 ```
 
-> **Why This Rules:** Add new options without breaking existing code. Clear defaults. Self-documenting API.
-
-## Factory Pattern
-
-*Factory functions*
+*math_test.go*
 
 ```go
-// Interface
-type Storage interface {
-    Save(key string, data []byte) error
-    Load(key string) ([]byte, error)
-}
+package math
 
-// Implementations
-type FileStorage struct { dir string }
-type S3Storage struct { bucket string }
-type MemoryStorage struct { data map[string][]byte }
+import "testing"
 
-// Factory function
-func NewStorage(storageType string, config map[string]string) (Storage, error) {
-    switch storageType {
-    case "file":
-        return &FileStorage{dir: config["dir"]}, nil
-    case "s3":
-        return &S3Storage{bucket: config["bucket"]}, nil
-    case "memory":
-        return &MemoryStorage{data: make(map[string][]byte)}, nil
-    default:
-        return nil, fmt.Errorf("unknown storage type: %s", storageType)
+func TestAdd(t *testing.T) {
+    result := Add(2, 3)
+    if result != 5 {
+        t.Errorf("Add(2, 3) = %d; want 5", result)
     }
 }
-
-// Usage
-storage, err := NewStorage("s3", map[string]string{"bucket": "my-bucket"})
 ```
 
-## Strategy Pattern
+*Run tests*
 
-Swap algorithms at runtime using interfaces.
+```bash
+$ go test ./...
+$ go test -v ./...           # Verbose
+$ go test -run TestAdd ./... # Run specific test
+$ go test -cover ./...       # With coverage
+```
 
-*Strategy pattern*
+## Table-Driven Tests
+
+The Go way to test multiple cases without repetition.
+
+*Table-driven test*
 
 ```go
-// Strategy interface
-type Compressor interface {
-    Compress(data []byte) ([]byte, error)
-    Decompress(data []byte) ([]byte, error)
+func TestAdd(t *testing.T) {
+    tests := []struct {
+        name     string
+        a, b     int
+        expected int
+    }{
+        {"positive", 2, 3, 5},
+        {"negative", -1, -2, -3},
+        {"zero", 0, 0, 0},
+        {"mixed", -5, 10, 5},
+    }
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            result := Add(tt.a, tt.b)
+            if result != tt.expected {
+                t.Errorf("Add(%d, %d) = %d; want %d",
+                    tt.a, tt.b, result, tt.expected)
+            }
+        })
+    }
+}
+```
+
+## Testing with Interfaces (Mocking)
+
+*Interface-based testing*
+
+```go
+// Define interface for dependencies
+type UserStore interface {
+    GetUser(id string) (*User, error)
 }
 
-// Strategies
-type GzipCompressor struct{}
-type ZstdCompressor struct{}
-type NoCompressor struct{}
-
-// Context that uses strategy
-type FileProcessor struct {
-    compressor Compressor
+// Service uses the interface
+type UserService struct {
+    store UserStore
 }
 
-func (p *FileProcessor) SaveFile(path string, data []byte) error {
-    compressed, err := p.compressor.Compress(data)
+func (s *UserService) GetUserName(id string) (string, error) {
+    user, err := s.store.GetUser(id)
     if err != nil {
-        return err
+        return "", err
     }
-    return os.WriteFile(path, compressed, 0644)
+    return user.Name, nil
 }
 
-// Swap strategy at runtime
-processor := &FileProcessor{compressor: &GzipCompressor{}}
-processor.compressor = &ZstdCompressor{}  // Change strategy
-```
-
-## Builder Pattern
-
-*Builder pattern*
-
-```go
-type Query struct {
-    table   string
-    columns []string
-    where   []string
-    orderBy string
-    limit   int
+// Mock for testing
+type mockStore struct {
+    users map[string]*User
 }
 
-type QueryBuilder struct {
-    query Query
+func (m *mockStore) GetUser(id string) (*User, error) {
+    if u, ok := m.users[id]; ok {
+        return u, nil
+    }
+    return nil, ErrNotFound
 }
 
-func NewQueryBuilder(table string) *QueryBuilder {
-    return &QueryBuilder{query: Query{table: table}}
-}
+func TestGetUserName(t *testing.T) {
+    mock := &mockStore{
+        users: map[string]*User{
+            "1": {Name: "Alice"},
+        },
+    }
+    svc := &UserService{store: mock}
 
-func (b *QueryBuilder) Select(cols ...string) *QueryBuilder {
-    b.query.columns = cols
-    return b
+    name, err := svc.GetUserName("1")
+    if err != nil {
+        t.Fatal(err)
+    }
+    if name != "Alice" {
+        t.Errorf("got %s, want Alice", name)
+    }
 }
-
-func (b *QueryBuilder) Where(condition string) *QueryBuilder {
-    b.query.where = append(b.query.where, condition)
-    return b
-}
-
-func (b *QueryBuilder) OrderBy(col string) *QueryBuilder {
-    b.query.orderBy = col
-    return b
-}
-
-func (b *QueryBuilder) Limit(n int) *QueryBuilder {
-    b.query.limit = n
-    return b
-}
-
-func (b *QueryBuilder) Build() string {
-    // Build SQL string from query struct
-    return "..."
-}
-
-// Usage — fluent API
-sql := NewQueryBuilder("users").
-    Select("id", "name", "email").
-    Where("active = true").
-    Where("age > 18").
-    OrderBy("created_at DESC").
-    Limit(10).
-    Build()
 ```
 
 ## Exercises
@@ -198,7 +128,7 @@ Practice individual concepts you just learned.
             <noscript><p class="js-required">JavaScript is required for the interactive exercises.</p></noscript>
             </div>
 
-### 💪 Challenges
+### Challenges
 
 Combine concepts and learn patterns. Each challenge has multiple variants at different difficulties.
 
@@ -208,7 +138,9 @@ Combine concepts and learn patterns. Each challenge has multiple variants at dif
 
 ## Module 10 Summary
 
-- **Functional Options** — flexible config with defaults
-- **Factory** — create objects without specifying concrete types
-- **Strategy** — swap algorithms via interfaces
-- **Builder** — fluent API for complex object construction
+- **Test files** end in `_test.go`, same package
+- **testing.T** -- `t.Errorf`, `t.Fatal`, `t.Run`
+- **Table-driven tests** -- the Go standard pattern
+- **Subtests** with `t.Run` for organized output
+- **Test coverage** with `go test -cover`
+- **Interfaces for mocking** -- easy dependency injection
