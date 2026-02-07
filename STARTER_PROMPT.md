@@ -42,7 +42,6 @@ courses/<slug>/
 │   │   └── ...                                    # (skip for modules with hasExercises: false)
 │   ├── flashcards/
 │   │   └── flashcards.yaml                        # All flashcards in one file
-│   ├── syntax-reference.yaml                      # (optional) Syntax quick-reference
 │   ├── algorithms/                                # (optional)
 │   │   └── algorithms.yaml
 │   └── real-world-challenges/                     # (optional)
@@ -533,53 +532,6 @@ variants:
 
 ---
 
-## Step 3.5 (optional): Generate `syntax-reference.yaml`
-
-**File:** `content/syntax-reference.yaml`
-
-A syntax quick-reference that appears as a collapsible card on exercises, auto-matched by the exercise's `concept` field. Useful for courses where learners need to glance at syntax patterns without scrolling back to the lesson.
-
-### Schema
-
-```yaml
-"Concept Name":            # Must match a concept value used in exercises
-  - label: "Pattern name"  # Short label (e.g., "Short declaration", "Range loop")
-    code: |                # Code snippet showing the pattern
-      x := 42
-  - label: "Another pattern"
-    code: "var x int = 42"
-```
-
-### Key rules
-
-- Top-level keys must **exactly match** the `concept` field values from your exercise YAML files
-- Each concept gets 3–5 short snippets covering the most common patterns
-- Keep snippets minimal — this is a quick glance reference, not a tutorial
-- If you skip this file, nothing breaks — exercises just won't show a syntax reference card
-
-### Example
-
-```yaml
-Variables:
-  - label: "Assign"
-    code: "x = 42"
-  - label: "Multiple assignment"
-    code: "x, y, z = 1, 2, 3"
-  - label: "Type check"
-    code: "print(type(x))"
-
-Strings:
-  - label: "F-string"
-    code: 'f"Hello, {name}!"'
-  - label: "Methods"
-    code: |
-      s.upper()
-      s.split(",")
-      ", ".join(parts)
-```
-
----
-
 ## Step 4: Generate `flashcards.yaml`
 
 **File:** `content/flashcards/flashcards.yaml`
@@ -793,7 +745,6 @@ Before finishing, verify:
 - [ ] The `content/flashcards/` directory exists with `flashcards.yaml`
 - [ ] The `content/exercises/` directory exists (even if some modules have no exercises)
 - [ ] Side-by-side comparisons use `*Label*` on its own line before each code block
-- [ ] If `syntax-reference.yaml` exists, its keys match `concept` values in exercise YAML files
 
 ## Build & Run
 

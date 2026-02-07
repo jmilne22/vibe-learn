@@ -68,16 +68,6 @@
         return html;
     }
 
-    // Render syntax reference for a concept (from window.syntaxReference)
-    function renderSyntaxReference(concept) {
-        var ref = window.syntaxReference && window.syntaxReference[concept];
-        if (!ref || !ref.length) return '';
-        var items = ref.map(function(r) {
-            return '<div class="syntax-ref-item"><span class="syntax-ref-label">' + escapeHtml(r.label) + '</span><pre><code>' + escapeHtml(r.code) + '</code></pre></div>';
-        }).join('');
-        return '<details class="syntax-ref"><summary>Syntax Reference</summary><div class="syntax-ref-content">' + items + '</div></details>';
-    }
-
     // Render documentation links (collapsible details block)
     function renderDocLinks(docLinks) {
         if (!docLinks || docLinks.length === 0) return '';
@@ -214,17 +204,6 @@
 
         html += `<p>${variant.description}</p>`;
 
-        // Syntax reference (matched by concept)
-        // Concept lives on challenge (for challenges) or warmup group (not passed here).
-        // Fall back to ConceptIndex lookup using the exercise key's base (strip variant suffix).
-        var concept = challenge ? challenge.concept : (variant.concept || '');
-        if (!concept && exerciseKey && window.ConceptIndex) {
-            // exerciseKey like "m1_warmup_1_v2" → base "m1_warmup_1"
-            var baseKey = exerciseKey.replace(/_v\d+$/, '');
-            concept = window.ConceptIndex[baseKey] || '';
-        }
-        if (concept) html += renderSyntaxReference(concept);
-
         // Hints
         html += renderHints(variant.hints);
 
@@ -285,7 +264,6 @@
         renderAnnotations,
         renderDocLinks,
         renderHints,
-        renderSyntaxReference,
         renderSolution,
         renderExpected,
         renderPersonalNotes,

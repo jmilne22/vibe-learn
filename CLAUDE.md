@@ -26,7 +26,6 @@ the prompt's instructions.
 - Exercise files: `content/exercises/module{id}-variants.yaml`
 - Lesson files: `content/lessons/module{id}.md`
 - Flashcards: `content/flashcards/flashcards.yaml` (keys are module IDs as strings)
-- Syntax reference: `content/syntax-reference.yaml` (optional, keyed by concept name)
 
 ## Don't
 - Modify `engine/` to add course content
