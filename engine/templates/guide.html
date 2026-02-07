@@ -455,7 +455,7 @@ $ npm run build</div>
                 <li><strong>Spaced repetition</strong> (SM-2 algorithm) scheduling reviews across exercises and flashcards</li>
                 <li><strong>Flashcard sessions</strong> with flip-and-rate interface, multiple review modes</li>
                 <li><strong>Daily practice</strong> that auto-selects exercises based on your SRS data</li>
-                <li><strong>Analytics dashboard</strong> showing weak concepts, module strengths, per-concept breakdowns</li>
+                <li><strong>Analytics dashboard</strong> with mastery overview, module health grid, action items, and detail panels</li>
                 <li><strong>Algorithm practice</strong> with session-based drills and pattern primers</li>
                 <li><strong>Real-world challenges</strong> with requirements, acceptance criteria, and progressive hints</li>
                 <li><strong>10 color themes</strong> switchable from the sidebar</li>
@@ -1072,19 +1072,20 @@ variants:
             <!-- Analytics -->
             <div class="plugin-card accent-orange" id="plugin-analytics">
                 <div class="plugin-card-header">
-                    <h4>Analytics (Weak Concepts)</h4>
+                    <h4>Analytics</h4>
                     <span class="plugin-card-tag tag-plugin">Plugin</span>
                 </div>
                 <div class="plugin-activate">Auto-activates when content/exercises/ exists &mdash; no content file needed</div>
-                <p>Visualizes your strengths and weaknesses across all exercises. Reads SRS data from localStorage &mdash;
+                <p>Grafana-style dashboard showing your learning health at a glance. Reads SRS data from localStorage &mdash;
                    no additional content files required.</p>
 
                 <div class="plugin-features">
                     <div class="plugin-features-label">Key features</div>
                     <ul>
-                        <li>Weak concept report ranked by ease factor</li>
-                        <li>Module strength rankings</li>
-                        <li>Per-concept breakdown with ease factors and intervals</li>
+                        <li>Health cards: mastery %, due count, streak, 30-day sparkline trend</li>
+                        <li>Module health grid with color-coded cells and hover tooltips</li>
+                        <li>Auto-generated action items (due reviews, weakest concepts, decaying modules)</li>
+                        <li>Collapsible detail panels for modules, concepts, weakest exercises, and ratings</li>
                     </ul>
                 </div>
             </div>
@@ -1120,7 +1121,7 @@ variants:
             <ul>
                 <li><strong><a href="#plugin-daily-practice">Daily Practice</a></strong> &mdash; "review" mode surfaces items whose interval has elapsed; "weakest" mode drills your lowest-ease concepts.</li>
                 <li><strong><a href="#plugin-flashcards">Flashcards</a></strong> &mdash; "due" mode shows cards that are ready for review.</li>
-                <li><strong><a href="#plugin-analytics">Analytics</a></strong> &mdash; the weak concepts report ranks concepts by ease factor.</li>
+                <li><strong><a href="#plugin-analytics">Analytics</a></strong> &mdash; the dashboard surfaces mastery stats, module health, and weakest concepts by ease factor.</li>
                 <li><strong><a href="#plugin-algorithms">Algorithm Practice</a></strong> &mdash; review and weakest modes use SRS data to select problems.</li>
             </ul>
             <p>All SRS data is stored in localStorage under each course's <span class="fp">storagePrefix</span>.
