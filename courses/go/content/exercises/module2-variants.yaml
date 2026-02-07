@@ -250,7 +250,8 @@ variants:
           hints:
             - title: "\U0001F914 Think about it"
               content: >-
-                Initialize a counter to 0. Loop through scores with range. For each score, check if it's >= 60 and increment the counter.
+                You need to walk through every score and keep a running tally. What's the simplest
+                way to count things that match a condition?
             - title: "\U0001F4A1 Hint"
               content: >-
                 Use <code>if score >= 60 { count++ }</code> inside the loop.
@@ -317,8 +318,8 @@ variants:
           hints:
             - title: "\U0001F914 Think about it"
               content: >-
-                Use slice syntax <code>lines[start:]</code>. Calculate the start index as <code>len(lines) - n</code>,
-                but make sure it doesn't go below 0.
+                You want to grab a portion from the end of the slice. Think about how slice syntax
+                can help, and what edge case you need to guard against.
             - title: "\U0001F4A1 Hint"
               content: >-
                 <code>if n > len(lines) { n = len(lines) }</code> then <code>return lines[len(lines)-n:]</code>
@@ -349,8 +350,8 @@ variants:
           hints:
             - title: "\U0001F914 Think about it"
               content: >-
-                Use a <code>map[string]bool</code> as a set to track which words you've already seen.
-                Only append to the result when you see a word for the first time.
+                As you go through the words, you need a fast way to check "have I seen this one
+                before?" What data structure gives you instant lookups?
             - title: "\U0001F4A1 Hint"
               content: >-
                 Check <code>if !seen[word]</code> before appending — this preserves first-occurrence order.
@@ -475,8 +476,8 @@ variants:
           hints:
             - title: "\U0001F914 Think about it"
               content: >-
-                Create a new slice with <code>make</code>. The element at index <code>i</code> in the
-                result should be the element at index <code>len(items)-1-i</code> in the original.
+                Think about the relationship between an element's position in the original slice
+                and where it should end up in the reversed slice. What's the pattern?
             - title: "\U0001F4A1 Hint"
               content: >-
                 <code>result := make([]string, len(items))</code>, then loop with
@@ -600,8 +601,8 @@ variants:
             - title: "\U0001F914 Think about it"
               content: >-
                 How many windows of size <code>k</code> fit in a slice of length <code>n</code>?
-                The answer is <code>n - k + 1</code>. Your loop runs from <code>i = 0</code> to
-                <code>i &lt;= len(lines) - size</code>.
+                Try a small example on paper — say 5 items with window size 3. How many windows
+                are there, and where does each one start?
             - title: "\U0001F4A1 Hint"
               content: >-
                 <code>for i := 0; i &lt;= len(lines)-size; i++ { result = append(result, lines[i:i+size]) }</code>.
@@ -653,8 +654,9 @@ variants:
           hints:
             - title: "\U0001F914 Think about it"
               content: >-
-                <code>strings.Fields</code> splits on any whitespace and handles multiple spaces.
-                <code>strings.ToLower</code> normalizes case. Then count with the frequency map pattern.
+                Two things need to happen: splitting the sentence into words and making the
+                comparison case-insensitive. At what point should you normalize the case —
+                before or after counting?
             - title: "\U0001F4A1 Hint"
               content: >-
                 <code>words := strings.Fields(sentence)</code>, then loop: <code>counts[strings.ToLower(word)]++</code>.
@@ -875,8 +877,9 @@ variants:
           hints:
             - title: "\U0001F914 Think about it"
               content: >-
-                Build a frequency map first, then find the max, then format the output string.
-                For alphabetical order, collect the keys into a sorted slice.
+                This problem has several sub-problems: counting, finding a maximum, and
+                formatting output in a specific order. Break it down — which part do you
+                need to solve first?
             - title: "\U0001F4A1 Hint"
               content: >-
                 Use <code>sort.Strings(keys)</code> to sort the keys, then iterate in that order
@@ -971,8 +974,9 @@ variants:
           hints:
             - title: "\U0001F914 Think about it"
               content: >-
-                Split each contact on <code>","</code>, check the city matches, check the name contains
-                the keyword, then format the output. Use <code>strings.Split</code> and <code>strings.Contains</code>.
+                Each contact is a single string with fields packed together. You need to pull
+                it apart, apply two filters, then reassemble the output in a new format.
+                What separator is used?
             - title: "\U0001F4A1 Hint"
               content: >-
                 <code>parts := strings.Split(contact, ",")</code>, check <code>parts[1] == city</code>,

@@ -249,9 +249,9 @@ variants:
           hints:
             - title: "\U0001F914 Think about it"
               content: >-
-                The <code>:=</code> inside the if block creates a <em>new</em> variable <code>x</code>
-                that shadows the outer one. Changes to the inner <code>x</code> don't affect the outer
-                <code>x</code>.
+                Pay close attention to <code>:=</code> vs <code>=</code>. What does <code>:=</code>
+                do when used inside a nested block? Does it modify the existing variable or do
+                something else?
             - title: "\U0001F4A1 Hint"
               content: >-
                 The inner <code>x</code> becomes 18 (10+5+3), but it goes out of scope when the
@@ -580,7 +580,8 @@ variants:
           hints:
             - title: "\U0001F914 Think about it"
               content: >-
-                Use <code>len(bio)</code> to check the length. Slice the string with <code>bio[:maxLen]</code> to get the first N characters.
+                You need to check whether the string is too long, and if so, cut it short. How do
+                you grab just the beginning of a string in Go?
             - title: "\U0001F4A1 Hint"
               content: >-
                 <code>if len(bio) > maxLen { return bio[:maxLen] + "..." }</code>
@@ -660,8 +661,8 @@ variants:
           hints:
             - title: "\U0001F914 Think about it"
               content: >-
-                Use <code>strings.Cut(line, ":")</code> to split on the first colon. It returns the parts
-                and a bool indicating if the separator was found. Then parse the score with <code>strconv.Atoi</code>.
+                Break the problem into two steps: first separate the name from the score text,
+                then turn the score text into a number. Each step can fail — how do you handle that?
             - title: "\U0001F4A1 Hint"
               content: >-
                 <code>name, scoreStr, ok := strings.Cut(line, ":")</code> — check <code>ok</code>, then parse <code>scoreStr</code>.
