@@ -82,6 +82,11 @@
         }
     }
 
+    /** Text color for strength badges: dark text on bright backgrounds, light on dim */
+    function badgeTextColor(label) {
+        return label === 'Too early' ? 'var(--text-main)' : '#111';
+    }
+
     /** Minimum reviews per module before showing a strength label */
     var MIN_REVIEWS = 5;
     var MIN_CONCEPT_REVIEWS = 3;
@@ -441,7 +446,7 @@
                         '<div style="width: ' + pct + '%; height: 100%; background: ' + mod.color + '; border-radius: 4px;"></div>' +
                     '</div>' +
                     easeDisplay +
-                    '<span class="module-tag" style="background: ' + mod.color + '; font-size: 0.75rem;">' + mod.label + '</span>' +
+                    '<span class="strength-badge" style="background: ' + mod.color + '; color: ' + badgeTextColor(mod.label) + '; font-size: 0.75rem;">' + mod.label + '</span>' +
                 '</div>';
         }
         rankingsEl.innerHTML = rankingsHTML;
@@ -474,7 +479,7 @@
                             '<div style="width: ' + cPct + '%; height: 100%; background: ' + cBarColor + '; border-radius: 3px;' + cBarOpacity + '"></div>' +
                         '</div>' +
                         cEaseDisplay +
-                        '<span class="module-tag" style="background: ' + con.color + '; font-size: 0.7rem;">' + con.label + '</span>' +
+                        '<span class="strength-badge" style="background: ' + con.color + '; color: ' + badgeTextColor(con.label) + '; font-size: 0.7rem;">' + con.label + '</span>' +
                     '</div>';
             }
         }
