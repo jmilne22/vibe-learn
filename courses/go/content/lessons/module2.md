@@ -203,6 +203,82 @@ if "dave" in ages:
 >
 > You can name them anything, but `ok` is conventional for the boolean.
 
+## The `strings` Package
+
+Go's `strings` package is your Swiss Army knife for text manipulation. Here are the functions you'll reach for constantly:
+
+*Essential string functions*
+
+```go
+import "strings"
+
+// Splitting and joining
+words := strings.Split("a,b,c", ",")       // ["a", "b", "c"]
+joined := strings.Join(words, " - ")        // "a - b - c"
+fields := strings.Fields("  hello   world ") // ["hello", "world"] (splits on any whitespace)
+
+// Searching
+strings.Contains("seafood", "foo")    // true
+strings.HasPrefix("GoLang", "Go")     // true
+strings.HasSuffix("main.go", ".go")   // true
+strings.Index("hello", "ll")          // 2 (-1 if not found)
+
+// Transforming
+strings.ToLower("HELLO")              // "hello"
+strings.ToUpper("hello")              // "HELLO"
+strings.TrimSpace("  hi  \n")         // "hi"
+strings.ReplaceAll("go go go", "go", "GO") // "GO GO GO"
+```
+
+*Practical example: parsing a key=value config line*
+
+```go
+func parseConfig(line string) (string, string, bool) {
+    line = strings.TrimSpace(line)
+    if line == "" || strings.HasPrefix(line, "#") {
+        return "", "", false // skip empty lines and comments
+    }
+    key, value, found := strings.Cut(line, "=")
+    if !found {
+        return "", "", false
+    }
+    return strings.TrimSpace(key), strings.TrimSpace(value), true
+}
+```
+
+> **`strings.Cut` (Go 1.18+):** Splits a string around the first occurrence of a separator. Cleaner than `strings.SplitN` when you want exactly two parts. Use it!
+
+## Nil vs Empty Slices
+
+This trips up every Go beginner. There are two kinds of "empty" slices:
+
+*Nil vs empty*
+
+```go
+var a []int         // nil slice — a == nil is true
+b := []int{}        // empty slice — b != nil, but len(b) == 0
+c := make([]int, 0) // also empty, not nil
+
+// Both work the same for most operations!
+fmt.Println(len(a), len(b)) // 0, 0
+a = append(a, 1)            // works fine
+b = append(b, 1)            // works fine
+
+for _, v := range a { }     // zero iterations, no panic
+```
+
+So when does it matter? Two situations:
+
+1. **Comparing to nil:** `a == nil` is `true`, `b == nil` is `false`
+2. **JSON marshaling:** `nil` slices become `null`, empty slices become `[]`
+
+```go
+json.Marshal(a) // null
+json.Marshal(b) // []
+```
+
+> **Rule of thumb:** Prefer `var s []int` (nil) as the default. It works with `append`, `len`, and `range`. Only use `[]int{}` or `make` when you specifically need a non-nil empty slice (like for JSON responses where `null` would be confusing).
+
 ## Exercises
 
 Progress through each section in order, or jump to where you need practice.

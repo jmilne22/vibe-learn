@@ -195,6 +195,146 @@ for i, item := range items {
 }
 ```
 
+## Switch Statements
+
+Go's `switch` is cleaner than a chain of if/else. No `break` needed — Go only runs the matching case.
+
+*Basic switch*
+
+```go
+day := "Tuesday"
+switch day {
+case "Monday":
+    fmt.Println("Start of the work week")
+case "Tuesday", "Wednesday", "Thursday":
+    fmt.Println("Midweek")
+case "Friday":
+    fmt.Println("Almost weekend!")
+default:
+    fmt.Println("Weekend!")
+}
+```
+
+> **Key difference from C/Java:** Go cases don't fall through by default. Each case runs only its own code. (Use the rare `fallthrough` keyword if you explicitly need it — but you almost never do.)
+
+*Expressionless switch (replaces if-else chains)*
+
+```go
+score := 85
+switch {
+case score >= 90:
+    fmt.Println("A")
+case score >= 80:
+    fmt.Println("B")
+case score >= 70:
+    fmt.Println("C")
+default:
+    fmt.Println("F")
+}
+```
+
+Here's the deal: an expressionless `switch` is just a cleaner way to write an if-else chain. Each case is a boolean expression, and the first `true` case wins.
+
+## More Loop Forms
+
+You saw the classic `for i := 0; i < n; i++` loop. But `for` in Go replaces `while` and even infinite loops:
+
+*Loop variations*
+
+```go
+// Infinite loop (like while True in Python)
+for {
+    fmt.Println("forever")
+    break // use break to exit!
+}
+
+// Condition-only loop (like while in Python)
+n := 1
+for n < 100 {
+    n *= 2
+}
+fmt.Println(n) // 128
+
+// continue skips to the next iteration
+for i := 0; i < 10; i++ {
+    if i%2 == 0 {
+        continue // skip even numbers
+    }
+    fmt.Println(i) // 1, 3, 5, 7, 9
+}
+```
+
+## The Blank Identifier `_`
+
+When a function returns multiple values but you don't need all of them, use `_` to discard:
+
+*Discarding values*
+
+```go
+// Don't need the index in a range loop
+for _, name := range names {
+    fmt.Println(name)
+}
+
+// Don't need the error (use sparingly!)
+val, _ := strconv.Atoi("42")
+
+// Don't need the value, just the key
+for key, _ := range myMap {
+    fmt.Println(key)
+}
+// Shorthand: omit the second variable entirely
+for key := range myMap {
+    fmt.Println(key)
+}
+```
+
+> **Gotcha:** The Go compiler **refuses to compile** if you declare a variable and never use it. `_` is the escape hatch — but don't use it to ignore errors in production code!
+
+## Constants and `iota`
+
+Constants are values fixed at compile time. They can't change.
+
+*Constants*
+
+```go
+const Pi = 3.14159
+const MaxRetries = 3
+
+// Const blocks group related constants
+const (
+    StatusOK    = 200
+    StatusNotFound = 404
+    StatusError = 500
+)
+```
+
+`iota` is Go's auto-incrementing constant generator. It starts at 0 and increases by 1 for each line in a `const` block:
+
+*iota for enumerations*
+
+```go
+const (
+    Sunday = iota // 0
+    Monday        // 1
+    Tuesday       // 2
+    Wednesday     // 3
+    Thursday      // 4
+    Friday        // 5
+    Saturday      // 6
+)
+
+// Skip zero with _ to avoid "zero value means unset" bugs
+const (
+    _       = iota // skip 0
+    Small          // 1
+    Medium         // 2
+    Large          // 3
+)
+```
+
+> **Why `iota`?** It's Go's replacement for C-style enums. You get type safety (if you use a named type) and no need to manually number each constant.
+
 ## Exercises
 
 Progress through each section in order, or jump to where you need practice.

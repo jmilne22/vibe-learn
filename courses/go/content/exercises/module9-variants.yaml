@@ -410,7 +410,7 @@ variants:
             // Output: handler: service: operation timed out
             fmt.Println(errors.Is(err, ErrTimeout))
             // Output: true
-          difficulty: 2
+          difficulty: 3
           annotations:
             - type: idiom
               label: Layered Wrapping
@@ -652,7 +652,7 @@ variants:
             case errors.Is(err, ErrTooLarge):
                 fmt.Println("file must be under 10 MB")
             }
-          difficulty: 2
+          difficulty: 3
           annotations:
             - type: pattern
               label: Multiple Sentinels

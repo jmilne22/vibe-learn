@@ -206,7 +206,7 @@ Combine concepts and learn patterns. Each challenge has multiple variants at dif
             <noscript><p class="js-required">JavaScript is required for the interactive exercises.</p></noscript>
             </div>
 
-## Module 10 Summary
+## Module 12 Summary
 
 - **Functional Options** — flexible config with defaults
 - **Factory** — create objects without specifying concrete types

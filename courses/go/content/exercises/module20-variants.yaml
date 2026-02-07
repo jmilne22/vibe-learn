@@ -452,6 +452,321 @@ variants:
             - type: complexity
               label: O(n * k log k)
               text: "n words, each of length k sorted in O(k log k). Map operations are O(1) amortized."
+    - id: warmup_4
+      concept: Two Pointers
+      variants:
+        - id: v1
+          title: Palindrome Check
+          description: >-
+            Write a function <code>isPalindrome(s string) bool</code> that checks if a string reads the same
+            forwards and backwards. Use two pointers converging from both ends. Ignore case — convert to lowercase
+            first.
+          hints:
+            - Convert to a <code>[]rune</code> slice and use <code>strings.ToLower</code> for case insensitivity.
+            - "Initialize <code>left, right := 0, len(runes)-1</code> and move inward."
+            - "If <code>runes[left] != runes[right]</code> at any point, return false."
+          solution: |-
+            func isPalindrome(s string) bool {
+                runes := []rune(strings.ToLower(s))
+                left, right := 0, len(runes)-1
+                for left < right {
+                    if runes[left] != runes[right] {
+                        return false
+                    }
+                    left++
+                    right--
+                }
+                return true
+            }
+          annotations:
+            - type: pattern
+              label: Converging Pointers
+              text: >-
+                Two pointers starting from opposite ends is the classic approach for symmetry checks.
+                O(n) time, O(1) extra space (after the rune conversion).
+            - type: gotcha
+              label: Rune vs Byte
+              text: >-
+                Always convert to <code>[]rune</code> before doing character-level comparisons. Indexing a string
+                directly gives bytes, which breaks for multi-byte characters like accented letters.
+        - id: v2
+          title: Two Sum Sorted
+          description: >-
+            Given a sorted slice of integers <code>nums</code> and a <code>target</code>, write
+            <code>func twoSumSorted(nums []int, target int) (int, int)</code> that returns the indices of the
+            two numbers that add up to target. Return <code>(-1, -1)</code> if no pair exists. Use the
+            two-pointer approach (not a hash map).
+          hints:
+            - "Start with <code>left, right := 0, len(nums)-1</code>."
+            - "If <code>nums[left]+nums[right] == target</code>, return the indices."
+            - "If the sum is too small, move left up. If too large, move right down."
+          solution: |-
+            func twoSumSorted(nums []int, target int) (int, int) {
+                left, right := 0, len(nums)-1
+                for left < right {
+                    sum := nums[left] + nums[right]
+                    if sum == target {
+                        return left, right
+                    } else if sum < target {
+                        left++
+                    } else {
+                        right--
+                    }
+                }
+                return -1, -1
+            }
+          annotations:
+            - type: pattern
+              label: Sorted Two Pointer
+              text: >-
+                On a sorted array, two pointers from the ends find a target sum in O(n). Moving left increases
+                the sum, moving right decreases it.
+            - type: complexity
+              label: O(n) Time, O(1) Space
+              text: >-
+                Single pass with no extra data structures. Compare to the hash map approach which is also O(n)
+                time but uses O(n) space.
+        - id: v3
+          title: Remove Duplicates Sorted
+          description: >-
+            Write <code>func removeDuplicates(nums []int) []int</code> that removes duplicate values from a
+            sorted slice in-place and returns the deduplicated slice. Use a slow/fast pointer approach where
+            slow tracks the write position and fast scans ahead.
+          hints:
+            - "Handle the empty case: if <code>len(nums) == 0</code>, return the empty slice."
+            - "Slow pointer stays at the last unique element. Fast pointer scans forward."
+            - "When <code>nums[fast] != nums[slow]</code>, advance slow and copy the value."
+          solution: |-
+            func removeDuplicates(nums []int) []int {
+                if len(nums) == 0 {
+                    return nums
+                }
+                slow := 0
+                for fast := 1; fast < len(nums); fast++ {
+                    if nums[fast] != nums[slow] {
+                        slow++
+                        nums[slow] = nums[fast]
+                    }
+                }
+                return nums[:slow+1]
+            }
+          annotations:
+            - type: pattern
+              label: Slow/Fast Pointer
+              text: >-
+                The slow pointer marks the boundary of processed output. The fast pointer scans ahead looking for
+                new values. This pattern works for in-place removal of any condition.
+            - type: idiom
+              label: Reslice for Result
+              text: >-
+                <code>nums[:slow+1]</code> returns a slice of just the unique elements. The underlying array still
+                has the old values past that point, but they're invisible to the caller.
+        - id: v4
+          title: Move Zeros
+          description: >-
+            Write <code>func moveZeros(nums []int) []int</code> that moves all zeros to the end of the slice
+            while maintaining the relative order of non-zero elements. Modify in-place and return the slice.
+            Use a slow pointer to track where the next non-zero should go.
+          hints:
+            - "Slow pointer marks the next position for a non-zero value."
+            - "Fast pointer scans through the array. When it finds a non-zero, swap with slow position."
+            - "After the loop, all positions from slow onward should be zero."
+          solution: |-
+            func moveZeros(nums []int) []int {
+                slow := 0
+                for fast := 0; fast < len(nums); fast++ {
+                    if nums[fast] != 0 {
+                        nums[slow], nums[fast] = nums[fast], nums[slow]
+                        slow++
+                    }
+                }
+                return nums
+            }
+          annotations:
+            - type: pattern
+              label: Partition Pattern
+              text: >-
+                This is a partition operation: non-zeros go left, zeros go right. The swap approach maintains
+                relative order of non-zero elements.
+            - type: complexity
+              label: O(n) Time, O(1) Space
+              text: Single pass, in-place. Each element is visited exactly once.
+    - id: warmup_5
+      concept: Sliding Window
+      variants:
+        - id: v1
+          title: Max Sum of K Elements
+          description: >-
+            Write <code>func maxSumK(nums []int, k int) int</code> that returns the maximum sum of any
+            contiguous subarray of length <code>k</code>. Use a fixed-size sliding window — compute the first
+            window's sum, then slide by adding the new element and subtracting the old one.
+          hints:
+            - "Compute the sum of the first k elements as your initial window."
+            - "Slide: add <code>nums[i]</code>, subtract <code>nums[i-k]</code>."
+            - "Track the maximum sum seen so far."
+          solution: |-
+            func maxSumK(nums []int, k int) int {
+                if len(nums) < k {
+                    return 0
+                }
+                windowSum := 0
+                for i := 0; i < k; i++ {
+                    windowSum += nums[i]
+                }
+                maxSum := windowSum
+                for i := k; i < len(nums); i++ {
+                    windowSum += nums[i] - nums[i-k]
+                    if windowSum > maxSum {
+                        maxSum = windowSum
+                    }
+                }
+                return maxSum
+            }
+          annotations:
+            - type: pattern
+              label: Fixed Sliding Window
+              text: >-
+                A fixed window of size k slides one step at a time. Instead of recomputing the sum from scratch
+                (O(k) per step), add the new element and subtract the old one (O(1) per step).
+            - type: complexity
+              label: O(n) Time
+              text: >-
+                Single pass after the initial window setup. Compare to the brute force O(n*k) approach of
+                summing each subarray independently.
+        - id: v2
+          title: Longest Substring Without Repeating
+          description: >-
+            Write <code>func lengthOfLongestSubstring(s string) int</code> that returns the length of the longest
+            substring without repeating characters. Use a variable-size sliding window with a map to track character
+            positions.
+          hints:
+            - "Use a <code>map[byte]int</code> to store the last index of each character."
+            - "Left pointer jumps forward when a duplicate is found inside the current window."
+            - "Track the maximum <code>right - left + 1</code> at each step."
+          solution: |-
+            func lengthOfLongestSubstring(s string) int {
+                lastSeen := make(map[byte]int)
+                maxLen := 0
+                left := 0
+                for right := 0; right < len(s); right++ {
+                    if idx, ok := lastSeen[s[right]]; ok && idx >= left {
+                        left = idx + 1
+                    }
+                    lastSeen[s[right]] = right
+                    if right-left+1 > maxLen {
+                        maxLen = right - left + 1
+                    }
+                }
+                return maxLen
+            }
+          annotations:
+            - type: pattern
+              label: Variable Sliding Window
+              text: >-
+                The window expands (right++) every step but only shrinks (left jumps) when the window condition
+                is violated. The map tracks where characters were last seen.
+            - type: gotcha
+              label: Check idx >= left
+              text: >-
+                A character might be in the map but outside the current window. Check <code>idx >= left</code>
+                to avoid shrinking the window unnecessarily.
+        - id: v3
+          title: Minimum Window Substring
+          description: >-
+            Write <code>func minWindow(s, t string) string</code> that finds the minimum window in <code>s</code>
+            that contains all characters of <code>t</code>. Return <code>""</code> if no such window exists. Use
+            a variable-size sliding window with frequency maps.
+          hints:
+            - "Build a frequency map of characters needed from <code>t</code>."
+            - "Expand right to include characters. When all needed characters are covered, shrink from left."
+            - "Track the minimum window size and its start position."
+          solution: |-
+            func minWindow(s, t string) string {
+                if len(t) > len(s) {
+                    return ""
+                }
+                need := make(map[byte]int)
+                for i := 0; i < len(t); i++ {
+                    need[t[i]]++
+                }
+                have := make(map[byte]int)
+                formed := 0
+                required := len(need)
+                minLen := len(s) + 1
+                minStart := 0
+                left := 0
+                for right := 0; right < len(s); right++ {
+                    ch := s[right]
+                    have[ch]++
+                    if have[ch] == need[ch] {
+                        formed++
+                    }
+                    for formed == required {
+                        if right-left+1 < minLen {
+                            minLen = right - left + 1
+                            minStart = left
+                        }
+                        out := s[left]
+                        have[out]--
+                        if have[out] < need[out] {
+                            formed--
+                        }
+                        left++
+                    }
+                }
+                if minLen > len(s) {
+                    return ""
+                }
+                return s[minStart : minStart+minLen]
+            }
+          annotations:
+            - type: pattern
+              label: Shrinkable Window
+              text: >-
+                This is the most complex sliding window variant: expand to satisfy the condition, then shrink
+                to minimize. The <code>formed</code> counter avoids re-scanning the frequency maps.
+            - type: complexity
+              label: O(n) Time
+              text: >-
+                Each character is added and removed from the window at most once. The inner while loop
+                across all iterations of the outer loop runs at most n times total.
+        - id: v4
+          title: Average of K Elements
+          description: >-
+            Write <code>func avgOfK(nums []float64, k int) []float64</code> that returns a slice of averages
+            for every contiguous subarray of length <code>k</code>. Use a fixed sliding window.
+          hints:
+            - "Compute the sum of the first k elements."
+            - "The first average is <code>sum / float64(k)</code>."
+            - "Slide the window: add the new element, subtract the leaving element, compute average."
+          solution: |-
+            func avgOfK(nums []float64, k int) []float64 {
+                if len(nums) < k {
+                    return nil
+                }
+                result := make([]float64, 0, len(nums)-k+1)
+                windowSum := 0.0
+                for i := 0; i < k; i++ {
+                    windowSum += nums[i]
+                }
+                result = append(result, windowSum/float64(k))
+                for i := k; i < len(nums); i++ {
+                    windowSum += nums[i] - nums[i-k]
+                    result = append(result, windowSum/float64(k))
+                }
+                return result
+            }
+          annotations:
+            - type: pattern
+              label: Fixed Window Accumulation
+              text: >-
+                Same sliding window pattern as max sum, but collecting all window values instead of tracking
+                a maximum. Pre-allocating with <code>cap: len(nums)-k+1</code> avoids reallocations.
+            - type: idiom
+              label: Float Division
+              text: >-
+                Use <code>float64(k)</code> to convert the integer divisor. Go won't auto-convert int to float64
+                in arithmetic — you must be explicit.
   challenges:
     - id: challenge_1
       block: 1

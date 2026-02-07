@@ -203,7 +203,7 @@ Combine concepts and learn patterns. Each challenge has multiple variants at dif
             <noscript><p class="js-required">JavaScript is required for the interactive exercises.</p></noscript>
             </div>
 
-## Module 11 Summary
+## Module 13 Summary
 
 - **http.Get/Post** — simple requests
 - **http.NewRequest** — custom requests with headers

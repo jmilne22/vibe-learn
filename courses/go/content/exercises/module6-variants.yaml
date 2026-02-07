@@ -135,6 +135,133 @@ variants:
             - type: gotcha
               label: Nil Map in Variadic
               text: Ranging over a nil map is safe in Go (zero iterations), so nil entries in the variadic list won't panic.
+    - id: warmup_2
+      concept: Generics
+      variants:
+        - id: v1
+          title: Generic Swap
+          description: >-
+            Write <code>func swap[T any](a, b T) (T, T)</code> that returns the two values in reversed order.
+          hints:
+            - This is a one-liner — just return <code>b, a</code>.
+            - >-
+              The type parameter <code>[T any]</code> ensures both inputs and outputs are the same type, giving you
+              type safety that a plain <code>interface{}</code> approach would lose.
+          solution: |-
+            func swap[T any](a, b T) (T, T) {
+                return b, a
+            }
+
+            // Usage:
+            x, y := swap(1, 2)       // x=2, y=1
+            s, t := swap("hi", "lo") // s="lo", t="hi"
+          annotations:
+            - type: idiom
+              label: Generic Basics
+              text: >-
+                Even simple functions benefit from generics. <code>swap[T any]</code> works with any type while keeping
+                full type safety — no casting needed.
+            - type: pattern
+              label: Multiple Returns
+              text: >-
+                Go's multiple return values combine naturally with generics. The compiler infers T from the arguments,
+                so you rarely need to specify it explicitly.
+        - id: v2
+          title: Generic Max
+          description: >-
+            Write <code>func max[T constraints.Ordered](a, b T) T</code> that returns the larger of two values.
+            Use the <code>constraints.Ordered</code> constraint to support any ordered type (int, float64, string, etc.).
+          hints:
+            - Import <code>golang.org/x/exp/constraints</code> for the <code>Ordered</code> constraint.
+            - Compare with <code>></code> — the <code>Ordered</code> constraint guarantees this operator works.
+          solution: |-
+            func max[T constraints.Ordered](a, b T) T {
+                if a > b {
+                    return a
+                }
+                return b
+            }
+
+            // Usage:
+            max(3, 5)          // 5
+            max("a", "b")      // "b"
+            max(3.14, 2.71)    // 3.14
+          annotations:
+            - type: idiom
+              label: Ordered Constraint
+              text: >-
+                <code>constraints.Ordered</code> includes all types that support <code><</code>, <code>></code>,
+                <code><=</code>, <code>>=</code>. This covers integers, floats, and strings.
+            - type: stdlib
+              label: Built-in max (Go 1.21+)
+              text: >-
+                Go 1.21 added built-in <code>min</code> and <code>max</code> functions, but implementing your own
+                teaches how constraints work.
+        - id: v3
+          title: Generic IndexOf
+          description: >-
+            Write <code>func indexOf[T comparable](items []T, target T) int</code> that returns the index of the
+            first occurrence of <code>target</code> in the slice, or <code>-1</code> if not found.
+          hints:
+            - Use the <code>comparable</code> constraint because you need <code>==</code>.
+            - Range over the slice, compare each element, return the index on match.
+            - Return <code>-1</code> after the loop if no match was found.
+          solution: |-
+            func indexOf[T comparable](items []T, target T) int {
+                for i, item := range items {
+                    if item == target {
+                        return i
+                    }
+                }
+                return -1
+            }
+
+            // Usage:
+            indexOf([]int{10, 20, 30}, 20)       // 1
+            indexOf([]string{"a", "b", "c"}, "d") // -1
+          annotations:
+            - type: idiom
+              label: Linear Search
+              text: >-
+                A generic linear search replaces the need for type-specific helper functions. One implementation works
+                for <code>[]int</code>, <code>[]string</code>, or any comparable type.
+            - type: gotcha
+              label: Comparable Requirement
+              text: >-
+                Slices, maps, and functions are not comparable in Go — you can't use <code>==</code> on them. That's
+                why this needs <code>comparable</code>, not <code>any</code>.
+        - id: v4
+          title: Generic Contains
+          description: >-
+            Write <code>func contains[T comparable](items []T, target T) bool</code> that returns true if the target
+            element exists in the slice.
+          hints:
+            - This is similar to indexOf but returns a bool instead of an index.
+            - Range over items, return <code>true</code> on first match, <code>false</code> after the loop.
+          solution: |-
+            func contains[T comparable](items []T, target T) bool {
+                for _, item := range items {
+                    if item == target {
+                        return true
+                    }
+                }
+                return false
+            }
+
+            // Usage:
+            contains([]int{1, 2, 3}, 2)           // true
+            contains([]string{"go", "rust"}, "py") // false
+          annotations:
+            - type: idiom
+              label: Early Return
+              text: >-
+                Return <code>true</code> immediately when a match is found — no need to check the rest of the slice.
+                This is more efficient than scanning everything.
+            - type: stdlib
+              label: slices.Contains
+              text: >-
+                Go 1.21+ provides <code>slices.Contains()</code> in the standard library. This exercise teaches
+                the same pattern the stdlib uses internally.
   challenges:
     - id: challenge_1
       block: 1
