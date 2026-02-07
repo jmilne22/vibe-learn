@@ -6,6 +6,21 @@
  * and daily-practice.js (cross-module review).
  *
  * Exposed as window.ExerciseCore
+ *
+ * @typedef {Object} ExerciseGroup
+ * @property {string} id - Unique exercise identifier (e.g. "warmup_1")
+ * @property {string} [concept] - Concept tag for filtering (e.g. "pointers")
+ * @property {number} [difficulty] - Base difficulty (1-5)
+ * @property {Variant[]} variants - Available variant versions of this exercise
+ *
+ * @typedef {Object} Variant
+ * @property {string} id - Variant identifier (e.g. "v1", "v2")
+ * @property {string} title - Display title
+ * @property {string} description - Exercise description (markdown)
+ * @property {string} solution - Solution code or explanation (markdown)
+ * @property {string[]} [hints] - Progressive hint texts
+ * @property {number} [difficulty] - Variant-specific difficulty override (1-5)
+ * @property {Object} [annotations] - Annotation metadata keyed by annotation type
  */
 (function() {
     'use strict';

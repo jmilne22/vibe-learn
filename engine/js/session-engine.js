@@ -3,6 +3,24 @@
  *
  * Provides queue building, session management, and UI helpers used by
  * both the Algorithm Practice and Daily Practice plugins.
+ *
+ * @typedef {Object} SessionConfig
+ * @property {Object} ids - DOM element IDs: { config, stats, session, label, bar, category, container, complete, results, hint }
+ * @property {string} itemLabel - Display label for items (e.g. "Problem", "Exercise")
+ * @property {string} accentColor - CSS variable name for accent color (e.g. "purple")
+ * @property {function(SessionState): void} onRender - Callback to render current exercise
+ * @property {string[]} [extraHideOnStart] - Additional element IDs to hide when session starts
+ * @property {string[]} [extraShowOnStart] - Additional element IDs to show when session starts
+ * @property {function(SessionState): void} [onSessionStart] - Callback after session UI is shown
+ *
+ * @typedef {Object} SessionState
+ * @property {Array<{key: string}>} queue - Ordered list of exercises to present
+ * @property {number} index - Current position in queue
+ * @property {{completed: number, skipped: number}} results - Session outcome counters
+ * @property {Object} ids - DOM element IDs (from SessionConfig)
+ * @property {string} itemLabel - Display label (from SessionConfig)
+ * @property {string} accentColor - Accent color (from SessionConfig)
+ * @property {function(SessionState): void} onRender - Render callback (from SessionConfig)
  */
 (function() {
     'use strict';
