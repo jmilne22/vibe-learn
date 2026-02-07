@@ -2,6 +2,28 @@ Your cheat sheet. Come back here whenever you need a quick lookup.
 
 ---
 
+## How to Use This Course
+
+The course is five tracks. Each track builds on the last, but not every module within a track is required to move forward.
+
+**Track 1 (Modules 1-3)** is drill-heavy on purpose. Slices, maps, structs, errors, testing — you do these until they're automatic. Don't rush through. If the warmups feel hard, re-read the lesson. If the warmups are easy but challenges are hard, that's working as intended — use the hints.
+
+**Track 2-3 (Modules 4-7)** shift to building real things: CLIs, API clients, concurrency. Projects start appearing. Do the projects — they're portfolio pieces, not homework.
+
+**Track 4 (Modules 8-11)** is the steepest ramp. HTTP servers → raw networking → container internals → K8s operators. If a module feels too hard, here's what's safe to skip or reorder:
+- **Module 10 (Containers)** is the most independent. You can skip it and do Module 11 (K8s) without it — they use different APIs entirely. Come back to containers later.
+- **Module 9 (Networking)** is needed for Project 3 (DNS server) but not for Modules 10-11.
+
+**Track 5 (Modules 12-13)** is interview prep and open source. The algorithms plugin gives you practice throughout the course, so Module 12 is reinforcement, not a cold start.
+
+### When you're stuck
+
+- **Warmups are the canary.** If warmups are hard, the gap is in the lesson, not the exercise. Re-read.
+- **Difficulty 3 challenges are optional.** They exist for depth, not as gates. Skip and come back.
+- **Projects aren't blockers.** If a project feels too ambitious, keep going with the next module. The project will still be there.
+
+---
+
 ## Go Toolchain
 
 Install from [go.dev/dl](https://go.dev/dl/) or your package manager. Verify:
