@@ -336,7 +336,7 @@
 
         var html = '';
         var currentBlock = 0;
-        var blockNames = { 1: 'Core Patterns', 2: 'Building & Filtering', 3: 'Two-Pointer Foundation', 4: 'Two-Pointer Application' };
+        var blockNames = (window.moduleData && window.moduleData.blockNames) || {};
 
         if (challenges.length === 0) {
             html = '<p style="color: var(--text-dim); text-align: center;">No challenges match this filter.</p>';
@@ -441,7 +441,8 @@
 
             if (challenge.block !== currentBlock) {
                 currentBlock = challenge.block;
-                html += '<p style="color: var(--cyan); font-size: 0.85rem; margin: 1.5rem 0 0.5rem; font-weight: 600;">Block ' + currentBlock + ': ' + (blockNames[currentBlock] || '') + ' <span style="opacity: 0.7">' + difficultyStars + '</span></p>';
+                var blockLabel = blockNames[currentBlock] ? 'Block ' + currentBlock + ': ' + blockNames[currentBlock] : 'Block ' + currentBlock;
+                html += '<p style="color: var(--cyan); font-size: 0.85rem; margin: 1.5rem 0 0.5rem; font-weight: 600;">' + blockLabel + ' <span style="opacity: 0.7">' + difficultyStars + '</span></p>';
             }
 
             html += renderSingleChallenge(displayNum, variant, challenge, difficultyStars);
