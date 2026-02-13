@@ -18,8 +18,8 @@ variants:
             Given <code>servers := []string{"web-1", "web-2", "api-1", "api-2", "db-1"}</code>, return a new slice
             containing the last 3 elements.
           hints:
-            - "Use a slice expression: <code>s[len(s)-3:]</code>"
-            - The result should be <code>[api-1 api-2 db-1]</code>
+            - How do you get elements from the end of a slice when Go doesn't support negative indexing?
+            - "Think about using <code>len(s)</code> to calculate the starting position of your slice expression."
           solution: |-
             servers := []string{"web-1", "web-2", "api-1", "api-2", "db-1"}
             last3 := servers[len(servers)-3:]
@@ -30,8 +30,8 @@ variants:
             Given <code>times := []int{234, 12, 891, 45, 567, 23, 445}</code> (response times in ms), find and print the
             minimum and maximum values. Use a single loop.
           hints:
-            - Initialize min and max to <code>times[0]</code>, then loop from index 1
-            - Use <code>if times[i] < min</code> and <code>if times[i] > max</code>
+            - "What's a safe starting value for min and max? Using 0 won't work — think about what element you already know exists."
+            - You only need one pass through the slice. Compare each element against your running min and max.
           solution: |-
             times := []int{234, 12, 891, 45, 567, 23, 445}
             min, max := times[0], times[0]
@@ -51,8 +51,8 @@ variants:
             batch size of 3, print each batch on its own line: <code>[web-1 web-2 web-3]</code>, <code>[web-4 web-5
             web-6]</code>, <code>[web-7]</code>.
           hints:
-            - Loop with <code>for i := 0; i < len(pods); i += batchSize</code>
-            - Compute <code>end := i + batchSize</code>, clamp with <code>if end > len(pods) { end = len(pods) }</code>
+            - You need a loop that jumps forward by the batch size each iteration, not one element at a time. Which loop form supports a custom step?
+            - What happens when the last batch is smaller than the batch size? You need to cap the end index so it doesn't go past the slice length.
           solution: |-
             pods := []string{"web-1", "web-2", "web-3", "web-4", "web-5", "web-6", "web-7"}
             batchSize := 3
@@ -69,8 +69,8 @@ variants:
             Start with an empty slice. Append the strings <code>"node-1"</code> through <code>"node-5"</code> using a
             loop. Then print the length, capacity, and contents.
           hints:
-            - Use <code>var nodes []string</code> then <code>append</code> in a loop
-            - Format node names with <code>fmt.Sprintf("node-%d", i)</code>
+            - Start with a nil slice and grow it inside a counting loop. You need to build each name dynamically from the loop index.
+            - "Check the lesson's Building Strings section for how to combine a string with a number. Use <code>len</code> and <code>cap</code> to inspect the slice afterwards."
           solution: |-
             var nodes []string
             for i := 1; i <= 5; i++ {
@@ -86,8 +86,8 @@ variants:
             Given <code>servers := []string{"nginx", "redis", "postgres", "mongo"}</code>, reverse the slice <strong>in
             place</strong> (don't create a new slice). Print the result.
           hints:
-            - "Two pointers: <code>i</code> starts at 0, <code>j</code> starts at <code>len(s)-1</code>"
-            - Swap <code>s[i], s[j] = s[j], s[i]</code> and walk inward
+            - Think about approaching from both ends simultaneously. When should you stop?
+            - "Each step, move both positions one closer to the center, swapping as you go."
           solution: |-
             servers := []string{"nginx", "redis", "postgres", "mongo"}
             for i, j := 0, len(servers)-1; i < j; i, j = i+1, j-1 {
@@ -101,8 +101,8 @@ variants:
             (<code>"web-2"</code>) <strong>without preserving order</strong> (swap with last element, then shrink).
             Print the result.
           hints:
-            - "Swap: <code>pods[1] = pods[len(pods)-1]</code>"
-            - "Shrink: <code>pods = pods[:len(pods)-1]</code>"
+            - "If order doesn't matter, you don't need to shift everything. What's the cheapest way to fill the gap left by the removed element?"
+            - "After filling the gap, the slice is one element too long. How do you shrink a slice by one without copying?"
           solution: |-
             pods := []string{"web-1", "web-2", "web-3", "web-4"}
             pods[1] = pods[len(pods)-1]
@@ -114,8 +114,8 @@ variants:
             Given <code>queue := []string{"job-a", "job-b", "job-d"}</code>, insert <code>"job-c"</code> at index 2
             (before <code>"job-d"</code>). Print the result: <code>[job-a job-b job-c job-d]</code>.
           hints:
-            - "Grow by one: <code>queue = append(queue, \"\")</code>"
-            - "Shift right: <code>copy(queue[3:], queue[2:])</code>, then set <code>queue[2] = \"job-c\"</code>"
+            - "Inserting needs three steps: make room, shift existing elements right, write the new value into the gap."
+            - "First grow the slice by one (append a zero value). Then shift elements at and after the target index one position right. Then assign the new value."
           solution: |-
             queue := []string{"job-a", "job-b", "job-d"}
             queue = append(queue, "")
@@ -130,9 +130,8 @@ variants:
             "Pending"}</code><br>Filter <code>names</code> <strong>in place</strong> to keep only pods where status is
             <code>"Running"</code>. Print the result.
           hints:
-            - "Use the two-index pattern: <code>n := 0</code> for write position"
-            - Loop with range, if status is Running, write to <code>names[n]</code> and increment <code>n</code>
-            - "Truncate: <code>names = names[:n]</code>"
+            - "Use the write-index pattern from the lesson — one variable tracks where to write, the loop reads from each position."
+            - "Range over statuses to decide which elements to keep. Use the loop index to grab the matching name from the parallel slice. Truncate at the end."
           solution: |-
             names := []string{"web-1", "web-2", "db-1", "cache-1", "web-3"}
             statuses := []string{"Running", "Failed", "Running", "Running", "Pending"}
@@ -152,8 +151,8 @@ variants:
             (already sorted), remove duplicates <strong>in place</strong>. Print the result: <code>[v1.0 v1.1 v1.2
             v1.3]</code>.
           hints:
-            - "Use the write-index pattern: <code>n := 1</code> (first element always stays)"
-            - If <code>versions[i] != versions[i-1]</code>, write it to position <code>n</code> and increment
+            - "This is a variant of the filter pattern. Since the slice is sorted, duplicates are always next to each other. How can you use that?"
+            - "Compare each element to the one before it. If it's different, it's a new unique value — keep it. The first element always stays."
           solution: |-
             versions := []string{"v1.0", "v1.0", "v1.1", "v1.1", "v1.1", "v1.2", "v1.3", "v1.3"}
             n := 1
@@ -174,8 +173,8 @@ variants:
             Given <code>levels := []string{"INFO", "ERROR", "INFO", "WARN", "ERROR", "INFO", "DEBUG", "ERROR"}</code>,
             count occurrences of each level using a map. Print each level and its count.
           hints:
-            - Create <code>counts := make(map[string]int)</code>
-            - Loop and <code>counts[level]++</code> — zero value of int is 0, so it just works
+            - What data structure maps a string key to an integer count?
+            - "The zero value of int is 0. So incrementing a key that doesn't exist yet just works — no need to check first."
           solution: |-
             levels := []string{"INFO", "ERROR", "INFO", "WARN", "ERROR", "INFO", "DEBUG", "ERROR"}
             counts := make(map[string]int)
@@ -193,8 +192,8 @@ variants:
             "backend"}</code><br>Build a <code>map[string][]string</code> grouping pod names by namespace. Print the
             map.
           hints:
-            - Use <code>grouped := make(map[string][]string)</code>
-            - Loop and <code>grouped[namespaces[i]] = append(grouped[namespaces[i]], pods[i])</code>
+            - What map type lets you store multiple strings under each key? Think about the value type.
+            - "Loop over the indices. The namespace determines which key to use, and the pod name gets appended to that key's slice."
           solution: |-
             pods := []string{"web-1", "web-2", "api-1", "db-1", "api-2"}
             namespaces := []string{"frontend", "frontend", "backend", "data", "backend"}
@@ -212,8 +211,8 @@ variants:
             "info"}</code><br><code>overrides := map[string]string{"timeout": "10s", "log_level":
             "debug"}</code><br>Merge them into a new map where overrides win. Print the result.
           hints:
-            - Create a new map, copy defaults in, then copy overrides in (overrides clobber)
-            - Or loop defaults first, then overrides — second loop overwrites
+            - "If both maps have the same key, which value should survive? Build your solution around that priority."
+            - "Iterate both maps into a fresh map. The order you iterate them determines which values win on conflicts."
           solution: |-
             defaults := map[string]string{"timeout": "30s", "retries": "3", "log_level": "info"}
             overrides := map[string]string{"timeout": "10s", "log_level": "debug"}
@@ -233,8 +232,8 @@ variants:
             Given <code>errors := []string{"timeout", "connection refused", "timeout", "DNS lookup failed", "timeout",
             "connection refused"}</code>, use a map-as-set to find unique error messages. Print them in any order.
           hints:
-            - Use <code>seen := make(map[string]bool)</code>
-            - Loop through errors, set <code>seen[err] = true</code>, then iterate the map keys
+            - "A map's keys are always unique. How can you exploit that to deduplicate a list?"
+            - "After recording each string as a map key, the map's keys ARE your unique set. Iterate the keys to print them."
           solution: >-
             errors := []string{"timeout", "connection refused", "timeout", "DNS lookup failed", "timeout", "connection
             refused"}
@@ -258,8 +257,8 @@ variants:
             <code>"app=nginx"</code> and returns the key and value. Split on the first <code>=</code> only (values might
             contain <code>=</code>).
           hints:
-            - Use <code>strings.Index(s, "=")</code> to find the first <code>=</code>
-            - "Slice: <code>s[:idx]</code> for key, <code>s[idx+1:]</code> for value"
+            - "You need to find the position of the first <code>=</code>, not split on all of them. Which <code>strings</code> function finds the index of a substring?"
+            - "Once you have the position, use slice expressions to grab everything before it (the key) and everything after it (the value)."
           solution: |-
             func parseLabel(s string) (string, string) {
                 idx := strings.Index(s, "=")
@@ -275,8 +274,8 @@ variants:
             splitResource(s string) (string, string)</code> that returns the namespace and resource name. If there's no
             <code>/</code>, return <code>"default"</code> as the namespace.
           hints:
-            - Use <code>strings.Contains(s, "/")</code> to check
-            - Use <code>strings.SplitN(s, "/", 2)</code> to split into at most 2 parts
+            - "First determine whether the separator exists at all. If it doesn't, you need to return a default namespace."
+            - "Limit your split to at most 2 parts, then check the result length to determine which format you got."
           solution: |-
             func splitResource(s string) (string, string) {
                 parts := strings.SplitN(s, "/", 2)
@@ -291,9 +290,8 @@ variants:
             Given a log line like <code>"2024-01-15T10:30:00Z ERROR [auth-service] connection refused"</code>, extract
             the timestamp, level, service name (without brackets), and message. Print each field.
           hints:
-            - Use <code>strings.Fields(line)</code> to split on whitespace
-            - "Service: <code>strings.Trim(fields[2], \"[]\")</code>"
-            - "Message: <code>strings.Join(fields[3:], \" \")</code>"
+            - "Splitting on whitespace gives you the individual parts: timestamp, level, service (with brackets), and the remaining message words."
+            - "The service name has brackets around it that need stripping. The message is all remaining words after the service, joined back into a single string."
           solution: |-
             line := "2024-01-15T10:30:00Z ERROR [auth-service] connection refused"
             fields := strings.Fields(line)
@@ -309,8 +307,8 @@ variants:
             build a Prometheus-style label string: <code>method="GET",status="200",path="/api/health"</code>. The pairs
             can be in any order.
           hints:
-            - Collect parts into a slice and <code>strings.Join</code>
-            - Format each pair as <code>key="value"</code> using <code>fmt.Sprintf</code>
+            - "Build each label pair as a formatted string, collect them all, then combine them. Look at the collect-and-join pattern in the lesson."
+            - "Each pair needs to include the quotes around the value. Remember to escape quotes inside a Go string with a backslash."
           solution: |-
             labels := map[string]string{"method": "GET", "status": "200", "path": "/api/health"}
             parts := make([]string, 0, len(labels))
@@ -347,11 +345,11 @@ variants:
               output: "0.0"
           hints:
             - title: 🤔 Think about it
-              content: You need to count errors and total lines. Then it's just division and rounding.
+              content: You need two numbers — how many errors and how many total lines. What do you do with those to get a percentage?
             - title: 💡 Hint
               content: >-
-                Count errors by checking <code>strings.Fields(line)[0] == "ERROR"</code>. Divide: <code>float64(errors)
-                / float64(total) * 100</code>. Round with <code>math.Round(rate*10) / 10</code>.
+                Extract the first word from each line to check its level. For the percentage, remember that dividing two
+                ints truncates — you need floats. Check the Numbers section in the lesson for how to round to one decimal.
           solution: |-
             func errorRate(lines []string) float64 {
                 if len(lines) == 0 {
@@ -386,13 +384,12 @@ variants:
           hints:
             - title: 🤔 Think about it
               content: >-
-                You need two steps: counting and sorting. What data structure counts things? What do you need to sort —
-                the map itself, or something extracted from it?
+                You need two steps: counting and sorting. What data structure counts things? And since maps aren't
+                sortable — what do you need to convert the data into before you can sort it?
             - title: 💡 Hint
               content: >-
-                Count with <code>map[string]int</code>. To sort by count, create a slice of structs with level and
-                count, then use <code>sort.Slice</code>. Build the output with <code>fmt.Sprintf</code> and
-                <code>strings.Join</code>.
+                This follows the count → sort → format pattern from the Putting It Together section of the lesson. The
+                key insight is transferring map data into a sortable slice.
           solution: |-
             func logReport(lines []string) string {
                 counts := make(map[string]int)
@@ -439,12 +436,13 @@ variants:
           hints:
             - title: 🤔 Think about it
               content: >-
-                This builds on the Log Level Report — same count-sort pattern, but now you also need to compute
-                percentages. How do you format a float to one decimal place?
+                This builds on the Log Level Report — same count-sort pattern. The extra step is computing a percentage
+                for each level. How do you format a float to one decimal place with a percent sign?
             - title: 💡 Hint
               content: >-
-                Reuse the count-sort pattern. For percentages: <code>float64(count) / float64(total) * 100</code>.
-                Format with <code>fmt.Sprintf("%s: %d (%.1f%%)", ...)</code>.
+                Reuse the count-sort-format pattern. The percentage is each level's count divided by total lines. See the
+                Numbers section for float conversion, and the Printing section for the format verb that outputs one decimal
+                place and a literal percent sign.
           solution: |-
             func logFrequency(lines []string) string {
                 if len(lines) == 0 {
@@ -500,13 +498,12 @@ variants:
           hints:
             - title: 🤔 Think about it
               content: >-
-                Break this into two steps: first split on commas to get individual pairs, then split each pair on
-                <code>=</code> to get key and value. What do you need to do to the value to remove the surrounding
-                quotes?
+                Two levels of splitting: first separate the individual pairs, then separate key from value within each
+                pair. What character separates pairs? What separates key from value?
             - title: 💡 Hint
               content: >-
-                Use <code>strings.Split(s, ",")</code> for pairs. For each pair, <code>strings.SplitN(pair, "=",
-                2)</code> gives key and value. Remove quotes with <code>strings.Trim(val, "\"")</code>.
+                After splitting each pair on <code>=</code>, the value still has quotes around it. You need to strip those.
+                Don't forget to handle empty input.
           solution: |-
             func parseLabels(s string) map[string]string {
                 result := make(map[string]string)
@@ -548,12 +545,12 @@ variants:
             - title: 🤔 Think about it
               content: >-
                 There are two formats: with labels (<code>name{labels} value</code>) and without (<code>name
-                value</code>). Check for the presence of <code>{</code> to determine which.
+                value</code>). How can you tell which format a line is? Handle them separately.
             - title: 💡 Hint
               content: >-
-                If <code>strings.Contains(line, "{")</code>: split on <code>{</code> for name, then find <code>}</code>
-                for labels, then parse the value after <code>} </code>. Reuse your label parser from the easier variant.
-                Parse the float with <code>strconv.ParseFloat</code>.
+                For the labeled format, find the braces to identify three sections: the name (before <code>{</code>), the
+                labels (between the braces), and the value (after <code>}</code>). You can reuse your label parser from
+                the easier variant.
           solution: |-
             func parseMetric(line string) (string, map[string]string, float64, error) {
                 labels := make(map[string]string)
@@ -614,13 +611,12 @@ variants:
           hints:
             - title: 🤔 Think about it
               content: >-
-                You've already written a metric parser. Now loop through lines, parse each one, and accumulate values in
-                a map keyed by metric name.
+                You already have a metric parser. Now you need to loop through lines, parse each one, and accumulate
+                values. What map type stores running totals by name?
             - title: 💡 Hint
               content: >-
-                Reuse <code>parseMetric</code> from the previous variant. Create <code>totals :=
-                make(map[string]float64)</code> and add each parsed value: <code>totals[name] += val</code>. Skip lines
-                that fail to parse.
+                Reuse your metric parser from the previous variant. Skip lines that fail to parse or that are comments.
+                The accumulation pattern is the same as counting, but with addition instead of increment.
           solution: |-
             func aggregateMetrics(lines []string) map[string]float64 {
                 totals := make(map[string]float64)
@@ -655,9 +651,9 @@ variants:
               output: "[\"api-1\", \"db-2\", \"web-1\", \"web-3\"]"
           hints:
             - title: 🤔 Think about it
-              content: Go's sort package has a function specifically for string slices. What is it?
+              content: "Go's sort package has a convenience function specifically for string slices. Check the Sorting section of the lesson."
             - title: 💡 Hint
-              content: Use <code>sort.Strings(names)</code> — it sorts in place. Then return the slice.
+              content: "It's a one-liner. The function sorts in place, then you return the same slice."
           solution: |-
             func sortPodNames(names []string) []string {
                 sort.Strings(names)
@@ -680,13 +676,12 @@ variants:
           hints:
             - title: 🤔 Think about it
               content: >-
-                You have two parallel slices. To sort them together, you need to pair them up. What data structure lets
-                you keep a name and memory value together?
+                You have two parallel slices that need to stay paired during sorting. What data structure lets you bundle
+                a name and a value together so they move as one unit?
             - title: 💡 Hint
               content: >-
-                Create a struct <code>type pod struct { name string; mem int }</code>. Build a slice of these,
-                <code>sort.Slice</code> by mem descending, then take the first <code>n</code> names. Clamp
-                <code>n</code> to <code>len(pods)</code> if needed.
+                Zip the parallel slices into structs so they stay paired when sorted. After sorting, extract just the
+                names from the top entries. Don't forget the edge case where n is larger than the input.
           solution: |-
             func topByMemory(names []string, memoryMB []int, n int) []string {
                 type pod struct {
@@ -734,12 +729,12 @@ variants:
           hints:
             - title: 🤔 Think about it
               content: >-
-                Same pattern as Top N: zip into structs, sort, format. The new piece is <code>fmt.Sprintf</code> with
-                width specifiers.
+                Same zip-sort-format pattern as Top N, but with three parallel slices and formatted output. The tricky
+                part is getting the format string right.
             - title: 💡 Hint
               content: >-
-                Create a struct with name, cpu, mem. Sort by cpu descending. Format each with <code>fmt.Sprintf("%-12s
-                %6.1f%% %6dMB", ...)</code>. Join with <code>\n</code>.
+                After zipping and sorting, check the Printing section of the lesson for width specifiers (left-aligned
+                strings, right-aligned numbers) and how to print a literal percent sign.
           solution: |-
             func resourceTable(names []string, cpuPercent []float64, memMB []int) string {
                 type resource struct {
@@ -784,13 +779,13 @@ variants:
           hints:
             - title: 🤔 Think about it
               content: >-
-                Split into lines. For each line: trim whitespace, skip empty/comments, split on first <code>=</code>,
-                trim key and value, strip quotes from value.
+                This follows the standard line-by-line parsing pattern: split into lines, decide what to skip, parse the
+                rest. What kinds of lines should be skipped?
             - title: 💡 Hint
               content: >-
-                Use <code>strings.Split(content, "\n")</code> for lines. <code>strings.TrimSpace</code> for whitespace.
-                <code>strings.HasPrefix(line, "#")</code> for comments. <code>strings.SplitN(line, "=", 2)</code> for
-                key/value. <code>strings.Trim(val, "\"")</code> for quotes.
+                The Line-by-Line Parsing section in the lesson walks through this exact pattern with a complete example.
+                The key steps are: split lines, trim whitespace, skip empties and comments, split key from value, clean
+                up the value.
           solution: |-
             func parseEnvFile(content string) map[string]string {
                 result := make(map[string]string)
@@ -834,13 +829,13 @@ variants:
           hints:
             - title: 🤔 Think about it
               content: >-
-                Track the "current section" as you loop through lines. When you see <code>[something]</code>, change the
-                current section. When you see <code>key=value</code>, add it to the current section's map.
+                This builds on the line-by-line pattern with one extra idea: you need to track which section you're
+                currently in. When you see a section header, update the tracker. When you see a key-value pair, file it
+                under the current section.
             - title: 💡 Hint
               content: >-
-                Initialize <code>currentSection := "default"</code>. Detect section headers with
-                <code>strings.HasPrefix(line, "[")</code> and extract the name with <code>line[1:len(line)-1]</code>.
-                Create the inner map on first use with a nil check.
+                The return type is a nested map. Be careful — writing to an inner map that hasn't been initialized will
+                panic. Check the Nested Maps section of the lesson for how to handle this safely.
           solution: |-
             func parseINI(content string) map[string]map[string]string {
                 result := make(map[string]map[string]string)
@@ -889,12 +884,13 @@ variants:
           hints:
             - title: 🤔 Think about it
               content: >-
-                Build on the INI parser. After extracting the value, scan for <code>${...}</code> patterns and replace
-                them with env lookups.
+                Build on your INI parser. After extracting each value, you need to find <code>${...}</code> patterns and
+                replace them with lookups from the env map.
             - title: 💡 Hint
               content: >-
-                After parsing key=value, use <code>os.Expand(val, func(key string) string { return env[key] })</code> —
-                Go's stdlib has this built in! Or do it manually with <code>strings.ReplaceAll</code> in a loop.
+                Go's stdlib has a function in the <code>os</code> package that does variable expansion with a custom
+                lookup function. Check <code>go doc os.Expand</code> — it handles both <code>${VAR}</code> and
+                <code>$VAR</code> syntax.
           solution: |-
             func parseINIExpand(content string, env map[string]string) map[string]map[string]string {
                 result := make(map[string]map[string]string)
