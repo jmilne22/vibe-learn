@@ -3,7 +3,9 @@ conceptLinks:
   In-Place Manipulation: "#in-place-manipulation"
   Map Patterns: "#map-patterns-for-infra"
   String Parsing: "#string-parsing--building"
+  Numbers & Percentages: "#numbers-floats--percentages"
   Sorting & Filtering: "#sorting--filtering"
+  Line Parsing: "#line-by-line-parsing"
 sharedContent: {}
 variants:
   warmups:
