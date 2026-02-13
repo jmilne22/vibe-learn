@@ -35,20 +35,13 @@ for i := 0; i < 10; i++ {
     fmt.Println(i)  // 0, 1, 2, ..., 9
 }
 
-// Stepping by more than 1 — useful for batching
-for i := 0; i < len(pods); i += batchSize {
-    end := i + batchSize
-    if end > len(pods) {
-        end = len(pods)
-    }
-    fmt.Println(pods[i:end])  // print each batch
-}
-
 // Counting from 1
 for i := 1; i <= 5; i++ {
     fmt.Println(fmt.Sprintf("node-%d", i))  // node-1, node-2, ..., node-5
 }
 ```
+
+The three parts of a C-style loop are: `init; condition; post`. You can put anything in the `post` part — it doesn't have to be `i++`. This is how you control the step size, which you'll need for batching (covered in its own section below).
 
 ```go
 // Multi-variable form — used for two-pointer patterns
@@ -304,15 +297,49 @@ for i, name := range names {
 # Go: no comprehensions. Loop and append. Pre-allocate with make().
 ```
 
-### Finding Min / Max
+### Batching (Processing in Chunks)
 
-No builtin for this. Just loop:
+You have 7 pods and need to process them in batches of 3. That means groups: `[0:3]`, `[3:6]`, `[6:7]`. How do you loop that?
+
+Start from what you know — a C-style loop counts up by 1:
 
 ```go
-times := []int{234, 12, 891, 45, 567, 23, 445}
+for i := 0; i < len(pods); i++ { ... }
+//  i goes: 0, 1, 2, 3, 4, 5, 6
+```
 
+But you don't want every index — you want the *start* of each batch. Those are 0, 3, 6. The step isn't 1, it's `batchSize`. The `post` part of a C-style loop can be anything, so change `i++` to `i += batchSize`:
+
+```go
+for i := 0; i < len(pods); i += batchSize { ... }
+//  i goes: 0, 3, 6
+```
+
+Now each `i` is the start of a batch. The end is `i + batchSize`. So the batch is `pods[i : i+batchSize]` — except there's a problem. When `i=6` and `batchSize=3`, `i+batchSize=9`, which is past the end of a 7-element slice. Go will panic with "index out of range."
+
+The fix: cap the end index so it never exceeds `len(pods)`:
+
+```go
+end := i + batchSize
+if end > len(pods) {
+    end = len(pods)
+}
+// Now pods[i:end] is always safe
+```
+
+That's the whole pattern. You derive it from three ideas: (1) C-style loops can step by any amount, (2) each step is the start of a batch, and (3) the last batch might be short so you clamp the end.
+
+### Finding Min / Max
+
+Go has no `min()`/`max()` for slices. You build it from a loop.
+
+The question is: what do you initialize min and max to? If you start with `min := 0`, you'll get 0 as the minimum for any slice of positive numbers — that's wrong. If you start with `min := 999999`, you're guessing at an upper bound — also wrong.
+
+The safe answer: initialize both to the first element. Now min and max are already correct for a 1-element slice, and you just need to scan the rest:
+
+```go
 min, max := times[0], times[0]
-for _, t := range times[1:] {
+for _, t := range times[1:] {   // start from index 1 — [0] is already covered
     if t < min {
         min = t
     }
@@ -320,11 +347,9 @@ for _, t := range times[1:] {
         max = t
     }
 }
-fmt.Printf("min=%dms max=%dms\n", min, max)
-// min=12ms max=891ms
 ```
 
-Initialize to the first element, then scan the rest. Works for any comparable type.
+One pass, two comparisons per element. `times[1:]` skips the first element since it's already accounted for. This works for any comparable type — ints, floats, strings.
 
 ## In-Place Manipulation
 
@@ -341,73 +366,81 @@ Go's simultaneous assignment makes this trivial.
 
 ### Reverse In Place
 
+Think about what reversing means: the first element swaps with the last, the second with the second-to-last, and so on. You need two positions — one starting at the front, one at the back — walking toward each other. When they meet in the middle, you're done.
+
+That's two loop variables. Go's C-style loop supports this with the multi-variable form:
+
 ```go
 for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
     s[i], s[j] = s[j], s[i]
 }
 ```
 
-Two pointers, walk inward, swap. Practice this until you can write it without thinking.
+`i` starts at 0, `j` starts at the last index. Each step: swap them, move both inward. Stop when `i >= j` (they've met or crossed). The simultaneous assignment `i, j = i+1, j-1` updates both in one statement.
 
 ### Remove at Index (Preserving Order)
 
+You want to remove element `i` and keep everything else in the same order. Think of it as: take everything before `i`, then everything after `i`, and join them.
+
 ```go
-// Remove element at index i, shift everything left
 s = append(s[:i], s[i+1:]...)
 ```
 
-Creates a new slice header but reuses the backing array. Elements after `i` shift left by one.
+`s[:i]` is everything before index `i`. `s[i+1:]` is everything after. `append` joins them, shifting the later elements left to fill the gap. The `...` unpacks the second slice so append can accept it.
 
 ### Remove at Index (Fast, Order Doesn't Matter)
 
+If you don't care about order, there's an O(1) trick: copy the last element into the gap, then shrink:
+
 ```go
-// Swap with last element, then shrink
-s[i] = s[len(s)-1]
-s = s[:len(s)-1]
+s[i] = s[len(s)-1]    // overwrite the one to remove with the last element
+s = s[:len(s)-1]       // shrink by one
 ```
 
-O(1) instead of O(n). Use this when order doesn't matter — like removing a terminated pod from a running list.
+Only two operations regardless of slice size. Use this when order doesn't matter — like removing a terminated pod from a running list.
 
 ### Insert at Index
 
+Inserting is the reverse of removing: you need to make a gap, then write into it. Three steps:
+
 ```go
-// Insert val at index i — grow, shift right, write
-s = append(s, "")          // grow by one (use zero value for the type)
-copy(s[i+1:], s[i:])       // shift elements at i and beyond one position right
-s[i] = val                 // insert into the gap
+s = append(s, "")      // 1. grow the slice by one (value doesn't matter, it'll be overwritten)
+copy(s[i+1:], s[i:])   // 2. shift elements at i and beyond one position right, opening a gap at i
+s[i] = val             // 3. write the new value into the gap
 ```
 
-`copy(dst, src)` copies elements from `src` into `dst`, overwriting whatever's there. It copies `min(len(dst), len(src))` elements.
+`copy(dst, src)` copies elements from `src` into `dst`, overwriting whatever's there. Here `s[i:]` is the source (elements from `i` onward) and `s[i+1:]` is the destination (one position to the right). The overlap is fine — `copy` handles it correctly.
 
 ### Filter In Place
 
-Keep elements that match a condition, reusing the same backing array:
+You want to keep only elements that match a condition, without allocating a new slice. The naive approach — looping and deleting non-matches — shifts elements every deletion (O(n²)). The efficient way uses a separate write position.
+
+The idea: read through every element, but only write the ones you want to keep. You need two positions — a "read" position (the loop variable) and a "write" position (`n`). They start together, but `n` only advances when you keep an element:
 
 ```go
-// Keep only running pods (struct slice version)
-n := 0
-for _, pod := range pods {
+n := 0                          // write position
+for _, pod := range pods {      // read position (implicit)
     if pod.Status == "Running" {
-        pods[n] = pod
-        n++
+        pods[n] = pod           // write keeper to position n
+        n++                     // advance write position
     }
+    // non-matches: read advances, write stays — element gets overwritten later
 }
-pods = pods[:n]
+pods = pods[:n]                 // shrink to only the kept elements
 ```
 
-This is the **in-place filter pattern**. Two-index approach: `n` tracks where to write, the range iterates where to read.
+After the loop, everything before index `n` is a keeper. Everything at `n` and beyond is garbage. `pods[:n]` slices it to just the good part.
 
-**Parallel slice version** — when your data is in separate slices instead of structs:
+**Parallel slice version** — same idea, but you use the index `i` to look up the corresponding element in another slice:
 
 ```go
-// names and statuses are parallel slices — names[i] goes with statuses[i]
 names := []string{"web-1", "web-2", "db-1", "cache-1"}
 statuses := []string{"Running", "Failed", "Running", "Running"}
 
 n := 0
 for i, status := range statuses {
     if status == "Running" {
-        names[n] = names[i]
+        names[n] = names[i]    // use i to index into the parallel slice
         n++
     }
 }
@@ -415,18 +448,23 @@ names = names[:n]
 // names = ["web-1", "db-1", "cache-1"]
 ```
 
-Same write-index pattern. Use the index `i` to reach into the parallel slice.
+The difference: with structs you iterate the slice directly (`for _, pod`). With parallel slices you need the index (`for i, status`) so you can reach into the other slice.
 
 ### Deduplicate a Sorted Slice
 
-A variant of the filter pattern — keep an element only if it differs from the previous one:
+If the slice is sorted, all duplicates are adjacent. So the question becomes: "is this element the same as the one before it?" If yes, skip it. If no, keep it.
+
+This is the filter-in-place pattern again — a write position `n` that only advances for keepers. But there are two differences from the filter above:
+
+1. The first element always stays (there's nothing before it to compare to), so `n` starts at 1 instead of 0.
+2. You need to compare `versions[i]` with `versions[i-1]`, which means you need the index — so use a C-style `for` starting at 1, not `range`.
 
 ```go
 versions := []string{"v1.0", "v1.0", "v1.1", "v1.1", "v1.2", "v1.3", "v1.3"}
 
 n := 1  // first element always stays
 for i := 1; i < len(versions); i++ {
-    if versions[i] != versions[i-1] {
+    if versions[i] != versions[i-1] {  // different from previous? keep it
         versions[n] = versions[i]
         n++
     }
@@ -435,7 +473,7 @@ versions = versions[:n]
 // [v1.0 v1.1 v1.2 v1.3]
 ```
 
-Note this uses a C-style `for` loop (not `range`) because we need to compare adjacent elements by index.
+If you understood the filter pattern, this is just "filter where the condition is: different from the previous element."
 
 *Python comparison*
 
@@ -525,7 +563,9 @@ if seen["connection refused"] {
 
 ### Merge Two Maps
 
-Override defaults with user-supplied values:
+Common infra pattern: you have default settings and user overrides. The override should win for any key that appears in both.
+
+Maps don't have a merge method. You build it: create a new map, copy one in, then copy the other. Whichever you copy second wins on conflicts:
 
 ```go
 defaults := map[string]string{"timeout": "30s", "retries": "3", "log_level": "info"}
@@ -533,15 +573,15 @@ overrides := map[string]string{"timeout": "10s", "log_level": "debug"}
 
 merged := make(map[string]string)
 for k, v := range defaults {
-    merged[k] = v
+    merged[k] = v              // copy all defaults
 }
 for k, v := range overrides {
-    merged[k] = v  // overwrites defaults
+    merged[k] = v              // overwrite with user values (second write wins)
 }
 // merged = map[log_level:debug retries:3 timeout:10s]
 ```
 
-Copy defaults in first, then overrides. Second write wins.
+Order matters. If you copied overrides first and defaults second, defaults would win — the opposite of what you want.
 
 ### Nested Maps
 
@@ -579,7 +619,11 @@ for k, v := range m {
 }
 ```
 
-If you need sorted output, collect keys into a slice and sort first:
+Go randomizes map iteration order on purpose — so you don't accidentally depend on it. If you need deterministic output (sorted keys), you have to sort yourself:
+
+1. Collect the keys into a slice (loop over the map, append each key)
+2. Sort the slice (`sort.Strings` for string keys)
+3. Loop the sorted slice, look up each value from the map
 
 ```go
 keys := make([]string, 0, len(m))
@@ -591,6 +635,8 @@ for _, k := range keys {
     fmt.Println(k, m[k])
 }
 ```
+
+This is verbose compared to Python's `for k in sorted(d)`, but there's no shortcut. You'll use this pattern whenever test output needs to be deterministic.
 
 ## String Parsing & Building
 
@@ -694,29 +740,33 @@ Infrastructure code mostly deals with integers (ports, counts, bytes), but repor
 
 ### Percentage Calculation
 
+In Go, dividing two ints gives an int — the decimal part is thrown away. `3 / 8` is `0`, not `0.375`. This is different from Python 3 where `/` always gives a float.
+
+So to get a real percentage, you must convert to `float64` *before* dividing:
+
 ```go
 errors := 3
 total := 8
 
-// Must convert to float64 before dividing — int division truncates
 pct := float64(errors) / float64(total) * 100  // 37.5
 fmt.Printf("%.1f%%\n", pct)                     // "37.5%"
 ```
 
-Without the `float64()` conversion: `3 / 8 = 0` (integer division truncates).
+The `float64()` calls do the conversion. `%%` prints a literal percent sign (because `%` is the format specifier prefix).
 
 ### Rounding
 
-```go
-import "math"
+`math.Round` rounds to the nearest integer. But what if you want 1 decimal place? There's no `math.Round(x, places)`. The trick: multiply to shift the decimal point, round, then divide back.
 
-// Round to 1 decimal place: multiply, round, divide
+To round to 1 decimal: multiply by 10 (moves the tenths digit into the ones place), round, divide by 10:
+
+```go
 rate := 33.3333
 rounded := math.Round(rate*10) / 10  // 33.3
-
-// Round to nearest integer
-count := math.Round(42.6)  // 43
+// 33.3333 * 10 = 333.333 → Round → 333 → / 10 = 33.3
 ```
+
+To round to 2 decimals, multiply/divide by 100. To round to the nearest integer, just `math.Round(x)`.
 
 ### Parsing Numbers from Strings
 
@@ -784,38 +834,37 @@ if len(pods) > 5 {
 
 ### Zipping Parallel Slices for Sorting
 
-When data comes as parallel slices (`names[i]` goes with `memoryMB[i]`), zip them into a struct slice first so you can sort them together:
+`sort.Slice` rearranges elements within a single slice. But if your data is in parallel slices (`names[i]` goes with `memoryMB[i]`), sorting one slice would break the pairing — `names` would be reordered but `memoryMB` would stay put.
+
+The solution: combine them into a struct slice so the paired data moves together. Three steps:
+
+**1. Define a struct to hold one pair.** You can define a `type` inside a function — it's scoped to that function. Use this for throwaway structs:
 
 ```go
-names := []string{"web-1", "api-1", "db-1", "cache-1"}
-memoryMB := []int{512, 256, 2048, 1024}
-
-// Define a struct type to hold paired data
 type pod struct {
     name string
     mem  int
 }
+```
 
-// Zip the parallel slices
+**2. Zip the parallel slices into structs.** Loop by index, pull from both slices:
+
+```go
 pods := make([]pod, len(names))
 for i := range names {
     pods[i] = pod{names[i], memoryMB[i]}
 }
-
-// Now sort by memory descending
-sort.Slice(pods, func(i, j int) bool {
-    return pods[i].mem > pods[j].mem
-})
-
-// Extract just the names back out
-topNames := make([]string, 3) // top 3
-for i := 0; i < 3; i++ {
-    topNames[i] = pods[i].name
-}
-// topNames = ["db-1", "cache-1", "web-1"]
 ```
 
-You can define a `type` inside a function — it's scoped to that function. Use this whenever you need a throwaway struct for sorting or grouping.
+**3. Sort the struct slice.** Now `sort.Slice` moves name and memory together:
+
+```go
+sort.Slice(pods, func(i, j int) bool {
+    return pods[i].mem > pods[j].mem  // descending by memory
+})
+```
+
+After sorting, extract the field you need (e.g. `pods[0].name` for the highest-memory pod). If you need a slice of just the names, loop and pull them out.
 
 ## Line-by-Line Parsing
 
