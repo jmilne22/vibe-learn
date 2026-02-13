@@ -36,12 +36,6 @@
             ]
         },
         {
-            label: 'Persona 5',
-            options: [
-                { value: 'persona5-dark', label: 'Dark' }
-            ]
-        },
-        {
             label: 'Classic',
             options: [
                 { value: 'dark', label: 'Dark' },
@@ -97,8 +91,7 @@
 
     // Theme-specific Google Fonts URLs (loaded async, not via @import)
     var themeFonts = {
-        'factorio-dark': 'https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Titillium+Web:wght@400;600;700&display=swap',
-        'persona5-dark': 'https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Bebas+Neue&family=Archivo+Black&display=swap'
+        'factorio-dark': 'https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Titillium+Web:wght@400;600;700&display=swap'
     };
 
     // Apply theme to document and swap the theme CSS + fonts
