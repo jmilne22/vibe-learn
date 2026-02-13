@@ -12,6 +12,22 @@ variants:
     - id: warmup_1
       concept: Structs
       variants:
+        - id: v0a
+          title: Create and Print a Pod
+          description: >-
+            Define a <code>Pod</code> struct with two fields: <code>Name</code> (string) and <code>Status</code>
+            (string). Create a pod named <code>"web-1"</code> with status <code>"Running"</code> and print it.
+          hints:
+            - "Use <code>type Pod struct { ... }</code> with exported (capitalized) field names."
+            - "Create with: <code>Pod{Name: \"web-1\", Status: \"Running\"}</code>."
+          solution: |-
+            type Pod struct {
+                Name   string
+                Status string
+            }
+
+            pod := Pod{Name: "web-1", Status: "Running"}
+            fmt.Println(pod) // {web-1 Running}
         - id: v1
           title: Define a ConfigEntry
           description: >-
@@ -187,6 +203,30 @@ variants:
     - id: warmup_3
       concept: Methods
       variants:
+        - id: v0a
+          title: Simple Status Method
+          description: >-
+            Define a <code>Pod</code> struct with <code>Name</code> (string) and <code>Ready</code> (bool). Write a
+            value receiver method <code>StatusLine() string</code> that returns <code>"name: ready"</code> if Ready is
+            true, or <code>"name: not ready"</code> otherwise. Test with both cases.
+          hints:
+            - "Value receiver: <code>func (p Pod) StatusLine() string</code>."
+            - "Use an if/else to pick the suffix, then combine with the name."
+          solution: |-
+            type Pod struct {
+                Name  string
+                Ready bool
+            }
+
+            func (p Pod) StatusLine() string {
+                if p.Ready {
+                    return p.Name + ": ready"
+                }
+                return p.Name + ": not ready"
+            }
+
+            fmt.Println(Pod{"web-1", true}.StatusLine())  // web-1: ready
+            fmt.Println(Pod{"web-2", false}.StatusLine()) // web-2: not ready
         - id: v1
           title: Pod FullName Method
           description: >-
@@ -526,6 +566,34 @@ variants:
     - id: warmup_7
       concept: Pointers
       variants:
+        - id: v0a
+          title: Pass by Value vs Pointer
+          description: >-
+            Create a <code>Counter</code> struct with a <code>Count</code> (int) field. Write two functions:
+            <code>incrementValue(c Counter)</code> (takes by value) and <code>incrementPointer(c *Counter)</code>
+            (takes by pointer). Both should add 1 to Count. Call each and print the counter after to see which one
+            actually changed it.
+          hints:
+            - "By value: the function gets a copy, so changes don't affect the original."
+            - "By pointer: the function modifies the original via <code>c.Count++</code>."
+          solution: |-
+            type Counter struct {
+                Count int
+            }
+
+            func incrementValue(c Counter) {
+                c.Count++ // modifies the copy only
+            }
+
+            func incrementPointer(c *Counter) {
+                c.Count++ // modifies the original
+            }
+
+            c := Counter{Count: 0}
+            incrementValue(c)
+            fmt.Println(c.Count) // 0 (unchanged!)
+            incrementPointer(&c)
+            fmt.Println(c.Count) // 1 (changed)
         - id: v1
           title: Pointer Basics
           description: >-
