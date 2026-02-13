@@ -482,6 +482,151 @@
         hasInlineExercises = inlineContainers.length > 0;
     }
 
+    // --- Split layout helpers for inline exercises ---
+
+    function extractReferenceContent(inlineEl) {
+        var nodes = [];
+        var sibling = inlineEl.previousElementSibling;
+        while (sibling) {
+            var tag = sibling.tagName;
+            // Stop at section boundary or another inline-exercises div
+            if (tag === 'H2' || sibling.classList.contains('inline-exercises')) break;
+
+            if (tag === 'PRE' ||
+                sibling.classList.contains('code-labeled') ||
+                sibling.classList.contains('code-compare')) {
+                nodes.unshift({ type: 'code', node: sibling.cloneNode(true) });
+            } else if (tag === 'H3' || tag === 'H4') {
+                nodes.unshift({ type: 'heading', node: sibling.cloneNode(true) });
+            }
+            sibling = sibling.previousElementSibling;
+        }
+
+        // Filter orphan headings (heading not followed by a code block)
+        var filtered = [];
+        for (var i = 0; i < nodes.length; i++) {
+            if (nodes[i].type === 'heading') {
+                // Keep only if next item is a code block
+                if (i + 1 < nodes.length && nodes[i + 1].type === 'code') {
+                    filtered.push(nodes[i]);
+                }
+            } else {
+                filtered.push(nodes[i]);
+            }
+        }
+        return filtered;
+    }
+
+    function buildRefPane(refNodes) {
+        var pane = document.createElement('div');
+        pane.className = 'inline-exercises-ref';
+
+        var title = document.createElement('div');
+        title.className = 'inline-exercises-ref-title';
+
+        var titleText = document.createElement('span');
+        titleText.textContent = 'Reference';
+        title.appendChild(titleText);
+
+        var hideBtn = document.createElement('button');
+        hideBtn.className = 'inline-exercises-ref-hide';
+        hideBtn.textContent = 'Hide';
+        hideBtn.addEventListener('click', function() {
+            collapseRefPane(pane);
+        });
+        title.appendChild(hideBtn);
+
+        pane.appendChild(title);
+
+        refNodes.forEach(function(item) {
+            pane.appendChild(item.node);
+        });
+        return pane;
+    }
+
+    function collapseRefPane(refPane) {
+        var bodyDiv = refPane.closest('.inline-exercises-body');
+        var inlineEl = bodyDiv ? bodyDiv.closest('.inline-exercises') : null;
+        if (!bodyDiv) return;
+
+        refPane.style.display = 'none';
+        bodyDiv.classList.remove('split-layout');
+        if (inlineEl) clearSplitBreakout(inlineEl);
+
+        // Add a small "show reference" button above the cards
+        var showBtn = document.createElement('button');
+        showBtn.className = 'inline-exercises-ref-show';
+        showBtn.textContent = 'Show Reference';
+        showBtn.addEventListener('click', function() {
+            expandRefPane(refPane, showBtn);
+        });
+        bodyDiv.insertBefore(showBtn, bodyDiv.firstChild);
+    }
+
+    function expandRefPane(refPane, showBtn) {
+        var bodyDiv = refPane.closest('.inline-exercises-body') ||
+                      refPane.parentNode && refPane.parentNode.closest('.inline-exercises-body');
+        // refPane might be detached from bodyDiv if inside a details wrapper
+        var inlineEl = bodyDiv ? bodyDiv.closest('.inline-exercises') : null;
+        if (!bodyDiv) return;
+
+        showBtn.remove();
+        refPane.style.display = '';
+
+        if (shouldUseSplitLayout()) {
+            // Ensure refPane is a direct child of bodyDiv (not inside a details)
+            if (refPane.parentNode !== bodyDiv) {
+                bodyDiv.appendChild(refPane);
+            }
+            bodyDiv.classList.add('split-layout');
+            if (inlineEl) applySplitBreakout(inlineEl);
+        }
+    }
+
+    function shouldUseSplitLayout() {
+        return window.innerWidth >= 1400;
+    }
+
+    function applySplitBreakout(inlineEl) {
+        var container = inlineEl.closest('.container');
+        if (!container) return;
+        var containerRect = container.getBoundingClientRect();
+        var availableWidth = document.documentElement.clientWidth;
+
+        // On sidebar-open, account for the sidebar
+        var sidebarOffset = 0;
+        if (document.body.classList.contains('sidebar-open')) {
+            var sidebar = document.querySelector('.sidebar');
+            if (sidebar) sidebarOffset = sidebar.offsetWidth;
+        }
+
+        var usableWidth = availableWidth - sidebarOffset;
+        var maxBreakout = usableWidth - 80; // 40px padding each side
+        var containerWidth = containerRect.width;
+        var extraWidth = Math.min(maxBreakout, usableWidth * 0.85) - containerWidth;
+
+        if (extraWidth > 0) {
+            var marginLeft = -(extraWidth / 2);
+            var marginRight = marginLeft;
+
+            // If sidebar is open, shift breakout to the right
+            if (sidebarOffset > 0) {
+                marginLeft = -(extraWidth / 2) + (sidebarOffset / 2);
+                marginRight = -(extraWidth / 2) - (sidebarOffset / 2);
+            }
+
+            inlineEl.style.marginLeft = marginLeft + 'px';
+            inlineEl.style.marginRight = marginRight + 'px';
+            inlineEl.style.width = 'calc(100% + ' + extraWidth + 'px)';
+        }
+    }
+
+    function clearSplitBreakout(inlineEl) {
+        inlineEl.style.marginLeft = '';
+        inlineEl.style.marginRight = '';
+        inlineEl.style.width = '';
+    }
+
     function renderInlineWarmups() {
         if (!hasInlineExercises || !variantsData || !variantsData.warmups) return;
 
@@ -521,12 +666,20 @@
                 el.insertBefore(header, el.firstChild);
             }
 
-            // Get or create the cards container
+            // Get or create the body wrapper and cards container
+            var bodyDiv = el.querySelector('.inline-exercises-body');
             var cardsDiv = el.querySelector('.inline-exercises-cards');
+            var isFirstRender = !bodyDiv;
+
+            if (!bodyDiv) {
+                bodyDiv = document.createElement('div');
+                bodyDiv.className = 'inline-exercises-body';
+                el.appendChild(bodyDiv);
+            }
             if (!cardsDiv) {
                 cardsDiv = document.createElement('div');
                 cardsDiv.className = 'inline-exercises-cards';
-                el.appendChild(cardsDiv);
+                bodyDiv.insertBefore(cardsDiv, bodyDiv.firstChild);
             }
 
             if (allVariants.length === 0) {
@@ -573,6 +726,28 @@
                 EC.initThinkingTimer(ex, { seconds: THINKING_TIME_SECONDS });
                 ER().initPersonalNotes(ex);
             });
+
+            // On first render, extract reference content — starts collapsed
+            if (isFirstRender) {
+                var refNodes = extractReferenceContent(el);
+                if (refNodes.length > 0) {
+                    var refPane = buildRefPane(refNodes);
+                    refPane.style.display = 'none';
+                    bodyDiv.appendChild(refPane);
+
+                    // Show button to reveal reference on demand
+                    var showBtn = document.createElement('button');
+                    showBtn.className = 'inline-exercises-ref-show';
+                    showBtn.textContent = 'Show Reference';
+                    showBtn.addEventListener('click', function() {
+                        expandRefPane(refPane, showBtn);
+                    });
+                    bodyDiv.insertBefore(showBtn, cardsDiv);
+
+                    el._hasRefPane = true;
+                }
+            }
+
             if (window.initExerciseProgress) window.initExerciseProgress();
         });
     }
@@ -588,6 +763,63 @@
         var btnId = 'shuffle-inline-' + concept.replace(/[^a-zA-Z0-9]/g, '-');
         EC.flashShuffleBtn(btnId, 'green-bright');
     }
+
+    // --- Resize handler: toggle split vs collapsible at 1400px boundary ---
+
+    function toggleSplitLayouts() {
+        if (!hasInlineExercises) return;
+        var wantSplit = shouldUseSplitLayout();
+
+        inlineContainers.forEach(function(container) {
+            var el = container.element;
+            if (!el._hasRefPane) return;
+
+            var bodyDiv = el.querySelector('.inline-exercises-body');
+            if (!bodyDiv) return;
+
+            var currentlySplit = bodyDiv.classList.contains('split-layout');
+
+            if (!wantSplit && currentlySplit) {
+                // Viewport narrowed below threshold while split — collapse
+                var refPane = bodyDiv.querySelector('.inline-exercises-ref');
+                if (refPane) {
+                    bodyDiv.classList.remove('split-layout');
+                    clearSplitBreakout(el);
+                    refPane.style.display = 'none';
+                    // Add show button if not already present
+                    if (!bodyDiv.querySelector('.inline-exercises-ref-show')) {
+                        var cardsDiv = bodyDiv.querySelector('.inline-exercises-cards');
+                        var showBtn = document.createElement('button');
+                        showBtn.className = 'inline-exercises-ref-show';
+                        showBtn.textContent = 'Show Reference';
+                        showBtn.addEventListener('click', function() {
+                            expandRefPane(refPane, showBtn);
+                        });
+                        bodyDiv.insertBefore(showBtn, cardsDiv);
+                    }
+                }
+            } else if (wantSplit && currentlySplit) {
+                // Recalculate breakout margins (e.g. after sidebar toggle)
+                applySplitBreakout(el);
+            }
+        });
+    }
+
+    var resizeTimer;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(toggleSplitLayouts, 150);
+    });
+
+    // Watch for sidebar toggle (body class changes) to recalculate breakout
+    document.addEventListener('DOMContentLoaded', function() {
+        var sidebarObserver = new MutationObserver(function() {
+            if (!hasInlineExercises) return;
+            // Delay to let sidebar CSS transition finish
+            setTimeout(toggleSplitLayouts, 350);
+        });
+        sidebarObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    });
 
     function adaptBottomWarmupsSection() {
         if (!hasInlineExercises) return;
@@ -606,35 +838,29 @@
         }
 
         if (allCovered) {
-            // Wrap the bottom warmups section in a collapsed details element
-            var parent = container.parentNode;
-            var existingDetails = parent.querySelector('.review-all-warmups');
-            if (existingDetails) return; // already wrapped
+            // Hide the bottom warmups section entirely — inline exercises cover everything
+            container.style.display = 'none';
 
-            var details = document.createElement('details');
-            details.className = 'review-all-warmups';
-            var summary = document.createElement('summary');
-            summary.textContent = 'Review All Warmups';
-            details.appendChild(summary);
-
-            // Move the warmups header (h3) and container into the details
-            var warmupHeader = null;
+            // Hide the warmups header (h3)
             var prev = container.previousElementSibling;
             while (prev) {
                 if (prev.tagName === 'H3' && prev.textContent.indexOf('Warmups') !== -1) {
-                    warmupHeader = prev;
+                    prev.style.display = 'none';
                     break;
                 }
                 prev = prev.previousElementSibling;
             }
 
-            // Also move the concept filter if present
+            // Hide the concept filter and shuffle button if present
             var conceptFilter = document.getElementById('warmup-concept-filter');
+            if (conceptFilter) conceptFilter.style.display = 'none';
+            var shuffleBtn = document.getElementById('shuffle-warmups-btn');
+            if (shuffleBtn) shuffleBtn.style.display = 'none';
 
-            parent.insertBefore(details, warmupHeader || container);
-            if (warmupHeader) details.appendChild(warmupHeader);
-            if (conceptFilter) details.appendChild(conceptFilter);
-            details.appendChild(container);
+            // Remove any existing review-all-warmups details wrapper
+            var parent = container.parentNode;
+            var existingDetails = parent.querySelector('.review-all-warmups');
+            if (existingDetails) existingDetails.remove();
         }
         // If not all covered, bottom section stays visible as-is
     }
