@@ -2755,6 +2755,147 @@ footer {
     color: var(--green-bright);
 }
 
+/* --- Split layout for inline exercises (wide screens) --- */
+
+.inline-exercises-body.split-layout {
+    display: grid;
+    grid-template-columns: 1fr minmax(340px, 35%);
+    gap: 2rem;
+    align-items: start;
+}
+
+.inline-exercises-ref {
+    position: sticky;
+    top: 1rem;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.inline-exercises-ref-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--cyan);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.inline-exercises-ref-hide {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    padding: 0.15rem 0.4rem;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    transition: color 0.2s, border-color 0.2s;
+}
+
+.inline-exercises-ref-hide:hover {
+    color: var(--cyan);
+    border-color: var(--cyan);
+}
+
+.inline-exercises-ref-show {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    padding: 0.25rem 0.6rem;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    transition: color 0.2s, border-color 0.2s;
+    margin-bottom: 0.75rem;
+}
+
+.inline-exercises-ref-show:hover {
+    color: var(--cyan);
+    border-color: var(--cyan);
+}
+
+.inline-exercises-ref h3,
+.inline-exercises-ref h4 {
+    font-size: 0.8rem;
+    color: var(--cyan);
+    margin: 0.75rem 0 0.25rem;
+}
+
+.inline-exercises-ref h3:first-child,
+.inline-exercises-ref h4:first-child {
+    margin-top: 0;
+}
+
+.inline-exercises-ref pre {
+    font-size: 0.78rem !important;
+    line-height: 1.5 !important;
+    padding: 0.5rem 0.75rem !important;
+    margin: 0.25rem 0 0.5rem !important;
+    border-radius: 6px;
+}
+
+.inline-exercises-ref .code-labeled,
+.inline-exercises-ref .code-compare {
+    margin: 0.25rem 0 0.5rem;
+}
+
+.inline-exercises-ref .code-label {
+    font-size: 0.7rem;
+}
+
+/* Collapsible reference for narrow screens */
+.inline-exercises-ref-details {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    background: var(--bg-card);
+}
+
+.inline-exercises-ref-details > summary {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--cyan);
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+}
+
+.inline-exercises-ref-details > summary:hover {
+    color: var(--green-bright);
+}
+
+.inline-exercises-ref-details > .inline-exercises-ref {
+    position: static;
+    max-height: 50vh;
+    border: none;
+    border-top: 1px solid var(--border);
+    border-radius: 0 0 8px 8px;
+}
+
+@media print {
+    .inline-exercises-body.split-layout {
+        display: block;
+    }
+    .inline-exercises-ref {
+        position: static;
+        max-height: none;
+        overflow: visible;
+        margin-top: 1rem;
+    }
+}
+
 /* ============================================================
    Real-World Challenges Plugin
    ============================================================ */

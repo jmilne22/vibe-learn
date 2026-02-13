@@ -12,6 +12,30 @@ variants:
     - id: warmup_1
       concept: Slice Operations
       variants:
+        - id: v0a
+          title: First Two Servers
+          description: >-
+            Given <code>servers := []string{"web-1", "web-2", "api-1", "api-2", "db-1"}</code>, create a new slice
+            containing only the first 2 elements. Print the result.
+          hints:
+            - "A slice expression <code>s[start:end]</code> gives you elements from start up to (not including) end."
+            - "To get the first two, you start at 0 and end at 2: <code>servers[:2]</code>."
+          solution: |-
+            servers := []string{"web-1", "web-2", "api-1", "api-2", "db-1"}
+            first2 := servers[:2]
+            fmt.Println(first2) // [web-1 web-2]
+        - id: v0b
+          title: Middle Element
+          description: >-
+            Given <code>nodes := []string{"node-1", "node-2", "node-3", "node-4", "node-5"}</code>, print the middle
+            element. Use <code>len()</code> to find it.
+          hints:
+            - "The middle index of a slice with 5 elements is 2 (indices go 0,1,2,3,4)."
+            - "Use <code>len(nodes)/2</code> to compute the middle index."
+          solution: |-
+            nodes := []string{"node-1", "node-2", "node-3", "node-4", "node-5"}
+            mid := nodes[len(nodes)/2]
+            fmt.Println(mid) // node-3
         - id: v1
           title: Last N Servers
           description: >-
@@ -80,6 +104,30 @@ variants:
     - id: warmup_2
       concept: In-Place Manipulation
       variants:
+        - id: v0a
+          title: Swap First and Last
+          description: >-
+            Given <code>pods := []string{"web-1", "web-2", "web-3", "web-4"}</code>, swap the first and last elements
+            <strong>in place</strong>. Print the result.
+          hints:
+            - "Go lets you swap two values in one line: <code>a, b = b, a</code>."
+            - "Use index 0 for first and <code>len(pods)-1</code> for last."
+          solution: |-
+            pods := []string{"web-1", "web-2", "web-3", "web-4"}
+            pods[0], pods[len(pods)-1] = pods[len(pods)-1], pods[0]
+            fmt.Println(pods) // [web-4 web-2 web-3 web-1]
+        - id: v0b
+          title: Overwrite an Element
+          description: >-
+            Given <code>statuses := []string{"Running", "Pending", "Running", "Failed"}</code>, change the
+            <code>"Failed"</code> pod (index 3) to <code>"Running"</code>. Print the result.
+          hints:
+            - "Assign directly by index: <code>statuses[3] = \"Running\"</code>."
+            - Slices are mutable — assigning to an index changes the original slice.
+          solution: |-
+            statuses := []string{"Running", "Pending", "Running", "Failed"}
+            statuses[3] = "Running"
+            fmt.Println(statuses) // [Running Pending Running Running]
         - id: v1
           title: Reverse Server List
           description: >-
@@ -167,6 +215,20 @@ variants:
     - id: warmup_3
       concept: Map Patterns
       variants:
+        - id: v0a
+          title: Look Up a Config Value
+          description: >-
+            Given <code>config := map[string]string{"host": "localhost", "port": "5432", "db": "myapp"}</code>,
+            look up the key <code>"port"</code> and print its value. Then check if the key <code>"timeout"</code>
+            exists using the comma-ok pattern, and print whether it was found.
+          hints:
+            - "Access a map value with <code>config[\"port\"]</code>."
+            - "Comma-ok pattern: <code>val, ok := config[\"timeout\"]</code>. <code>ok</code> is <code>true</code> if the key exists."
+          solution: |-
+            config := map[string]string{"host": "localhost", "port": "5432", "db": "myapp"}
+            fmt.Println(config["port"]) // 5432
+            val, ok := config["timeout"]
+            fmt.Printf("timeout=%q found=%t\n", val, ok) // timeout="" found=false
         - id: v1
           title: Count Log Levels
           description: >-
@@ -250,6 +312,33 @@ variants:
     - id: warmup_4
       concept: String Parsing
       variants:
+        - id: v0a
+          title: Split a Host:Port String
+          description: >-
+            Given <code>addr := "api-server:8080"</code>, split it into the hostname and port parts. Print each on
+            its own line.
+          hints:
+            - "Use <code>strings.SplitN(addr, \":\", 2)</code> to split on the first colon only."
+            - "The result is a two-element slice: <code>parts[0]</code> is the host, <code>parts[1]</code> is the port."
+          solution: |-
+            addr := "api-server:8080"
+            parts := strings.SplitN(addr, ":", 2)
+            fmt.Println("host:", parts[0]) // host: api-server
+            fmt.Println("port:", parts[1]) // port: 8080
+        - id: v0b
+          title: Check a String Prefix
+          description: >-
+            Given <code>image := "registry.io/nginx:1.25"</code>, check if it starts with <code>"registry.io/"</code>.
+            If it does, extract just the image name and tag after the registry prefix. Print the result.
+          hints:
+            - "Use <code>strings.HasPrefix</code> to check the prefix."
+            - "Use <code>strings.TrimPrefix</code> to remove the prefix, or slice the string from a known position."
+          solution: |-
+            image := "registry.io/nginx:1.25"
+            if strings.HasPrefix(image, "registry.io/") {
+                nameTag := strings.TrimPrefix(image, "registry.io/")
+                fmt.Println(nameTag) // nginx:1.25
+            }
         - id: v1
           title: Parse Label Pair
           description: >-
@@ -412,6 +501,18 @@ variants:
     - id: warmup_7
       concept: Line Parsing
       variants:
+        - id: v0a
+          title: Count Lines
+          description: >-
+            Given <code>content := "web-1\nweb-2\nweb-3\napi-1\ndb-1"</code>, split it into lines and print how many
+            lines there are.
+          hints:
+            - "Use <code>strings.Split(content, \"\\n\")</code> to split on newlines."
+            - "Then use <code>len()</code> on the resulting slice."
+          solution: |-
+            content := "web-1\nweb-2\nweb-3\napi-1\ndb-1"
+            lines := strings.Split(content, "\n")
+            fmt.Println(len(lines)) // 5
         - id: v1
           title: Extract Non-Empty Lines
           description: >-

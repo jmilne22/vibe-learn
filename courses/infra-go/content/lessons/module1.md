@@ -1,6 +1,6 @@
-You know what slices and maps are. This module drills you on *using* them until they're automatic. Every exercise uses infrastructure data — log lines, metric labels, pod specs, config entries.
+Picture this: you're on-call and a dashboard alert fires — "Pod memory exceeding threshold on 3 nodes." You need to pull the pod list, group them by node, find the top memory consumers, and format a report for the incident channel. That's slices, maps, string parsing, and sorting — the four tools this module drills until they're automatic.
 
-Every function and pattern used in the exercises below is taught in this lesson first. If an exercise feels impossible, the gap is here — come back and re-read the relevant section.
+Every exercise uses infrastructure data: log lines, metric labels, pod specs, config entries. Every function and pattern used in the exercises is taught in this lesson first. If an exercise feels impossible, the gap is here — come back and re-read the relevant section.
 
 ---
 
@@ -213,7 +213,9 @@ s[2] = "inserted"          // write into the gap
 
 ## Slice Operations Under Pressure
 
-A slice is a view over an array: pointer, length, capacity. What you need to drill is *using* them without thinking.
+> *"Make the zero value useful."* — Go Proverb
+
+A slice is a view over an array: pointer, length, capacity. Think of it like a window over a bookshelf — the pointer says which shelf, the length says how many books are visible through the window, and the capacity says how many the shelf can hold before you need a bigger one. What you need to drill is *using* slices without thinking.
 
 *Quick reference*
 
@@ -242,6 +244,22 @@ s[len(s)-3:]     // last 3 elements
 
 ### Append & Grow
 
+Spot the bug:
+
+```go
+pods := []string{"web-1"}
+append(pods, "web-2")       // add a pod...
+fmt.Println(pods)            // ["web-1"] — where did web-2 go?
+```
+
+`append` doesn't modify the original — it returns a *new* slice. If you throw away the return value, you throw away the data. The fix is one character:
+
+```go
+pods = append(pods, "web-2")  // reassign!
+```
+
+This is the single most common slice bug in Go. Now the correct patterns:
+
 ```go
 var pods []string                      // nil slice, length 0
 pods = append(pods, "web-1")           // [web-1]
@@ -252,7 +270,7 @@ more := []string{"db-1", "db-2"}
 pods = append(pods, more...)           // [web-1, web-2, web-3, db-1, db-2]
 ```
 
-> **Key insight:** `append` may return a *new* underlying array if capacity is exceeded. Always reassign: `s = append(s, item)`. Forgetting the reassignment is a silent bug.
+> **Key insight:** `append` may return a *new* underlying array if capacity is exceeded. Always reassign: `s = append(s, item)`. The compiler won't warn you if you forget — the code runs fine and silently loses data.
 
 **Building a slice in a loop:**
 
@@ -269,7 +287,7 @@ fmt.Printf("len=%d cap=%d %v\n", len(nodes), cap(nodes), nodes)
 
 ### Pre-allocation with make
 
-When you know the size upfront, pre-allocate. This matters in infra code processing thousands of resources.
+When you know the size upfront, pre-allocate. When your monitoring tool processes 50,000 metrics per scrape, the difference between "grow the backing array 17 times" and "one allocation" is the difference between a smooth scrape and a GC pause that trips your own alerts.
 
 ```go
 // Bad: grows the backing array multiple times
@@ -330,7 +348,7 @@ if end > len(pods) {
 // Now pods[i:end] is always safe
 ```
 
-That's the whole pattern. You derive it from three ideas: (1) C-style loops can step by any amount, (2) each step is the start of a batch, and (3) the last batch might be short so you clamp the end.
+That's the whole pattern. You derive it from three ideas: (1) C-style loops can step by any amount, (2) each step is the start of a batch, and (3) the last batch might be short so you clamp the end. In production, you'll use this when rolling out config changes to 500 nodes — you don't hit all 500 at once, you batch them in groups of 50 so a bad config only takes down 10% before you notice.
 
 ### Finding Min / Max
 
@@ -358,7 +376,9 @@ One pass, two comparisons per element. `times[1:]` skips the first element since
 
 ## In-Place Manipulation
 
-Modify a slice without creating a new one.
+> *"Don't communicate by sharing memory, share memory by communicating."* — Go Proverb
+
+Sometimes you can't afford a copy. Modify a slice without creating a new one.
 
 ### Swap Two Elements
 
@@ -417,6 +437,8 @@ s[i] = val             // 3. write the new value into the gap
 `copy(dst, src)` copies elements from `src` into `dst`, overwriting whatever's there. Here `s[i:]` is the source (elements from `i` onward) and `s[i+1:]` is the destination (one position to the right). The overlap is fine — `copy` handles it correctly.
 
 ### Filter In Place
+
+Say you have 10,000 pods and need to keep only the running ones. You could create a new slice and copy matches into it — that works, but now you've got two 10,000-element slices in memory. During an incident, when memory is already tight, that matters.
 
 You want to keep only elements that match a condition, without allocating a new slice. The naive approach — looping and deleting non-matches — shifts elements every deletion (O(n²)). The efficient way uses a separate write position.
 
@@ -490,6 +512,10 @@ If you understood the filter pattern, this is just "filter where the condition i
 <div class="inline-exercises" data-concept="In-Place Manipulation"></div>
 
 ## Map Patterns for Infra
+
+> *"Clear is better than clever."* — Go Proverb
+
+A map is a lookup table — think of it like a DNS server. You give it a name (the key), it gives you back an address (the value). If the name isn't registered, you get back a zero value, not an error. That's why you'll need the comma-ok pattern below: to tell "this key maps to zero" apart from "this key doesn't exist."
 
 Maps are your most-used data structure in infrastructure code. Counting, grouping, lookup tables, caches.
 
@@ -570,7 +596,7 @@ if seen["connection refused"] {
 
 ### Merge Two Maps
 
-Common infra pattern: you have default settings and user overrides. The override should win for any key that appears in both.
+Here's a scenario: you have default config values (`timeout: 30s`, `retries: 3`, `log_level: info`) and user overrides (`timeout: 10s`, `log_level: debug`). The final config should have the user's timeout and log level, but the default retries. How would you produce that merged result?
 
 Maps don't have a merge method. You build it: create a new map, copy one in, then copy the other. Whichever you copy second wins on conflicts:
 
@@ -609,7 +635,7 @@ config[section]["host"] = "localhost"
 config[section]["port"] = "5432"
 ```
 
-Always check if the inner map is nil before writing. This "lazy initialization" pattern avoids pre-creating maps for every possible key.
+Always check if the inner map is nil before writing. The compiler won't catch this — it compiles fine and panics at runtime, which is exactly the kind of bug that shows up in production at 2am because your test data only had one section. This "lazy initialization" pattern avoids pre-creating maps for every possible key.
 
 ### Delete
 
@@ -626,7 +652,9 @@ for k, v := range m {
 }
 ```
 
-Go randomizes map iteration order on purpose — so you don't accidentally depend on it. If you need deterministic output (sorted keys), you have to sort yourself:
+Go randomizes map iteration order on purpose — so you don't accidentally depend on it. Yes, they did this intentionally. Yes, it's annoying the first time you write a test that passes one run and fails the next. And yes, you'll eventually appreciate it — because that flaky test just saved you from a production bug where "it worked on my machine" because the map happened to iterate in the order you expected.
+
+If you need deterministic output (sorted keys), you have to sort yourself:
 
 1. Collect the keys into a slice (loop over the map, append each key)
 2. Sort the slice (`sort.Strings` for string keys)
@@ -647,7 +675,41 @@ This is verbose compared to Python's `for k in sorted(d)`, but there's no shortc
 
 <div class="inline-exercises" data-concept="Map Patterns"></div>
 
+### Checkpoint: Slices + Maps Together
+
+Before moving on, here's a taste of how slices and maps combine. Given a list of pod statuses, produce a summary: how many pods in each state, sorted alphabetically.
+
+```go
+statuses := []string{"Running", "Failed", "Running", "Pending", "Running", "Failed"}
+
+// Step 1: count with a map
+counts := make(map[string]int)
+for _, s := range statuses {
+    counts[s]++
+}
+
+// Step 2: sorted keys (because map iteration is random)
+keys := make([]string, 0, len(counts))
+for k := range counts {
+    keys = append(keys, k)
+}
+sort.Strings(keys)
+
+// Step 3: format
+for _, k := range keys {
+    fmt.Printf("  %-10s %d\n", k, counts[k])
+}
+// Output:
+//   Failed     2
+//   Pending    1
+//   Running    3
+```
+
+Three patterns you already know — counting, sorted key iteration, formatted output — combined into something useful. The full "Putting It Together" at the end of this module builds on this same idea, just with string parsing added.
+
 ## String Parsing & Building
+
+> *"A little copying is better than a little dependency."* — Go Proverb
 
 Infrastructure is strings all the way down. Log lines, metric formats, config files, YAML keys.
 
@@ -677,7 +739,7 @@ joined := strings.Join(pairs, " | ")
 // "app=nginx | env=prod | region=us-east"
 ```
 
-`strings.SplitN(s, sep, n)` splits into at most `n` pieces. Use `SplitN(s, "=", 2)` whenever the value side might contain the delimiter.
+`strings.SplitN(s, sep, n)` splits into at most `n` pieces. Use `SplitN(s, "=", 2)` whenever the value side might contain the delimiter. This one trips people up in production — a database URL like `postgres://host:5432/db?opt=val` contains multiple `=` signs, and a naive `Split` will shred it.
 
 ### Checking Content
 
@@ -803,6 +865,8 @@ The second argument to `ParseFloat` is the bit size (64 for `float64`, 32 for `f
 
 ## Sorting & Filtering
 
+> *"The bigger the interface, the weaker the abstraction."* — Rob Pike
+
 ### sort.Slice
 
 ```go
@@ -845,6 +909,8 @@ if len(pods) > 5 {
 }
 ```
 
+During an incident, you need the top 5 memory hogs in seconds, not minutes. This three-line sort-and-truncate is something you'll write from muscle memory at 3am.
+
 ### Zipping Parallel Slices for Sorting
 
 `sort.Slice` rearranges elements within a single slice. But if your data is in parallel slices (`names[i]` goes with `memoryMB[i]`), sorting one slice would break the pairing — `names` would be reordered but `memoryMB` would stay put.
@@ -883,7 +949,9 @@ After sorting, extract the field you need (e.g. `pods[0].name` for the highest-m
 
 ## Line-by-Line Parsing
 
-Parsing config files, env files, or any line-oriented format follows the same pattern:
+Imagine someone hands you a `.env` file and says "load this into a map." The file has blank lines, comments starting with `#`, and key-value pairs like `DB_HOST=localhost`. Some values are quoted, some aren't. How do you handle all of that?
+
+The answer is a pattern you'll use over and over — for `.env` files, INI configs, CSVs, and any line-oriented format:
 
 ```go
 // Split into lines, skip blanks and comments, parse each line
@@ -915,7 +983,7 @@ func parseEnv(content string) map[string]string {
 }
 ```
 
-This pattern — split lines, trim, skip empties/comments, parse — works for `.env` files, INI configs, CSVs, and most line-oriented formats.
+Split lines, trim, skip empties and comments, parse what's left. You'll recognize this skeleton in half the infrastructure tools you read on GitHub.
 
 ### State Tracking
 
@@ -962,7 +1030,7 @@ This is a simple **state machine**: the variable `currentSection` changes as you
 
 ## Putting It Together
 
-Here's a realistic example combining everything: parse a Prometheus-style metrics file, group by label, sort by value, return the top N. We'll build it in steps.
+Remember the on-call scenario from the top? Here's something close to it: parse a Prometheus-style metrics file, group by label, sort by value, return the top N. This is the kind of function you'd write during an incident to answer "which endpoints are getting hammered?" We'll build it in steps.
 
 **Step 1: Parse one line.** A Prometheus metric looks like `http_requests{method="GET",status="200"} 1027`. We need the label part and the numeric value.
 
@@ -1076,7 +1144,7 @@ func topEndpoints(lines []string, n int) []string {
 }
 ```
 
-This function uses: string parsing, `continue` for skipping bad lines, maps for counting, an inline struct for sorting, `sort.Slice`, and slice truncation. This is the **count → sort → format** pattern. You'll see it again in the challenges. If you can write this from scratch, you're ready for Module 2.
+This function uses: string parsing, `continue` for skipping bad lines, maps for counting, an inline struct for sorting, `sort.Slice`, and slice truncation. This is the **count → sort → format** pattern — the same shape as "group pods by node, find the top memory consumers, format a report." You'll see it again in the challenges. If you can write this from scratch, you're ready for Module 2.
 
 ---
 

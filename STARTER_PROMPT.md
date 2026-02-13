@@ -233,9 +233,9 @@ To interleave practice with lesson content, place inline exercise divs **after e
 <div class="inline-exercises" data-concept="Slice Operations"></div>
 ```
 
-The `data-concept` value must match the `concept` field on warmup exercises in the YAML file. The engine renders all matching warmup variants as separate exercise cards with a per-concept shuffle button. When all warmup concepts are covered by inline divs, the bottom warmups section auto-collapses into a "Review All Warmups" toggle.
+The `data-concept` value must match the `concept` field on warmup exercises in the YAML file. The engine renders all matching warmup variants as separate exercise cards with a per-concept shuffle button. On wide screens (>= 1400px), each inline exercise section becomes a two-column split layout with a sticky reference pane showing code blocks from the preceding lesson section. When all warmup concepts are covered by inline divs, the bottom warmups section is hidden entirely.
 
-**Keep the bottom `warmups-container` and `challenges-container` divs even when using inline exercises** — they serve as a fallback review section and hold challenges.
+**Keep the bottom `warmups-container` and `challenges-container` divs even when using inline exercises** — they hold challenges, and serve as fallback when not all concepts are covered inline.
 
 ### Quality guidelines
 
