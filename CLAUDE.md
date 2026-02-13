@@ -36,7 +36,8 @@ Lesson authors can interleave practice after each concept section:
 
 - `data-concept` matches the `concept` field on warmups in the exercise YAML
 - Engine renders all matching warmup variants as separate cards with a shuffle button
-- Bottom warmups section auto-collapses when all concepts are covered inline
+- On wide screens (>= 1400px), inline exercises show a two-column split with a sticky reference pane
+- Bottom warmups section is hidden when all concepts are covered inline
 - Modules without inline divs work unchanged
 - Bottom `warmups-container` and `challenges-container` divs should still be present
 

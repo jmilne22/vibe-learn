@@ -76,7 +76,7 @@ See the [Platform Guide](https://jmilne22.github.io/vibe-learn/guide.html) for d
 
 - **Plugin system** — features are self-contained plugins, auto-discovered at build time
 - **Multi-course** — one install hosts unlimited courses, each with isolated progress
-- **10 themes** — gruvbox, solarized, everforest, OLED dark, persona 5, factorio, and more
+- **9 themes** — gruvbox, solarized, everforest, OLED dark, factorio, and more
 - **Pomodoro timer** — session presets (25/5, 50/10, 90/20) with break reminders
 - **Offline support** via service worker
 - **Zero backend** — pure static site, host on GitHub Pages, Netlify, S3, or any web server
@@ -294,7 +294,6 @@ jobs:
 | Everforest Dark | Soft green tones |
 | Everforest Light | Soft green light |
 | OLED Dark | True black background |
-| Persona 5 | Red/black stylized |
 | Factorio Dark | Industrial amber |
 
 ## Project structure
