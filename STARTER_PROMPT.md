@@ -212,8 +212,6 @@ For every module that has exercises (`hasExercises: true` or omitted), the markd
 ```markdown
 ## Exercises
 
-### Warmups
-
 <div id="warmups-container">
     <noscript><p class="js-required">JavaScript is required for the interactive exercises.</p></noscript>
 </div>
@@ -226,6 +224,18 @@ For every module that has exercises (`hasExercises: true` or omitted), the markd
 ```
 
 **If these divs are missing, exercises will not render even if the YAML file exists.** The build system injects exercise JavaScript that targets these container IDs.
+
+### Inline exercises (recommended)
+
+To interleave practice with lesson content, place inline exercise divs **after each concept section** in the lesson markdown:
+
+```html
+<div class="inline-exercises" data-concept="Slice Operations"></div>
+```
+
+The `data-concept` value must match the `concept` field on warmup exercises in the YAML file. The engine renders all matching warmup variants as separate exercise cards with a per-concept shuffle button. When all warmup concepts are covered by inline divs, the bottom warmups section auto-collapses into a "Review All Warmups" toggle.
+
+**Keep the bottom `warmups-container` and `challenges-container` divs even when using inline exercises** — they serve as a fallback review section and hold challenges.
 
 ### Quality guidelines
 
@@ -269,6 +279,8 @@ scores = [95, 87, 92] # list
 ```
 
 > **Tip:** Python has distinct `int` and `float` types. JavaScript has only `number`.
+
+<div class="inline-exercises" data-concept="Variables & Types"></div>
 
 ## String Formatting
 
@@ -738,6 +750,7 @@ Before finishing, verify:
 - [ ] Every module with `hasExercises: true` (or omitted) has a `module{id}-variants.yaml` file in `content/exercises/`
 - [ ] Exercise files use exact naming: `module{id}-variants.yaml` (not `module-{id}` or `module_{id}`)
 - [ ] Lesson markdown for exercise modules ends with the `warmups-container` and `challenges-container` divs
+- [ ] Inline exercise divs use `data-concept` values that match `concept` fields in the warmup YAML
 - [ ] Flashcard keys are module IDs as **quoted strings** (`"0"`, `"1"`, not bare numbers)
 - [ ] All `conceptLinks` values are valid anchor IDs matching headings in the lesson
 - [ ] `storagePrefix` in course.yaml is unique

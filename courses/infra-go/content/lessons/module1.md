@@ -6,7 +6,8 @@ Every function and pattern used in the exercises below is taught in this lesson 
 
 ## Go Syntax You'll Use
 
-This section covers the Go-specific syntax the exercises need. Not what slices or maps *are* — you know that — but the Go forms for writing loops, functions, printing, and converting types. Skim this now, come back when you need it.
+<details>
+<summary>Reference: loops, functions, printing, type conversions, builtins — expand when you need it</summary>
 
 ### For Loops
 
@@ -206,6 +207,8 @@ copy(s[2+1:], s[2:])      // shift elements at index 2+ one position right
 s[2] = "inserted"          // write into the gap
 ```
 
+</details>
+
 ---
 
 ## Slice Operations Under Pressure
@@ -351,6 +354,8 @@ for _, t := range times[1:] {   // start from index 1 — [0] is already covered
 
 One pass, two comparisons per element. `times[1:]` skips the first element since it's already accounted for. This works for any comparable type — ints, floats, strings.
 
+<div class="inline-exercises" data-concept="Slice Operations"></div>
+
 ## In-Place Manipulation
 
 Modify a slice without creating a new one.
@@ -481,6 +486,8 @@ If you understood the filter pattern, this is just "filter where the condition i
 # Python: pods = [p for p in pods if p.status == "Running"]
 # Go: no filter builtin. The loop above IS the Go way.
 ```
+
+<div class="inline-exercises" data-concept="In-Place Manipulation"></div>
 
 ## Map Patterns for Infra
 
@@ -638,6 +645,8 @@ for _, k := range keys {
 
 This is verbose compared to Python's `for k in sorted(d)`, but there's no shortcut. You'll use this pattern whenever test output needs to be deterministic.
 
+<div class="inline-exercises" data-concept="Map Patterns"></div>
+
 ## String Parsing & Building
 
 Infrastructure is strings all the way down. Log lines, metric formats, config files, YAML keys.
@@ -734,6 +743,8 @@ s := strings.TrimPrefix(s, "https://")   // remove prefix if present
 s := strings.TrimSuffix(s, ".yaml")      // remove suffix if present
 ```
 
+<div class="inline-exercises" data-concept="String Parsing"></div>
+
 ## Numbers, Floats & Percentages
 
 Infrastructure code mostly deals with integers (ports, counts, bytes), but reporting often needs percentages and formatted output.
@@ -787,6 +798,8 @@ if err != nil {
 ```
 
 The second argument to `ParseFloat` is the bit size (64 for `float64`, 32 for `float32`). Always use 64.
+
+<div class="inline-exercises" data-concept="Numbers & Percentages"></div>
 
 ## Sorting & Filtering
 
@@ -866,6 +879,8 @@ sort.Slice(pods, func(i, j int) bool {
 
 After sorting, extract the field you need (e.g. `pods[0].name` for the highest-memory pod). If you need a slice of just the names, loop and pull them out.
 
+<div class="inline-exercises" data-concept="Sorting & Filtering"></div>
+
 ## Line-by-Line Parsing
 
 Parsing config files, env files, or any line-oriented format follows the same pattern:
@@ -942,6 +957,8 @@ func parseINI(content string) map[string]map[string]string {
 ```
 
 This is a simple **state machine**: the variable `currentSection` changes as you encounter `[section]` headers, and all key-value pairs go into whatever section is current. Same pattern works for parsing Dockerfiles (current stage), multi-doc YAML (current document), etc.
+
+<div class="inline-exercises" data-concept="Line Parsing"></div>
 
 ## Putting It Together
 

@@ -26,7 +26,12 @@
     var currentWarmupConceptFilter = null;
     var conceptFilterSelection = [];
 
-    // Personal notes storage
+    // Inline exercises state
+    var hasInlineExercises = false;
+    var inlineContainers = [];   // [{element, concept}]
+    var inlineConcepts = [];     // concept strings covered inline
+    var inlineVariantOrders = {}; // concept -> shuffled index array
+
     // Unified difficulty mode
     var difficultyMode = 'balanced';
 
@@ -139,6 +144,9 @@
         });
         Object.assign(currentWarmupVariants, result);
         renderWarmups();
+        if (hasInlineExercises) {
+            renderInlineWarmups();
+        }
         EC.flashShuffleBtn('shuffle-warmups-btn', 'green-bright');
     }
 
@@ -458,13 +466,190 @@
         if (window.initExerciseProgress) window.initExerciseProgress();
     }
 
+    // --- Inline exercises ---
+
+    function detectInlineContainers() {
+        var els = document.querySelectorAll('.inline-exercises[data-concept]');
+        inlineContainers = [];
+        inlineConcepts = [];
+        els.forEach(function(el) {
+            var concept = el.getAttribute('data-concept');
+            inlineContainers.push({ element: el, concept: concept });
+            if (inlineConcepts.indexOf(concept) === -1) {
+                inlineConcepts.push(concept);
+            }
+        });
+        hasInlineExercises = inlineContainers.length > 0;
+    }
+
+    function renderInlineWarmups() {
+        if (!hasInlineExercises || !variantsData || !variantsData.warmups) return;
+
+        inlineContainers.forEach(function(container) {
+            var concept = container.concept;
+            var el = container.element;
+
+            // Collect ALL variants across all warmups for this concept
+            var warmups = variantsData.warmups.filter(function(w) {
+                return w.concept === concept;
+            });
+
+            var allVariants = [];
+            warmups.forEach(function(warmup) {
+                warmup.variants.forEach(function(variant) {
+                    allVariants.push({ warmup: warmup, variant: variant });
+                });
+            });
+
+            // Build header if not already present
+            if (!el.querySelector('.inline-exercises-header')) {
+                var header = document.createElement('div');
+                header.className = 'inline-exercises-header';
+
+                var label = document.createElement('span');
+                label.className = 'inline-exercises-label';
+                label.textContent = 'Practice: ' + concept;
+                header.appendChild(label);
+
+                var btn = EC.createShuffleBtn({
+                    id: 'shuffle-inline-' + concept.replace(/[^a-zA-Z0-9]/g, '-'),
+                    color: 'green-bright',
+                    onClick: function() { shuffleInlineConcept(concept); }
+                });
+                header.appendChild(btn);
+
+                el.insertBefore(header, el.firstChild);
+            }
+
+            // Get or create the cards container
+            var cardsDiv = el.querySelector('.inline-exercises-cards');
+            if (!cardsDiv) {
+                cardsDiv = document.createElement('div');
+                cardsDiv.className = 'inline-exercises-cards';
+                el.appendChild(cardsDiv);
+            }
+
+            if (allVariants.length === 0) {
+                cardsDiv.innerHTML = '';
+                return;
+            }
+
+            // Use stored order if available, otherwise shuffle
+            var key = 'inline_order_' + concept;
+            var order = inlineVariantOrders[key];
+            if (!order || order.length !== allVariants.length) {
+                order = allVariants.map(function(_, i) { return i; });
+                for (var k = order.length - 1; k > 0; k--) {
+                    var r = Math.floor(Math.random() * (k + 1));
+                    var tmp = order[k]; order[k] = order[r]; order[r] = tmp;
+                }
+                inlineVariantOrders[key] = order;
+            }
+
+            var html = '';
+            order.forEach(function(idx, displayIdx) {
+                var item = allVariants[idx];
+                var variant = item.variant;
+                var warmup = item.warmup;
+
+                var conceptLink = window.conceptLinks[warmup.concept];
+                var conceptHtml = conceptLink
+                    ? '<a href="' + conceptLink + '" class="concept-link" style="color: var(--green-dim); opacity: 0.8;">(' + warmup.concept + ' \u2197)</a>'
+                    : '<span style="font-size: 0.75rem; opacity: 0.6; color: var(--text-dim);">(' + warmup.concept + ')</span>';
+
+                variant.warmupId = warmup.id;
+                html += ER().renderExerciseCard({
+                    num: displayIdx + 1,
+                    variant: variant,
+                    challenge: null,
+                    type: 'warmup',
+                    exerciseKey: 'm' + getModuleNum() + '_' + warmup.id + '_' + variant.id,
+                    conceptHtml: conceptHtml
+                });
+            });
+
+            cardsDiv.innerHTML = html;
+            cardsDiv.querySelectorAll('.exercise').forEach(function(ex) {
+                EC.initThinkingTimer(ex, { seconds: THINKING_TIME_SECONDS });
+                ER().initPersonalNotes(ex);
+            });
+            if (window.initExerciseProgress) window.initExerciseProgress();
+        });
+    }
+
+    function shuffleInlineConcept(concept) {
+        if (!variantsData || !variantsData.warmups) return;
+
+        // Clear stored order so renderInlineWarmups generates a new shuffle
+        delete inlineVariantOrders['inline_order_' + concept];
+
+        renderInlineWarmups();
+
+        var btnId = 'shuffle-inline-' + concept.replace(/[^a-zA-Z0-9]/g, '-');
+        EC.flashShuffleBtn(btnId, 'green-bright');
+    }
+
+    function adaptBottomWarmupsSection() {
+        if (!hasInlineExercises) return;
+
+        var container = document.getElementById('warmups-container');
+        if (!container) return;
+
+        // Check if all warmup concepts are covered inline
+        var allCovered = true;
+        if (variantsData && variantsData.warmups) {
+            variantsData.warmups.forEach(function(w) {
+                if (inlineConcepts.indexOf(w.concept) === -1) {
+                    allCovered = false;
+                }
+            });
+        }
+
+        if (allCovered) {
+            // Wrap the bottom warmups section in a collapsed details element
+            var parent = container.parentNode;
+            var existingDetails = parent.querySelector('.review-all-warmups');
+            if (existingDetails) return; // already wrapped
+
+            var details = document.createElement('details');
+            details.className = 'review-all-warmups';
+            var summary = document.createElement('summary');
+            summary.textContent = 'Review All Warmups';
+            details.appendChild(summary);
+
+            // Move the warmups header (h3) and container into the details
+            var warmupHeader = null;
+            var prev = container.previousElementSibling;
+            while (prev) {
+                if (prev.tagName === 'H3' && prev.textContent.indexOf('Warmups') !== -1) {
+                    warmupHeader = prev;
+                    break;
+                }
+                prev = prev.previousElementSibling;
+            }
+
+            // Also move the concept filter if present
+            var conceptFilter = document.getElementById('warmup-concept-filter');
+
+            parent.insertBefore(details, warmupHeader || container);
+            if (warmupHeader) details.appendChild(warmupHeader);
+            if (conceptFilter) details.appendChild(conceptFilter);
+            details.appendChild(container);
+        }
+        // If not all covered, bottom section stays visible as-is
+    }
+
     // --- Module data loading ---
 
     function loadVariants() {
         variantsData = window.variantsDataEmbedded;
+        detectInlineContainers();
         setupWarmupConceptFilter();
         setupShuffleWarmupsBtn();
         shuffleWarmups();
+        if (hasInlineExercises) {
+            adaptBottomWarmupsSection();
+        }
         setupConceptFilter();
         setupDifficultyModeSelector();
         setupShuffleChallengesBtn();

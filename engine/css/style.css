@@ -2713,6 +2713,49 @@ footer {
 }
 
 /* ============================================================
+   Inline Exercises (interleaved with lesson content)
+   ============================================================ */
+.inline-exercises {
+    border: 1px solid var(--green-dim);
+    border-radius: 10px;
+    background: rgba(0, 255, 157, 0.03);
+    padding: 1.5rem;
+    margin: 2rem 0;
+}
+
+.inline-exercises-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.inline-exercises-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--green-bright);
+}
+
+.review-all-warmups {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    margin: 2rem 0;
+}
+
+.review-all-warmups > summary {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    padding: 0.5rem 0;
+}
+
+.review-all-warmups > summary:hover {
+    color: var(--green-bright);
+}
+
+/* ============================================================
    Real-World Challenges Plugin
    ============================================================ */
 .rwc-challenge-list {
