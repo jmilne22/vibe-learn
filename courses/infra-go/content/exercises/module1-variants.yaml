@@ -317,6 +317,154 @@ variants:
             }
             result := strings.Join(parts, ",")
             fmt.Println(result)
+    - id: warmup_5
+      concept: Numbers & Percentages
+      variants:
+        - id: v1
+          title: Error Percentage
+          description: >-
+            Given <code>errors := 3</code> and <code>total := 8</code>, calculate the error rate as a percentage and
+            print it with one decimal place followed by a percent sign. Expected output: <code>37.5%</code>
+          hints:
+            - Dividing two ints in Go gives an int — the decimal part is thrown away. How do you get the real percentage?
+            - "Convert both to <code>float64</code> before dividing, multiply by 100, then use the right format verb to get one decimal place and a literal <code>%</code>."
+          solution: |-
+            errors := 3
+            total := 8
+            pct := float64(errors) / float64(total) * 100
+            fmt.Printf("%.1f%%\n", pct)
+        - id: v2
+          title: Round to One Decimal
+          description: >-
+            Given <code>rate := 33.33333</code>, round it to one decimal place and print the result.
+            Expected output: <code>33.3</code>
+          hints:
+            - "Go has no <code>math.Round(x, places)</code>. You need to shift the decimal point, round, then shift back."
+            - "Multiply by 10, round with <code>math.Round</code>, divide by 10."
+          solution: |-
+            rate := 33.33333
+            rounded := math.Round(rate*10) / 10
+            fmt.Println(rounded) // 33.3
+        - id: v3
+          title: Parse Port Number
+          description: >-
+            Given <code>portStr := "8080"</code>, convert it to an integer, check it's in the valid range (1-65535),
+            and print it. If the conversion fails or the port is out of range, print an error message.
+          hints:
+            - Which <code>strconv</code> function converts a string to an int? What does it return on failure?
+            - "Use <code>strconv.Atoi</code> and check the error. Then validate the numeric range separately."
+          solution: |-
+            portStr := "8080"
+            port, err := strconv.Atoi(portStr)
+            if err != nil {
+                fmt.Println("invalid port:", portStr)
+                return
+            }
+            if port < 1 || port > 65535 {
+                fmt.Println("port out of range:", port)
+                return
+            }
+            fmt.Println(port) // 8080
+    - id: warmup_6
+      concept: Sorting & Filtering
+      variants:
+        - id: v1
+          title: Sort Server Names
+          description: >-
+            Given <code>servers := []string{"web-3", "api-1", "db-2", "web-1", "api-2"}</code>, sort them
+            alphabetically in place and print the result.
+          hints:
+            - "Go's <code>sort</code> package has a convenience function specifically for string slices."
+            - "It's a one-liner: <code>sort.Strings(slice)</code> sorts in place."
+          solution: |-
+            servers := []string{"web-3", "api-1", "db-2", "web-1", "api-2"}
+            sort.Strings(servers)
+            fmt.Println(servers) // [api-1 api-2 db-2 web-1 web-3]
+        - id: v2
+          title: Sort by Value Descending
+          description: >-
+            Given <code>counts := []int{42, 7, 256, 13, 89}</code>, sort them in descending order (largest first)
+            and print the result.
+          hints:
+            - "<code>sort.Slice</code> takes a comparator function. For descending order, which element should come first?"
+            - "Return <code>counts[i] > counts[j]</code> to sort largest first."
+          solution: |-
+            counts := []int{42, 7, 256, 13, 89}
+            sort.Slice(counts, func(i, j int) bool {
+                return counts[i] > counts[j]
+            })
+            fmt.Println(counts) // [256 89 42 13 7]
+        - id: v3
+          title: Top 3 Elements
+          description: >-
+            Given <code>latencies := []int{234, 12, 891, 45, 567, 23, 445}</code>, find and print the top 3 highest
+            values. Sort descending, then slice.
+          hints:
+            - "Sort the slice in descending order first, then take the first 3 elements."
+            - "After sorting, use a slice expression to grab just the first N elements. Don't forget to check if the slice is shorter than N."
+          solution: |-
+            latencies := []int{234, 12, 891, 45, 567, 23, 445}
+            sort.Slice(latencies, func(i, j int) bool {
+                return latencies[i] > latencies[j]
+            })
+            top3 := latencies[:3]
+            fmt.Println(top3) // [891 567 445]
+    - id: warmup_7
+      concept: Line Parsing
+      variants:
+        - id: v1
+          title: Extract Non-Empty Lines
+          description: >-
+            Given a multi-line string <code>content := "alpha\n\nbeta\n\n\ngamma\n"</code>, split it into lines,
+            skip empty lines, and collect the non-empty ones into a slice. Print the result.
+          hints:
+            - "Split on newlines first, then filter. What does an empty line look like after trimming?"
+            - "Loop through the lines, trim each one, and only append non-empty ones to your result slice."
+          solution: |-
+            content := "alpha\n\nbeta\n\n\ngamma\n"
+            var result []string
+            for _, line := range strings.Split(content, "\n") {
+                line = strings.TrimSpace(line)
+                if line != "" {
+                    result = append(result, line)
+                }
+            }
+            fmt.Println(result) // [alpha beta gamma]
+        - id: v2
+          title: Skip Comments
+          description: >-
+            Given a config string:<br><code>"# database config\nhost=localhost\n# port\nport=5432\nname=mydb"</code><br>
+            Split into lines, skip lines starting with <code>#</code> and empty lines, and print each remaining line.
+          hints:
+            - "After trimming, check two conditions: is it empty? Does it start with <code>#</code>? Skip both."
+            - "Use <code>strings.HasPrefix</code> to check for the comment character."
+          solution: |-
+            content := "# database config\nhost=localhost\n# port\nport=5432\nname=mydb"
+            for _, line := range strings.Split(content, "\n") {
+                line = strings.TrimSpace(line)
+                if line == "" || strings.HasPrefix(line, "#") {
+                    continue
+                }
+                fmt.Println(line)
+            }
+        - id: v3
+          title: Parse Key-Value Lines
+          description: >-
+            Given <code>content := "HOST=localhost\nPORT=5432\nDB_NAME=myapp"</code>, parse it into a
+            <code>map[string]string</code> and print the map.
+          hints:
+            - "Split into lines, then split each line on <code>=</code>. How many parts should you limit the split to?"
+            - "Use <code>strings.SplitN(line, \"=\", 2)</code> to split on the first <code>=</code> only, in case values contain <code>=</code>."
+          solution: |-
+            content := "HOST=localhost\nPORT=5432\nDB_NAME=myapp"
+            result := make(map[string]string)
+            for _, line := range strings.Split(content, "\n") {
+                parts := strings.SplitN(line, "=", 2)
+                if len(parts) == 2 {
+                    result[strings.TrimSpace(parts[0])] = strings.TrimSpace(parts[1])
+                }
+            }
+            fmt.Println(result)
   challenges:
     - id: challenge_1
       block: 1
