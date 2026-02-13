@@ -27,6 +27,19 @@ the prompt's instructions.
 - Lesson files: `content/lessons/module{id}.md`
 - Flashcards: `content/flashcards/flashcards.yaml` (keys are module IDs as strings)
 
+## Inline Exercises
+Lesson authors can interleave practice after each concept section:
+
+```html
+<div class="inline-exercises" data-concept="Slice Operations"></div>
+```
+
+- `data-concept` matches the `concept` field on warmups in the exercise YAML
+- Engine renders all matching warmup variants as separate cards with a shuffle button
+- Bottom warmups section auto-collapses when all concepts are covered inline
+- Modules without inline divs work unchanged
+- Bottom `warmups-container` and `challenges-container` divs should still be present
+
 ## Don't
 - Modify `engine/` to add course content
 - Add a backend or external API calls
