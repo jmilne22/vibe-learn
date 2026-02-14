@@ -19,7 +19,7 @@ variants:
             containing only the first 2 elements. Print the result.
           hints:
             - "A slice expression <code>s[start:end]</code> gives you elements from start up to (not including) end."
-            - "To get the first two, you start at 0 and end at 2: <code>servers[:2]</code>."
+            - "When the start index is 0, you can omit it from the slice expression."
           solution: |-
             servers := []string{"web-1", "web-2", "api-1", "api-2", "db-1"}
             first2 := servers[:2]
@@ -69,7 +69,7 @@ variants:
             result.
           hints:
             - "<code>append</code> returns a new slice — you must assign it back to the variable."
-            - "<code>colors = append(colors, \"blue\")</code>"
+            - "The syntax is <code>append(slice, element)</code> — remember to assign the result back."
           solution: |-
             colors := []string{"red", "green"}
             colors = append(colors, "blue")
@@ -81,7 +81,7 @@ variants:
             a single slice using <code>append</code>. Print the result.
           hints:
             - "To append all elements of one slice to another, use the spread operator: <code>...</code>"
-            - "<code>all := append(front, back...)</code>"
+            - "The <code>...</code> goes after the second slice in the <code>append</code> call."
           solution: |-
             front := []string{"a", "b"}
             back := []string{"c", "d"}
@@ -108,7 +108,7 @@ variants:
             Given <code>statuses := []string{"Running", "Pending", "Running", "Failed"}</code>, change the
             <code>"Failed"</code> pod (index 3) to <code>"Running"</code>. Print the result.
           hints:
-            - "Assign directly by index: <code>statuses[3] = \"Running\"</code>."
+            - "You can assign to a specific index in a slice, just like a variable."
             - Slices are mutable — assigning to an index changes the original slice.
           solution: |-
             statuses := []string{"Running", "Pending", "Running", "Failed"}
@@ -135,7 +135,7 @@ variants:
             result.
           hints:
             - "You can shrink a slice by re-slicing it with a shorter length."
-            - "<code>tasks = tasks[:len(tasks)-1]</code>"
+            - "Use a slice expression that stops one element short of the current length."
           solution: |-
             tasks := []string{"deploy", "test", "lint", "scan"}
             tasks = tasks[:len(tasks)-1]
@@ -235,7 +235,7 @@ variants:
             the <code>"debug"</code> key from the map. Print the map.
           hints:
             - "Go has a built-in function specifically for removing map keys."
-            - "<code>delete(config, \"debug\")</code>"
+            - "The function is called <code>delete</code>. It takes two arguments: the map and the key to remove."
           solution: |-
             config := map[string]string{"host": "localhost", "port": "5432", "debug": "true"}
             delete(config, "debug")
@@ -262,7 +262,7 @@ variants:
             1 and set <code>"warnings"</code> to 0. Print the map.
           hints:
             - "Map values can be updated by assigning to the key: <code>counts[\"key\"] = newValue</code>."
-            - "To increment: <code>counts[\"errors\"]++</code>. To overwrite: <code>counts[\"warnings\"] = 0</code>."
+            - "You can use <code>++</code> directly on a map value to increment it, and assign to a key to overwrite."
           solution: |-
             counts := map[string]int{"errors": 5, "warnings": 12}
             counts["errors"]++
@@ -339,7 +339,7 @@ variants:
             separated by spaces. Print the result.
           hints:
             - "The <code>strings</code> package has a function that joins a slice of strings with a separator."
-            - "<code>strings.Join(words, \" \")</code>"
+            - "The function is <code>strings.Join</code>. It takes two arguments: the slice and the separator string."
           solution: |-
             words := []string{"hello", "world", "from", "Go"}
             result := strings.Join(words, " ")
@@ -351,7 +351,7 @@ variants:
             <code>"error"</code> with <code>"warn"</code>. Print the result.
           hints:
             - "The <code>strings</code> package has a function for replacing all occurrences of a substring."
-            - "<code>strings.ReplaceAll(msg, \"error\", \"warn\")</code>"
+            - "The function is <code>strings.ReplaceAll</code>. It takes three arguments: the original string, what to find, and what to replace it with."
           solution: |-
             msg := "error: disk full, error: retry failed"
             result := strings.ReplaceAll(msg, "error", "warn")
@@ -391,7 +391,7 @@ variants:
             result.
           hints:
             - "<code>strconv.Itoa</code> converts an int to its string representation."
-            - "<code>s := strconv.Itoa(port)</code>"
+            - "It takes one int argument and returns a string — no error return."
           solution: |-
             port := 8080
             s := strconv.Itoa(port)
@@ -420,7 +420,7 @@ variants:
             alphabetically in place and print the result.
           hints:
             - "Go's <code>sort</code> package has a convenience function specifically for string slices."
-            - "It's a one-liner: <code>sort.Strings(slice)</code> sorts in place."
+            - "The function name matches the element type. It sorts in place — no return value needed."
           solution: |-
             servers := []string{"web-3", "api-1", "db-2", "web-1", "api-2"}
             sort.Strings(servers)
@@ -512,7 +512,7 @@ variants:
             the last line.
           hints:
             - "Use <code>strings.Split(content, \"\\n\")</code> to get all lines as a slice."
-            - "The first line is <code>lines[0]</code>, the last is <code>lines[len(lines)-1]</code>."
+            - "Think about how you access the first and last elements of any slice."
           solution: |-
             content := "alpha\nbeta\ngamma\ndelta"
             lines := strings.Split(content, "\n")
