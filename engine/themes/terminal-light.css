@@ -1,0 +1,587 @@
+/* ============================================
+   Terminal Light — CLI Mode (light)
+   Same structural stripping as terminal dark.
+   Warm paper, dark ink, printed man page.
+   ============================================ */
+
+/* --- Near-monochrome: dark ink on warm paper --- */
+[data-theme="terminal-light"] {
+    --bg-dark: #f4f1ec;
+    --bg-card: #f4f1ec;
+    --bg-code: #f4f1ec;
+    --bg-lighter: #eae7e2;
+    --green-bright: #2a2826;
+    --green-dim: #5a5856;
+    --green-glow: rgba(58, 56, 54, 0.06);
+    --orange: #2a2826;
+    --purple: #2a2826;
+    --blue: #2a2826;
+    --cyan: #2a2826;
+    --red: #2a2826;
+    --text-main: #3a3836;
+    --text: var(--text-main);
+    --text-dim: #8a8884;
+    --border: #ccc8c0;
+}
+
+/* ===========================================
+   STRUCTURAL OVERRIDES
+   =========================================== */
+
+[data-theme="terminal-light"] *,
+[data-theme="terminal-light"] *::before,
+[data-theme="terminal-light"] *::after {
+    transition: none !important;
+    animation: none !important;
+    animation-delay: 0s !important;
+    animation-duration: 0s !important;
+}
+
+[data-theme="terminal-light"] .sidebar {
+    transition: transform 0.15s linear !important;
+}
+
+[data-theme="terminal-light"] *,
+[data-theme="terminal-light"] *::before,
+[data-theme="terminal-light"] *::after {
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+
+[data-theme="terminal-light"],
+[data-theme="terminal-light"] body,
+[data-theme="terminal-light"] h1,
+[data-theme="terminal-light"] h2,
+[data-theme="terminal-light"] h3,
+[data-theme="terminal-light"] h4,
+[data-theme="terminal-light"] p,
+[data-theme="terminal-light"] li,
+[data-theme="terminal-light"] span,
+[data-theme="terminal-light"] a,
+[data-theme="terminal-light"] button,
+[data-theme="terminal-light"] select,
+[data-theme="terminal-light"] input,
+[data-theme="terminal-light"] label,
+[data-theme="terminal-light"] .sidebar-link,
+[data-theme="terminal-light"] .module-card,
+[data-theme="terminal-light"] .nav-btn,
+[data-theme="terminal-light"] .stat-value,
+[data-theme="terminal-light"] .stat-label,
+[data-theme="terminal-light"] .theme-picker-label,
+[data-theme="terminal-light"] .exercise-header,
+[data-theme="terminal-light"] .flashcard-front,
+[data-theme="terminal-light"] .flashcard-back {
+    font-family: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', 'Courier New', monospace;
+}
+
+/* ===========================================
+   SUBTLE TEXTURE
+   =========================================== */
+
+[data-theme="terminal-light"] body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9999;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 0, 0, 0.02) 2px,
+        rgba(0, 0, 0, 0.02) 4px
+    );
+}
+
+[data-theme="terminal-light"] body {
+    background: #f4f1ec;
+}
+
+[data-theme="terminal-light"] ::selection {
+    background: rgba(58, 56, 54, 0.2);
+    color: #000;
+}
+
+/* ===========================================
+   HEADINGS
+   =========================================== */
+
+[data-theme="terminal-light"] h1 {
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    border-bottom: 1px dashed var(--border);
+    padding-bottom: 0.4em;
+}
+
+[data-theme="terminal-light"] h2,
+[data-theme="terminal-light"] h3 {
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px dashed var(--border);
+    padding-bottom: 0.4em;
+}
+
+[data-theme="terminal-light"] h1::after,
+[data-theme="terminal-light"] h2::after,
+[data-theme="terminal-light"] h3::after,
+[data-theme="terminal-light"] .lesson h1::after,
+[data-theme="terminal-light"] .lesson h2::after,
+[data-theme="terminal-light"] .lesson h3::after {
+    display: none !important;
+}
+
+/* ===========================================
+   SYNTAX HIGHLIGHTING — monochrome
+   Brightness only, dark end of the spectrum.
+   =========================================== */
+
+[data-theme="terminal-light"] .hljs { color: #3a3836; }
+
+[data-theme="terminal-light"] .hljs-keyword,
+[data-theme="terminal-light"] .hljs-selector-tag,
+[data-theme="terminal-light"] .hljs-built_in,
+[data-theme="terminal-light"] .hljs-name { color: #1a1816; font-weight: bold; }
+
+[data-theme="terminal-light"] .hljs-string,
+[data-theme="terminal-light"] .hljs-attr,
+[data-theme="terminal-light"] .hljs-symbol,
+[data-theme="terminal-light"] .hljs-bullet,
+[data-theme="terminal-light"] .hljs-addition { color: #5a5856; }
+
+[data-theme="terminal-light"] .hljs-title,
+[data-theme="terminal-light"] .hljs-title.function_,
+[data-theme="terminal-light"] .hljs-section { color: #2a2826; }
+
+[data-theme="terminal-light"] .hljs-comment,
+[data-theme="terminal-light"] .hljs-quote,
+[data-theme="terminal-light"] .hljs-deletion { color: #aaa8a4; font-style: italic; }
+
+[data-theme="terminal-light"] .hljs-type,
+[data-theme="terminal-light"] .hljs-template-tag,
+[data-theme="terminal-light"] .hljs-class .hljs-title { color: #6a6864; }
+
+[data-theme="terminal-light"] .hljs-number,
+[data-theme="terminal-light"] .hljs-literal,
+[data-theme="terminal-light"] .hljs-variable,
+[data-theme="terminal-light"] .hljs-template-variable,
+[data-theme="terminal-light"] .hljs-tag .hljs-attr { color: #4a4844; }
+
+[data-theme="terminal-light"] .hljs-meta,
+[data-theme="terminal-light"] .hljs-doctag { color: #8a8884; }
+[data-theme="terminal-light"] .hljs-params { color: #3a3836; }
+[data-theme="terminal-light"] .hljs-punctuation { color: #8a8884; }
+
+/* ===========================================
+   CONTAINERS
+   =========================================== */
+
+[data-theme="terminal-light"] .module-card,
+[data-theme="terminal-light"] .card,
+[data-theme="terminal-light"] .stat-card,
+[data-theme="terminal-light"] .exercise {
+    border: 1px dashed var(--border);
+    background: transparent;
+}
+
+[data-theme="terminal-light"] .module-card:hover,
+[data-theme="terminal-light"] .card:hover,
+[data-theme="terminal-light"] .stat-card:hover {
+    transform: none !important;
+    border-color: #8a8884;
+    background: transparent;
+}
+
+[data-theme="terminal-light"] .code-block,
+[data-theme="terminal-light"] .lesson pre {
+    border: 1px dashed var(--border);
+    background: transparent;
+}
+
+[data-theme="terminal-light"] code:not(.code-block code):not(pre code) {
+    background: transparent;
+    border: none;
+    color: #1a1816;
+}
+
+/* ===========================================
+   BUTTONS
+   =========================================== */
+
+[data-theme="terminal-light"] .nav-btn,
+[data-theme="terminal-light"] .quick-btn,
+[data-theme="terminal-light"] .start-btn,
+[data-theme="terminal-light"] .resume-btn,
+[data-theme="terminal-light"] .fc-rate-btn,
+[data-theme="terminal-light"] .session-control-btn,
+[data-theme="terminal-light"] .data-btn,
+[data-theme="terminal-light"] .rating-btn {
+    border: 1px solid var(--border);
+    background: transparent;
+    color: #3a3836;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+[data-theme="terminal-light"] .nav-btn:hover,
+[data-theme="terminal-light"] .quick-btn:hover,
+[data-theme="terminal-light"] .start-btn:hover,
+[data-theme="terminal-light"] .resume-btn:hover,
+[data-theme="terminal-light"] .fc-rate-btn:hover,
+[data-theme="terminal-light"] .session-control-btn:hover,
+[data-theme="terminal-light"] .data-btn:hover,
+[data-theme="terminal-light"] .rating-btn:hover {
+    background: rgba(58, 56, 54, 0.05);
+    border-color: #8a8884;
+}
+
+[data-theme="terminal-light"] .nav-btn.primary,
+[data-theme="terminal-light"] .quick-btn.primary {
+    border-color: #8a8884;
+    color: #1a1816;
+}
+
+/* ===========================================
+   TIP / WARNING / INFO
+   =========================================== */
+
+[data-theme="terminal-light"] .tip,
+[data-theme="terminal-light"] .warning,
+[data-theme="terminal-light"] .info {
+    background: transparent;
+    border: 1px dashed var(--border);
+    border-left: 2px solid #b0aca4;
+}
+
+[data-theme="terminal-light"] .tip::before {
+    content: '> TIP:' !important;
+    color: #3a3836;
+}
+
+[data-theme="terminal-light"] .warning::before {
+    content: '> WARN:' !important;
+    color: #3a3836;
+}
+
+[data-theme="terminal-light"] .info::before {
+    content: '> NOTE:' !important;
+    color: #3a3836;
+}
+
+/* ===========================================
+   SIDEBAR
+   =========================================== */
+
+[data-theme="terminal-light"] .sidebar {
+    background: #f4f1ec;
+    border-right: 1px dashed var(--border);
+}
+
+[data-theme="terminal-light"] .sidebar-link {
+    border-left-color: transparent;
+}
+
+[data-theme="terminal-light"] .sidebar-link:hover {
+    background: rgba(58, 56, 54, 0.04);
+}
+
+[data-theme="terminal-light"] .sidebar-link.active {
+    background: transparent;
+    border-left-color: transparent;
+    color: #1a1816;
+}
+
+[data-theme="terminal-light"] .sidebar-link.active::before {
+    content: '> ';
+}
+
+[data-theme="terminal-light"] .sidebar-link.sidebar-project-link {
+    color: #3a3836;
+}
+
+[data-theme="terminal-light"] .sidebar-link.sidebar-project-link.active {
+    border-left-color: transparent;
+}
+
+/* ===========================================
+   FLASHCARDS
+   =========================================== */
+
+[data-theme="terminal-light"] .flashcard-front,
+[data-theme="terminal-light"] .flashcard-back {
+    border: 1px dashed var(--border);
+    background: #f4f1ec;
+}
+
+/* ===========================================
+   PROGRESS
+   =========================================== */
+
+[data-theme="terminal-light"] .exercise-progress-fill,
+[data-theme="terminal-light"] .session-progress-bar,
+[data-theme="terminal-light"] .strength-fill {
+    background: #8a8884;
+}
+
+/* ===========================================
+   LINKS
+   =========================================== */
+
+[data-theme="terminal-light"] a {
+    color: #3a3836;
+    text-decoration: underline;
+    text-decoration-style: dashed;
+    text-decoration-color: #ccc8c0;
+    text-underline-offset: 3px;
+}
+
+[data-theme="terminal-light"] a:hover {
+    color: #1a1816;
+    text-decoration-style: solid;
+    text-decoration-color: #8a8884;
+}
+
+[data-theme="terminal-light"] .sidebar-link,
+[data-theme="terminal-light"] .sidebar-link:hover {
+    text-decoration: none;
+}
+
+[data-theme="terminal-light"] .breadcrumb a {
+    text-decoration: none;
+}
+
+/* ===========================================
+   SCROLLBAR
+   =========================================== */
+
+[data-theme="terminal-light"] ::-webkit-scrollbar {
+    width: 6px;
+}
+
+[data-theme="terminal-light"] ::-webkit-scrollbar-track {
+    background: #f4f1ec;
+}
+
+[data-theme="terminal-light"] ::-webkit-scrollbar-thumb {
+    background: #d0ccc4;
+}
+
+[data-theme="terminal-light"] ::-webkit-scrollbar-thumb:hover {
+    background: #b0aca4;
+}
+
+/* ===========================================
+   MISC CONTAINERS
+   =========================================== */
+
+[data-theme="terminal-light"] .visual-box,
+[data-theme="terminal-light"] .quote-box,
+[data-theme="terminal-light"] .comparison-block,
+[data-theme="terminal-light"] .exercise-jump-box {
+    border: 1px dashed var(--border);
+    background: transparent;
+}
+
+[data-theme="terminal-light"] .quote-box {
+    border-left: 2px solid #b0aca4;
+}
+
+[data-theme="terminal-light"] .annotation {
+    border: 1px dashed var(--border);
+    background: transparent;
+}
+
+/* ===========================================
+   THEME PICKER / CONTROLS
+   =========================================== */
+
+[data-theme="terminal-light"] .theme-picker {
+    background: #f4f1ec;
+    border: 1px dashed var(--border);
+}
+
+[data-theme="terminal-light"] .theme-select {
+    background: #f4f1ec;
+    color: #3a3836;
+    border-color: var(--border);
+}
+
+[data-theme="terminal-light"] .focus-toggle,
+[data-theme="terminal-light"] .show-timer-toggle {
+    background: transparent;
+    border-color: var(--border);
+    color: #3a3836;
+}
+
+[data-theme="terminal-light"] .focus-toggle:hover,
+[data-theme="terminal-light"] .show-timer-toggle:hover {
+    border-color: #8a8884;
+    background: rgba(58, 56, 54, 0.05);
+}
+
+/* ===========================================
+   SESSION TIMER
+   =========================================== */
+
+[data-theme="terminal-light"] .floating-session-timer,
+[data-theme="terminal-light"] .session-timer {
+    background: #f4f1ec;
+    border: 1px dashed var(--border);
+}
+
+[data-theme="terminal-light"] .session-countdown {
+    color: #1a1816;
+}
+
+[data-theme="terminal-light"] .session-duration-select {
+    background: #f4f1ec;
+    color: #3a3836;
+    border-color: var(--border);
+}
+
+/* ===========================================
+   CODE COMPARE / LABELED BLOCKS
+   =========================================== */
+
+[data-theme="terminal-light"] .code-compare {
+    border: 1px dashed var(--border);
+    background: transparent;
+}
+
+[data-theme="terminal-light"] .code-compare .code-labeled + .code-labeled {
+    border-left: 1px dashed var(--border);
+}
+
+[data-theme="terminal-light"] .code-labeled {
+    border: 1px dashed var(--border);
+}
+
+[data-theme="terminal-light"] .code-header {
+    background: transparent;
+    border-bottom: 1px dashed var(--border);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #8a8884;
+}
+
+/* ===========================================
+   DETAILS / SUMMARY
+   =========================================== */
+
+[data-theme="terminal-light"] details summary {
+    color: #3a3836;
+}
+
+[data-theme="terminal-light"] details summary:hover {
+    color: #1a1816;
+}
+
+[data-theme="terminal-light"] details summary::before {
+    content: '[+] ' !important;
+    font-size: 1em;
+}
+
+[data-theme="terminal-light"] details[open] summary::before {
+    content: '[-] ' !important;
+}
+
+[data-theme="terminal-light"] .hint-content {
+    background: transparent;
+    border: 1px dashed var(--border);
+}
+
+/* ===========================================
+   HR
+   =========================================== */
+
+[data-theme="terminal-light"] hr {
+    border: none;
+    border-top: 1px dashed var(--border);
+}
+
+/* ===========================================
+   TABLES
+   =========================================== */
+
+[data-theme="terminal-light"] table {
+    border-collapse: collapse;
+}
+
+[data-theme="terminal-light"] th,
+[data-theme="terminal-light"] td {
+    border: 1px dashed var(--border);
+    padding: 0.5rem 0.75rem;
+}
+
+[data-theme="terminal-light"] th {
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 0.85em;
+    color: #8a8884;
+    background: transparent;
+}
+
+[data-theme="terminal-light"] thead {
+    border-bottom: 1px dashed #8a8884;
+}
+
+/* ===========================================
+   SIDEBAR — section links & special links
+   =========================================== */
+
+[data-theme="terminal-light"] .sidebar-section-link {
+    color: #8a8884;
+}
+
+[data-theme="terminal-light"] .sidebar-section-link:hover,
+[data-theme="terminal-light"] .sidebar-section-link.active {
+    color: #3a3836;
+}
+
+[data-theme="terminal-light"] .sidebar-header a {
+    color: #8a8884;
+}
+
+[data-theme="terminal-light"] .sidebar-header a:hover {
+    color: #3a3836;
+}
+
+[data-theme="terminal-light"] .sidebar-module-num {
+    color: #8a8884;
+    opacity: 1;
+}
+
+/* ===========================================
+   MODULE TAG / NUMBER
+   =========================================== */
+
+[data-theme="terminal-light"] .module-tag {
+    color: #8a8884;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+[data-theme="terminal-light"] .module-num {
+    color: #8a8884;
+}
+
+/* ===========================================
+   BLOCKQUOTE
+   =========================================== */
+
+[data-theme="terminal-light"] blockquote {
+    border-left: 2px solid #ccc8c0;
+    color: #6a6864;
+    background: transparent;
+}
+
+/* ===========================================
+   LISTS
+   =========================================== */
+
+[data-theme="terminal-light"] .lesson ul {
+    list-style-type: '- ';
+}
+
+[data-theme="terminal-light"] .lesson ol {
+    color: #3a3836;
+}
