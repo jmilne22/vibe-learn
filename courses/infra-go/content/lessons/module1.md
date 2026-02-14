@@ -382,18 +382,38 @@ Sometimes you can't afford a copy. Modify a slice without creating a new one.
 
 ### Swap Two Elements
 
+Go's simultaneous assignment makes swapping trivial — no temp variable needed:
+
 ```go
-// Swap elements at index i and j
-s[i], s[j] = s[j], s[i]
+colors := []string{"red", "green", "blue", "yellow"}
+colors[0], colors[3] = colors[3], colors[0]
+// Before: [red green blue yellow]
+// After:  [yellow green blue red]
 ```
 
-Go's simultaneous assignment makes this trivial.
+The general form is `s[i], s[j] = s[j], s[i]`. Both sides are evaluated before any assignment happens, so neither value is lost.
 
 ### Reverse In Place
 
 Think about what reversing means: the first element swaps with the last, the second with the second-to-last, and so on. You need two positions — one starting at the front, one at the back — walking toward each other. When they meet in the middle, you're done.
 
-That's two loop variables. Go's C-style loop supports this with the multi-variable form:
+```go
+letters := []string{"a", "b", "c", "d", "e"}
+
+left := 0
+right := len(letters) - 1
+for left < right {
+    letters[left], letters[right] = letters[right], letters[left]
+    left++
+    right--
+}
+// Before: [a b c d e]
+// After:  [e d c b a]
+```
+
+`left` starts at 0, `right` starts at the last index. Each step: swap them, move both inward. Stop when they've met or crossed.
+
+Go also supports a compact multi-variable form that does the same thing:
 
 ```go
 for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
@@ -401,25 +421,33 @@ for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
 }
 ```
 
-`i` starts at 0, `j` starts at the last index. Each step: swap them, move both inward. Stop when `i >= j` (they've met or crossed). The simultaneous assignment `i, j = i+1, j-1` updates both in one statement.
+The simultaneous assignment `i, j = i+1, j-1` updates both in one statement. Use whichever form you find easier to read.
 
 ### Remove at Index (Preserving Order)
 
-You want to remove element `i` and keep everything else in the same order. Think of it as: take everything before `i`, then everything after `i`, and join them.
+You want to remove an element and keep everything else in the same order. Think of it as: take everything before the index, then everything after, and join them.
 
 ```go
-s = append(s[:i], s[i+1:]...)
+items := []string{"a", "b", "c", "d", "e"}
+i := 2 // remove "c"
+items = append(items[:i], items[i+1:]...)
+// Before: [a b c d e]
+// After:  [a b d e]
 ```
 
-`s[:i]` is everything before index `i`. `s[i+1:]` is everything after. `append` joins them, shifting the later elements left to fill the gap. The `...` unpacks the second slice so append can accept it.
+`items[:2]` is `["a", "b"]`. `items[3:]` is `["d", "e"]`. `append` joins them, shifting the later elements left to fill the gap. The `...` unpacks the second slice so append can accept it.
 
 ### Remove at Index (Fast, Order Doesn't Matter)
 
 If you don't care about order, there's an O(1) trick: copy the last element into the gap, then shrink:
 
 ```go
-s[i] = s[len(s)-1]    // overwrite the one to remove with the last element
-s = s[:len(s)-1]       // shrink by one
+items := []string{"a", "b", "c", "d", "e"}
+i := 1 // remove "b"
+items[i] = items[len(items)-1]  // overwrite "b" with "e" (the last element)
+items = items[:len(items)-1]     // shrink by one
+// Before: [a b c d e]
+// After:  [a e c d]
 ```
 
 Only two operations regardless of slice size. Use this when order doesn't matter — like removing a terminated pod from a running list.
@@ -429,53 +457,61 @@ Only two operations regardless of slice size. Use this when order doesn't matter
 Inserting is the reverse of removing: you need to make a gap, then write into it. Three steps:
 
 ```go
-s = append(s, "")      // 1. grow the slice by one (value doesn't matter, it'll be overwritten)
-copy(s[i+1:], s[i:])   // 2. shift elements at i and beyond one position right, opening a gap at i
-s[i] = val             // 3. write the new value into the gap
+items := []string{"a", "b", "d", "e"}
+i := 2
+val := "c"
+
+items = append(items, "")      // [a b d e ""] — grow by one
+copy(items[i+1:], items[i:])   // [a b d d e]  — shift elements right, opening a gap at i
+items[i] = val                 // [a b c d e]  — write into the gap
 ```
 
-`copy(dst, src)` copies elements from `src` into `dst`, overwriting whatever's there. Here `s[i:]` is the source (elements from `i` onward) and `s[i+1:]` is the destination (one position to the right). The overlap is fine — `copy` handles it correctly.
+`copy(dst, src)` copies elements from `src` into `dst`, overwriting whatever's there. Here `items[i:]` is the source (elements from `i` onward) and `items[i+1:]` is the destination (one position to the right). The overlap is fine — `copy` handles it correctly.
 
 ### Filter In Place
 
-Say you have 10,000 pods and need to keep only the running ones. You could create a new slice and copy matches into it — that works, but now you've got two 10,000-element slices in memory. During an incident, when memory is already tight, that matters.
+Say you have 10,000 items and need to keep only the ones that match a condition. You could create a new slice and copy matches into it — that works, but doubles memory usage. When memory is already tight, that matters.
 
-You want to keep only elements that match a condition, without allocating a new slice. The naive approach — looping and deleting non-matches — shifts elements every deletion (O(n²)). The efficient way uses a separate write position.
+The naive approach — looping and deleting non-matches — shifts elements every deletion (O(n²)). The efficient way uses a separate write position.
 
 The idea: read through every element, but only write the ones you want to keep. You need two positions — a "read" position (the loop variable) and a "write" position (`n`). They start together, but `n` only advances when you keep an element:
 
 ```go
+words := []string{"keep", "drop", "keep", "drop", "keep"}
+
 n := 0                          // write position
-for _, pod := range pods {      // read position (implicit)
-    if pod.Status == "Running" {
-        pods[n] = pod           // write keeper to position n
+for _, w := range words {       // read position (implicit)
+    if w == "keep" {
+        words[n] = w            // write keeper to position n
         n++                     // advance write position
     }
     // non-matches: read advances, write stays — element gets overwritten later
 }
-pods = pods[:n]                 // shrink to only the kept elements
+words = words[:n]               // shrink to only the kept elements
+// Before: [keep drop keep drop keep]
+// After:  [keep keep keep]
 ```
 
-After the loop, everything before index `n` is a keeper. Everything at `n` and beyond is garbage. `pods[:n]` slices it to just the good part.
+After the loop, everything before index `n` is a keeper. Everything at `n` and beyond is garbage. `words[:n]` slices it to just the good part.
 
 **Parallel slice version** — same idea, but you use the index `i` to look up the corresponding element in another slice:
 
 ```go
-names := []string{"web-1", "web-2", "db-1", "cache-1"}
-statuses := []string{"Running", "Failed", "Running", "Running"}
+fruits := []string{"apple", "banana", "cherry", "date"}
+fresh := []bool{true, false, true, true}
 
 n := 0
-for i, status := range statuses {
-    if status == "Running" {
-        names[n] = names[i]    // use i to index into the parallel slice
+for i, ok := range fresh {
+    if ok {
+        fruits[n] = fruits[i]   // use i to index into the parallel slice
         n++
     }
 }
-names = names[:n]
-// names = ["web-1", "db-1", "cache-1"]
+fruits = fruits[:n]
+// fruits = ["apple", "cherry", "date"]
 ```
 
-The difference: with structs you iterate the slice directly (`for _, pod`). With parallel slices you need the index (`for i, status`) so you can reach into the other slice.
+The difference: with a single slice you iterate it directly (`for _, w`). With parallel slices you need the index (`for i, ok`) so you can reach into the other slice.
 
 ### Deduplicate a Sorted Slice
 
@@ -484,20 +520,21 @@ If the slice is sorted, all duplicates are adjacent. So the question becomes: "i
 This is the filter-in-place pattern again — a write position `n` that only advances for keepers. But there are two differences from the filter above:
 
 1. The first element always stays (there's nothing before it to compare to), so `n` starts at 1 instead of 0.
-2. You need to compare `versions[i]` with `versions[i-1]`, which means you need the index — so use a C-style `for` starting at 1, not `range`.
+2. You need to compare `nums[i]` with `nums[i-1]`, which means you need the index — so use a C-style `for` starting at 1, not `range`.
 
 ```go
-versions := []string{"v1.0", "v1.0", "v1.1", "v1.1", "v1.2", "v1.3", "v1.3"}
+nums := []int{1, 1, 2, 2, 2, 3, 4, 4}
 
 n := 1  // first element always stays
-for i := 1; i < len(versions); i++ {
-    if versions[i] != versions[i-1] {  // different from previous? keep it
-        versions[n] = versions[i]
+for i := 1; i < len(nums); i++ {
+    if nums[i] != nums[i-1] {  // different from previous? keep it
+        nums[n] = nums[i]
         n++
     }
 }
-versions = versions[:n]
-// [v1.0 v1.1 v1.2 v1.3]
+nums = nums[:n]
+// Before: [1 1 2 2 2 3 4 4]
+// After:  [1 2 3 4]
 ```
 
 If you understood the filter pattern, this is just "filter where the condition is: different from the previous element."
@@ -505,8 +542,8 @@ If you understood the filter pattern, this is just "filter where the condition i
 *Python comparison*
 
 ```python
-# Python: pods = [p for p in pods if p.status == "Running"]
-# Go: no filter builtin. The loop above IS the Go way.
+# Python: filtered = [x for x in items if condition(x)]
+# Go: no filter builtin. The write-index loop above IS the Go way.
 ```
 
 <div class="inline-exercises" data-concept="In-Place Manipulation"></div>
