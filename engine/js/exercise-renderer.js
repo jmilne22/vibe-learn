@@ -177,7 +177,8 @@
             exerciseKey,    // e.g., "m2_challenge_1_v2"
             moduleLabel,    // e.g., "M2" (daily practice badge)
             conceptHtml,    // e.g., "(loops ↗)" link (module pages)
-            difficultyNav   // e.g., easier/harder buttons HTML (module pages)
+            difficultyNav,  // e.g., easier/harder buttons HTML (module pages)
+            drill           // truthy for scaffold drill cards (compact header, no notes)
         } = opts;
 
         const progress = window.ExerciseProgress?.get(exerciseKey);
@@ -197,8 +198,12 @@
 
         const challengeAttr = challenge ? ` data-challenge-id="${challenge.id}"` : '';
 
-        let html = `<div class="exercise${completedClass}" data-exercise-key="${exerciseKey}"${challengeAttr}>
-            <h4>${typeLabel} ${num}: ${escapeHtml(variant.title)}${difficultyHtml}${conceptSuffix}${moduleBadge}</h4>`;
+        const headerText = drill
+            ? `Step ${num} \u00b7 ${escapeHtml(variant.title)}`
+            : `${typeLabel} ${num}: ${escapeHtml(variant.title)}${difficultyHtml}${conceptSuffix}${moduleBadge}`;
+
+        let html = `<div class="exercise${completedClass}"${drill ? '' : ` data-exercise-key="${exerciseKey}"`}${challengeAttr}>
+            <h4>${headerText}</h4>`;
 
         if (difficultyNav) html += difficultyNav;
 
@@ -215,9 +220,11 @@
         // Solution with annotations
         html += renderSolution(variant.solution, variant.annotations);
 
-        // Personal notes
-        const exId = challenge ? challenge.id : (variant.warmupId || `ex${num}`);
-        html += renderPersonalNotes(exId, variant.id);
+        // Personal notes (skip for drill cards)
+        if (!drill) {
+            const exId = challenge ? challenge.id : (variant.warmupId || `ex${num}`);
+            html += renderPersonalNotes(exId, variant.id);
+        }
 
         // Expected output
         html += renderExpected(variant);

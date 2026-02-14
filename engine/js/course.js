@@ -581,6 +581,18 @@
             bodyDiv.classList.add('split-layout');
             if (inlineEl) applySplitBreakout(inlineEl);
         }
+
+        // Track reference usage: mark hintsUsed on all exercises in this section
+        // so SRS downgrades quality from 5→4 (used hints, not pure recall)
+        if (inlineEl && window.ExerciseProgress) {
+            var exerciseEls = inlineEl.querySelectorAll('.exercise[data-exercise-key]');
+            exerciseEls.forEach(function(ex) {
+                var exKey = ex.getAttribute('data-exercise-key');
+                if (exKey) {
+                    window.ExerciseProgress.update(exKey, { hintsUsed: true });
+                }
+            });
+        }
     }
 
     function shouldUseSplitLayout() {

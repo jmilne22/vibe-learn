@@ -166,6 +166,8 @@ pre {
     margin: 0;
     white-space: pre-wrap;
     word-wrap: break-word;
+    tab-size: 4;
+    -moz-tab-size: 4;
 }
 
 /* Markdown-generated code blocks (pre > code) */
@@ -415,6 +417,15 @@ pre {
     margin-bottom: 1rem;
 }
 
+.exercise pre {
+    white-space: pre;
+    overflow-x: auto;
+    background: var(--bg-code);
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    margin: 0.5rem 0;
+}
+
 .expected {
     margin-top: 1.5rem;
 }
@@ -517,6 +528,11 @@ details .hint-content {
     border-radius: 4px;
     padding: 1rem;
     margin-top: 0.5rem;
+}
+
+details .hint-content pre {
+    white-space: pre;
+    overflow-x: auto;
 }
 
 /* ============================================

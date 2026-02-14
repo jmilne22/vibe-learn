@@ -193,6 +193,111 @@
         return loadSRS();
     }
 
+    // --- Concept Strength API ---
+
+    var MIN_CONCEPT_REVIEWS = 3;
+
+    function extractModuleNum(key) {
+        if (key.indexOf('algo_') === 0) return 'algo';
+        var match = key.match(/^(?:fc_)?m(\d+)_/);
+        return match ? parseInt(match[1], 10) : null;
+    }
+
+    function stripVariantSuffix(key) {
+        return key.replace(/_(?:v|tp)\d+$/, '');
+    }
+
+    function strengthLabel(avgEase, count, minReviews) {
+        if (count < (minReviews || MIN_CONCEPT_REVIEWS)) return 'Too early';
+        if (avgEase >= 2.5) return 'Strong';
+        if (avgEase >= 2.3) return 'Good';
+        if (avgEase >= 1.8) return 'Moderate';
+        return 'Weak';
+    }
+
+    function strengthColor(label) {
+        switch (label) {
+            case 'Strong':    return 'var(--green-bright)';
+            case 'Good':      return 'var(--cyan)';
+            case 'Moderate':  return 'var(--orange)';
+            case 'Weak':      return 'var(--red)';
+            case 'Too early': return 'var(--text-dim)';
+            default:          return 'var(--text-dim)';
+        }
+    }
+
+    /**
+     * Compute per-concept strength using recency-weighted ease factors.
+     * @param {Object} [opts] - Options
+     * @param {number|string} [opts.moduleNum] - Filter to a specific module
+     * @returns {Array<{concept: string, moduleNum: number|string, avgEase: number, count: number, label: string, color: string}>}
+     */
+    function getConceptStrengths(opts) {
+        var srsData = loadSRS();
+        var conceptIndex = window.ConceptIndex || {};
+        var moduleFilter = opts && opts.moduleNum !== undefined ? opts.moduleNum : null;
+        var now = Date.now();
+
+        var conceptMap = {}; // "moduleNum|concept" -> { weightedEase, totalWeight, count }
+        var srsKeys = Object.keys(srsData);
+
+        for (var i = 0; i < srsKeys.length; i++) {
+            var key = srsKeys[i];
+            if (key.indexOf('fc_') === 0) continue; // skip flashcards
+            var entry = srsData[key];
+            var modNum = extractModuleNum(key);
+            if (modNum === null) continue;
+            if (moduleFilter !== null && String(modNum) !== String(moduleFilter)) continue;
+
+            var baseKey = stripVariantSuffix(key);
+            var conceptName = conceptIndex[baseKey];
+            if (!conceptName) continue;
+
+            // Recency weight: 1 / (1 + daysSinceLastReview / 30)
+            var weight = 1;
+            if (entry.nextReview && entry.interval) {
+                var lastReview = new Date(entry.nextReview);
+                lastReview.setDate(lastReview.getDate() - entry.interval);
+                var daysSince = Math.max(0, (now - lastReview) / (1000 * 60 * 60 * 24));
+                weight = 1 / (1 + daysSince / 30);
+            }
+
+            var groupKey = modNum + '|' + conceptName;
+            if (!conceptMap[groupKey]) {
+                conceptMap[groupKey] = { moduleNum: modNum, concept: conceptName, weightedEase: 0, totalWeight: 0, count: 0 };
+            }
+            conceptMap[groupKey].weightedEase += entry.easeFactor * weight;
+            conceptMap[groupKey].totalWeight += weight;
+            conceptMap[groupKey].count += (entry.reviewCount || Math.max(entry.repetitions, 1));
+        }
+
+        var concepts = [];
+        var groupKeys = Object.keys(conceptMap);
+        for (var g = 0; g < groupKeys.length; g++) {
+            var data = conceptMap[groupKeys[g]];
+            var avgEase = data.totalWeight > 0 ? data.weightedEase / data.totalWeight : data.weightedEase / data.count;
+            var label = strengthLabel(avgEase, data.count, MIN_CONCEPT_REVIEWS);
+            concepts.push({
+                moduleNum: data.moduleNum,
+                concept: data.concept,
+                avgEase: Math.round(avgEase * 10) / 10,
+                count: data.count,
+                label: label,
+                color: strengthColor(label)
+            });
+        }
+
+        // Sort: "Too early" at bottom, then weakest-first
+        concepts.sort(function(a, b) {
+            var aEarly = a.label === 'Too early' ? 1 : 0;
+            var bEarly = b.label === 'Too early' ? 1 : 0;
+            if (aEarly !== bEarly) return aEarly - bEarly;
+            return a.avgEase - b.avgEase;
+        });
+
+        return concepts;
+    }
+
     // Public API
     window.SRS = {
         recordReview,
@@ -200,6 +305,9 @@
         getDueExercises,
         getWeakestExercises,
         getDueCount,
-        getAll
+        getAll,
+        getConceptStrengths,
+        strengthLabel,
+        strengthColor
     };
 })();

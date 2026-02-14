@@ -243,10 +243,18 @@
         const progress = getExerciseProgress(key);
         if (!progress) return;
         const quality = window.SRS.deriveQuality(progress);
-        const srsKey = key.replace(/_v\d+$/, '');
+        const srsKey = key.replace(/_(?:v|tp)\w+$/, '');
         const exerciseEl = document.querySelector('[data-exercise-key="' + key + '"]');
         const h4 = exerciseEl && exerciseEl.querySelector('h4');
         const label = h4 ? h4.textContent.trim() : null;
         window.SRS.recordReview(srsKey, quality, label);
+
+        // Drill trigger: when user struggled or needed solution, offer scaffold drill
+        if (rating >= 2 && exerciseEl && window.ScaffoldDrill && window.ConceptIndex) {
+            const concept = window.ConceptIndex[srsKey];
+            if (concept) {
+                window.ScaffoldDrill.showDrillButton(exerciseEl, concept, srsKey);
+            }
+        }
     });
 })();
