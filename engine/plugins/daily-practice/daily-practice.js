@@ -462,6 +462,36 @@
             }
         }
 
+        // Fallback: variant was removed but warmup/challenge group still exists.
+        // Match by group ID prefix and pick a random surviving variant.
+        if (variants.warmups) {
+            for (var swi = 0; swi < variants.warmups.length; swi++) {
+                var sw = variants.warmups[swi];
+                if (keyParts.indexOf(sw.id + '_') === 0 && sw.variants && sw.variants.length > 0) {
+                    var srv = sw.variants[Math.floor(Math.random() * sw.variants.length)];
+                    item.key = 'm' + item.moduleNum + '_' + sw.id + '_' + srv.id;
+                    return window.ExerciseRenderer ? window.ExerciseRenderer.renderExerciseCard({
+                        num: 1, variant: srv, challenge: null, type: 'warmup',
+                        exerciseKey: item.key, moduleLabel: 'M' + item.moduleNum
+                    }) : null;
+                }
+            }
+        }
+
+        if (variants.challenges) {
+            for (var sci = 0; sci < variants.challenges.length; sci++) {
+                var sc = variants.challenges[sci];
+                if (keyParts.indexOf(sc.id + '_') === 0 && sc.variants && sc.variants.length > 0) {
+                    var scv = sc.variants[Math.floor(Math.random() * sc.variants.length)];
+                    item.key = 'm' + item.moduleNum + '_' + sc.id + '_' + scv.id;
+                    return window.ExerciseRenderer ? window.ExerciseRenderer.renderExerciseCard({
+                        num: 1, variant: scv, challenge: sc, type: 'challenge',
+                        exerciseKey: item.key, moduleLabel: 'M' + item.moduleNum
+                    }) : null;
+                }
+            }
+        }
+
         // Fallback: SRS keys have variant suffixes stripped (e.g. "warmup_1" not "warmup_1_v3").
         // Match by exercise ID alone and pick a random variant.
         if (variants.warmups) {
