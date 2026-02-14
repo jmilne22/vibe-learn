@@ -220,14 +220,14 @@ A slice is a view over an array: pointer, length, capacity. Think of it like a w
 *Quick reference*
 
 ```go
-s := []string{"nginx", "redis", "postgres"}
+fruits := []string{"apple", "banana", "cherry", "date", "elderberry"}
 
-s[0]             // "nginx" — access by index
-s[len(s)-1]      // "postgres" — last element
-s[1:3]           // ["redis", "postgres"] — slice expression (start inclusive, end exclusive)
-s[:2]            // ["nginx", "redis"] — first two
-s[1:]            // ["redis", "postgres"] — everything after first
-s[len(s)-3:]     // last 3 elements
+fruits[0]             // "apple" — access by index
+fruits[len(fruits)-1] // "elderberry" — last element
+fruits[1:3]           // ["banana", "cherry"] — slice expression (start inclusive, end exclusive)
+fruits[:3]            // ["apple", "banana", "cherry"] — first three
+fruits[2:]            // ["cherry", "date", "elderberry"] — everything from index 2 onward
+fruits[len(fruits)-2:]// ["date", "elderberry"] — last two
 ```
 
 *Python comparison*
@@ -275,13 +275,13 @@ pods = append(pods, more...)           // [web-1, web-2, web-3, db-1, db-2]
 **Building a slice in a loop:**
 
 ```go
-// Build "node-1" through "node-5"
-var nodes []string
-for i := 1; i <= 5; i++ {
-    nodes = append(nodes, fmt.Sprintf("node-%d", i))
+// Build "step-1" through "step-4"
+var steps []string
+for i := 1; i <= 4; i++ {
+    steps = append(steps, fmt.Sprintf("step-%d", i))
 }
-fmt.Printf("len=%d cap=%d %v\n", len(nodes), cap(nodes), nodes)
-// len=5 cap=8 [node-1 node-2 node-3 node-4 node-5]
+fmt.Printf("len=%d cap=%d %v\n", len(steps), cap(steps), steps)
+// len=4 cap=4 [step-1 step-2 step-3 step-4]
 // (cap may vary — Go doubles capacity as needed)
 ```
 
@@ -320,35 +320,35 @@ for i, name := range names {
 
 ### Batching (Processing in Chunks)
 
-You have 7 pods and need to process them in batches of 3. That means groups: `[0:3]`, `[3:6]`, `[6:7]`. How do you loop that?
+You have 10 items and need to process them in batches of 4. That means groups: `[0:4]`, `[4:8]`, `[8:10]`. How do you loop that?
 
 Start from what you know — a C-style loop counts up by 1:
 
 ```go
-for i := 0; i < len(pods); i++ { ... }
-//  i goes: 0, 1, 2, 3, 4, 5, 6
+for i := 0; i < len(items); i++ { ... }
+//  i goes: 0, 1, 2, ..., 9
 ```
 
-But you don't want every index — you want the *start* of each batch. Those are 0, 3, 6. The step isn't 1, it's `batchSize`. The `post` part of a C-style loop can be anything, so change `i++` to `i += batchSize`:
+But you don't want every index — you want the *start* of each batch. Those are 0, 4, 8. The step isn't 1, it's `batchSize`. The `post` part of a C-style loop can be anything, so change `i++` to `i += batchSize`:
 
 ```go
-for i := 0; i < len(pods); i += batchSize { ... }
-//  i goes: 0, 3, 6
+for i := 0; i < len(items); i += batchSize { ... }
+//  i goes: 0, 4, 8
 ```
 
-Now each `i` is the start of a batch. The end is `i + batchSize`. So the batch is `pods[i : i+batchSize]` — except there's a problem. When `i=6` and `batchSize=3`, `i+batchSize=9`, which is past the end of a 7-element slice. Go will panic with "index out of range."
+Now each `i` is the start of a batch. The end is `i + batchSize`. So the batch is `items[i : i+batchSize]` — except there's a problem. When `i=8` and `batchSize=4`, `i+batchSize=12`, which is past the end of a 10-element slice. Go will panic with "index out of range."
 
-The fix: cap the end index so it never exceeds `len(pods)`:
+The fix: cap the end index so it never exceeds `len(items)`:
 
 ```go
 end := i + batchSize
-if end > len(pods) {
-    end = len(pods)
+if end > len(items) {
+    end = len(items)
 }
-// Now pods[i:end] is always safe
+// Now items[i:end] is always safe
 ```
 
-That's the whole pattern. You derive it from three ideas: (1) C-style loops can step by any amount, (2) each step is the start of a batch, and (3) the last batch might be short so you clamp the end. In production, you'll use this when rolling out config changes to 500 nodes — you don't hit all 500 at once, you batch them in groups of 50 so a bad config only takes down 10% before you notice.
+That's the whole pattern. You derive it from three ideas: (1) C-style loops can step by any amount, (2) each step is the start of a batch, and (3) the last batch might be short so you clamp the end.
 
 ### Finding Min / Max
 
@@ -359,18 +359,18 @@ The question is: what do you initialize min and max to? If you start with `min :
 The safe answer: initialize both to the first element. Now min and max are already correct for a 1-element slice, and you just need to scan the rest:
 
 ```go
-min, max := times[0], times[0]
-for _, t := range times[1:] {   // start from index 1 — [0] is already covered
-    if t < min {
-        min = t
+min, max := prices[0], prices[0]
+for _, p := range prices[1:] {   // start from index 1 — [0] is already covered
+    if p < min {
+        min = p
     }
-    if t > max {
-        max = t
+    if p > max {
+        max = p
     }
 }
 ```
 
-One pass, two comparisons per element. `times[1:]` skips the first element since it's already accounted for. This works for any comparable type — ints, floats, strings.
+One pass, two comparisons per element. `prices[1:]` skips the first element since it's already accounted for. This works for any comparable type — ints, floats, strings.
 
 <div class="inline-exercises" data-concept="Slice Operations"></div>
 
@@ -548,70 +548,71 @@ If you understood the filter pattern, this is just "filter where the condition i
 
 <div class="inline-exercises" data-concept="In-Place Manipulation"></div>
 
-## Map Patterns for Infra
+## Map Patterns
 
 > *"Clear is better than clever."* — Go Proverb
 
-A map is a lookup table — think of it like a DNS server. You give it a name (the key), it gives you back an address (the value). If the name isn't registered, you get back a zero value, not an error. That's why you'll need the comma-ok pattern below: to tell "this key maps to zero" apart from "this key doesn't exist."
+A map is a lookup table — think of it like a dictionary. You look up a word (the key) and get back a definition (the value). If the word isn't in the dictionary, you get back a zero value, not an error. That's why you'll need the comma-ok pattern below: to tell "this key maps to zero" apart from "this key doesn't exist."
 
-Maps are your most-used data structure in infrastructure code. Counting, grouping, lookup tables, caches.
+Maps are your most-used data structure after slices. Counting, grouping, lookup tables, caches.
 
 ### Create & Access
 
 ```go
 // Literal
-statusCodes := map[string]int{
-    "healthy":   0,
-    "degraded":  1,
-    "unhealthy": 2,
+scores := map[string]int{
+    "Alice": 95,
+    "Bob":   0,
+    "Carol": 78,
 }
 
 // make
-podsByNode := make(map[string][]string)
+studentsByClass := make(map[string][]string)
 
 // Access (zero value if missing)
-count := statusCodes["healthy"]  // 0
-count := statusCodes["missing"]  // 0 (zero value for int — ambiguous!)
+score := scores["Alice"]    // 95
+score := scores["Dave"]     // 0 (zero value for int — but did Dave score 0, or is he missing?)
 
 // Comma-ok pattern: distinguish "exists with zero value" from "missing"
-count, ok := statusCodes["missing"]
+score, ok := scores["Bob"]    // score = 0, ok = true  (Bob scored 0)
+score, ok := scores["Dave"]   // score = 0, ok = false (Dave isn't in the map)
 if !ok {
     fmt.Println("key not found")
 }
 ```
 
-> **When to use comma-ok:** Whenever the zero value is a valid value. For `map[string]int`, 0 could be a real count. For `map[string]string`, empty string could be a real value. When in doubt, use comma-ok.
+> **When to use comma-ok:** Whenever the zero value is a valid value. For `map[string]int`, 0 could be a real score. For `map[string]string`, empty string could be a real value. When in doubt, use comma-ok.
 
 ### Counting
 
-The single most common map pattern in infra:
+The single most common map pattern:
 
 ```go
-// Count log entries by level
+// Count how many of each fruit
 counts := make(map[string]int)
-for _, level := range levels {
-    counts[level]++  // zero value of int is 0, so this just works
+for _, fruit := range basket {
+    counts[fruit]++  // zero value of int is 0, so this just works
 }
 ```
 
 ### Grouping
 
 ```go
-// Group pods by namespace (struct slice version)
-byNamespace := make(map[string][]string)
-for _, pod := range pods {
-    byNamespace[pod.Namespace] = append(byNamespace[pod.Namespace], pod.Name)
+// Group students by grade level (struct slice version)
+byGrade := make(map[string][]string)
+for _, s := range students {
+    byGrade[s.Grade] = append(byGrade[s.Grade], s.Name)
 }
 
-// Parallel slice version — names[i] goes with namespaces[i]
-names := []string{"web-1", "web-2", "api-1", "db-1"}
-namespaces := []string{"frontend", "frontend", "backend", "data"}
+// Parallel slice version — names[i] goes with subjects[i]
+names := []string{"Alice", "Bob", "Carol", "Dave"}
+subjects := []string{"math", "math", "science", "science"}
 
 grouped := make(map[string][]string)
-for i, ns := range namespaces {
-    grouped[ns] = append(grouped[ns], names[i])
+for i, subj := range subjects {
+    grouped[subj] = append(grouped[subj], names[i])
 }
-// grouped = map[frontend:[web-1 web-2] backend:[api-1] data:[db-1]]
+// grouped = map[math:[Alice Bob] science:[Carol Dave]]
 ```
 
 ### Map as Set
@@ -619,39 +620,39 @@ for i, ns := range namespaces {
 Go has no set type. Use `map[string]bool`:
 
 ```go
-// Track unique error messages
+// Track which words you've already seen
 seen := make(map[string]bool)
-for _, msg := range errors {
-    seen[msg] = true
+for _, word := range words {
+    seen[word] = true
 }
 
 // Check membership
-if seen["connection refused"] {
-    fmt.Println("network issue detected")
+if seen["hello"] {
+    fmt.Println("already encountered this word")
 }
 ```
 
 ### Merge Two Maps
 
-Here's a scenario: you have default config values (`timeout: 30s`, `retries: 3`, `log_level: info`) and user overrides (`timeout: 10s`, `log_level: debug`). The final config should have the user's timeout and log level, but the default retries. How would you produce that merged result?
+Say you have base settings for a game character (`health: 100`, `speed: 5`, `armor: 10`) and a power-up that changes some of them (`speed: 8`, `armor: 20`). The final stats should use the power-up values where they exist, and the base values everywhere else.
 
 Maps don't have a merge method. You build it: create a new map, copy one in, then copy the other. Whichever you copy second wins on conflicts:
 
 ```go
-defaults := map[string]string{"timeout": "30s", "retries": "3", "log_level": "info"}
-overrides := map[string]string{"timeout": "10s", "log_level": "debug"}
+base := map[string]int{"health": 100, "speed": 5, "armor": 10}
+powerUp := map[string]int{"speed": 8, "armor": 20}
 
-merged := make(map[string]string)
-for k, v := range defaults {
-    merged[k] = v              // copy all defaults
+merged := make(map[string]int)
+for k, v := range base {
+    merged[k] = v            // copy all base stats
 }
-for k, v := range overrides {
-    merged[k] = v              // overwrite with user values (second write wins)
+for k, v := range powerUp {
+    merged[k] = v            // overwrite with power-up values (second write wins)
 }
-// merged = map[log_level:debug retries:3 timeout:10s]
+// merged = map[armor:20 health:100 speed:8]
 ```
 
-Order matters. If you copied overrides first and defaults second, defaults would win — the opposite of what you want.
+Order matters. If you copied `powerUp` first and `base` second, the base values would win — the opposite of what you want.
 
 ### Nested Maps
 
@@ -677,7 +678,7 @@ Always check if the inner map is nil before writing. The compiler won't catch th
 ### Delete
 
 ```go
-delete(podsByNode, "node-3")  // remove key. No-op if key doesn't exist.
+delete(studentsByClass, "art")  // remove key. No-op if key doesn't exist.
 ```
 
 ### Iteration Order is Random
@@ -755,28 +756,28 @@ Infrastructure is strings all the way down. Log lines, metric formats, config fi
 ```go
 import "strings"
 
-// Split a log line on whitespace
-line := "2024-01-15 ERROR [auth] connection refused"
-parts := strings.Fields(line)  // splits on any whitespace
-// ["2024-01-15", "ERROR", "[auth]", "connection", "refused"]
+// Split a sentence on whitespace
+line := "The quick brown fox jumps over the lazy dog"
+words := strings.Fields(line)  // splits on any whitespace
+// ["The", "quick", "brown", "fox", "jumps", "over", "the", "lazy", "dog"]
 
 // Split on specific delimiter
-labels := "app=nginx,env=prod,region=us-east"
-pairs := strings.Split(labels, ",")
-// ["app=nginx", "env=prod", "region=us-east"]
+csv := "Alice,Bob,Carol,Dave"
+names := strings.Split(csv, ",")
+// ["Alice", "Bob", "Carol", "Dave"]
 
-// SplitN — limit the number of splits (critical for key=value where value contains =)
-line2 := "DB_URL=postgres://host:5432/db?opt=val"
-parts2 := strings.SplitN(line2, "=", 2)  // split into at most 2 parts
-// ["DB_URL", "postgres://host:5432/db?opt=val"]
-// Without the 2: Split would give ["DB_URL", "postgres://host:5432/db?opt", "val"]
+// SplitN — limit the number of splits (useful when the value contains the delimiter)
+entry := "name=Tom = Jerry"
+parts := strings.SplitN(entry, "=", 2)  // split into at most 2 parts
+// ["name", "Tom = Jerry"]
+// Without the 2: Split would give ["name", "Tom ", " Jerry"]
 
 // Join
-joined := strings.Join(pairs, " | ")
-// "app=nginx | env=prod | region=us-east"
+joined := strings.Join(names, " | ")
+// "Alice | Bob | Carol | Dave"
 ```
 
-`strings.SplitN(s, sep, n)` splits into at most `n` pieces. Use `SplitN(s, "=", 2)` whenever the value side might contain the delimiter. This one trips people up in production — a database URL like `postgres://host:5432/db?opt=val` contains multiple `=` signs, and a naive `Split` will shred it.
+`strings.SplitN(s, sep, n)` splits into at most `n` pieces. Use `SplitN(s, "=", 2)` whenever the value side might contain the delimiter. A naive `Split` will break any value that contains extra `=` signs.
 
 ### Checking Content
 
@@ -790,39 +791,33 @@ These are your guards before parsing. Check what a string looks like before you 
 
 ### Parsing Key-Value Pairs
 
-You'll do this constantly — config files, labels, environment variables:
+You'll do this constantly — config files, labels, environment variables. The quickest way: `SplitN` with a limit of 2:
 
 ```go
-// Parse "key=value" into key and value, splitting on first = only
-func parseKV(s string) (string, string, bool) {
-    i := strings.Index(s, "=")
-    if i < 0 {
-        return "", "", false
-    }
-    return s[:i], s[i+1:], true
+// Parse "key=value" into key and value
+setting := "color=dark blue"
+parts := strings.SplitN(setting, "=", 2)
+if len(parts) == 2 {
+    fmt.Println(parts[0], parts[1])  // "color" "dark blue"
 }
-
-key, val, ok := parseKV("app=nginx")
-// key="app", val="nginx", ok=true
 ```
 
-> **`strings.Index` vs `strings.SplitN`:** Both can split on the first occurrence. `Index` gives you the position (use slice expressions). `SplitN(s, "=", 2)` gives you a `[]string` directly. Use whichever feels cleaner for the situation.
+> **`strings.Index` vs `strings.SplitN`:** Both can split on the first occurrence. `SplitN(s, "=", 2)` gives you a `[]string` directly. `strings.Index` gives you the position so you can use slice expressions (`s[:i]`, `s[i+1:]`). Use whichever feels cleaner for the situation.
 
 ### Building Strings
 
 ```go
 // fmt.Sprintf — your workhorse
-msg := fmt.Sprintf("pod %s in namespace %s: %s", "web-1", "production", "Running")
+msg := fmt.Sprintf("%s scored %d out of %d", "Alice", 87, 100)
 
 // Collect-and-join pattern — build a slice of strings, then join
-// Very common for building reports from maps or slices
-labels := map[string]string{"method": "GET", "status": "200"}
-parts := make([]string, 0, len(labels))
-for k, v := range labels {
-    parts = append(parts, fmt.Sprintf("%s=\"%s\"", k, v))
+colors := map[string]string{"sky": "blue", "grass": "green", "sun": "yellow"}
+parts := make([]string, 0, len(colors))
+for k, v := range colors {
+    parts = append(parts, fmt.Sprintf("%s is %s", k, v))
 }
-result := strings.Join(parts, ",")
-// result = method="GET",status="200" (order may vary)
+result := strings.Join(parts, ", ")
+// result = "sky is blue, grass is green, sun is yellow" (order may vary)
 
 // strings.Builder — for building in a loop (more efficient than += concatenation)
 var b strings.Builder
@@ -855,11 +850,11 @@ In Go, dividing two ints gives an int — the decimal part is thrown away. `3 / 
 So to get a real percentage, you must convert to `float64` *before* dividing:
 
 ```go
-errors := 3
-total := 8
+passed := 7
+total := 12
 
-pct := float64(errors) / float64(total) * 100  // 37.5
-fmt.Printf("%.1f%%\n", pct)                     // "37.5%"
+pct := float64(passed) / float64(total) * 100  // 58.333...
+fmt.Printf("%.1f%%\n", pct)                     // "58.3%"
 ```
 
 The `float64()` calls do the conversion. `%%` prints a literal percent sign (because `%` is the format specifier prefix).
@@ -871,9 +866,9 @@ The `float64()` calls do the conversion. `%%` prints a literal percent sign (bec
 To round to 1 decimal: multiply by 10 (moves the tenths digit into the ones place), round, divide by 10:
 
 ```go
-rate := 33.3333
-rounded := math.Round(rate*10) / 10  // 33.3
-// 33.3333 * 10 = 333.333 → Round → 333 → / 10 = 33.3
+avg := 72.6789
+rounded := math.Round(avg*10) / 10  // 72.7
+// 72.6789 * 10 = 726.789 → Round → 727 → / 10 = 72.7
 ```
 
 To round to 2 decimals, multiply/divide by 100. To round to the nearest integer, just `math.Round(x)`.
@@ -913,13 +908,13 @@ import "sort"
 sort.Strings(names)  // sorts in place, modifies the original slice
 
 // Sort with custom comparator — for any slice type
-sort.Slice(pods, func(i, j int) bool {
-    return pods[i].Name < pods[j].Name
+sort.Slice(students, func(i, j int) bool {
+    return students[i].Name < students[j].Name
 })
 
-// Sort by memory usage, descending
-sort.Slice(pods, func(i, j int) bool {
-    return pods[i].MemoryMB > pods[j].MemoryMB
+// Sort by score, descending
+sort.Slice(students, func(i, j int) bool {
+    return students[i].Score > students[j].Score
 })
 ```
 
@@ -928,59 +923,59 @@ The comparator returns `true` if element `i` should come before element `j`. Tha
 *Python comparison*
 
 ```python
-# Python: pods.sort(key=lambda p: p.name)
-# Go: sort.Slice(pods, func(i, j int) bool { return pods[i].Name < pods[j].Name })
+# Python: students.sort(key=lambda s: s.name)
+# Go: sort.Slice(students, func(i, j int) bool { return students[i].Name < students[j].Name })
 # More verbose, but explicit about the comparison.
 ```
 
 ### Top N Pattern
 
-A very common infra pattern: "give me the top 5 pods by CPU usage."
+A very common pattern: "give me the top 5 students by score."
 
 ```go
-sort.Slice(pods, func(i, j int) bool {
-    return pods[i].CPUM > pods[j].CPUM  // descending
+sort.Slice(students, func(i, j int) bool {
+    return students[i].Score > students[j].Score  // descending
 })
-if len(pods) > 5 {
-    pods = pods[:5]  // keep top 5
+if len(students) > 5 {
+    students = students[:5]  // keep top 5
 }
 ```
 
-During an incident, you need the top 5 memory hogs in seconds, not minutes. This three-line sort-and-truncate is something you'll write from muscle memory at 3am.
+Sort descending, then truncate. Three lines. You'll use this shape whenever you need "the top N of anything."
 
 ### Zipping Parallel Slices for Sorting
 
-`sort.Slice` rearranges elements within a single slice. But if your data is in parallel slices (`names[i]` goes with `memoryMB[i]`), sorting one slice would break the pairing — `names` would be reordered but `memoryMB` would stay put.
+`sort.Slice` rearranges elements within a single slice. But if your data is in parallel slices (`names[i]` goes with `scores[i]`), sorting one slice would break the pairing — `names` would be reordered but `scores` would stay put.
 
 The solution: combine them into a struct slice so the paired data moves together. Three steps:
 
 **1. Define a struct to hold one pair.** You can define a `type` inside a function — it's scoped to that function. Use this for throwaway structs:
 
 ```go
-type pod struct {
-    name string
-    mem  int
+type student struct {
+    name  string
+    score int
 }
 ```
 
 **2. Zip the parallel slices into structs.** Loop by index, pull from both slices:
 
 ```go
-pods := make([]pod, len(names))
+students := make([]student, len(names))
 for i := range names {
-    pods[i] = pod{names[i], memoryMB[i]}
+    students[i] = student{names[i], scores[i]}
 }
 ```
 
-**3. Sort the struct slice.** Now `sort.Slice` moves name and memory together:
+**3. Sort the struct slice.** Now `sort.Slice` moves name and score together:
 
 ```go
-sort.Slice(pods, func(i, j int) bool {
-    return pods[i].mem > pods[j].mem  // descending by memory
+sort.Slice(students, func(i, j int) bool {
+    return students[i].score > students[j].score  // descending by score
 })
 ```
 
-After sorting, extract the field you need (e.g. `pods[0].name` for the highest-memory pod). If you need a slice of just the names, loop and pull them out.
+After sorting, extract the field you need (e.g. `students[0].name` for the highest-scoring student). If you need a slice of just the names, loop and pull them out.
 
 <div class="inline-exercises" data-concept="Sorting & Filtering"></div>
 

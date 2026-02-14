@@ -1,7 +1,7 @@
 conceptLinks:
   Slice Operations: "#slice-operations-under-pressure"
   In-Place Manipulation: "#in-place-manipulation"
-  Map Patterns: "#map-patterns-for-infra"
+  Map Patterns: "#map-patterns"
   String Parsing: "#string-parsing--building"
   Numbers & Percentages: "#numbers-floats--percentages"
   Sorting & Filtering: "#sorting--filtering"
