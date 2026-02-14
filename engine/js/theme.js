@@ -63,6 +63,13 @@
                 { value: 'everforest-dark', label: 'Dark' },
                 { value: 'everforest-light', label: 'Light' }
             ]
+        },
+        {
+            label: 'Minimal',
+            options: [
+                { value: 'terminal', label: 'Dark' },
+                { value: 'terminal-light', label: 'Light' }
+            ]
         }
     ];
 
