@@ -48,45 +48,6 @@ variants:
             servers := []string{"web-1", "web-2", "api-1", "api-2", "db-1"}
             last3 := servers[len(servers)-3:]
             fmt.Println(last3) // [api-1 api-2 db-1]
-        - id: v2
-          title: Response Time Range
-          description: >-
-            Given <code>times := []int{234, 12, 891, 45, 567, 23, 445}</code> (response times in ms), find and print the
-            minimum and maximum values. Use a single loop.
-          hints:
-            - "What's a safe starting value for min and max? Using 0 won't work — think about what element you already know exists."
-            - You only need one pass through the slice. Compare each element against your running min and max.
-          solution: |-
-            times := []int{234, 12, 891, 45, 567, 23, 445}
-            min, max := times[0], times[0]
-            for _, t := range times[1:] {
-                if t < min {
-                    min = t
-                }
-                if t > max {
-                    max = t
-                }
-            }
-            fmt.Printf("min=%dms max=%dms\n", min, max)
-        - id: v3
-          title: Batch Pods
-          description: |-
-            Given this slice and a batch size of 3:
-            <pre>pods := []string{"web-1", "web-2", "web-3", "web-4", "web-5", "web-6", "web-7"}</pre>
-            Print each batch on its own line: <code>[web-1 web-2 web-3]</code>, <code>[web-4 web-5 web-6]</code>, <code>[web-7]</code>.
-          hints:
-            - You need a loop that jumps forward by the batch size each iteration, not one element at a time. Which loop form supports a custom step?
-            - What happens when the last batch is smaller than the batch size? You need to cap the end index so it doesn't go past the slice length.
-          solution: |-
-            pods := []string{"web-1", "web-2", "web-3", "web-4", "web-5", "web-6", "web-7"}
-            batchSize := 3
-            for i := 0; i < len(pods); i += batchSize {
-                end := i + batchSize
-                if end > len(pods) {
-                    end = len(pods)
-                }
-                fmt.Println(pods[i:end])
-            }
         - id: v4
           title: Build a Slice from Scratch
           description: >-
@@ -101,6 +62,31 @@ variants:
                 nodes = append(nodes, fmt.Sprintf("node-%d", i))
             }
             fmt.Printf("len=%d cap=%d %v\n", len(nodes), cap(nodes), nodes)
+        - id: v5
+          title: Append to a Slice
+          description: >-
+            Given <code>colors := []string{"red", "green"}</code>, append <code>"blue"</code> to the slice. Print the
+            result.
+          hints:
+            - "<code>append</code> returns a new slice — you must assign it back to the variable."
+            - "<code>colors = append(colors, \"blue\")</code>"
+          solution: |-
+            colors := []string{"red", "green"}
+            colors = append(colors, "blue")
+            fmt.Println(colors) // [red green blue]
+        - id: v6
+          title: Combine Two Slices
+          description: >-
+            Given <code>front := []string{"a", "b"}</code> and <code>back := []string{"c", "d"}</code>, combine them into
+            a single slice using <code>append</code>. Print the result.
+          hints:
+            - "To append all elements of one slice to another, use the spread operator: <code>...</code>"
+            - "<code>all := append(front, back...)</code>"
+          solution: |-
+            front := []string{"a", "b"}
+            back := []string{"c", "d"}
+            all := append(front, back...)
+            fmt.Println(all) // [a b c d]
     - id: warmup_2
       concept: In-Place Manipulation
       variants:
@@ -128,33 +114,6 @@ variants:
             statuses := []string{"Running", "Pending", "Running", "Failed"}
             statuses[3] = "Running"
             fmt.Println(statuses) // [Running Pending Running Running]
-        - id: v0c
-          title: Remove Keeping Order
-          description: >-
-            Given <code>services := []string{"auth", "api", "web", "cache"}</code>, remove the element at index 1
-            (<code>"api"</code>) while <strong>preserving the order</strong> of the remaining elements. Print the
-            result.
-          hints:
-            - "You need everything before the index joined with everything after it. Which Go builtin combines two slices?"
-            - "Use <code>append(s[:i], s[i+1:]...)</code> — this slides the later elements left to fill the gap."
-          solution: |-
-            services := []string{"auth", "api", "web", "cache"}
-            services = append(services[:1], services[2:]...)
-            fmt.Println(services) // [auth web cache]
-        - id: v1
-          title: Reverse Server List
-          description: >-
-            Given <code>servers := []string{"nginx", "redis", "postgres", "mongo"}</code>, reverse the slice <strong>in
-            place</strong> (don't create a new slice). Print the result.
-          hints:
-            - Think about approaching from both ends simultaneously. When should you stop?
-            - "Each step, move both positions one closer to the center, swapping as you go."
-          solution: |-
-            servers := []string{"nginx", "redis", "postgres", "mongo"}
-            for i, j := 0, len(servers)-1; i < j; i, j = i+1, j-1 {
-                servers[i], servers[j] = servers[j], servers[i]
-            }
-            fmt.Println(servers)
         - id: v2
           title: Remove Terminated Pod
           description: >-
@@ -169,81 +128,51 @@ variants:
             pods[1] = pods[len(pods)-1]
             pods = pods[:len(pods)-1]
             fmt.Println(pods) // [web-1 web-4 web-3]
-        - id: v3
-          title: Insert at Position
+        - id: v6
+          title: Remove Last Element
           description: >-
-            Given <code>queue := []string{"job-a", "job-b", "job-d"}</code>, insert <code>"job-c"</code> at index 2
-            (before <code>"job-d"</code>). Print the result: <code>[job-a job-b job-c job-d]</code>.
+            Given <code>tasks := []string{"deploy", "test", "lint", "scan"}</code>, remove the last element. Print the
+            result.
           hints:
-            - "Inserting needs three steps: make room, shift existing elements right, write the new value into the gap."
-            - "First grow the slice by one (append a zero value). Then shift elements at and after the target index one position right. Then assign the new value."
+            - "You can shrink a slice by re-slicing it with a shorter length."
+            - "<code>tasks = tasks[:len(tasks)-1]</code>"
           solution: |-
-            queue := []string{"job-a", "job-b", "job-d"}
-            queue = append(queue, "")
-            copy(queue[3:], queue[2:])
-            queue[2] = "job-c"
-            fmt.Println(queue) // [job-a job-b job-c job-d]
-        - id: v3b
-          title: Filter Tags In Place
+            tasks := []string{"deploy", "test", "lint", "scan"}
+            tasks = tasks[:len(tasks)-1]
+            fmt.Println(tasks) // [deploy test lint]
+        - id: v7
+          title: Replace by Value
           description: >-
-            Given <code>tags := []string{"v1.0", "latest", "v2.0", "dev", "v3.0"}</code>, filter the slice
-            <strong>in place</strong> to keep only tags that start with <code>"v"</code>. Print the result.
+            Given <code>envs := []string{"dev", "staging", "prod", "dev"}</code>, replace all occurrences of
+            <code>"dev"</code> with <code>"development"</code>. Print the result.
           hints:
-            - "Use the write-index pattern: a variable <code>n</code> tracks where to write, the loop reads every element."
-            - "Use <code>strings.HasPrefix(tag, \"v\")</code> to check the condition. After the loop, truncate with <code>tags = tags[:n]</code>."
+            - "Loop through the slice and check each element. If it matches, overwrite it."
+            - "Use <code>range</code> with the index to modify in place: <code>envs[i] = \"development\"</code>."
           solution: |-
-            tags := []string{"v1.0", "latest", "v2.0", "dev", "v3.0"}
-            n := 0
-            for _, tag := range tags {
-                if strings.HasPrefix(tag, "v") {
-                    tags[n] = tag
-                    n++
+            envs := []string{"dev", "staging", "prod", "dev"}
+            for i, e := range envs {
+                if e == "dev" {
+                    envs[i] = "development"
                 }
             }
-            tags = tags[:n]
-            fmt.Println(tags) // [v1.0 v2.0 v3.0]
-        - id: v4
-          title: Filter Running Pods
-          description: |-
-            Given these parallel slices:
-            <pre>names   := []string{"web-1", "web-2", "db-1", "cache-1", "web-3"}
-            statuses := []string{"Running", "Failed", "Running", "Running", "Pending"}</pre>
-            Filter <code>names</code> <strong>in place</strong> to keep only pods where status is <code>"Running"</code>. Print the result.
+            fmt.Println(envs) // [development staging prod development]
+        - id: v8
+          title: Move to Front
+          description: >-
+            Given <code>servers := []string{"api-1", "db-1", "web-1", "cache-1"}</code>, find <code>"web-1"</code> and
+            swap it with the first element. Print the result.
           hints:
-            - "Use the write-index pattern from the lesson — one variable tracks where to write, the loop reads from each position."
-            - "Range over statuses to decide which elements to keep. Use the loop index to grab the matching name from the parallel slice. Truncate at the end."
+            - "First find the index of the target element with a loop. Then swap it with index 0."
+            - "Use Go's parallel assignment to swap: <code>servers[0], servers[i] = servers[i], servers[0]</code>."
           solution: |-
-            names := []string{"web-1", "web-2", "db-1", "cache-1", "web-3"}
-            statuses := []string{"Running", "Failed", "Running", "Running", "Pending"}
-            n := 0
-            for i, s := range statuses {
-                if s == "Running" {
-                    names[n] = names[i]
-                    n++
+            servers := []string{"api-1", "db-1", "web-1", "cache-1"}
+            for i, s := range servers {
+                if s == "web-1" {
+                    servers[0], servers[i] = servers[i], servers[0]
+                    break
                 }
             }
-            names = names[:n]
-            fmt.Println(names) // [web-1 db-1 cache-1]
-        - id: v5
-          title: Deduplicate Sorted
-          description: |-
-            Given this already-sorted slice:
-            <pre>versions := []string{"v1.0", "v1.0", "v1.1", "v1.1", "v1.1", "v1.2", "v1.3", "v1.3"}</pre>
-            Remove duplicates <strong>in place</strong>. Print the result: <code>[v1.0 v1.1 v1.2 v1.3]</code>.
-          hints:
-            - "This is a variant of the filter pattern. Since the slice is sorted, duplicates are always next to each other. How can you use that?"
-            - "Compare each element to the one before it. If it's different, it's a new unique value — keep it. The first element always stays."
-          solution: |-
-            versions := []string{"v1.0", "v1.0", "v1.1", "v1.1", "v1.1", "v1.2", "v1.3", "v1.3"}
-            n := 1
-            for i := 1; i < len(versions); i++ {
-                if versions[i] != versions[i-1] {
-                    versions[n] = versions[i]
-                    n++
-                }
-            }
-            versions = versions[:n]
-            fmt.Println(versions) // [v1.0 v1.1 v1.2 v1.3]
+            fmt.Println(servers) // [web-1 db-1 api-1 cache-1]
     - id: warmup_3
       concept: Map Patterns
       variants:
@@ -279,49 +208,6 @@ variants:
             for level, count := range counts {
                 fmt.Printf("%s: %d\n", level, count)
             }
-        - id: v2
-          title: Group by Namespace
-          description: |-
-            Given these parallel slices:
-            <pre>pods       := []string{"web-1", "web-2", "api-1", "db-1", "api-2"}
-            namespaces := []string{"frontend", "frontend", "backend", "data", "backend"}</pre>
-            Build a <code>map[string][]string</code> grouping pod names by namespace. Print the map.
-          hints:
-            - What map type lets you store multiple strings under each key? Think about the value type.
-            - "Loop over the indices. The namespace determines which key to use, and the pod name gets appended to that key's slice."
-          solution: |-
-            pods := []string{"web-1", "web-2", "api-1", "db-1", "api-2"}
-            namespaces := []string{"frontend", "frontend", "backend", "data", "backend"}
-            grouped := make(map[string][]string)
-            for i, ns := range namespaces {
-                grouped[ns] = append(grouped[ns], pods[i])
-            }
-            for ns, names := range grouped {
-                fmt.Printf("%s: %v\n", ns, names)
-            }
-        - id: v3
-          title: Merge Config Maps
-          description: |-
-            Given two config maps:
-            <pre>defaults  := map[string]string{"timeout": "30s", "retries": "3", "log_level": "info"}
-            overrides := map[string]string{"timeout": "10s", "log_level": "debug"}</pre>
-            Merge them into a new map where overrides win. Print the result.
-          hints:
-            - "If both maps have the same key, which value should survive? Build your solution around that priority."
-            - "Iterate both maps into a fresh map. The order you iterate them determines which values win on conflicts."
-          solution: |-
-            defaults := map[string]string{"timeout": "30s", "retries": "3", "log_level": "info"}
-            overrides := map[string]string{"timeout": "10s", "log_level": "debug"}
-            merged := make(map[string]string)
-            for k, v := range defaults {
-                merged[k] = v
-            }
-            for k, v := range overrides {
-                merged[k] = v
-            }
-            for k, v := range merged {
-                fmt.Printf("%s=%s\n", k, v)
-            }
         - id: v4
           title: Unique Error Messages
           description: |-
@@ -342,6 +228,46 @@ variants:
             for msg := range seen {
                 fmt.Println(msg)
             }
+        - id: v5
+          title: Delete a Key
+          description: >-
+            Given <code>config := map[string]string{"host": "localhost", "port": "5432", "debug": "true"}</code>, delete
+            the <code>"debug"</code> key from the map. Print the map.
+          hints:
+            - "Go has a built-in function specifically for removing map keys."
+            - "<code>delete(config, \"debug\")</code>"
+          solution: |-
+            config := map[string]string{"host": "localhost", "port": "5432", "debug": "true"}
+            delete(config, "debug")
+            fmt.Println(config) // map[host:localhost port:5432]
+        - id: v6
+          title: Keys to Slice
+          description: >-
+            Given <code>ports := map[string]int{"http": 80, "https": 443, "ssh": 22}</code>, collect all the keys into a
+            string slice. Print the slice.
+          hints:
+            - "Use <code>range</code> over the map to get each key."
+            - "Append each key to a slice: <code>keys = append(keys, k)</code>."
+          solution: |-
+            ports := map[string]int{"http": 80, "https": 443, "ssh": 22}
+            var keys []string
+            for k := range ports {
+                keys = append(keys, k)
+            }
+            fmt.Println(keys)
+        - id: v7
+          title: Update a Value
+          description: >-
+            Given <code>counts := map[string]int{"errors": 5, "warnings": 12}</code>, increment <code>"errors"</code> by
+            1 and set <code>"warnings"</code> to 0. Print the map.
+          hints:
+            - "Map values can be updated by assigning to the key: <code>counts[\"key\"] = newValue</code>."
+            - "To increment: <code>counts[\"errors\"]++</code>. To overwrite: <code>counts[\"warnings\"] = 0</code>."
+          solution: |-
+            counts := map[string]int{"errors": 5, "warnings": 12}
+            counts["errors"]++
+            counts["warnings"] = 0
+            fmt.Println(counts) // map[errors:6 warnings:0]
     - id: warmup_4
       concept: String Parsing
       variants:
@@ -406,39 +332,30 @@ variants:
                 }
                 return parts[0], parts[1]
             }
-        - id: v3
-          title: Parse Log Line
+        - id: v5
+          title: Join Words
           description: >-
-            Given a log line like <code>"2024-01-15T10:30:00Z ERROR [auth-service] connection refused"</code>, extract
-            the timestamp, level, service name (without brackets), and message. Print each field.
+            Given <code>words := []string{"hello", "world", "from", "Go"}</code>, join them into a single string
+            separated by spaces. Print the result.
           hints:
-            - "Splitting on whitespace gives you the individual parts: timestamp, level, service (with brackets), and the remaining message words."
-            - "The service name has brackets around it that need stripping. The message is all remaining words after the service, joined back into a single string."
+            - "The <code>strings</code> package has a function that joins a slice of strings with a separator."
+            - "<code>strings.Join(words, \" \")</code>"
           solution: |-
-            line := "2024-01-15T10:30:00Z ERROR [auth-service] connection refused"
-            fields := strings.Fields(line)
-            timestamp := fields[0]
-            level := fields[1]
-            service := strings.Trim(fields[2], "[]")
-            message := strings.Join(fields[3:], " ")
-            fmt.Printf("time=%s level=%s service=%s msg=%s\n", timestamp, level, service, message)
-        - id: v4
-          title: Build Prometheus Labels
-          description: |-
-            Given this map:
-            <pre>labels := map[string]string{"method": "GET", "status": "200", "path": "/api/health"}</pre>
-            Build a Prometheus-style label string: <code>method="GET",status="200",path="/api/health"</code>. The pairs can be in any order.
+            words := []string{"hello", "world", "from", "Go"}
+            result := strings.Join(words, " ")
+            fmt.Println(result) // hello world from Go
+        - id: v6
+          title: Replace in String
+          description: >-
+            Given <code>msg := "error: disk full, error: retry failed"</code>, replace all occurrences of
+            <code>"error"</code> with <code>"warn"</code>. Print the result.
           hints:
-            - "Build each label pair as a formatted string, collect them all, then combine them. Look at the collect-and-join pattern in the lesson."
-            - "Each pair needs to include the quotes around the value. Remember to escape quotes inside a Go string with a backslash."
+            - "The <code>strings</code> package has a function for replacing all occurrences of a substring."
+            - "<code>strings.ReplaceAll(msg, \"error\", \"warn\")</code>"
           solution: |-
-            labels := map[string]string{"method": "GET", "status": "200", "path": "/api/health"}
-            parts := make([]string, 0, len(labels))
-            for k, v := range labels {
-                parts = append(parts, fmt.Sprintf("%s=\"%s\"", k, v))
-            }
-            result := strings.Join(parts, ",")
-            fmt.Println(result)
+            msg := "error: disk full, error: retry failed"
+            result := strings.ReplaceAll(msg, "error", "warn")
+            fmt.Println(result) // warn: disk full, warn: retry failed
     - id: warmup_5
       concept: Numbers & Percentages
       variants:
@@ -467,26 +384,18 @@ variants:
             rate := 33.33333
             rounded := math.Round(rate*10) / 10
             fmt.Println(rounded) // 33.3
-        - id: v3
-          title: Parse Port Number
+        - id: v4
+          title: Int to String
           description: >-
-            Given <code>portStr := "8080"</code>, convert it to an integer, check it's in the valid range (1-65535),
-            and print it. If the conversion fails or the port is out of range, print an error message.
+            Given <code>port := 8080</code>, convert it to a string using <code>strconv.Itoa</code> and print the
+            result.
           hints:
-            - Which <code>strconv</code> function converts a string to an int? What does it return on failure?
-            - "Use <code>strconv.Atoi</code> and check the error. Then validate the numeric range separately."
+            - "<code>strconv.Itoa</code> converts an int to its string representation."
+            - "<code>s := strconv.Itoa(port)</code>"
           solution: |-
-            portStr := "8080"
-            port, err := strconv.Atoi(portStr)
-            if err != nil {
-                fmt.Println("invalid port:", portStr)
-                return
-            }
-            if port < 1 || port > 65535 {
-                fmt.Println("port out of range:", port)
-                return
-            }
-            fmt.Println(port) // 8080
+            port := 8080
+            s := strconv.Itoa(port)
+            fmt.Println(s) // 8080
     - id: warmup_6
       concept: Sorting & Filtering
       variants:
@@ -597,23 +506,18 @@ variants:
                 fmt.Println(line)
             }
         - id: v3
-          title: Parse Key-Value Lines
+          title: First and Last Line
           description: >-
-            Given <code>content := "HOST=localhost\nPORT=5432\nDB_NAME=myapp"</code>, parse it into a
-            <code>map[string]string</code> and print the map.
+            Given <code>content := "alpha\nbeta\ngamma\ndelta"</code>, split it into lines and print the first line and
+            the last line.
           hints:
-            - "Split into lines, then split each line on <code>=</code>. How many parts should you limit the split to?"
-            - "Use <code>strings.SplitN(line, \"=\", 2)</code> to split on the first <code>=</code> only, in case values contain <code>=</code>."
+            - "Use <code>strings.Split(content, \"\\n\")</code> to get all lines as a slice."
+            - "The first line is <code>lines[0]</code>, the last is <code>lines[len(lines)-1]</code>."
           solution: |-
-            content := "HOST=localhost\nPORT=5432\nDB_NAME=myapp"
-            result := make(map[string]string)
-            for _, line := range strings.Split(content, "\n") {
-                parts := strings.SplitN(line, "=", 2)
-                if len(parts) == 2 {
-                    result[strings.TrimSpace(parts[0])] = strings.TrimSpace(parts[1])
-                }
-            }
-            fmt.Println(result)
+            content := "alpha\nbeta\ngamma\ndelta"
+            lines := strings.Split(content, "\n")
+            fmt.Println(lines[0])              // alpha
+            fmt.Println(lines[len(lines)-1])   // delta
   challenges:
     - id: challenge_1
       block: 1
