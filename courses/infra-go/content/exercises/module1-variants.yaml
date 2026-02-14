@@ -128,6 +128,19 @@ variants:
             statuses := []string{"Running", "Pending", "Running", "Failed"}
             statuses[3] = "Running"
             fmt.Println(statuses) // [Running Pending Running Running]
+        - id: v0c
+          title: Remove Keeping Order
+          description: >-
+            Given <code>services := []string{"auth", "api", "web", "cache"}</code>, remove the element at index 1
+            (<code>"api"</code>) while <strong>preserving the order</strong> of the remaining elements. Print the
+            result.
+          hints:
+            - "You need everything before the index joined with everything after it. Which Go builtin combines two slices?"
+            - "Use <code>append(s[:i], s[i+1:]...)</code> — this slides the later elements left to fill the gap."
+          solution: |-
+            services := []string{"auth", "api", "web", "cache"}
+            services = append(services[:1], services[2:]...)
+            fmt.Println(services) // [auth web cache]
         - id: v1
           title: Reverse Server List
           description: >-
@@ -170,6 +183,25 @@ variants:
             copy(queue[3:], queue[2:])
             queue[2] = "job-c"
             fmt.Println(queue) // [job-a job-b job-c job-d]
+        - id: v3b
+          title: Filter Tags In Place
+          description: >-
+            Given <code>tags := []string{"v1.0", "latest", "v2.0", "dev", "v3.0"}</code>, filter the slice
+            <strong>in place</strong> to keep only tags that start with <code>"v"</code>. Print the result.
+          hints:
+            - "Use the write-index pattern: a variable <code>n</code> tracks where to write, the loop reads every element."
+            - "Use <code>strings.HasPrefix(tag, \"v\")</code> to check the condition. After the loop, truncate with <code>tags = tags[:n]</code>."
+          solution: |-
+            tags := []string{"v1.0", "latest", "v2.0", "dev", "v3.0"}
+            n := 0
+            for _, tag := range tags {
+                if strings.HasPrefix(tag, "v") {
+                    tags[n] = tag
+                    n++
+                }
+            }
+            tags = tags[:n]
+            fmt.Println(tags) // [v1.0 v2.0 v3.0]
         - id: v4
           title: Filter Running Pods
           description: >-
@@ -457,6 +489,20 @@ variants:
     - id: warmup_6
       concept: Sorting & Filtering
       variants:
+        - id: v0a
+          title: Sort Scores Ascending
+          description: >-
+            Given <code>scores := []int{42, 7, 89, 23, 56}</code>, sort them in ascending order (smallest first) using
+            <code>sort.Slice</code>. Print the result.
+          hints:
+            - "<code>sort.Slice</code> takes the slice and a comparator: <code>func(i, j int) bool</code>. Return true if element i should come before element j."
+            - "For ascending order, return <code>scores[i] < scores[j]</code>."
+          solution: |-
+            scores := []int{42, 7, 89, 23, 56}
+            sort.Slice(scores, func(i, j int) bool {
+                return scores[i] < scores[j]
+            })
+            fmt.Println(scores) // [7 23 42 56 89]
         - id: v1
           title: Sort Server Names
           description: >-
