@@ -145,7 +145,14 @@ function validateCourse(courseJson, courseDir, storagePrefixes) {
                     warn(`${label}: concept "${exercise.concept}" not found in conceptLinks`);
                 }
 
-                if (!Array.isArray(exercise.variants) || exercise.variants.length === 0) {
+                // Scaffolds can use template + params instead of variants[]
+                if (type === 'scaffolds' && exercise.template && Array.isArray(exercise.params)) {
+                    const tmpl = exercise.template;
+                    if (!tmpl.title) fail(`${label}: template missing "title"`);
+                    if (!tmpl.description) fail(`${label}: template missing "description"`);
+                    if (!tmpl.solution) fail(`${label}: template missing "solution"`);
+                    if (exercise.params.length === 0) fail(`${label}: "params" array is empty`);
+                } else if (!Array.isArray(exercise.variants) || exercise.variants.length === 0) {
                     fail(`${label}: missing or empty "variants" array`);
                 } else {
                     const seenVariantIds = {};

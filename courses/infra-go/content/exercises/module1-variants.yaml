@@ -70,10 +70,10 @@ variants:
             fmt.Printf("min=%dms max=%dms\n", min, max)
         - id: v3
           title: Batch Pods
-          description: >-
-            Given <code>pods := []string{"web-1", "web-2", "web-3", "web-4", "web-5", "web-6", "web-7"}</code> and a
-            batch size of 3, print each batch on its own line: <code>[web-1 web-2 web-3]</code>, <code>[web-4 web-5
-            web-6]</code>, <code>[web-7]</code>.
+          description: |-
+            Given this slice and a batch size of 3:
+            <pre>pods := []string{"web-1", "web-2", "web-3", "web-4", "web-5", "web-6", "web-7"}</pre>
+            Print each batch on its own line: <code>[web-1 web-2 web-3]</code>, <code>[web-4 web-5 web-6]</code>, <code>[web-7]</code>.
           hints:
             - You need a loop that jumps forward by the batch size each iteration, not one element at a time. Which loop form supports a custom step?
             - What happens when the last batch is smaller than the batch size? You need to cap the end index so it doesn't go past the slice length.
@@ -204,11 +204,11 @@ variants:
             fmt.Println(tags) // [v1.0 v2.0 v3.0]
         - id: v4
           title: Filter Running Pods
-          description: >-
-            Given these slices:<br><code>names := []string{"web-1", "web-2", "db-1", "cache-1",
-            "web-3"}</code><br><code>statuses := []string{"Running", "Failed", "Running", "Running",
-            "Pending"}</code><br>Filter <code>names</code> <strong>in place</strong> to keep only pods where status is
-            <code>"Running"</code>. Print the result.
+          description: |-
+            Given these parallel slices:
+            <pre>names   := []string{"web-1", "web-2", "db-1", "cache-1", "web-3"}
+            statuses := []string{"Running", "Failed", "Running", "Running", "Pending"}</pre>
+            Filter <code>names</code> <strong>in place</strong> to keep only pods where status is <code>"Running"</code>. Print the result.
           hints:
             - "Use the write-index pattern from the lesson — one variable tracks where to write, the loop reads from each position."
             - "Range over statuses to decide which elements to keep. Use the loop index to grab the matching name from the parallel slice. Truncate at the end."
@@ -226,10 +226,10 @@ variants:
             fmt.Println(names) // [web-1 db-1 cache-1]
         - id: v5
           title: Deduplicate Sorted
-          description: >-
-            Given <code>versions := []string{"v1.0", "v1.0", "v1.1", "v1.1", "v1.1", "v1.2", "v1.3", "v1.3"}</code>
-            (already sorted), remove duplicates <strong>in place</strong>. Print the result: <code>[v1.0 v1.1 v1.2
-            v1.3]</code>.
+          description: |-
+            Given this already-sorted slice:
+            <pre>versions := []string{"v1.0", "v1.0", "v1.1", "v1.1", "v1.1", "v1.2", "v1.3", "v1.3"}</pre>
+            Remove duplicates <strong>in place</strong>. Print the result: <code>[v1.0 v1.1 v1.2 v1.3]</code>.
           hints:
             - "This is a variant of the filter pattern. Since the slice is sorted, duplicates are always next to each other. How can you use that?"
             - "Compare each element to the one before it. If it's different, it's a new unique value — keep it. The first element always stays."
@@ -263,9 +263,10 @@ variants:
             fmt.Printf("timeout=%q found=%t\n", val, ok) // timeout="" found=false
         - id: v1
           title: Count Log Levels
-          description: >-
-            Given <code>levels := []string{"INFO", "ERROR", "INFO", "WARN", "ERROR", "INFO", "DEBUG", "ERROR"}</code>,
-            count occurrences of each level using a map. Print each level and its count.
+          description: |-
+            Given this slice of log levels:
+            <pre>levels := []string{"INFO", "ERROR", "INFO", "WARN", "ERROR", "INFO", "DEBUG", "ERROR"}</pre>
+            Count occurrences of each level using a map. Print each level and its count.
           hints:
             - What data structure maps a string key to an integer count?
             - "The zero value of int is 0. So incrementing a key that doesn't exist yet just works — no need to check first."
@@ -280,11 +281,11 @@ variants:
             }
         - id: v2
           title: Group by Namespace
-          description: >-
-            Given these parallel slices:<br><code>pods := []string{"web-1", "web-2", "api-1", "db-1",
-            "api-2"}</code><br><code>namespaces := []string{"frontend", "frontend", "backend", "data",
-            "backend"}</code><br>Build a <code>map[string][]string</code> grouping pod names by namespace. Print the
-            map.
+          description: |-
+            Given these parallel slices:
+            <pre>pods       := []string{"web-1", "web-2", "api-1", "db-1", "api-2"}
+            namespaces := []string{"frontend", "frontend", "backend", "data", "backend"}</pre>
+            Build a <code>map[string][]string</code> grouping pod names by namespace. Print the map.
           hints:
             - What map type lets you store multiple strings under each key? Think about the value type.
             - "Loop over the indices. The namespace determines which key to use, and the pod name gets appended to that key's slice."
@@ -300,10 +301,11 @@ variants:
             }
         - id: v3
           title: Merge Config Maps
-          description: >-
-            Given two config maps:<br><code>defaults := map[string]string{"timeout": "30s", "retries": "3", "log_level":
-            "info"}</code><br><code>overrides := map[string]string{"timeout": "10s", "log_level":
-            "debug"}</code><br>Merge them into a new map where overrides win. Print the result.
+          description: |-
+            Given two config maps:
+            <pre>defaults  := map[string]string{"timeout": "30s", "retries": "3", "log_level": "info"}
+            overrides := map[string]string{"timeout": "10s", "log_level": "debug"}</pre>
+            Merge them into a new map where overrides win. Print the result.
           hints:
             - "If both maps have the same key, which value should survive? Build your solution around that priority."
             - "Iterate both maps into a fresh map. The order you iterate them determines which values win on conflicts."
@@ -322,22 +324,21 @@ variants:
             }
         - id: v4
           title: Unique Error Messages
-          description: >-
-            Given <code>errors := []string{"timeout", "connection refused", "timeout", "DNS lookup failed", "timeout",
-            "connection refused"}</code>, use a map-as-set to find unique error messages. Print them in any order.
+          description: |-
+            Given this slice of error messages:
+            <pre>errors := []string{"timeout", "connection refused", "timeout",
+                "DNS lookup failed", "timeout", "connection refused"}</pre>
+            Use a map-as-set to find unique error messages. Print them in any order.
           hints:
             - "A map's keys are always unique. How can you exploit that to deduplicate a list?"
             - "After recording each string as a map key, the map's keys ARE your unique set. Iterate the keys to print them."
-          solution: >-
-            errors := []string{"timeout", "connection refused", "timeout", "DNS lookup failed", "timeout", "connection
-            refused"}
-
+          solution: |-
+            errors := []string{"timeout", "connection refused", "timeout",
+                "DNS lookup failed", "timeout", "connection refused"}
             seen := make(map[string]bool)
-
             for _, err := range errors {
                 seen[err] = true
             }
-
             for msg := range seen {
                 fmt.Println(msg)
             }
@@ -423,10 +424,10 @@ variants:
             fmt.Printf("time=%s level=%s service=%s msg=%s\n", timestamp, level, service, message)
         - id: v4
           title: Build Prometheus Labels
-          description: >-
-            Given <code>labels := map[string]string{"method": "GET", "status": "200", "path": "/api/health"}</code>,
-            build a Prometheus-style label string: <code>method="GET",status="200",path="/api/health"</code>. The pairs
-            can be in any order.
+          description: |-
+            Given this map:
+            <pre>labels := map[string]string{"method": "GET", "status": "200", "path": "/api/health"}</pre>
+            Build a Prometheus-style label string: <code>method="GET",status="200",path="/api/health"</code>. The pairs can be in any order.
           hints:
             - "Build each label pair as a formatted string, collect them all, then combine them. Look at the collect-and-join pattern in the lesson."
             - "Each pair needs to include the quotes around the value. Remember to escape quotes inside a Go string with a backslash."
@@ -579,8 +580,9 @@ variants:
             fmt.Println(result) // [alpha beta gamma]
         - id: v2
           title: Skip Comments
-          description: >-
-            Given a config string:<br><code>"# database config\nhost=localhost\n# port\nport=5432\nname=mydb"</code><br>
+          description: |-
+            Given a config string:
+            <pre>"# database config\nhost=localhost\n# port\nport=5432\nname=mydb"</pre>
             Split into lines, skip lines starting with <code>#</code> and empty lines, and print each remaining line.
           hints:
             - "After trimming, check two conditions: is it empty? Does it start with <code>#</code>? Skip both."
@@ -956,11 +958,11 @@ variants:
             }
         - id: v2
           title: Top N by Memory
-          description: >-
-            Given parallel slices of pod names and memory usage:<br><code>names := []string{"web-1", "api-1", "db-1",
-            "cache-1", "worker-1"}</code><br><code>memoryMB := []int{512, 256, 2048, 1024, 128}</code><br><br>Write
-            <code>func topByMemory(names []string, memoryMB []int, n int) []string</code> that returns the names of the
-            top <code>n</code> pods by memory usage (descending).
+          description: |-
+            Given parallel slices of pod names and memory usage:
+            <pre>names    := []string{"web-1", "api-1", "db-1", "cache-1", "worker-1"}
+            memoryMB := []int{512, 256, 2048, 1024, 128}</pre>
+            Write <code>func topByMemory(names []string, memoryMB []int, n int) []string</code> that returns the names of the top <code>n</code> pods by memory usage (descending).
           functionSignature: func topByMemory(names []string, memoryMB []int, n int) []string
           difficulty: 2
           testCases:
@@ -1222,3 +1224,711 @@ variants:
               text: >-
                 Go's <code>os.Expand</code> handles <code>${VAR}</code> and <code>$VAR</code> expansion with a custom
                 mapping function. Much cleaner than regex. Used internally by Docker and other tools.
+  scaffolds:
+    - id: scaffold_swap
+      concept: "In-Place Manipulation"
+      variants:
+        - id: v1
+          type: trace
+          title: "Predict the Swap"
+          description: |-
+            Trace through this code and predict the output:
+            <pre>nums := []int{10, 20, 30}
+            nums[0], nums[2] = nums[2], nums[0]
+            fmt.Println(nums)</pre>
+          solution: "[30 20 10]"
+        - id: v2
+          type: fix
+          title: "Fix the Broken Swap"
+          description: |-
+            This code tries to swap the first and last elements, but it prints <code>[30 20 30]</code> instead of <code>[30 20 10]</code>. Why?
+            <pre>nums := []int{10, 20, 30}
+            nums[0] = nums[2]
+            nums[2] = nums[0]
+            fmt.Println(nums)</pre>
+            Fix it so both values actually swap.
+          hints: ["After <code>nums[0] = nums[2]</code> runs, what is <code>nums[0]</code>? The original 10 is gone."]
+          solution: |-
+            // The original nums[0] is overwritten before nums[2] reads it.
+            // Fix: use simultaneous assignment so both sides read before writing.
+            nums[0], nums[2] = nums[2], nums[0]
+        - id: v3
+          type: complete
+          title: "Complete the Swap"
+          description: |-
+            Fill in the blank to swap index 1 and 3:
+            <pre>vals := []string{"a", "b", "c", "d"}
+            ____________________________
+            fmt.Println(vals) // [a d c b]</pre>
+          solution: 'vals[1], vals[3] = vals[3], vals[1]'
+        - id: v4
+          type: produce
+          title: "Swap Two Elements"
+          description: >-
+            Given <code>nums := []int{10, 20, 30}</code>, swap index 0 and 2 in a single statement. Print the result.
+          hints: ["Go supports simultaneous assignment: <code>a, b = b, a</code>"]
+          solution: |-
+            nums := []int{10, 20, 30}
+            nums[0], nums[2] = nums[2], nums[0]
+            fmt.Println(nums) // [30 20 10]
+    - id: scaffold_swap_t
+      concept: "In-Place Manipulation"
+      template:
+        type: produce
+        title: "Swap in {{name}}"
+        description: "Given <code>{{name}} := {{value}}</code>, swap index {{i}} and {{j}}. Print the result."
+        hints: ["Use <code>{{name}}[{{i}}], {{name}}[{{j}}] = {{name}}[{{j}}], {{name}}[{{i}}]</code>"]
+        solution: |-
+          {{name}} := {{value}}
+          {{name}}[{{i}}], {{name}}[{{j}}] = {{name}}[{{j}}], {{name}}[{{i}}]
+          fmt.Println({{name}})
+      params:
+        - { name: colors, value: '[]string{"red", "green", "blue"}', i: "0", j: "2" }
+        - { name: scores, value: '[]int{88, 95, 72}', i: "0", j: "1" }
+    - id: scaffold_reverse
+      concept: "In-Place Manipulation"
+      variants:
+        - id: v1
+          type: trace
+          title: "Predict the Reverse"
+          description: |-
+            Trace through this two-pointer loop and predict the output:
+            <pre>s := []int{1, 2, 3, 4}
+            for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
+                s[i], s[j] = s[j], s[i]
+            }
+            fmt.Println(s)</pre>
+          solution: "[4 3 2 1]"
+        - id: v2
+          type: fix
+          title: "Fix the Reverse Loop"
+          description: |-
+            This reverse loop runs too many iterations and double-reverses back to the original order. Fix the loop condition:
+            <pre>s := []string{"a", "b", "c", "d"}
+            for i, j := 0, len(s)-1; i < len(s); i, j = i+1, j-1 {
+                s[i], s[j] = s[j], s[i]
+            }
+            fmt.Println(s) // prints [a b c d] — unchanged!</pre>
+          hints: ["The loop should stop when the two pointers meet in the middle, not when i reaches the end."]
+          solution: |-
+            // i < len(s) makes i go all the way across, swapping everything
+            // back to where it started. Stop when pointers meet:
+            for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
+                s[i], s[j] = s[j], s[i]
+            }
+        - id: v3
+          type: complete
+          title: "Complete the Reverse"
+          description: |-
+            Fill in the four blanks to reverse this slice in place:
+            <pre>items := []string{"x", "y", "z", "w"}
+            for i, j := _____, _____; i < j; _____, _____ {
+                items[i], items[j] = items[j], items[i]
+            }</pre>
+          solution: |-
+            for i, j := 0, len(items)-1; i < j; i, j = i+1, j-1 {
+                items[i], items[j] = items[j], items[i]
+            }
+        - id: v4
+          type: produce
+          title: "Reverse a Server List"
+          description: >-
+            Given <code>servers := []string{"a", "b", "c", "d"}</code>, reverse it in place (no new slice) and print the result.
+          hints: ["Use two pointers starting from opposite ends. Swap and move inward until they meet."]
+          solution: |-
+            servers := []string{"a", "b", "c", "d"}
+            for i, j := 0, len(servers)-1; i < j; i, j = i+1, j-1 {
+                servers[i], servers[j] = servers[j], servers[i]
+            }
+            fmt.Println(servers) // [d c b a]
+    - id: scaffold_filter
+      concept: "In-Place Manipulation"
+      variants:
+        - id: v1
+          type: trace
+          title: "Predict the Filter"
+          description: |-
+            Trace through the write-index pattern and predict the output:
+            <pre>nums := []int{1, 2, 3, 4, 5, 6}
+            n := 0
+            for _, v := range nums {
+                if v%2 == 0 {
+                    nums[n] = v
+                    n++
+                }
+            }
+            nums = nums[:n]
+            fmt.Println(nums)</pre>
+          solution: "[2 4 6]"
+        - id: v2
+          type: complete
+          title: "Complete the Filter"
+          description: |-
+            Fill in the three blanks to filter in place, keeping only strings starting with "web":
+            <pre>pods := []string{"web-1", "api-1", "web-2", "db-1"}
+            n := 0
+            for _, p := range pods {
+                if ________________________ {
+                    _____________
+                    _____________
+                }
+            }
+            pods = pods[:n]</pre>
+          solution: |-
+            if strings.HasPrefix(p, "web") {
+                pods[n] = p
+                n++
+            }
+        - id: v3
+          type: produce
+          title: "Filter Tags In Place"
+          description: >-
+            Given <code>tags := []string{"v1.0", "latest", "v2.0", "dev"}</code>, remove all non-version tags
+            in place (keep only tags starting with "v"). Print the result.
+          hints: ["Use the write-index pattern: <code>n</code> tracks where to write, the loop reads every element. Truncate at the end."]
+          solution: |-
+            tags := []string{"v1.0", "latest", "v2.0", "dev"}
+            n := 0
+            for _, tag := range tags {
+                if strings.HasPrefix(tag, "v") {
+                    tags[n] = tag
+                    n++
+                }
+            }
+            tags = tags[:n]
+            fmt.Println(tags) // [v1.0 v2.0]
+    - id: scaffold_sort
+      concept: "Sorting & Filtering"
+      variants:
+        - id: v1
+          type: trace
+          title: "Predict the Sort"
+          description: |-
+            The <code>></code> comparator sorts descending. What does this print?
+            <pre>nums := []int{3, 1, 4, 1, 5}
+            sort.Slice(nums, func(i, j int) bool {
+                return nums[i] > nums[j]
+            })
+            fmt.Println(nums)</pre>
+          solution: "[5 4 3 1 1]"
+        - id: v2
+          type: fix
+          title: "Fix the Sort Order"
+          description: |-
+            This should sort names A-Z, but it outputs <code>[charlie bob alice]</code>. Fix the comparator:
+            <pre>names := []string{"charlie", "alice", "bob"}
+            sort.Slice(names, func(i, j int) bool {
+                return names[i] > names[j]
+            })</pre>
+          hints: ["<code>></code> means 'i comes first if it's larger' — that's descending. What operator gives ascending?"]
+          solution: |-
+            // Change > to < for ascending (A-Z) order:
+            sort.Slice(names, func(i, j int) bool {
+                return names[i] < names[j]
+            })
+        - id: v3
+          type: complete
+          title: "Complete the Sort"
+          description: |-
+            Fill in the comparator to sort response times ascending (fastest first):
+            <pre>times := []int{234, 12, 891, 45}
+            sort.Slice(times, func(i, j int) bool {
+                return _______________________
+            })
+            fmt.Println(times) // [12 45 234 891]</pre>
+          solution: "times[i] < times[j]"
+        - id: v4
+          type: produce
+          title: "Sort Scores Ascending"
+          description: >-
+            Given <code>scores := []int{42, 7, 89, 23}</code>, sort them smallest-first using <code>sort.Slice</code> and print the result.
+          hints: ["The comparator returns true when element i should come before element j. For ascending, that means i < j."]
+          solution: |-
+            scores := []int{42, 7, 89, 23}
+            sort.Slice(scores, func(i, j int) bool {
+                return scores[i] < scores[j]
+            })
+            fmt.Println(scores) // [7 23 42 89]
+    - id: scaffold_sort_t
+      concept: "Sorting & Filtering"
+      template:
+        type: produce
+        title: "Sort {{name}}"
+        description: "Given <code>{{name}} := {{value}}</code>, sort in {{order}} order and print the result."
+        hints: ["Use <code>sort.Slice</code> with <code>{{name}}[i] {{op}} {{name}}[j]</code>"]
+        solution: |-
+          {{name}} := {{value}}
+          sort.Slice({{name}}, func(i, j int) bool {
+              return {{name}}[i] {{op}} {{name}}[j]
+          })
+          fmt.Println({{name}})
+      params:
+        - { name: ages, value: '[]int{25, 18, 42, 31}', order: ascending, op: "<" }
+        - { name: prices, value: '[]float64{9.99, 4.50, 15.00, 7.25}', order: descending, op: ">" }
+    - id: scaffold_topn
+      concept: "Sorting & Filtering"
+      variants:
+        - id: v1
+          type: trace
+          title: "Predict Top 2"
+          description: |-
+            Sort descending, then slice. What does this print?
+            <pre>vals := []int{10, 50, 30, 20, 40}
+            sort.Slice(vals, func(i, j int) bool {
+                return vals[i] > vals[j]
+            })
+            fmt.Println(vals[:2])</pre>
+          solution: "[50 40]"
+        - id: v2
+          type: complete
+          title: "Complete Top N"
+          description: |-
+            Fill in the two blanks to get the top 3 highest latencies:
+            <pre>latencies := []int{234, 12, 891, 45, 567}
+            sort.Slice(latencies, func(i, j int) bool {
+                return _______________________
+            })
+            top3 := latencies[:___]
+            fmt.Println(top3)</pre>
+          solution: |-
+            latencies[i] > latencies[j]
+            // and
+            latencies[:3]
+        - id: v3
+          type: produce
+          title: "Find the Top 2"
+          description: >-
+            Given <code>scores := []int{42, 7, 89, 23, 56}</code>, find and print the 2 highest values.
+          hints: ["Sort the slice in descending order, then take a slice of the first 2 elements."]
+          solution: |-
+            scores := []int{42, 7, 89, 23, 56}
+            sort.Slice(scores, func(i, j int) bool {
+                return scores[i] > scores[j]
+            })
+            fmt.Println(scores[:2]) // [89 56]
+    - id: scaffold_slice_ops
+      concept: "Slice Operations"
+      variants:
+        - id: v1
+          type: trace
+          title: "Predict the Slice"
+          description: |-
+            What does this print?
+            <pre>s := []string{"a", "b", "c", "d", "e"}
+            fmt.Println(s[1:4])
+            fmt.Println(s[:2])
+            fmt.Println(s[3:])</pre>
+          solution: |-
+            [b c d]
+            [a b]
+            [d e]
+        - id: v2
+          type: fix
+          title: "Fix the Slice Bounds"
+          description: |-
+            This code should print the last 3 elements, but it panics with an out-of-range error:
+            <pre>items := []string{"a", "b", "c", "d", "e"}
+            last3 := items[len(items)-3 : len(items)+1]
+            fmt.Println(last3)</pre>
+            Fix the slice expression.
+          hints: ["The end index in a slice expression is exclusive — it goes up to but not including that index."]
+          solution: |-
+            // End index must be <= len(items), not len(items)+1
+            last3 := items[len(items)-3:]
+        - id: v3
+          type: complete
+          title: "Complete the Slice"
+          description: |-
+            Fill in the blank to get elements at index 1 and 2:
+            <pre>nodes := []string{"a", "b", "c", "d"}
+            mid := nodes[___:___]
+            fmt.Println(mid) // [b c]</pre>
+          solution: "nodes[1:3]"
+        - id: v4
+          type: produce
+          title: "Get the Last Two"
+          description: >-
+            Given <code>pods := []string{"web-1", "api-1", "db-1", "cache-1"}</code>, get a slice of the last 2 elements. Print it.
+          hints: ["Use <code>len()</code> to calculate the start index from the end."]
+          solution: |-
+            pods := []string{"web-1", "api-1", "db-1", "cache-1"}
+            last2 := pods[len(pods)-2:]
+            fmt.Println(last2) // [db-1 cache-1]
+    - id: scaffold_append
+      concept: "Slice Operations"
+      variants:
+        - id: v1
+          type: trace
+          title: "Predict Append"
+          description: |-
+            What does this print?
+            <pre>a := []int{1, 2}
+            b := append(a, 3, 4)
+            fmt.Println(a)
+            fmt.Println(b)
+            fmt.Println(len(a), len(b))</pre>
+          solution: |-
+            [1 2]
+            [1 2 3 4]
+            2 4
+        - id: v2
+          type: fix
+          title: "Fix the Append"
+          description: |-
+            This should build a list of names, but it always prints an empty slice:
+            <pre>var names []string
+            for _, n := range []string{"a", "b", "c"} {
+                append(names, n)
+            }
+            fmt.Println(names)</pre>
+            Fix it.
+          hints: ["<code>append</code> returns a new slice — it doesn't modify the original."]
+          solution: |-
+            // append returns the result; you must assign it back
+            names = append(names, n)
+        - id: v3
+          type: complete
+          title: "Complete the Append"
+          description: |-
+            Fill in the blank to add "db-1" to the end of the slice:
+            <pre>servers := []string{"web-1", "api-1"}
+            servers = ___________________________
+            fmt.Println(servers) // [web-1 api-1 db-1]</pre>
+          solution: 'append(servers, "db-1")'
+        - id: v4
+          type: produce
+          title: "Build a Slice"
+          description: >-
+            Start with an empty slice. Use a loop to append the strings <code>"item-1"</code> through <code>"item-4"</code>. Print the result.
+          hints: ["Use <code>fmt.Sprintf(\"item-%d\", i)</code> to build each string."]
+          solution: |-
+            var items []string
+            for i := 1; i <= 4; i++ {
+                items = append(items, fmt.Sprintf("item-%d", i))
+            }
+            fmt.Println(items) // [item-1 item-2 item-3 item-4]
+    - id: scaffold_map_count
+      concept: "Map Patterns"
+      variants:
+        - id: v1
+          type: trace
+          title: "Predict the Map"
+          description: |-
+            What does this print?
+            <pre>m := make(map[string]int)
+            m["a"]++
+            m["b"]++
+            m["a"]++
+            fmt.Println(m["a"], m["b"], m["c"])</pre>
+          solution: "2 1 0"
+        - id: v2
+          type: fix
+          title: "Fix the Map Lookup"
+          description: |-
+            This code should print "found" for keys that exist, but it always prints "found" even for missing keys:
+            <pre>config := map[string]string{"host": "localhost", "port": "5432"}
+            val := config["timeout"]
+            if val != "" {
+                fmt.Println("found:", val)
+            } else {
+                fmt.Println("not found")
+            }</pre>
+            What's the problem? What if a key exists with an empty string value?
+          hints: ["An empty string is the zero value for string — you can't tell if the key exists or has an empty value. Use the comma-ok pattern."]
+          solution: |-
+            // Use comma-ok to distinguish "missing" from "empty value":
+            val, ok := config["timeout"]
+            if ok {
+                fmt.Println("found:", val)
+            } else {
+                fmt.Println("not found")
+            }
+        - id: v3
+          type: complete
+          title: "Complete the Counter"
+          description: |-
+            Fill in the blanks to count word frequencies:
+            <pre>words := []string{"go", "is", "go", "fun"}
+            counts := make(map[string]int)
+            for _, w := range words {
+                _____________
+            }
+            fmt.Println(counts)</pre>
+          solution: "counts[w]++"
+        - id: v4
+          type: produce
+          title: "Count Characters"
+          description: >-
+            Given <code>s := "banana"</code>, count how many times each character appears using a map. Print the map.
+          hints: ["Range over a string to get each character. Use a <code>map[rune]int</code> or <code>map[byte]int</code>."]
+          solution: |-
+            s := "banana"
+            counts := make(map[rune]int)
+            for _, ch := range s {
+                counts[ch]++
+            }
+            for ch, n := range counts {
+                fmt.Printf("%c: %d\n", ch, n)
+            }
+    - id: scaffold_map_group
+      concept: "Map Patterns"
+      variants:
+        - id: v1
+          type: trace
+          title: "Predict the Grouping"
+          description: |-
+            What does <code>grouped["short"]</code> contain after this runs?
+            <pre>words := []string{"go", "rust", "c", "java", "py"}
+            grouped := make(map[string][]string)
+            for _, w := range words {
+                if len(w) <= 2 {
+                    grouped["short"] = append(grouped["short"], w)
+                } else {
+                    grouped["long"] = append(grouped["long"], w)
+                }
+            }
+            fmt.Println(grouped["short"])</pre>
+          solution: "[go c py]"
+        - id: v2
+          type: complete
+          title: "Complete the Grouping"
+          description: |-
+            Fill in the blank to group numbers as even or odd:
+            <pre>nums := []int{1, 2, 3, 4, 5, 6}
+            groups := make(map[string][]int)
+            for _, n := range nums {
+                if n%2 == 0 {
+                    ___________________________________
+                } else {
+                    ___________________________________
+                }
+            }</pre>
+          solution: |-
+            groups["even"] = append(groups["even"], n)
+            // and
+            groups["odd"] = append(groups["odd"], n)
+        - id: v3
+          type: produce
+          title: "Group by First Letter"
+          description: >-
+            Given <code>names := []string{"alice", "bob", "anna", "ben"}</code>, build a <code>map[string][]string</code> grouping names by their first letter. Print the map.
+          hints: ["Get the first letter with <code>string(name[0])</code> or <code>name[:1]</code>."]
+          solution: |-
+            names := []string{"alice", "bob", "anna", "ben"}
+            groups := make(map[string][]string)
+            for _, name := range names {
+                key := name[:1]
+                groups[key] = append(groups[key], name)
+            }
+            for k, v := range groups {
+                fmt.Printf("%s: %v\n", k, v)
+            }
+    - id: scaffold_string_split
+      concept: "String Parsing"
+      variants:
+        - id: v1
+          type: trace
+          title: "Predict the Split"
+          description: |-
+            What does this print?
+            <pre>s := "a:b:c:d"
+            fmt.Println(strings.Split(s, ":"))
+            fmt.Println(strings.SplitN(s, ":", 2))</pre>
+          solution: |-
+            [a b c d]
+            [a b:c:d]
+        - id: v2
+          type: fix
+          title: "Fix the Split"
+          description: |-
+            This should extract the host from <code>"host:port"</code> but it panics when there's no colon:
+            <pre>addr := "localhost"
+            parts := strings.Split(addr, ":")
+            host := parts[0]
+            port := parts[1]
+            fmt.Println(host, port)</pre>
+            Fix it to handle addresses with or without a port.
+          hints: ["When there's no colon, <code>strings.Split</code> returns a single-element slice. Accessing index 1 panics."]
+          solution: |-
+            parts := strings.SplitN(addr, ":", 2)
+            host := parts[0]
+            port := ""
+            if len(parts) == 2 {
+                port = parts[1]
+            }
+        - id: v3
+          type: complete
+          title: "Complete the Parse"
+          description: |-
+            Fill in the blank to extract the key and value from <code>"name=Go"</code>:
+            <pre>pair := "name=Go"
+            parts := strings.SplitN(pair, "=", ___)
+            key := parts[0]
+            val := parts[1]
+            fmt.Println(key, val) // name Go</pre>
+          solution: "2"
+        - id: v4
+          type: produce
+          title: "Split a CSV Line"
+          description: >-
+            Given <code>line := "alice,30,engineer"</code>, split it on commas and print each field on its own line.
+          hints: ["Use <code>strings.Split(line, \",\")</code> then range over the result."]
+          solution: |-
+            line := "alice,30,engineer"
+            for _, field := range strings.Split(line, ",") {
+                fmt.Println(field)
+            }
+    - id: scaffold_string_build
+      concept: "String Parsing"
+      variants:
+        - id: v1
+          type: trace
+          title: "Predict the Join"
+          description: |-
+            What does this print?
+            <pre>parts := []string{"hello", "world"}
+            fmt.Println(strings.Join(parts, "-"))
+            fmt.Println(strings.Join(parts, ""))
+            fmt.Println(strings.Join(parts, ", "))</pre>
+          solution: |-
+            hello-world
+            helloworld
+            hello, world
+        - id: v2
+          type: complete
+          title: "Complete the Builder"
+          description: |-
+            Fill in the blanks to build <code>"a|b|c"</code> from a slice:
+            <pre>items := []string{"a", "b", "c"}
+            result := strings._______(items, "___")
+            fmt.Println(result)</pre>
+          solution: 'strings.Join(items, "|")'
+        - id: v3
+          type: produce
+          title: "Build a Path"
+          description: >-
+            Given <code>segments := []string{"usr", "local", "bin"}</code>, join them with <code>"/"</code> and print the result.
+          hints: ["Use <code>strings.Join</code>."]
+          solution: |-
+            segments := []string{"usr", "local", "bin"}
+            fmt.Println(strings.Join(segments, "/")) // usr/local/bin
+    - id: scaffold_numbers
+      concept: "Numbers & Percentages"
+      variants:
+        - id: v1
+          type: trace
+          title: "Predict the Division"
+          description: |-
+            What does this print?
+            <pre>a := 7
+            b := 2
+            fmt.Println(a / b)
+            fmt.Println(float64(a) / float64(b))</pre>
+          solution: |-
+            3
+            3.5
+        - id: v2
+          type: fix
+          title: "Fix the Percentage"
+          description: |-
+            This should print <code>75.0%</code> but prints <code>0.0%</code>:
+            <pre>passed := 3
+            total := 4
+            pct := passed / total * 100
+            fmt.Printf("%.1f%%\n", float64(pct))</pre>
+            Fix it.
+          hints: ["Integer division <code>3 / 4</code> equals 0, not 0.75. You need floats BEFORE dividing."]
+          solution: |-
+            // Convert to float64 before dividing
+            pct := float64(passed) / float64(total) * 100
+            fmt.Printf("%.1f%%\n", pct) // 75.0%
+        - id: v3
+          type: complete
+          title: "Complete the Conversion"
+          description: |-
+            Fill in the blank to convert a string to an int safely:
+            <pre>s := "42"
+            n, err := strconv._______(s)
+            if err != nil {
+                fmt.Println("bad number")
+            }
+            fmt.Println(n)</pre>
+          solution: "Atoi"
+        - id: v4
+          type: produce
+          title: "Calculate a Ratio"
+          description: >-
+            Given <code>errors := 7</code> and <code>total := 20</code>, calculate the error rate as a percentage with one decimal place. Print it as <code>35.0%</code>.
+          hints: ["Convert to <code>float64</code> before dividing. Use <code>%.1f%%</code> format verb."]
+          solution: |-
+            errors := 7
+            total := 20
+            pct := float64(errors) / float64(total) * 100
+            fmt.Printf("%.1f%%\n", pct) // 35.0%
+    - id: scaffold_line_parse
+      concept: "Line Parsing"
+      variants:
+        - id: v1
+          type: trace
+          title: "Predict the Lines"
+          description: |-
+            What does this print?
+            <pre>s := "one\ntwo\n\nthree"
+            lines := strings.Split(s, "\n")
+            fmt.Println(len(lines))
+            fmt.Println(lines[2] == "")</pre>
+          solution: |-
+            4
+            true
+        - id: v2
+          type: fix
+          title: "Fix the Line Filter"
+          description: |-
+            This should skip comment lines (starting with #) but it skips ALL lines:
+            <pre>input := "# comment\ndata\n# another\nmore"
+            for _, line := range strings.Split(input, "\n") {
+                if strings.HasPrefix(line, "#") {
+                    break
+                }
+                fmt.Println(line)
+            }</pre>
+            Fix it.
+          hints: ["<code>break</code> exits the entire loop. You want to skip just this iteration."]
+          solution: |-
+            // Use continue instead of break to skip one iteration
+            if strings.HasPrefix(line, "#") {
+                continue
+            }
+        - id: v3
+          type: complete
+          title: "Complete the Parser"
+          description: |-
+            Fill in the blanks to parse <code>"a=1\nb=2"</code> into a map:
+            <pre>input := "a=1\nb=2"
+            m := make(map[string]string)
+            for _, line := range strings.Split(input, "\n") {
+                parts := strings.SplitN(line, "=", ___)
+                if len(parts) == ___ {
+                    m[parts[0]] = parts[1]
+                }
+            }
+            fmt.Println(m)</pre>
+          solution: |-
+            2
+            // and
+            2
+        - id: v4
+          type: produce
+          title: "Count Non-Empty Lines"
+          description: >-
+            Given <code>text := "alpha\n\nbeta\n\ngamma\n"</code>, count and print how many non-empty lines there are.
+          hints: ["Split on newlines, then loop and count lines where <code>strings.TrimSpace(line) != \"\"</code>."]
+          solution: |-
+            text := "alpha\n\nbeta\n\ngamma\n"
+            count := 0
+            for _, line := range strings.Split(text, "\n") {
+                if strings.TrimSpace(line) != "" {
+                    count++
+                }
+            }
+            fmt.Println(count) // 3

@@ -443,7 +443,7 @@ function buildCourse(slug) {
     function buildExerciseScripts(moduleId) {
         const mod = modules.find(m => m.id === moduleId);
         if (!mod || !mod.hasExercises) return '';
-        return `    <script src="exercise-core.js"></script>\n    <script src="course.js"></script>\n    <script src="exercise-renderer.js"></script>\n    <script src="module-loader.js"></script>`;
+        return `    <script src="exercise-core.js"></script>\n    <script src="concept-index.js"></script>\n    <script src="course.js"></script>\n    <script src="exercise-renderer.js"></script>\n    <script src="module-loader.js"></script>\n    <script src="scaffold-drill.js"></script>`;
     }
 
     // 7. Generate module HTML pages
@@ -685,6 +685,80 @@ function buildCourse(slug) {
         }
     });
 
+    // 10e. Expand scaffold templates ({{key}} → concrete variants)
+    function expandScaffoldTemplates(scaffolds) {
+        if (!Array.isArray(scaffolds)) return scaffolds;
+        return scaffolds.map(scaffold => {
+            if (!scaffold.template || !Array.isArray(scaffold.params)) return scaffold;
+            // Expand template + params into concrete variants
+            const expanded = { ...scaffold, variants: [] };
+            scaffold.params.forEach((paramSet, idx) => {
+                const variant = { id: 'tp' + (idx + 1) };
+                // Copy template fields, substituting {{key}} placeholders
+                ['type', 'title', 'description', 'solution'].forEach(field => {
+                    if (scaffold.template[field]) {
+                        variant[field] = scaffold.template[field].replace(/\{\{(\w+)\}\}/g, (_, key) => {
+                            return paramSet[key] !== undefined ? paramSet[key] : `{{${key}}}`;
+                        });
+                    }
+                });
+                // Handle hints array
+                if (Array.isArray(scaffold.template.hints)) {
+                    variant.hints = scaffold.template.hints.map(hint => {
+                        if (typeof hint === 'string') {
+                            return hint.replace(/\{\{(\w+)\}\}/g, (_, key) => {
+                                return paramSet[key] !== undefined ? paramSet[key] : `{{${key}}}`;
+                            });
+                        }
+                        return hint;
+                    });
+                }
+                expanded.variants.push(variant);
+            });
+            delete expanded.template;
+            delete expanded.params;
+            return expanded;
+        });
+    }
+
+    // 10f. Add blank-line spacing to multi-line solutions for readability
+    function spacifySolution(text) {
+        if (!text || typeof text !== 'string' || !text.includes('\n')) return text;
+        const lines = text.split('\n');
+        const result = [];
+        for (let i = 0; i < lines.length; i++) {
+            result.push(lines[i]);
+            if (i >= lines.length - 1) continue;
+            const trimmed = lines[i].trim();
+            const nextTrimmed = lines[i + 1].trim();
+            // After a closing brace line, add blank line if next line isn't another close or empty
+            if ((trimmed === '}' || trimmed === '})') &&
+                nextTrimmed !== '' &&
+                !nextTrimmed.startsWith('}') &&
+                !nextTrimmed.startsWith(')') &&
+                !nextTrimmed.startsWith('} else')) {
+                result.push('');
+            }
+        }
+        return result.join('\n');
+    }
+
+    function addSolutionSpacing(parsed) {
+        const variants = parsed.variants;
+        if (!variants) return;
+        ['warmups', 'challenges', 'advanced', 'scaffolds'].forEach(type => {
+            if (!Array.isArray(variants[type])) return;
+            variants[type].forEach(exercise => {
+                if (exercise.solution) exercise.solution = spacifySolution(exercise.solution);
+                if (Array.isArray(exercise.variants)) {
+                    exercise.variants.forEach(v => {
+                        if (v.solution) v.solution = spacifySolution(v.solution);
+                    });
+                }
+            });
+        });
+    }
+
     // 11. Compile exercise YAML → JS
     console.log('Compiling exercise data...');
     const exerciseFiles = fs.existsSync(EXERCISES_DIR)
@@ -713,9 +787,14 @@ function buildCourse(slug) {
             conceptLinks[moduleNum] = parsed.conceptLinks;
         }
 
-        // Accumulate concept index from all exercise types
+        // Expand scaffold templates before serialization
         const variants = parsed.variants || {};
-        ['warmups', 'challenges', 'advanced'].forEach(type => {
+        if (Array.isArray(variants.scaffolds)) {
+            variants.scaffolds = expandScaffoldTemplates(variants.scaffolds);
+        }
+
+        // Accumulate concept index from all exercise types
+        ['warmups', 'challenges', 'advanced', 'scaffolds'].forEach(type => {
             if (!Array.isArray(variants[type])) return;
             variants[type].forEach(exercise => {
                 if (exercise.id && exercise.concept) {
@@ -723,6 +802,9 @@ function buildCourse(slug) {
                 }
             });
         });
+
+        // Add blank lines between logical blocks in solutions for readability
+        addSolutionSpacing(parsed);
 
         const jsonStr = JSON.stringify(parsed);
         const js = `// Auto-generated from ${yamlFile} - do not edit directly\nwindow.moduleData = ${jsonStr};\nwindow.moduleDataRegistry = window.moduleDataRegistry || {};\nwindow.moduleDataRegistry[${moduleNum}] = window.moduleData;\n`;
