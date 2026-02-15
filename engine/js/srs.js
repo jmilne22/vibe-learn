@@ -130,6 +130,13 @@
         } else if (current.label) {
             srsData[exerciseKey].label = current.label;
         }
+
+        // Clean up legacy variant-suffixed entries that map to this base key
+        const basePattern = new RegExp('^' + exerciseKey.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '_(?:v|tp)\\w+$');
+        for (const k of Object.keys(srsData)) {
+            if (basePattern.test(k)) delete srsData[k];
+        }
+
         saveSRS(srsData);
         return srsData[exerciseKey];
     }
@@ -144,6 +151,8 @@
         const due = [];
 
         for (const [key, item] of Object.entries(srsData)) {
+            // Skip legacy variant-suffixed entries — reviews now use stripped keys
+            if (/_(?:v|tp)\w+$/.test(key)) continue;
             if (new Date(item.nextReview) <= now) {
                 due.push({ key, ...item });
             }
@@ -169,6 +178,7 @@
         count = count || 10;
         const srsData = loadSRS();
         const items = Object.entries(srsData)
+            .filter(([key]) => !/_(?:v|tp)\w+$/.test(key))
             .map(([key, item]) => ({ key, ...item }))
             .filter(item => item.repetitions >= 2 && item.easeFactor < 2.5);
 
