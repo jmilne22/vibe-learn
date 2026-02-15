@@ -128,13 +128,14 @@ fmt.Printf("quoted: %q\n", "hello")     // %q = quoted string
 fmt.Printf("bool: %t\n", true)          // %t = boolean
 
 // Float formatting
-fmt.Printf("rate: %f\n", 3.14159)       // %f  = 3.141590 (default 6 decimal places)
-fmt.Printf("rate: %.1f\n", 3.14159)     // %.1f = 3.1 (1 decimal place)
-fmt.Printf("rate: %.2f\n", 3.14159)     // %.2f = 3.14 (2 decimal places)
+fmt.Printf("rate: %f\n", 3.14159)    // 3.141590 (default: 6 decimals)
+fmt.Printf("rate: %.1f\n", 3.14159)  // 3.1
+fmt.Printf("rate: %.2f\n", 3.14159)  // 3.14
 
 // Width and alignment
-fmt.Printf("%-12s %6d\n", "web-1", 512) // %-12s = left-aligned, 12 chars wide
-                                         // %6d = right-aligned, 6 chars wide
+// %-12s = left-aligned, 12 chars wide
+// %6d  = right-aligned, 6 chars wide
+fmt.Printf("%-12s %6d\n", "web-1", 512)
 // Output: "web-1           512"
 
 // Literal percent sign
@@ -193,18 +194,18 @@ s := strconv.Itoa(42)               // s = "42"
 
 ```go
 s := []string{"a", "b", "c"}
-len(s)   // 3 — number of elements
-cap(s)   // capacity — how many elements before the backing array needs to grow
+len(s)  // 3 — number of elements
+cap(s)  // capacity (how many before the backing array grows)
 
-// copy(dst, src) — copies elements from src into dst. Returns count copied.
+// copy(dst, src) — returns number of elements copied
 src := []int{1, 2, 3, 4, 5}
 dst := make([]int, 3)
-copy(dst, src)      // dst = [1, 2, 3] — copied first 3 elements
+copy(dst, src) // dst = [1, 2, 3]
 
-// Shift elements right (used for insert-at-index):
-s = append(s, "")         // grow by one
-copy(s[2+1:], s[2:])      // shift elements at index 2+ one position right
-s[2] = "inserted"          // write into the gap
+// Shift elements right (used for insert-at-index)
+s = append(s, "")    // grow by one
+copy(s[2+1:], s[2:]) // shift index 2+ one position right
+s[2] = "inserted"     // write into the gap
 ```
 
 </details>
@@ -217,12 +218,14 @@ Three things that will bite you if you don't know them:
 
 ```go
 nums := []int{1, 2, 3}
+
+// BUG: v is a copy — changing it does nothing to the slice
 for _, v := range nums {
-    v = v * 10  // modifies the copy, not the slice
+    v = v * 10
 }
 fmt.Println(nums) // [1 2 3] — unchanged!
 
-// Fix: use the index to modify in place
+// FIX: use the index to modify in place
 for i := range nums {
     nums[i] = nums[i] * 10
 }
@@ -233,13 +236,16 @@ fmt.Println(nums) // [10 20 30]
 
 ```go
 nums := []int{1, 2, 3}
+
 for i := range nums {
     if nums[i] == 2 {
         nums = append(nums, 99)
     }
 }
-fmt.Println(nums) // [1 2 3 99] — 99 was added but never iterated
-fmt.Println(len(nums)) // 4 — but range only ran 3 times
+
+// 99 was appended — but range already decided to run 3 times
+fmt.Println(nums)      // [1 2 3 99]
+fmt.Println(len(nums)) // 4
 ```
 
 **Use `for i := range` when you need to mutate.** If you need to change elements, use the index form. If you just need to read them, `for _, v := range` is fine.
@@ -257,12 +263,22 @@ A slice is a view over an array: pointer, length, capacity. Think of it like a w
 ```go
 fruits := []string{"apple", "banana", "cherry", "date", "elderberry"}
 
-fruits[0]             // "apple" — access by index
-fruits[len(fruits)-1] // "elderberry" — last element
-fruits[1:3]           // ["banana", "cherry"] — slice expression (start inclusive, end exclusive)
-fruits[:3]            // ["apple", "banana", "cherry"] — first three
-fruits[2:]            // ["cherry", "date", "elderberry"] — everything from index 2 onward
-fruits[len(fruits)-2:]// ["date", "elderberry"] — last two
+// Access by index
+fruits[0]              // "apple"
+fruits[len(fruits)-1]  // "elderberry" (last element)
+
+// Slice expression — [start : end)
+// start is inclusive, end is exclusive
+fruits[1:3]            // ["banana", "cherry"]
+
+// Omit start → from the beginning
+fruits[:3]             // ["apple", "banana", "cherry"]
+
+// Omit end → through the end
+fruits[2:]             // ["cherry", "date", "elderberry"]
+
+// Last N elements
+fruits[len(fruits)-2:] // ["date", "elderberry"]
 ```
 
 *Python comparison*
@@ -296,13 +312,17 @@ pods = append(pods, "web-2")  // reassign!
 This is the single most common slice bug in Go. Now the correct patterns:
 
 ```go
-var pods []string                      // nil slice, length 0
-pods = append(pods, "web-1")           // [web-1]
-pods = append(pods, "web-2", "web-3")  // [web-1, web-2, web-3]
+var pods []string            // nil slice, length 0
+pods = append(pods, "web-1") // [web-1]
 
-// Append another slice with ...
+// Append multiple at once
+pods = append(pods, "web-2", "web-3")
+// pods = [web-1, web-2, web-3]
+
+// Append another slice (... unpacks it)
 more := []string{"db-1", "db-2"}
-pods = append(pods, more...)           // [web-1, web-2, web-3, db-1, db-2]
+pods = append(pods, more...)
+// pods = [web-1, web-2, web-3, db-1, db-2]
 ```
 
 > **Key insight:** `append` may return a *new* underlying array if capacity is exceeded. Always reassign: `s = append(s, item)`. The compiler won't warn you if you forget — the code runs fine and silently loses data.
@@ -395,7 +415,9 @@ The safe answer: initialize both to the first element. Now min and max are alrea
 
 ```go
 min, max := prices[0], prices[0]
-for _, p := range prices[1:] {   // start from index 1 — [0] is already covered
+
+// Start from index 1 — prices[0] is already covered
+for _, p := range prices[1:] {
     if p < min {
         min = p
     }
@@ -479,8 +501,11 @@ If you don't care about order, there's an O(1) trick: copy the last element into
 ```go
 items := []string{"a", "b", "c", "d", "e"}
 i := 1 // remove "b"
-items[i] = items[len(items)-1]  // overwrite "b" with "e" (the last element)
-items = items[:len(items)-1]     // shrink by one
+
+// Overwrite the gap with the last element, then shrink
+items[i] = items[len(items)-1]
+items = items[:len(items)-1]
+
 // Before: [a b c d e]
 // After:  [a e c d]
 ```
@@ -498,15 +523,17 @@ The idea: read through every element, but only write the ones you want to keep. 
 ```go
 words := []string{"keep", "drop", "keep", "drop", "keep"}
 
-n := 0                          // write position
-for _, w := range words {       // read position (implicit)
+n := 0 // write position
+
+for _, w := range words {
     if w == "keep" {
-        words[n] = w            // write keeper to position n
-        n++                     // advance write position
+        words[n] = w
+        n++
     }
-    // non-matches: read advances, write stays — element gets overwritten later
+    // non-matches: n stays put, so the next keeper overwrites the gap
 }
-words = words[:n]               // shrink to only the kept elements
+
+words = words[:n] // shrink to only the kept elements
 // Before: [keep drop keep drop keep]
 // After:  [keep keep keep]
 ```
@@ -562,13 +589,13 @@ scores := map[string]int{
 // make
 studentsByClass := make(map[string][]string)
 
-// Access (zero value if missing)
-score := scores["Alice"]    // 95
-score := scores["Dave"]     // 0 (zero value for int — but did Dave score 0, or is he missing?)
+// Access — returns zero value if key is missing
+score := scores["Alice"] // 95
+score := scores["Dave"]  // 0 — but did Dave score 0, or is he missing?
 
-// Comma-ok pattern: distinguish "exists with zero value" from "missing"
-score, ok := scores["Bob"]    // score = 0, ok = true  (Bob scored 0)
-score, ok := scores["Dave"]   // score = 0, ok = false (Dave isn't in the map)
+// Comma-ok pattern: tells you whether the key actually exists
+score, ok := scores["Bob"]  // 0, true  (Bob scored 0)
+score, ok := scores["Dave"] // 0, false (Dave isn't in the map)
 if !ok {
     fmt.Println("key not found")
 }
@@ -775,9 +802,9 @@ joined := strings.Join(names, " | ")
 ### Checking Content
 
 ```go
-strings.Contains(s, "=")           // true if s has "=" anywhere
-strings.HasPrefix(line, "#")       // true if line starts with "#" (comment detection)
-strings.HasSuffix(path, ".yaml")   // true if path ends with ".yaml"
+strings.Contains(s, "=")       // has "=" anywhere?
+strings.HasPrefix(line, "#")   // starts with "#"?
+strings.HasSuffix(path, ".yaml") // ends with ".yaml"?
 ```
 
 These are your guards before parsing. Check what a string looks like before you try to split or slice it.
