@@ -209,6 +209,41 @@ s[2] = "inserted"          // write into the gap
 
 </details>
 
+### Range Gotchas
+
+Three things that will bite you if you don't know them:
+
+**Range gives you a copy.** The `v` in `for _, v := range nums` is a *copy* of the element. Mutating it does nothing to the slice:
+
+```go
+nums := []int{1, 2, 3}
+for _, v := range nums {
+    v = v * 10  // modifies the copy, not the slice
+}
+fmt.Println(nums) // [1 2 3] — unchanged!
+
+// Fix: use the index to modify in place
+for i := range nums {
+    nums[i] = nums[i] * 10
+}
+fmt.Println(nums) // [10 20 30]
+```
+
+**Range locks the length at loop start.** If you `append` during a `range` loop, the new elements won't be visited — the iteration count was set when the loop began:
+
+```go
+nums := []int{1, 2, 3}
+for i := range nums {
+    if nums[i] == 2 {
+        nums = append(nums, 99)
+    }
+}
+fmt.Println(nums) // [1 2 3 99] — 99 was added but never iterated
+fmt.Println(len(nums)) // 4 — but range only ran 3 times
+```
+
+**Use `for i := range` when you need to mutate.** If you need to change elements, use the index form. If you just need to read them, `for _, v := range` is fine.
+
 ---
 
 ## Slice Operations Under Pressure
@@ -452,22 +487,6 @@ items = items[:len(items)-1]     // shrink by one
 
 Only two operations regardless of slice size. Use this when order doesn't matter — like removing a terminated pod from a running list.
 
-### Insert at Index
-
-Inserting is the reverse of removing: you need to make a gap, then write into it. Three steps:
-
-```go
-items := []string{"a", "b", "d", "e"}
-i := 2
-val := "c"
-
-items = append(items, "")      // [a b d e ""] — grow by one
-copy(items[i+1:], items[i:])   // [a b d d e]  — shift elements right, opening a gap at i
-items[i] = val                 // [a b c d e]  — write into the gap
-```
-
-`copy(dst, src)` copies elements from `src` into `dst`, overwriting whatever's there. Here `items[i:]` is the source (elements from `i` onward) and `items[i+1:]` is the destination (one position to the right). The overlap is fine — `copy` handles it correctly.
-
 ### Filter In Place
 
 Say you have 10,000 items and need to keep only the ones that match a condition. You could create a new slice and copy matches into it — that works, but doubles memory usage. When memory is already tight, that matters.
@@ -512,32 +531,6 @@ fruits = fruits[:n]
 ```
 
 The difference: with a single slice you iterate it directly (`for _, w`). With parallel slices you need the index (`for i, ok`) so you can reach into the other slice.
-
-### Deduplicate a Sorted Slice
-
-If the slice is sorted, all duplicates are adjacent. So the question becomes: "is this element the same as the one before it?" If yes, skip it. If no, keep it.
-
-This is the filter-in-place pattern again — a write position `n` that only advances for keepers. But there are two differences from the filter above:
-
-1. The first element always stays (there's nothing before it to compare to), so `n` starts at 1 instead of 0.
-2. You need to compare `nums[i]` with `nums[i-1]`, which means you need the index — so use a C-style `for` starting at 1, not `range`.
-
-```go
-nums := []int{1, 1, 2, 2, 2, 3, 4, 4}
-
-n := 1  // first element always stays
-for i := 1; i < len(nums); i++ {
-    if nums[i] != nums[i-1] {  // different from previous? keep it
-        nums[n] = nums[i]
-        n++
-    }
-}
-nums = nums[:n]
-// Before: [1 1 2 2 2 3 4 4]
-// After:  [1 2 3 4]
-```
-
-If you understood the filter pattern, this is just "filter where the condition is: different from the previous element."
 
 *Python comparison*
 
@@ -943,40 +936,6 @@ if len(students) > 5 {
 
 Sort descending, then truncate. Three lines. You'll use this shape whenever you need "the top N of anything."
 
-### Zipping Parallel Slices for Sorting
-
-`sort.Slice` rearranges elements within a single slice. But if your data is in parallel slices (`names[i]` goes with `scores[i]`), sorting one slice would break the pairing — `names` would be reordered but `scores` would stay put.
-
-The solution: combine them into a struct slice so the paired data moves together. Three steps:
-
-**1. Define a struct to hold one pair.** You can define a `type` inside a function — it's scoped to that function. Use this for throwaway structs:
-
-```go
-type student struct {
-    name  string
-    score int
-}
-```
-
-**2. Zip the parallel slices into structs.** Loop by index, pull from both slices:
-
-```go
-students := make([]student, len(names))
-for i := range names {
-    students[i] = student{names[i], scores[i]}
-}
-```
-
-**3. Sort the struct slice.** Now `sort.Slice` moves name and score together:
-
-```go
-sort.Slice(students, func(i, j int) bool {
-    return students[i].score > students[j].score  // descending by score
-})
-```
-
-After sorting, extract the field you need (e.g. `students[0].name` for the highest-scoring student). If you need a slice of just the names, loop and pull them out.
-
 <div class="inline-exercises" data-concept="Sorting & Filtering"></div>
 
 ## Line-by-Line Parsing
@@ -1062,7 +1021,7 @@ This is a simple **state machine**: the variable `currentSection` changes as you
 
 ## Putting It Together
 
-Remember the on-call scenario from the top? Here's something close to it: parse a Prometheus-style metrics file, group by label, sort by value, return the top N. This is the kind of function you'd write during an incident to answer "which endpoints are getting hammered?" We'll build it in steps.
+Remember the on-call scenario from the top? Here's something close to it: parse a Prometheus-style metrics file, group by label, and produce a sorted report. This is the kind of function you'd write during an incident to answer "which endpoints are getting hammered?" We'll build it in steps.
 
 **Step 1: Parse one line.** A Prometheus metric looks like `http_requests{method="GET",status="200"} 1027`. We need the label part and the numeric value.
 
@@ -1100,33 +1059,18 @@ for _, line := range lines {
 }
 ```
 
-**Step 3: Sort by count.** Maps aren't sortable, so convert to a struct slice.
+**Step 3: Sorted output.** Maps iterate in random order, so collect keys, sort, and format.
 
 ```go
-type entry struct {
-    labels string
-    count  int
+keys := make([]string, 0, len(counts))
+for k := range counts {
+    keys = append(keys, k)
 }
-entries := make([]entry, 0, len(counts))
-for k, v := range counts {
-    entries = append(entries, entry{k, v})
-}
+sort.Strings(keys)
 
-sort.Slice(entries, func(i, j int) bool {
-    return entries[i].count > entries[j].count  // descending
-})
-```
-
-**Step 4: Take top N and format.**
-
-```go
-if len(entries) > n {
-    entries = entries[:n]
-}
-
-results := make([]string, len(entries))
-for i, e := range entries {
-    results[i] = fmt.Sprintf("%s: %d", e.labels, e.count)
+results := make([]string, len(keys))
+for i, k := range keys {
+    results[i] = fmt.Sprintf("  %-40s %d", k, counts[k])
 }
 return results
 ```
@@ -1134,7 +1078,7 @@ return results
 **All together:**
 
 ```go
-func topEndpoints(lines []string, n int) []string {
+func endpointReport(lines []string) []string {
     counts := make(map[string]int)
 
     for _, line := range lines {
@@ -1151,32 +1095,23 @@ func topEndpoints(lines []string, n int) []string {
         counts[labelPart] += val
     }
 
-    type entry struct {
-        labels string
-        count  int
+    keys := make([]string, 0, len(counts))
+    for k := range counts {
+        keys = append(keys, k)
     }
-    entries := make([]entry, 0, len(counts))
-    for k, v := range counts {
-        entries = append(entries, entry{k, v})
-    }
+    sort.Strings(keys)
 
-    sort.Slice(entries, func(i, j int) bool {
-        return entries[i].count > entries[j].count
-    })
-
-    if len(entries) > n {
-        entries = entries[:n]
-    }
-
-    results := make([]string, len(entries))
-    for i, e := range entries {
-        results[i] = fmt.Sprintf("%s: %d", e.labels, e.count)
+    results := make([]string, len(keys))
+    for i, k := range keys {
+        results[i] = fmt.Sprintf("  %-40s %d", k, counts[k])
     }
     return results
 }
 ```
 
-This function uses: string parsing, `continue` for skipping bad lines, maps for counting, an inline struct for sorting, `sort.Slice`, and slice truncation. This is the **count → sort → format** pattern — the same shape as "group pods by node, find the top memory consumers, format a report." You'll see it again in the challenges. If you can write this from scratch, you're ready for Module 2.
+This function uses: string parsing, `continue` for skipping bad lines, maps for counting, the sorted-keys pattern, and formatted output. This is the **parse → count → sort → format** pattern — the same shape as "group pods by node and format a report."
+
+> **What's missing?** You might notice we sorted alphabetically, not by count descending. Sorting by value (to get "top N by count") requires bundling each key-value pair into a sortable unit — and that's exactly what structs unlock in Module 2. Once you learn structs, you'll upgrade this pattern to **count → struct → sort → truncate → format**.
 
 ---
 
