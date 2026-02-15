@@ -25,7 +25,8 @@
 (function() {
     'use strict';
 
-    var MIN_SESSION_SIZE = 5;
+    // Minimum session size removed — sessions now start with any number of
+    // due/weak candidates and pad up to the requested count with other tracked items.
 
     // --- Helpers ---
 
@@ -147,9 +148,8 @@
             return filterFn(e.key);
         });
 
-        if (due.length >= MIN_SESSION_SIZE) return 'review';
-        if (weak.length >= MIN_SESSION_SIZE) return 'weakest';
-        if (due.length > 0 || weak.length > 0) return 'mixed';
+        if (due.length > 0) return 'review';
+        if (weak.length > 0) return 'weakest';
         return 'discover';
     }
 
@@ -340,20 +340,16 @@
      * @param {string} mode - 'review', 'weakest', or 'mixed'
      * @param {number} count - Desired queue size
      * @param {Function} filterFn - function(key) => boolean
-     * @param {object} [opts] - { minThreshold: 5, pad: true }
-     * @returns {Array} SRS candidate objects or empty array if below threshold
+     * @param {object} [opts] - { pad: true }
+     * @returns {Array} SRS candidate objects or empty array if none match
      */
     function buildPaddedSRSQueue(mode, count, filterFn, opts) {
         opts = opts || {};
-        var minThreshold = opts.minThreshold !== undefined ? opts.minThreshold : MIN_SESSION_SIZE;
         var pad = opts.pad !== undefined ? opts.pad : true;
 
         var candidates = buildSRSQueue(mode, count, filterFn);
 
-        if ((mode === 'review' || mode === 'weakest') && candidates.length < minThreshold) {
-            return [];
-        }
-        if (mode === 'mixed' && candidates.length === 0) {
+        if (candidates.length === 0) {
             return [];
         }
 
