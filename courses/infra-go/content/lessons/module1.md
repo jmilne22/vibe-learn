@@ -1021,56 +1021,47 @@ This is a simple **state machine**: the variable `currentSection` changes as you
 
 ## Putting It Together
 
-Remember the on-call scenario from the top? Here's something close to it: parse a Prometheus-style metrics file, group by label, and produce a sorted report. This is the kind of function you'd write during an incident to answer "which endpoints are getting hammered?" We'll build it in steps.
+Time to combine everything. Given a text file where each line is `name:score`, we'll parse lines, group scores by name, and produce a sorted summary. This is the **parse → accumulate → sort → format** pattern — the same shape you'll use for any "group data and report" task.
 
-**Step 1: Parse one line.** A Prometheus metric looks like `http_requests{method="GET",status="200"} 1027`. We need the label part and the numeric value.
+**Step 1: Parse one line.** Split on `:` to get the name and numeric value.
 
 ```go
-// Extract labels and value from: metric_name{labels} value
-line := "http_requests{method=\"GET\",status=\"200\"} 1027"
-
-// Find the { and } to extract the label portion
-braceOpen := strings.Index(line, "{")
-braceClose := strings.Index(line, "}")
-labelPart := line[braceOpen+1 : braceClose]  // method="GET",status="200"
-
-// The value is everything after "} "
-valStr := strings.TrimSpace(line[braceClose+1:])
-val, err := strconv.Atoi(valStr)  // 1027
+line := "alice:95"
+parts := strings.SplitN(line, ":", 2)
+name := parts[0]                        // "alice"
+score, err := strconv.Atoi(parts[1])    // 95
 ```
 
-**Step 2: Accumulate counts.** Loop through lines, parse each one, sum values by label.
+**Step 2: Accumulate totals.** Loop through lines, parse each one, sum scores by name.
 
 ```go
-counts := make(map[string]int)
+totals := make(map[string]int)
 
 for _, line := range lines {
-    idx := strings.Index(line, "} ")
-    if idx < 0 {
-        continue  // skip lines without labels
+    parts := strings.SplitN(line, ":", 2)
+    if len(parts) != 2 {
+        continue  // skip malformed lines
     }
-    labelPart := line[strings.Index(line, "{")+1 : idx]
-    valStr := strings.TrimSpace(line[idx+2:])
-    val, err := strconv.Atoi(valStr)
+    score, err := strconv.Atoi(strings.TrimSpace(parts[1]))
     if err != nil {
-        continue  // skip lines with unparseable values
+        continue  // skip lines with bad numbers
     }
-    counts[labelPart] += val
+    totals[parts[0]] += score
 }
 ```
 
 **Step 3: Sorted output.** Maps iterate in random order, so collect keys, sort, and format.
 
 ```go
-keys := make([]string, 0, len(counts))
-for k := range counts {
-    keys = append(keys, k)
+names := make([]string, 0, len(totals))
+for name := range totals {
+    names = append(names, name)
 }
-sort.Strings(keys)
+sort.Strings(names)
 
-results := make([]string, len(keys))
-for i, k := range keys {
-    results[i] = fmt.Sprintf("  %-40s %d", k, counts[k])
+results := make([]string, len(names))
+for i, name := range names {
+    results[i] = fmt.Sprintf("%-20s %d", name, totals[name])
 }
 return results
 ```
@@ -1078,40 +1069,40 @@ return results
 **All together:**
 
 ```go
-func endpointReport(lines []string) []string {
-    counts := make(map[string]int)
+func scoreReport(lines []string) []string {
+    totals := make(map[string]int)
 
     for _, line := range lines {
-        idx := strings.Index(line, "} ")
-        if idx < 0 {
+        parts := strings.SplitN(line, ":", 2)
+        if len(parts) != 2 {
             continue
         }
-        labelPart := line[strings.Index(line, "{")+1 : idx]
-        valStr := strings.TrimSpace(line[idx+2:])
-        val, err := strconv.Atoi(valStr)
+        score, err := strconv.Atoi(strings.TrimSpace(parts[1]))
         if err != nil {
             continue
         }
-        counts[labelPart] += val
+        totals[parts[0]] += score
     }
 
-    keys := make([]string, 0, len(counts))
-    for k := range counts {
-        keys = append(keys, k)
+    names := make([]string, 0, len(totals))
+    for name := range totals {
+        names = append(names, name)
     }
-    sort.Strings(keys)
+    sort.Strings(names)
 
-    results := make([]string, len(keys))
-    for i, k := range keys {
-        results[i] = fmt.Sprintf("  %-40s %d", k, counts[k])
+    results := make([]string, len(names))
+    for i, name := range names {
+        results[i] = fmt.Sprintf("%-20s %d", name, totals[name])
     }
     return results
 }
 ```
 
-This function uses: string parsing, `continue` for skipping bad lines, maps for counting, the sorted-keys pattern, and formatted output. This is the **parse → count → sort → format** pattern — the same shape as "group pods by node and format a report."
+This function uses every pattern from the module: string splitting, `continue` for skipping bad lines, maps for accumulating, the sorted-keys pattern, and formatted output. In practice, the input could be log entries, config lines, or CSV rows — the shape stays the same.
 
-> **What's missing?** You might notice we sorted alphabetically, not by count descending. Sorting by value (to get "top N by count") requires bundling each key-value pair into a sortable unit — and that's exactly what structs unlock in Module 2. Once you learn structs, you'll upgrade this pattern to **count → struct → sort → truncate → format**.
+> **What's missing?** You might notice we sorted alphabetically, not by score descending. Sorting by value (to get "top N") requires bundling each key-value pair into a sortable unit — and that's exactly what structs unlock in Module 2. Once you learn structs, you'll upgrade this pattern to **accumulate → struct → sort → truncate → format**.
+
+<div class="inline-exercises" data-concept="Combining Patterns"></div>
 
 ---
 
