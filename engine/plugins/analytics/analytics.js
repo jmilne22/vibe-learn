@@ -472,7 +472,7 @@
             '</div>' +
             // Card 2: Due for Review
             '<div class="stat-card">' +
-                '<a href="daily-practice.html" style="text-decoration: none; color: inherit;">' +
+                '<a href="daily-practice.html?mode=review&autostart" style="text-decoration: none; color: inherit;">' +
                     '<div class="stat-value" style="color: ' + dueColor + ';">' + dueCount + '</div>' +
                     '<div class="stat-label">Due for Review</div>' +
                 '</a>' +
@@ -567,7 +567,7 @@
             items.push({
                 icon: '\u23F0',
                 text: dueCount + ' exercise' + (dueCount === 1 ? '' : 's') + ' due for review' + ageText,
-                link: 'daily-practice.html',
+                link: 'daily-practice.html?mode=review&autostart',
                 linkText: 'Practice now'
             });
         }
