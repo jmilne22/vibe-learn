@@ -359,6 +359,18 @@
 
     // --- Exercise Rendering ---
 
+    function resetCompletionState(container) {
+        container.querySelectorAll('.exercise').forEach(function(ex) {
+            ex.classList.remove('exercise-completed');
+        });
+        container.querySelectorAll('.self-rating .rating-btn').forEach(function(btn) {
+            btn.classList.remove('active', 'got-it', 'struggled', 'peeked');
+        });
+        container.querySelectorAll('.self-rating-label').forEach(function(lbl) {
+            lbl.textContent = 'How did it go?';
+        });
+    }
+
     function renderCurrentExercise(sess) {
         var item = sess.queue[sess.index];
         if (!item) return;
@@ -389,6 +401,7 @@
                         window.ExerciseRenderer.initPersonalNotes(ex);
                     }
                 });
+                resetCompletionState(container);
                 return;
             }
         }
@@ -403,6 +416,7 @@
                     window.ExerciseRenderer.initPersonalNotes(ex);
                 }
             });
+            resetCompletionState(container);
         } else {
             container.innerHTML =
                 '<div class="exercise" style="text-align: center; padding: 2rem;">' +
@@ -546,6 +560,30 @@
     }
 
     // --- Public API ---
+
+    // --- SRS Feedback after Rating ---
+
+    window.addEventListener('exerciseRated', function(e) {
+        if (!session) return;
+        var key = e.detail.key;
+        var srsKey = key.replace(/_(?:v|tp)\w+$/, '');
+        var srsData = window.SRS && window.SRS.getAll();
+        var entry = srsData && srsData[srsKey];
+        if (!entry || !entry.interval) return;
+
+        var ratingEl = document.querySelector('.self-rating[data-exercise-key="' + key + '"]');
+        if (!ratingEl) return;
+
+        // Remove any previous feedback
+        var old = ratingEl.parentNode.querySelector('.srs-feedback');
+        if (old) old.remove();
+
+        var fb = document.createElement('div');
+        fb.className = 'srs-feedback';
+        fb.textContent = 'Next review in ' + entry.interval + (entry.interval === 1 ? ' day' : ' days');
+        fb.style.cssText = 'font-size: 0.78rem; color: var(--text-dim); margin-top: 0.4rem;';
+        ratingEl.insertAdjacentElement('afterend', fb);
+    });
 
     window.startSession = doStartSession;
     window.nextExercise = function() { if (session) SE.nextExercise(session); };
