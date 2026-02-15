@@ -580,7 +580,13 @@
 
         var fb = document.createElement('div');
         fb.className = 'srs-feedback';
-        fb.textContent = 'Next review in ' + entry.interval + (entry.interval === 1 ? ' day' : ' days');
+        var days = entry.interval;
+        var msg;
+        if (days <= 1) msg = 'Next review in 1 day';
+        else if (days < 30) msg = 'Next review in ' + days + ' days';
+        else if (days < 365) msg = 'Next review in ' + Math.round(days / 30) + ' month' + (Math.round(days / 30) === 1 ? '' : 's');
+        else msg = 'Mastered — next review in ' + Math.round(days / 365) + '+ year' + (Math.round(days / 365) === 1 ? '' : 's');
+        fb.textContent = msg;
         fb.style.cssText = 'font-size: 0.78rem; color: var(--text-dim); margin-top: 0.4rem;';
         ratingEl.insertAdjacentElement('afterend', fb);
     });
