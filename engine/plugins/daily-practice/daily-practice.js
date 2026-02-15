@@ -206,9 +206,7 @@
 
         var loadPromises = [];
         modulesToLoad.forEach(function(moduleNum) {
-            if (!loadedModules.has(moduleNum)) {
-                loadPromises.push(preloadModuleData(moduleNum));
-            }
+            loadPromises.push(preloadModuleData(moduleNum));
         });
 
         Promise.all(loadPromises).then(function() {
@@ -527,23 +525,23 @@
 
     // --- Module Data Loading ---
 
-    var loadedModules = new Set();
+    var moduleLoadPromises = {};
 
     function preloadModuleData(moduleNum) {
-        if (loadedModules.has(moduleNum)) return Promise.resolve();
-        loadedModules.add(moduleNum);
+        if (moduleLoadPromises[moduleNum]) return moduleLoadPromises[moduleNum];
 
-        return new Promise(function(resolve) {
+        moduleLoadPromises[moduleNum] = new Promise(function(resolve) {
             var script = document.createElement('script');
             script.src = 'data/module' + moduleNum + '-variants.js';
             script.onload = resolve;
             script.onerror = resolve;
             document.head.appendChild(script);
         });
+
+        return moduleLoadPromises[moduleNum];
     }
 
     function loadModuleData(moduleNum) {
-        if (loadedModules.has(moduleNum)) return;
         preloadModuleData(moduleNum);
     }
 
