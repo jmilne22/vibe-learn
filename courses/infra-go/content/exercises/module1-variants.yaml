@@ -6,6 +6,7 @@ conceptLinks:
   Numbers & Percentages: "#numbers-floats--percentages"
   Sorting & Filtering: "#sorting--filtering"
   Line Parsing: "#line-by-line-parsing"
+  Combining Patterns: "#putting-it-together"
 sharedContent: {}
 variants:
   warmups:
@@ -518,6 +519,106 @@ variants:
             lines := strings.Split(content, "\n")
             fmt.Println(lines[0])              // alpha
             fmt.Println(lines[len(lines)-1])   // delta
+    - id: warmup_8
+      concept: Combining Patterns
+      variants:
+        - id: v1
+          title: Pod Status Summary
+          description: >-
+            Given <code>statuses := []string{"Running", "Failed", "Running", "Pending", "Running", "Failed"}</code>,
+            count each status with a map and print the results sorted alphabetically by status name.
+            Format each line as <code>"status: count"</code>.
+          hints:
+            - "Two patterns back to back: counting with a map, then sorted-keys iteration."
+            - "After counting, collect keys into a slice, <code>sort.Strings</code>, then loop the sorted keys to print."
+          solution: |-
+            statuses := []string{"Running", "Failed", "Running", "Pending", "Running", "Failed"}
+            counts := make(map[string]int)
+            for _, s := range statuses {
+                counts[s]++
+            }
+            keys := make([]string, 0, len(counts))
+            for k := range counts {
+                keys = append(keys, k)
+            }
+            sort.Strings(keys)
+            for _, k := range keys {
+                fmt.Printf("%s: %d\n", k, counts[k])
+            }
+        - id: v2
+          title: Most Common Log Level
+          description: >-
+            Given log lines <code>["INFO request started", "ERROR timeout", "INFO done", "ERROR OOM", "WARN
+            slow"]</code>, parse the first word of each line as the level, count occurrences, and print the most
+            common level and its count. Format: <code>"INFO: 2"</code>.
+          hints:
+            - "Parse each line with <code>strings.Fields</code> to get the first word. Count with a map."
+            - "After counting, loop the map to find the key with the highest value — track both the max count and its key."
+          solution: |-
+            lines := []string{"INFO request started", "ERROR timeout", "INFO done", "ERROR OOM", "WARN slow"}
+            counts := make(map[string]int)
+            for _, line := range lines {
+                fields := strings.Fields(line)
+                if len(fields) > 0 {
+                    counts[fields[0]]++
+                }
+            }
+            maxLevel := ""
+            maxCount := 0
+            for level, count := range counts {
+                if count > maxCount {
+                    maxCount = count
+                    maxLevel = level
+                }
+            }
+            fmt.Printf("%s: %d\n", maxLevel, maxCount)
+        - id: v3
+          title: Parse and Group Config
+          description: >-
+            Given config lines <code>["host=web-1", "env=prod", "host=web-2", "env=staging", "host=db-1",
+            "env=prod"]</code>, parse each key=value pair and group the values by key. Print each key and its
+            values, sorted alphabetically by key.
+          hints:
+            - "Combine <code>SplitN</code> parsing with map grouping: <code>map[string][]string</code>."
+            - "After grouping, use the sorted-keys pattern to print in deterministic order."
+          solution: |-
+            lines := []string{"host=web-1", "env=prod", "host=web-2", "env=staging", "host=db-1", "env=prod"}
+            groups := make(map[string][]string)
+            for _, line := range lines {
+                parts := strings.SplitN(line, "=", 2)
+                if len(parts) == 2 {
+                    groups[parts[0]] = append(groups[parts[0]], parts[1])
+                }
+            }
+            keys := make([]string, 0, len(groups))
+            for k := range groups {
+                keys = append(keys, k)
+            }
+            sort.Strings(keys)
+            for _, k := range keys {
+                fmt.Printf("%s: %v\n", k, groups[k])
+            }
+        - id: v4
+          title: Error Rate from Logs
+          description: >-
+            Given log lines where the first word is the level (INFO, ERROR, WARN), count total lines and ERROR
+            lines, then print the error percentage with one decimal place.
+            Input: <code>["INFO ok", "ERROR bad", "INFO fine", "ERROR oom", "WARN slow"]</code>.
+            Expected: <code>"Error rate: 40.0%"</code>.
+          hints:
+            - "This combines parsing (<code>strings.Fields</code>), counting, and percentage calculation."
+            - "Count errors in the loop, then compute <code>float64(errors) / float64(total) * 100</code> and format with <code>%.1f%%</code>."
+          solution: |-
+            lines := []string{"INFO ok", "ERROR bad", "INFO fine", "ERROR oom", "WARN slow"}
+            errors := 0
+            for _, line := range lines {
+                fields := strings.Fields(line)
+                if len(fields) > 0 && fields[0] == "ERROR" {
+                    errors++
+                }
+            }
+            pct := float64(errors) / float64(len(lines)) * 100
+            fmt.Printf("Error rate: %.1f%%\n", pct)
   challenges:
     - id: challenge_1
       block: 1
@@ -570,14 +671,14 @@ variants:
           title: Log Level Report
           description: >-
             Write <code>func logReport(lines []string) string</code> that takes log lines in the format <code>"LEVEL
-            message text"</code> and returns a report string with each level and its count, sorted by count
-            descending.<br><br>Example input: <code>["INFO request started", "ERROR timeout", "INFO request done", "WARN
-            slow query", "ERROR OOM"]</code><br>Example output: <code>"INFO: 2\nERROR: 2\nWARN: 1"</code>
+            message text"</code> and returns a report string with each level and its count, sorted alphabetically
+            by level name.<br><br>Example input: <code>["INFO request started", "ERROR timeout", "INFO request done", "WARN
+            slow query", "ERROR OOM"]</code><br>Example output: <code>"ERROR: 2\nINFO: 2\nWARN: 1"</code>
           functionSignature: func logReport(lines []string) string
           difficulty: 2
           testCases:
             - input: logReport([]string{"INFO ok", "ERROR bad", "INFO ok2", "WARN slow", "ERROR oom"})
-              output: "\"INFO: 2\\nERROR: 2\\nWARN: 1\""
+              output: "\"ERROR: 2\\nINFO: 2\\nWARN: 1\""
             - input: logReport([]string{"DEBUG x", "DEBUG y", "DEBUG z"})
               output: "\"DEBUG: 3\""
             - input: logReport([]string{})
@@ -585,14 +686,17 @@ variants:
           hints:
             - title: 🤔 Think about it
               content: >-
-                You need two steps: counting and sorting. What data structure counts things? And since maps aren't
-                sortable — what do you need to convert the data into before you can sort it?
+                You need two steps: counting and sorting. What data structure counts things? Since maps iterate
+                in random order, how do you output alphabetically?
             - title: 💡 Hint
               content: >-
-                This follows the count → sort → format pattern from the Putting It Together section of the lesson. The
-                key insight is transferring map data into a sortable slice.
+                This follows the count → sort-keys → format pattern from the Putting It Together section. Count
+                with a map, collect keys into a slice, sort.Strings, then format each entry.
           solution: |-
             func logReport(lines []string) string {
+                if len(lines) == 0 {
+                    return ""
+                }
                 counts := make(map[string]int)
                 for _, line := range lines {
                     fields := strings.Fields(line)
@@ -600,35 +704,29 @@ variants:
                         counts[fields[0]]++
                     }
                 }
-                type entry struct {
-                    level string
-                    count int
+                keys := make([]string, 0, len(counts))
+                for k := range counts {
+                    keys = append(keys, k)
                 }
-                entries := make([]entry, 0, len(counts))
-                for k, v := range counts {
-                    entries = append(entries, entry{k, v})
-                }
-                sort.Slice(entries, func(i, j int) bool {
-                    return entries[i].count > entries[j].count
-                })
-                parts := make([]string, len(entries))
-                for i, e := range entries {
-                    parts[i] = fmt.Sprintf("%s: %d", e.level, e.count)
+                sort.Strings(keys)
+                parts := make([]string, len(keys))
+                for i, k := range keys {
+                    parts[i] = fmt.Sprintf("%s: %d", k, counts[k])
                 }
                 return strings.Join(parts, "\n")
             }
           annotations:
             - type: pattern
-              label: Count-Sort-Format
+              label: Count-SortKeys-Format
               text: >-
-                This three-step pattern (count with map → sort → format output) appears everywhere in infra tooling. Log
+                This three-step pattern (count with map → sort keys → format output) appears everywhere in infra tooling. Log
                 analysis, metric aggregation, resource reporting — same shape.
         - id: v3
           title: Level Frequency with Percentages
           description: >-
             Write <code>func logFrequency(lines []string) string</code> that takes log lines and returns a report with
-            each level, its count, AND its percentage of total, sorted by count descending.<br><br>Format: <code>"ERROR:
-            3 (37.5%)\nINFO: 3 (37.5%)\nWARN: 2 (25.0%)"</code>
+            each level, its count, AND its percentage of total, sorted alphabetically by level name.<br><br>Format: <code>"ERROR:
+            2 (66.7%)\nINFO: 1 (33.3%)"</code>
           functionSignature: func logFrequency(lines []string) string
           difficulty: 3
           testCases:
@@ -637,11 +735,11 @@ variants:
           hints:
             - title: 🤔 Think about it
               content: >-
-                This builds on the Log Level Report — same count-sort pattern. The extra step is computing a percentage
-                for each level. How do you format a float to one decimal place with a percent sign?
+                This builds on the Log Level Report — same count → sort-keys → format pattern. The extra step is
+                computing a percentage for each level. How do you format a float to one decimal place with a percent sign?
             - title: 💡 Hint
               content: >-
-                Reuse the count-sort-format pattern. The percentage is each level's count divided by total lines. See the
+                Reuse the count → sort-keys → format pattern. The percentage is each level's count divided by total lines. See the
                 Numbers section for float conversion, and the Printing section for the format verb that outputs one decimal
                 place and a literal percent sign.
           solution: |-
@@ -656,22 +754,16 @@ variants:
                         counts[fields[0]]++
                     }
                 }
-                type entry struct {
-                    level string
-                    count int
+                keys := make([]string, 0, len(counts))
+                for k := range counts {
+                    keys = append(keys, k)
                 }
-                entries := make([]entry, 0, len(counts))
-                for k, v := range counts {
-                    entries = append(entries, entry{k, v})
-                }
-                sort.Slice(entries, func(i, j int) bool {
-                    return entries[i].count > entries[j].count
-                })
+                sort.Strings(keys)
                 total := len(lines)
-                parts := make([]string, len(entries))
-                for i, e := range entries {
-                    pct := float64(e.count) / float64(total) * 100
-                    parts[i] = fmt.Sprintf("%s: %d (%.1f%%)", e.level, e.count, pct)
+                parts := make([]string, len(keys))
+                for i, k := range keys {
+                    pct := float64(counts[k]) / float64(total) * 100
+                    parts[i] = fmt.Sprintf("%s: %d (%.1f%%)", k, counts[k], pct)
                 }
                 return strings.Join(parts, "\n")
             }
@@ -861,101 +953,95 @@ variants:
                 return names
             }
         - id: v2
-          title: Top N by Memory
-          description: |-
-            Given parallel slices of pod names and memory usage:
-            <pre>names    := []string{"web-1", "api-1", "db-1", "cache-1", "worker-1"}
-            memoryMB := []int{512, 256, 2048, 1024, 128}</pre>
-            Write <code>func topByMemory(names []string, memoryMB []int, n int) []string</code> that returns the names of the top <code>n</code> pods by memory usage (descending).
-          functionSignature: func topByMemory(names []string, memoryMB []int, n int) []string
+          title: Filter and Sort Pods
+          description: >-
+            Write <code>func filterSorted(names []string, prefix string) []string</code> that returns all names
+            starting with <code>prefix</code>, sorted alphabetically.<br><br>Example: <code>["web-3", "api-1", "db-2",
+            "web-1", "api-2"]</code> with prefix <code>"web"</code> → <code>["web-1", "web-3"]</code>
+          functionSignature: func filterSorted(names []string, prefix string) []string
           difficulty: 2
           testCases:
-            - input: topByMemory([]string{"web-1","api-1","db-1","cache-1","worker-1"}, []int{512,256,2048,1024,128}, 3)
-              output: "[\"db-1\", \"cache-1\", \"web-1\"]"
-            - input: topByMemory([]string{"a","b"}, []int{100,200}, 5)
-              output: "[\"b\", \"a\"]"
+            - input: filterSorted([]string{"web-3","api-1","db-2","web-1","api-2"}, "web")
+              output: "[\"web-1\", \"web-3\"]"
+            - input: filterSorted([]string{"web-3","api-1","db-2","web-1","api-2"}, "db")
+              output: "[\"db-2\"]"
+            - input: filterSorted([]string{"a","b"}, "z")
+              output: "[]"
           hints:
             - title: 🤔 Think about it
               content: >-
-                You have two parallel slices that need to stay paired during sorting. What data structure lets you bundle
-                a name and a value together so they move as one unit?
+                Two operations: filter matching names into a new slice, then sort that slice.
             - title: 💡 Hint
               content: >-
-                Zip the parallel slices into structs so they stay paired when sorted. After sorting, extract just the
-                names from the top entries. Don't forget the edge case where n is larger than the input.
+                Use <code>strings.HasPrefix</code> to check each name. Collect matches into a result slice,
+                then <code>sort.Strings(result)</code> before returning.
           solution: |-
-            func topByMemory(names []string, memoryMB []int, n int) []string {
-                type pod struct {
-                    name string
-                    mem  int
+            func filterSorted(names []string, prefix string) []string {
+                var result []string
+                for _, name := range names {
+                    if strings.HasPrefix(name, prefix) {
+                        result = append(result, name)
+                    }
                 }
-                pods := make([]pod, len(names))
-                for i := range names {
-                    pods[i] = pod{names[i], memoryMB[i]}
-                }
-                sort.Slice(pods, func(i, j int) bool {
-                    return pods[i].mem > pods[j].mem
-                })
-                if n > len(pods) {
-                    n = len(pods)
-                }
-                result := make([]string, n)
-                for i := 0; i < n; i++ {
-                    result[i] = pods[i].name
-                }
+                sort.Strings(result)
                 return result
             }
           annotations:
             - type: pattern
-              label: Parallel Slice → Struct
+              label: Filter-then-Sort
               text: >-
-                When you have parallel slices (names[i] goes with values[i]), zip them into a slice of structs first.
-                This is safer and makes sorting straightforward.
-            - type: interview
-              label: Top K Pattern
-              text: >-
-                "Find top K elements" is one of the most common interview questions. For small K, sort and slice. For
-                large data, use a min-heap (covered in Module 12).
+                Filter first, sort second. Sorting after filtering means you sort a smaller slice — more efficient
+                and the code is clearer.
         - id: v3
-          title: Resource Usage Table
+          title: Sorted Key-Value Report
           description: >-
-            Write <code>func resourceTable(names []string, cpuPercent []float64, memMB []int) string</code> that returns
-            a formatted table sorted by CPU usage descending.<br><br>Format each row as <code>"%-12s %6.1f%%
-            %6dMB"</code>.
-          functionSignature: func resourceTable(names []string, cpuPercent []float64, memMB []int) string
+            Write <code>func kvReport(lines []string) string</code> that takes lines in <code>"key=value"</code>
+            format, parses them, and returns a formatted report sorted by key. Skip malformed lines (no <code>=</code>).<br><br>
+            Format each line as <code>"  key: value"</code> (two-space indent).<br>
+            Example: <code>["port=8080", "host=localhost", "bad line", "db=myapp"]</code>
+            → <code>"  db: myapp\n  host: localhost\n  port: 8080"</code>
+          functionSignature: func kvReport(lines []string) string
           difficulty: 3
           testCases:
-            - input: resourceTable([]string{"web","api"}, []float64{45.2, 82.3}, []int{256, 512})
-              output: "\"api           82.3%    512MB\\nweb           45.2%    256MB\""
+            - input: kvReport([]string{"port=8080", "host=localhost", "db=myapp"})
+              output: "\"  db: myapp\\n  host: localhost\\n  port: 8080\""
+            - input: kvReport([]string{"z=1", "a=2"})
+              output: "\"  a: 2\\n  z: 1\""
           hints:
             - title: 🤔 Think about it
               content: >-
-                Same zip-sort-format pattern as Top N, but with three parallel slices and formatted output. The tricky
-                part is getting the format string right.
+                Parse into a map (SplitN on "="), then use the sorted-keys pattern to output in order.
             - title: 💡 Hint
               content: >-
-                After zipping and sorting, check the Printing section of the lesson for width specifiers (left-aligned
-                strings, right-aligned numbers) and how to print a literal percent sign.
+                This combines line parsing, map storage, sorted-keys iteration, and formatted output —
+                the full parse → store → sort → format pipeline from the Putting It Together section.
           solution: |-
-            func resourceTable(names []string, cpuPercent []float64, memMB []int) string {
-                type resource struct {
-                    name string
-                    cpu  float64
-                    mem  int
+            func kvReport(lines []string) string {
+                kv := make(map[string]string)
+                for _, line := range lines {
+                    parts := strings.SplitN(line, "=", 2)
+                    if len(parts) != 2 {
+                        continue
+                    }
+                    kv[parts[0]] = parts[1]
                 }
-                resources := make([]resource, len(names))
-                for i := range names {
-                    resources[i] = resource{names[i], cpuPercent[i], memMB[i]}
+                keys := make([]string, 0, len(kv))
+                for k := range kv {
+                    keys = append(keys, k)
                 }
-                sort.Slice(resources, func(i, j int) bool {
-                    return resources[i].cpu > resources[j].cpu
-                })
-                lines := make([]string, len(resources))
-                for i, r := range resources {
-                    lines[i] = fmt.Sprintf("%-12s %6.1f%% %6dMB", r.name, r.cpu, r.mem)
+                sort.Strings(keys)
+                result := make([]string, len(keys))
+                for i, k := range keys {
+                    result[i] = fmt.Sprintf("  %s: %s", k, kv[k])
                 }
-                return strings.Join(lines, "\n")
+                return strings.Join(result, "\n")
             }
+          annotations:
+            - type: pattern
+              label: Parse-Store-Sort-Format
+              text: >-
+                Parse into a map, sort keys, format output. This is the same pipeline as the Putting It Together
+                capstone — you'll use this shape constantly in infra tooling.
     - id: challenge_4
       block: 4
       difficulty: 2
@@ -1836,3 +1922,65 @@ variants:
                 }
             }
             fmt.Println(count) // 3
+    - id: scaffold_range
+      concept: "Slice Operations"
+      variants:
+        - id: v1
+          type: trace
+          title: "Predict Range Copy"
+          description: |-
+            What does this print?
+            <pre>nums := []int{1, 2, 3}
+            for _, v := range nums {
+                v = v * 10
+            }
+            fmt.Println(nums)</pre>
+          solution: "[1 2 3]"
+        - id: v2
+          type: fix
+          title: "Fix the Range Mutation"
+          description: |-
+            This code tries to double every element, but the slice is unchanged:
+            <pre>nums := []int{5, 10, 15}
+            for _, v := range nums {
+                v = v * 2
+            }
+            fmt.Println(nums) // still [5 10 15]!</pre>
+            Fix it so the elements are actually doubled.
+          hints: ["<code>v</code> is a copy of the element. To modify the original, you need the index to write back to the slice."]
+          solution: |-
+            // v is a copy — changes to it don't affect the slice.
+            // Fix: use the index form to modify in place.
+            for i := range nums {
+                nums[i] = nums[i] * 2
+            }
+        - id: v3
+          type: complete
+          title: "Complete the Range Mutation"
+          description: |-
+            Fill in the blanks to triple every element in place:
+            <pre>vals := []int{2, 4, 6}
+            for _____ := range vals {
+                vals[___] = vals[___] * 3
+            }
+            fmt.Println(vals) // [6 12 18]</pre>
+          solution: |-
+            for i := range vals {
+                vals[i] = vals[i] * 3
+            }
+        - id: v4
+          type: trace
+          title: "Predict Range Length Lock"
+          description: |-
+            What does this print?
+            <pre>nums := []int{1, 2, 3}
+            for i := range nums {
+                if nums[i] == 2 {
+                    nums = append(nums, 99)
+                }
+            }
+            fmt.Println(nums)
+            fmt.Println(len(nums))</pre>
+          solution: |-
+            [1 2 3 99]
+            4

@@ -1401,3 +1401,171 @@ variants:
             - type: gotcha
               label: Method override
               text: Pod and Node each define their own String(). This 'overrides' any promoted String() from embedded types.
+    - id: challenge_5
+      block: 5
+      difficulty: 2
+      concept: Structs
+      variants:
+        - id: v1
+          title: Top N by Memory
+          description: |-
+            Given parallel slices of pod names and memory usage:
+            <pre>names    := []string{"web-1", "api-1", "db-1", "cache-1", "worker-1"}
+            memoryMB := []int{512, 256, 2048, 1024, 128}</pre>
+            Write <code>func topByMemory(names []string, memoryMB []int, n int) []string</code> that returns the names of the top <code>n</code> pods by memory usage (descending).
+          functionSignature: func topByMemory(names []string, memoryMB []int, n int) []string
+          difficulty: 2
+          testCases:
+            - input: topByMemory([]string{"web-1","api-1","db-1","cache-1","worker-1"}, []int{512,256,2048,1024,128}, 3)
+              output: "[\"db-1\", \"cache-1\", \"web-1\"]"
+            - input: topByMemory([]string{"a","b"}, []int{100,200}, 5)
+              output: "[\"b\", \"a\"]"
+          hints:
+            - title: 🤔 Think about it
+              content: >-
+                You have two parallel slices that need to stay paired during sorting. What data structure lets you bundle
+                a name and a value together so they move as one unit?
+            - title: 💡 Hint
+              content: >-
+                Zip the parallel slices into structs so they stay paired when sorted. After sorting, extract just the
+                names from the top entries. Don't forget the edge case where n is larger than the input.
+          solution: |-
+            func topByMemory(names []string, memoryMB []int, n int) []string {
+                type pod struct {
+                    name string
+                    mem  int
+                }
+                pods := make([]pod, len(names))
+                for i := range names {
+                    pods[i] = pod{names[i], memoryMB[i]}
+                }
+                sort.Slice(pods, func(i, j int) bool {
+                    return pods[i].mem > pods[j].mem
+                })
+                if n > len(pods) {
+                    n = len(pods)
+                }
+                result := make([]string, n)
+                for i := 0; i < n; i++ {
+                    result[i] = pods[i].name
+                }
+                return result
+            }
+          annotations:
+            - type: pattern
+              label: Parallel Slice → Struct
+              text: >-
+                When you have parallel slices (names[i] goes with values[i]), zip them into a slice of structs first.
+                This is safer and makes sorting straightforward.
+            - type: interview
+              label: Top K Pattern
+              text: >-
+                "Find top K elements" is one of the most common interview questions. For small K, sort and slice. For
+                large data, use a min-heap (covered in Module 12).
+        - id: v2
+          title: Resource Usage Table
+          description: >-
+            Write <code>func resourceTable(names []string, cpuPercent []float64, memMB []int) string</code> that returns
+            a formatted table sorted by CPU usage descending.<br><br>Format each row as <code>"%-12s %6.1f%%
+            %6dMB"</code>.
+          functionSignature: func resourceTable(names []string, cpuPercent []float64, memMB []int) string
+          difficulty: 3
+          testCases:
+            - input: resourceTable([]string{"web","api"}, []float64{45.2, 82.3}, []int{256, 512})
+              output: "\"api           82.3%    512MB\\nweb           45.2%    256MB\""
+          hints:
+            - title: 🤔 Think about it
+              content: >-
+                Same zip-sort-format pattern as Top N, but with three parallel slices and formatted output. The tricky
+                part is getting the format string right.
+            - title: 💡 Hint
+              content: >-
+                After zipping and sorting, check the Printing section in Module 1 for width specifiers (left-aligned
+                strings, right-aligned numbers) and how to print a literal percent sign.
+          solution: |-
+            func resourceTable(names []string, cpuPercent []float64, memMB []int) string {
+                type resource struct {
+                    name string
+                    cpu  float64
+                    mem  int
+                }
+                resources := make([]resource, len(names))
+                for i := range names {
+                    resources[i] = resource{names[i], cpuPercent[i], memMB[i]}
+                }
+                sort.Slice(resources, func(i, j int) bool {
+                    return resources[i].cpu > resources[j].cpu
+                })
+                lines := make([]string, len(resources))
+                for i, r := range resources {
+                    lines[i] = fmt.Sprintf("%-12s %6.1f%% %6dMB", r.name, r.cpu, r.mem)
+                }
+                return strings.Join(lines, "\n")
+            }
+          annotations:
+            - type: pattern
+              label: Zip-Sort-Format
+              text: >-
+                Zip parallel slices into structs, sort by any field, format output. This is the upgraded version of
+                Module 1's sorted-keys pattern — structs let you sort by value, not just by key.
+        - id: v3
+          title: Log Level Report (by Count)
+          description: >-
+            Write <code>func logReportByCount(lines []string) string</code> that takes log lines in the format <code>"LEVEL
+            message text"</code> and returns a report string with each level and its count, sorted by count
+            descending. Ties are broken alphabetically.<br><br>Example input: <code>["INFO ok", "ERROR bad", "INFO ok2", "WARN
+            slow", "ERROR oom"]</code><br>Example output: <code>"ERROR: 2\nINFO: 2\nWARN: 1"</code>
+          functionSignature: func logReportByCount(lines []string) string
+          difficulty: 2
+          testCases:
+            - input: logReportByCount([]string{"INFO ok", "ERROR bad", "INFO ok2", "WARN slow", "ERROR oom"})
+              output: "\"ERROR: 2\\nINFO: 2\\nWARN: 1\""
+            - input: logReportByCount([]string{"DEBUG x", "DEBUG y", "DEBUG z"})
+              output: "\"DEBUG: 3\""
+          hints:
+            - title: 🤔 Think about it
+              content: >-
+                In Module 1 you sorted alphabetically with sorted-keys. Now you need to sort by count descending —
+                which requires bundling key-value pairs into a struct.
+            - title: 💡 Hint
+              content: >-
+                Count with a map, then zip into a struct slice. Sort with a comparator that compares counts descending,
+                breaking ties alphabetically. Format with Sprintf.
+          solution: |-
+            func logReportByCount(lines []string) string {
+                if len(lines) == 0 {
+                    return ""
+                }
+                counts := make(map[string]int)
+                for _, line := range lines {
+                    fields := strings.Fields(line)
+                    if len(fields) > 0 {
+                        counts[fields[0]]++
+                    }
+                }
+                type entry struct {
+                    level string
+                    count int
+                }
+                entries := make([]entry, 0, len(counts))
+                for k, v := range counts {
+                    entries = append(entries, entry{k, v})
+                }
+                sort.Slice(entries, func(i, j int) bool {
+                    if entries[i].count != entries[j].count {
+                        return entries[i].count > entries[j].count
+                    }
+                    return entries[i].level < entries[j].level
+                })
+                parts := make([]string, len(entries))
+                for i, e := range entries {
+                    parts[i] = fmt.Sprintf("%s: %d", e.level, e.count)
+                }
+                return strings.Join(parts, "\n")
+            }
+          annotations:
+            - type: pattern
+              label: Count → Struct → Sort
+              text: >-
+                This is the upgrade from Module 1's count → sort-keys → format. Structs let you sort by value (count)
+                instead of just by key. Same pattern, more power.

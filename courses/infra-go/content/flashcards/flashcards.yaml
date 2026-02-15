@@ -1,0 +1,125 @@
+"0":
+  - topic: Go Toolchain
+    q: What command compiles and runs a Go file in one step?
+    a: >-
+      <code>go run main.go</code> compiles and executes in a temporary directory. For a permanent binary, use
+      <code>go build</code> instead.
+  - topic: For Loops
+    q: How many loop keywords does Go have, and what are they?
+    a: >-
+      Go has exactly one: <code>for</code>. It handles C-style counting (<code>for i := 0; i < n; i++</code>),
+      while-style (<code>for condition {}</code>), infinite (<code>for {}</code>), and range-based
+      (<code>for i, v := range collection</code>).
+  - topic: Error Handling
+    q: What is the standard Go pattern for returning and checking errors?
+    a: >-
+      Functions return <code>(value, error)</code>. Callers check immediately:
+      <code>result, err := doThing(); if err != nil { return err }</code>.
+      There is no try/catch. <code>nil</code> means no error.
+  - topic: Multiple Returns
+    q: How do you return multiple values from a Go function?
+    a: >-
+      List the return types in parentheses: <code>func parse(s string) (string, error)</code>.
+      Capture with <code>key, err := parse(s)</code>. The <code>(value, error)</code> pair is the most
+      common pattern.
+  - topic: Format Verbs
+    q: What format verb prints a float with one decimal place and a literal percent sign?
+    a: >-
+      <code>fmt.Printf("%.1f%%\n", 42.7)</code> prints <code>42.7%</code>.
+      <code>.1f</code> controls decimal places. <code>%%</code> is a literal percent (because <code>%</code>
+      is the format prefix).
+  - topic: Type Conversions
+    q: What happens when you divide two ints in Go, and how do you get a float result?
+    a: >-
+      Integer division truncates: <code>3 / 8 == 0</code>. Convert before dividing:
+      <code>float64(3) / float64(8)</code> gives <code>0.375</code>. Go never converts implicitly.
+  - topic: Exported Names
+    q: How does Go determine whether a name is exported (public)?
+    a: >-
+      Names starting with an uppercase letter are exported: <code>Pod</code> is public,
+      <code>pod</code> is package-private. This applies to functions, types, variables, struct fields,
+      and methods. No <code>public</code>/<code>private</code> keywords.
+  - topic: Blank Identifier
+    q: What is <code>_</code> in Go and when do you use it?
+    a: >-
+      The blank identifier <code>_</code> discards a value. Common uses: ignore the index in
+      <code>for _, v := range items</code>, or ignore an unwanted return value. Go requires all
+      variables to be used — <code>_</code> is the escape hatch.
+  - topic: Strings Package
+    q: Name three <code>strings</code> functions you use when parsing config files.
+    a: >-
+      <code>strings.SplitN(s, "=", 2)</code> — split on first delimiter.
+      <code>strings.TrimSpace(s)</code> — strip whitespace.
+      <code>strings.HasPrefix(s, "#")</code> — detect comments.
+      Also useful: <code>Fields</code>, <code>Contains</code>, <code>Join</code>.
+  - topic: Strconv
+    q: How do you convert a string to an int in Go?
+    a: >-
+      <code>n, err := strconv.Atoi("42")</code>. Always check the error — invalid input returns
+      <code>0, error</code>. The reverse is <code>strconv.Itoa(42)</code> which returns <code>"42"</code>.
+
+"1":
+  - topic: Slice Basics
+    q: What three things does a Go slice header contain?
+    a: >-
+      A pointer to the backing array, a length (number of elements), and a capacity (total slots before
+      reallocation). Use <code>len(s)</code> and <code>cap(s)</code> to inspect them.
+  - topic: Append Gotcha
+    q: What is the most common slice bug with <code>append</code>?
+    a: >-
+      Forgetting to reassign: <code>append(s, x)</code> returns a new slice — it does not modify <code>s</code>.
+      You must write <code>s = append(s, x)</code>. The compiler won't warn you.
+  - topic: Range Copy
+    q: Why does <code>for _, v := range nums { v = v * 10 }</code> leave <code>nums</code> unchanged?
+    a: >-
+      <code>v</code> is a copy of the element, not a reference. Modifying it does nothing to the slice.
+      To mutate in place, use the index form: <code>for i := range nums { nums[i] *= 10 }</code>.
+  - topic: Range Length Lock
+    q: What happens if you <code>append</code> to a slice during a <code>range</code> loop?
+    a: >-
+      The new elements won't be visited. <code>range</code> locks the iteration count at loop start.
+      The append succeeds (the slice grows), but the loop won't iterate over the new elements.
+  - topic: Map Zero Value
+    q: What happens when you read a missing key from a Go map?
+    a: >-
+      You get the zero value for the value type — <code>0</code> for int, <code>""</code> for string.
+      Use the comma-ok pattern to distinguish missing from zero: <code>val, ok := m["key"]</code>.
+  - topic: Map Counting
+    q: Why does <code>counts[key]++</code> work even for new keys?
+    a: >-
+      The zero value of <code>int</code> is <code>0</code>. Reading a missing key returns <code>0</code>,
+      then <code>++</code> increments to <code>1</code>. No initialization or existence check needed.
+  - topic: Map Iteration
+    q: Is map iteration order guaranteed in Go?
+    a: >-
+      No. Go randomizes map iteration order intentionally. If you need deterministic output, collect keys
+      into a slice, <code>sort.Strings(keys)</code>, then iterate the sorted slice.
+  - topic: Write-Index Filter
+    q: How do you filter a slice in place without allocating a new one?
+    a: >-
+      Use a write-index: <code>n := 0; for _, v := range items { if keep(v) { items[n] = v; n++ } };
+      items = items[:n]</code>. Read position advances every iteration, write position only on keepers.
+  - topic: sort.Slice Comparator
+    q: How does <code>sort.Slice</code>'s comparator function work?
+    a: >-
+      <code>sort.Slice(s, func(i, j int) bool { return s[i] < s[j] })</code>. Return <code>true</code>
+      if element <code>i</code> should come before <code>j</code>. Use <code><</code> for ascending,
+      <code>></code> for descending.
+  - topic: Sorted Keys Pattern
+    q: How do you print map entries in sorted order?
+    a: >-
+      Collect keys into a slice, sort, iterate: <code>keys := ...; sort.Strings(keys); for _, k :=
+      range keys { fmt.Println(k, m[k]) }</code>. This is the Go equivalent of Python's
+      <code>for k in sorted(d)</code>.
+  - topic: SplitN
+    q: When should you use <code>strings.SplitN</code> instead of <code>strings.Split</code>?
+    a: >-
+      When the value might contain the delimiter. <code>SplitN("key=a=b", "=", 2)</code> gives
+      <code>["key", "a=b"]</code>. Without the limit, <code>Split</code> would give three pieces.
+      Always use <code>SplitN(s, sep, 2)</code> for key=value parsing.
+  - topic: Pre-allocation
+    q: What is the difference between <code>make([]string, 0, n)</code> and <code>make([]string, n)</code>?
+    a: >-
+      <code>make([]string, 0, n)</code> creates length 0, capacity n — use with <code>append</code>.
+      <code>make([]string, n)</code> creates length AND capacity n — assign by index. Both avoid
+      repeated array growth.
