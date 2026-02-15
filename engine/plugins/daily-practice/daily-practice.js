@@ -156,29 +156,7 @@
 
         var queue = buildQueue(sessionConfig.mode, sessionConfig.count);
 
-        session = SE.createSession({
-            ids: {
-                config: 'dp-config',
-                stats: 'dp-stats',
-                session: 'dp-session',
-                label: 'dp-session-label',
-                bar: 'dp-session-bar',
-                container: 'dp-exercise-container',
-                complete: 'dp-complete',
-                results: 'dp-results',
-                hint: 'dp-start-hint'
-            },
-            itemLabel: 'Exercise',
-            accentColor: 'orange',
-            onRender: renderCurrentExercise,
-            extraShowOnStart: ['dp-nav'],
-            onSessionStart: function() {
-                document.body.classList.add('dp-in-session');
-            }
-        });
-        session.queue = queue;
-
-        if (!SE.startSession(session)) {
+        if (queue.length === 0) {
             var hintEl = document.getElementById('dp-start-hint');
             if (hintEl) {
                 var modeLabel = sessionConfig.mode === 'review' ? 'due for review'
@@ -190,15 +168,13 @@
             return;
         }
 
-        // Show loading state while variant data loads
-        var container = document.getElementById('dp-exercise-container');
-        if (container) {
-            container.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-dim);">Loading...</div>';
-        }
+        // Disable start button while loading
+        var startBtn = document.getElementById('dp-start');
+        if (startBtn) { startBtn.disabled = true; startBtn.textContent = 'Loading\u2026'; }
 
-        // Preload variant data for queued modules
+        // Preload variant data BEFORE starting session to avoid race condition
         var modulesToLoad = new Set();
-        session.queue.forEach(function(item) {
+        queue.forEach(function(item) {
             if (item.moduleNum !== null && !MODULES_WITHOUT_VARIANTS.has(item.moduleNum)) {
                 modulesToLoad.add(item.moduleNum);
             }
@@ -210,7 +186,31 @@
         });
 
         Promise.all(loadPromises).then(function() {
-            renderCurrentExercise(session);
+            if (startBtn) { startBtn.disabled = false; startBtn.textContent = 'Start Session'; }
+
+            session = SE.createSession({
+                ids: {
+                    config: 'dp-config',
+                    stats: 'dp-stats',
+                    session: 'dp-session',
+                    label: 'dp-session-label',
+                    bar: 'dp-session-bar',
+                    container: 'dp-exercise-container',
+                    complete: 'dp-complete',
+                    results: 'dp-results',
+                    hint: 'dp-start-hint'
+                },
+                itemLabel: 'Exercise',
+                accentColor: 'orange',
+                onRender: renderCurrentExercise,
+                extraShowOnStart: ['dp-nav'],
+                onSessionStart: function() {
+                    document.body.classList.add('dp-in-session');
+                }
+            });
+            session.queue = queue;
+
+            SE.startSession(session);
         });
     }
 
