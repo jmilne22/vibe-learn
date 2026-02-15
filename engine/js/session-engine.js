@@ -357,10 +357,20 @@
             var all = window.SRS.getAll();
             var existing = {};
             candidates.forEach(function(c) { existing[c.key] = true; });
+            var cutoff = new Date();
+            cutoff.setDate(cutoff.getDate() + 14);
+            var cutoffTime = cutoff.getTime();
             var extras = Object.keys(all)
                 .filter(function(key) { return !existing[key] && filterFn(key); })
                 .map(function(key) { var item = all[key]; item.key = key; return item; })
-                .sort(function() { return Math.random() - 0.5; });
+                .filter(function(item) {
+                    return !item.nextReview || new Date(item.nextReview).getTime() <= cutoffTime;
+                })
+                .sort(function(a, b) {
+                    var aDate = a.nextReview ? new Date(a.nextReview).getTime() : 0;
+                    var bDate = b.nextReview ? new Date(b.nextReview).getTime() : 0;
+                    return aDate - bDate;
+                });
             candidates = candidates.concat(extras);
         }
 
