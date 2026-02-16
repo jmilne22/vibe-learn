@@ -87,6 +87,17 @@ window.importAllData = function (file) {
     });
 
     alert('Restore complete: ' + restored + ' key(s) restored.');
+
+    // Push imported data to sync server if logged in
+    if (window.SyncManager && window.SyncManager.isLoggedIn()) {
+      window.SyncManager.pushAll().then(function() {
+        location.reload();
+      }).catch(function() {
+        location.reload();
+      });
+      return;
+    }
+
     location.reload();
   };
 

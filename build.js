@@ -39,6 +39,7 @@ const CSS_DIR = path.join(ENGINE_DIR, 'css');
 const THEMES_DIR = path.join(ENGINE_DIR, 'themes');
 const PLUGINS_DIR = path.join(ENGINE_DIR, 'plugins');
 const PARTIALS_DIR = path.join(ENGINE_DIR, 'partials');
+const VENDOR_DIR = path.join(JS_DIR, 'vendor');
 
 // ---------------------------------------------------------------------------
 // Utilities
@@ -674,8 +675,17 @@ function buildCourse(slug) {
 
     // 5b. Generate course-data.js (deferred to after module loop so sidebarPages is complete)
     console.log('Generating course-data.js...');
+
+    // Inject syncUrl from env var or course.yaml (env var takes precedence)
+    const syncUrl = process.env.VIBE_LEARN_SYNC_URL || course.syncUrl || null;
+    const courseForConfig = Object.assign({}, course);
+    if (syncUrl) {
+        courseForConfig.syncUrl = syncUrl;
+        console.log(`  Sync enabled: ${syncUrl}`);
+    }
+
     const courseConfigData = {
-        course: course,
+        course: courseForConfig,
         tracks: tracks,
         modules: modules,
         projects: projects,
@@ -786,13 +796,17 @@ function buildCourse(slug) {
 
     const moduleCount = modules.filter(m => m.id > 0).length;
 
+    // Build sync UI from partial (or empty string if partial doesn't exist)
+    const syncUiHtml = allPartials['sync-ui'] || '';
+
     let indexPage = indexTemplate
         .replace(/\{\{COURSE_NAME\}\}/g, course.name)
         .replace(/\{\{COURSE_DESCRIPTION\}\}/g, course.description)
         .replace(/\{\{MODULE_COUNT\}\}/g, String(moduleCount))
         .replace('{{THEME_LINKS}}', themeLinksHtml)
         .replace('{{MODULE_LIST}}', buildModuleListHtml())
-        .replace('{{PLUGIN_NAV_PILLS}}', buildPluginNavPills());
+        .replace('{{PLUGIN_NAV_PILLS}}', buildPluginNavPills())
+        .replace('{{SYNC_UI}}', syncUiHtml);
 
     fs.writeFileSync(path.join(COURSE_DIST, 'index.html'), indexPage);
     console.log('  index.html');
@@ -1035,6 +1049,16 @@ function buildCourse(slug) {
         fs.readdirSync(JS_DIR).filter(f => f.endsWith('.js')).forEach(file => {
             fs.copyFileSync(path.join(JS_DIR, file), path.join(COURSE_DIST, file));
             console.log(`  ${file}`);
+        });
+    }
+
+    // 12b. Copy vendor JS files (e.g. pocketbase.umd.js)
+    if (fs.existsSync(VENDOR_DIR)) {
+        const vendorDist = path.join(COURSE_DIST, 'vendor');
+        mkdirp(vendorDist);
+        fs.readdirSync(VENDOR_DIR).filter(f => f.endsWith('.js')).forEach(file => {
+            fs.copyFileSync(path.join(VENDOR_DIR, file), path.join(vendorDist, file));
+            console.log(`  vendor/${file}`);
         });
     }
 
