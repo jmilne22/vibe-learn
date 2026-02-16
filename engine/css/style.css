@@ -3913,3 +3913,207 @@ footer {
 .exercise.just-completed {
     animation: celebrate 0.6s ease;
 }
+
+/* ============================================
+   Scaffold Drill System
+   ============================================ */
+
+.drill-btn {
+    background: transparent;
+    border: 2px solid var(--accent);
+    color: var(--accent);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 0.75rem;
+    transition: all 0.2s;
+    font-size: 0.85rem;
+    display: inline-block;
+}
+.drill-btn:hover {
+    background: var(--accent);
+    color: var(--bg-base);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-glow-green);
+}
+
+.drill-container {
+    border: 1px solid rgba(167, 139, 250, 0.20);
+    border-left: 3px solid var(--amethyst);
+    border-radius: 10px;
+    padding: 1.25rem;
+    margin-top: 1rem;
+    background: rgba(167, 139, 250, 0.04);
+    animation: fadeInReveal 0.3s ease;
+}
+.drill-container-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(167, 139, 250, 0.12);
+}
+.drill-container-title {
+    font-weight: 600;
+    color: var(--amethyst);
+    font-size: 0.95rem;
+}
+.drill-container-subtitle {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+.drill-close-btn {
+    margin-left: auto;
+    background: transparent;
+    border: 1px solid var(--text-secondary);
+    color: var(--text-secondary);
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    cursor: pointer;
+}
+.drill-close-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+/* Step indicator */
+.drill-step-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+.drill-step-count {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+/* Cognitive type labels */
+.drill-type-label {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+}
+.drill-type-trace    { background: var(--slate);    color: var(--bg-base); }
+.drill-type-fix      { background: var(--amber);    color: white; }
+.drill-type-complete { background: var(--lavender);  color: white; }
+.drill-type-produce  { background: var(--sage);     color: var(--bg-base); }
+
+/* Exercise cards inside drill — strip outer chrome */
+.drill-step-content .exercise {
+    border: none;
+    padding: 0;
+    margin: 0;
+    background: transparent;
+}
+.drill-step-content .exercise h4 {
+    font-size: 0.9rem;
+    margin-bottom: 0.4rem;
+}
+
+/* Next step / finish button */
+.drill-next-btn {
+    display: block;
+    width: 100%;
+    margin-top: 1rem;
+    padding: 0.6rem 1rem;
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.drill-next-btn:hover {
+    background: var(--accent);
+    color: var(--bg-base);
+}
+
+/* Completion state */
+.drill-complete {
+    text-align: center;
+    padding: 1.5rem;
+    color: var(--sage);
+    font-weight: 600;
+}
+.drill-complete-sub {
+    color: var(--text-secondary);
+    font-weight: 400;
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+}
+
+/* ── Concept Mastery Panel ── */
+
+.concept-mastery-panel {
+    background: rgba(167, 139, 250, 0.03);
+    border: 1px solid rgba(167, 139, 250, 0.12);
+    border-radius: 10px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+.concept-mastery-title {
+    font-weight: 600;
+    font-size: 1rem;
+    margin-bottom: 1rem;
+    color: var(--text);
+}
+.concept-mastery-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border-subtle);
+}
+.concept-mastery-item:last-child { border-bottom: none; }
+.concept-mastery-name {
+    flex: 1;
+    font-size: 0.85rem;
+    color: var(--text);
+    min-width: 0;
+}
+.concept-mastery-bar-container {
+    width: 80px;
+    height: 6px;
+    background: var(--border-default);
+    border-radius: 3px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+.concept-mastery-bar {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.3s;
+}
+.concept-mastery-badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.concept-mastery-practice-btn {
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+.concept-mastery-practice-btn:hover {
+    background: var(--accent);
+    color: var(--bg-base);
+}

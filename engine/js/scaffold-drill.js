@@ -23,162 +23,6 @@
     };
 
     // ---------------------------------------------------------------------------
-    // Styles (injected once)
-    // ---------------------------------------------------------------------------
-    function injectStyles() {
-        if (document.getElementById('scaffold-drill-styles')) return;
-
-        var style = document.createElement('style');
-        style.id = 'scaffold-drill-styles';
-        style.textContent =
-            '.drill-btn {' +
-                'background: transparent;' +
-                'border: 2px solid var(--orange);' +
-                'color: var(--orange);' +
-                'padding: 0.5rem 1rem;' +
-                'border-radius: 8px;' +
-                'font-weight: 600;' +
-                'cursor: pointer;' +
-                'margin-top: 0.75rem;' +
-                'transition: all 0.2s;' +
-                'font-size: 0.85rem;' +
-                'display: inline-block;' +
-            '}' +
-            '.drill-btn:hover {' +
-                'background: var(--orange);' +
-                'color: white;' +
-                'transform: translateY(-1px);' +
-            '}' +
-            '.drill-container {' +
-                'border: 2px solid var(--orange);' +
-                'border-radius: 10px;' +
-                'padding: 1.25rem;' +
-                'margin-top: 1rem;' +
-                'background: var(--bg-surface);' +
-            '}' +
-            '.drill-container-header {' +
-                'display: flex;' +
-                'align-items: center;' +
-                'gap: 0.5rem;' +
-                'margin-bottom: 1rem;' +
-                'padding-bottom: 0.75rem;' +
-                'border-bottom: 1px solid var(--border-default);' +
-            '}' +
-            '.drill-container-title {' +
-                'font-weight: 600;' +
-                'color: var(--orange);' +
-                'font-size: 0.95rem;' +
-            '}' +
-            '.drill-container-subtitle {' +
-                'font-size: 0.8rem;' +
-                'color: var(--text-secondary);' +
-            '}' +
-            '.drill-close-btn {' +
-                'margin-left: auto;' +
-                'background: transparent;' +
-                'border: 1px solid var(--text-secondary);' +
-                'color: var(--text-secondary);' +
-                'padding: 0.2rem 0.6rem;' +
-                'border-radius: 4px;' +
-                'font-size: 0.75rem;' +
-                'cursor: pointer;' +
-            '}' +
-            '.drill-close-btn:hover {' +
-                'border-color: var(--orange);' +
-                'color: var(--orange);' +
-            '}' +
-            '.drill-type-label {' +
-                'display: inline-block;' +
-                'font-size: 0.7rem;' +
-                'font-weight: 600;' +
-                'text-transform: uppercase;' +
-                'letter-spacing: 0.05em;' +
-                'padding: 0.15rem 0.5rem;' +
-                'border-radius: 4px;' +
-                'margin-bottom: 0.5rem;' +
-            '}' +
-            '.drill-type-trace { background: var(--cyan); color: var(--bg-base); }' +
-            '.drill-type-fix { background: var(--orange); color: white; }' +
-            '.drill-type-complete { background: var(--purple); color: white; }' +
-            '.drill-type-produce { background: var(--green-bright); color: var(--bg-base); }' +
-            '.drill-container .exercise {' +
-                'border: none;' +
-                'border-bottom: 1px solid var(--border-default);' +
-                'padding: 0.75rem 0;' +
-                'margin: 0;' +
-            '}' +
-            '.drill-container .exercise:last-child { border-bottom: none; }' +
-            '.drill-container .exercise h4 {' +
-                'font-size: 0.9rem;' +
-                'margin-bottom: 0.4rem;' +
-            '}' +
-            '.concept-mastery-panel {' +
-                'background: var(--bg-surface);' +
-                'border: 1px solid var(--border-default);' +
-                'border-radius: 10px;' +
-                'padding: 1.25rem;' +
-                'margin-bottom: 1.5rem;' +
-            '}' +
-            '.concept-mastery-title {' +
-                'font-weight: 600;' +
-                'font-size: 1rem;' +
-                'margin-bottom: 1rem;' +
-                'color: var(--text);' +
-            '}' +
-            '.concept-mastery-item {' +
-                'display: flex;' +
-                'align-items: center;' +
-                'gap: 0.75rem;' +
-                'padding: 0.5rem 0;' +
-                'border-bottom: 1px solid var(--border-default);' +
-            '}' +
-            '.concept-mastery-item:last-child { border-bottom: none; }' +
-            '.concept-mastery-name {' +
-                'flex: 1;' +
-                'font-size: 0.85rem;' +
-                'color: var(--text);' +
-                'min-width: 0;' +
-            '}' +
-            '.concept-mastery-bar-container {' +
-                'width: 80px;' +
-                'height: 6px;' +
-                'background: var(--border-default);' +
-                'border-radius: 3px;' +
-                'overflow: hidden;' +
-                'flex-shrink: 0;' +
-            '}' +
-            '.concept-mastery-bar {' +
-                'height: 100%;' +
-                'border-radius: 3px;' +
-                'transition: width 0.3s;' +
-            '}' +
-            '.concept-mastery-badge {' +
-                'font-size: 0.7rem;' +
-                'font-weight: 600;' +
-                'padding: 0.1rem 0.4rem;' +
-                'border-radius: 4px;' +
-                'white-space: nowrap;' +
-                'flex-shrink: 0;' +
-            '}' +
-            '.concept-mastery-practice-btn {' +
-                'background: transparent;' +
-                'border: 1px solid var(--orange);' +
-                'color: var(--orange);' +
-                'padding: 0.2rem 0.5rem;' +
-                'border-radius: 4px;' +
-                'font-size: 0.7rem;' +
-                'cursor: pointer;' +
-                'transition: all 0.2s;' +
-                'flex-shrink: 0;' +
-            '}' +
-            '.concept-mastery-practice-btn:hover {' +
-                'background: var(--orange);' +
-                'color: white;' +
-            '}';
-        document.head.appendChild(style);
-    }
-
-    // ---------------------------------------------------------------------------
     // Data access
     // ---------------------------------------------------------------------------
 
@@ -242,7 +86,7 @@
     }
 
     // ---------------------------------------------------------------------------
-    // Drill container with cognitive ladder
+    // Drill container with step-by-step cognitive ladder
     // ---------------------------------------------------------------------------
 
     function renderDrillContainer(exerciseEl, concept, scaffolds) {
@@ -272,6 +116,14 @@
         var container = document.createElement('div');
         container.className = 'drill-container';
 
+        // Store drill state on container
+        container._drillState = {
+            steps: selected,
+            current: 0,
+            concept: concept,
+            container: container
+        };
+
         // Header
         var header = document.createElement('div');
         header.className = 'drill-container-header';
@@ -280,11 +132,6 @@
         titleSpan.className = 'drill-container-title';
         titleSpan.textContent = 'Drill: ' + concept;
         header.appendChild(titleSpan);
-
-        var subtitleSpan = document.createElement('span');
-        subtitleSpan.className = 'drill-container-subtitle';
-        subtitleSpan.textContent = selected.length + ' step' + (selected.length !== 1 ? 's' : '') + ', easiest first';
-        header.appendChild(subtitleSpan);
 
         var closeBtn = document.createElement('button');
         closeBtn.className = 'drill-close-btn';
@@ -296,44 +143,136 @@
 
         container.appendChild(header);
 
-        // Render each selected scaffold as an exercise card
-        var ER = window.ExerciseRenderer;
-        var moduleNum = getModuleNum();
+        // Step indicator
+        var stepIndicator = document.createElement('div');
+        stepIndicator.className = 'drill-step-indicator';
+        container._stepIndicator = stepIndicator;
+        container.appendChild(stepIndicator);
 
-        selected.forEach(function(scaffold, idx) {
-            // Human-readable step label
-            var typeLabel = document.createElement('div');
-            typeLabel.className = 'drill-type-label drill-type-' + scaffold.type;
-            typeLabel.textContent = COGNITIVE_LABELS[scaffold.type] || scaffold.type;
-            container.appendChild(typeLabel);
+        // Step content area
+        var stepContent = document.createElement('div');
+        stepContent.className = 'drill-step-content';
+        container._stepContent = stepContent;
+        container.appendChild(stepContent);
 
-            // Render exercise card in drill mode (compact header, no notes, no data-exercise-key)
-            var cardHtml = ER.renderExerciseCard({
-                num: idx + 1,
-                variant: {
-                    id: scaffold.id,
-                    title: scaffold.title,
-                    description: scaffold.description,
-                    hints: scaffold.hints,
-                    solution: scaffold.solution
-                },
-                challenge: null,
-                type: 'warmup',
-                exerciseKey: 'm' + moduleNum + '_' + scaffold.id,
-                drill: true
-            });
-
-            var wrapper = document.createElement('div');
-            wrapper.innerHTML = cardHtml;
-            var cardEl = wrapper.firstElementChild;
-            container.appendChild(cardEl);
-
-            // No initThinkingTimer — drills are low-pressure practice
-            // No initExerciseProgress — drills don't get SRS tracking
+        // Nav button
+        var navBtn = document.createElement('button');
+        navBtn.className = 'drill-next-btn';
+        navBtn.addEventListener('click', function() {
+            advanceDrillStep(container);
         });
+        container._navBtn = navBtn;
+        container.appendChild(navBtn);
 
         // Insert after the exercise element
         exerciseEl.parentNode.insertBefore(container, exerciseEl.nextSibling);
+
+        // Render first step
+        renderDrillStep(container);
+
+        // Smooth scroll into view
+        container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function renderDrillStep(container) {
+        var state = container._drillState;
+        var step = state.steps[state.current];
+        var total = state.steps.length;
+        var num = state.current + 1;
+
+        // Update step indicator
+        var indicator = container._stepIndicator;
+        indicator.innerHTML = '';
+
+        var typeLabel = document.createElement('span');
+        typeLabel.className = 'drill-type-label drill-type-' + step.type;
+        typeLabel.textContent = COGNITIVE_LABELS[step.type] || step.type;
+        indicator.appendChild(typeLabel);
+
+        var stepCount = document.createElement('span');
+        stepCount.className = 'drill-step-count';
+        stepCount.textContent = 'Step ' + num + ' of ' + total;
+        indicator.appendChild(stepCount);
+
+        // Render exercise card into step content
+        var content = container._stepContent;
+        content.innerHTML = '';
+
+        var ER = window.ExerciseRenderer;
+        var moduleNum = getModuleNum();
+
+        var cardHtml = ER.renderExerciseCard({
+            num: num,
+            variant: {
+                id: step.id,
+                title: step.title,
+                description: step.description,
+                hints: step.hints,
+                solution: step.solution
+            },
+            challenge: null,
+            type: 'warmup',
+            exerciseKey: 'm' + moduleNum + '_' + step.id,
+            drill: true
+        });
+
+        var wrapper = document.createElement('div');
+        wrapper.innerHTML = cardHtml;
+        var cardEl = wrapper.firstElementChild;
+        content.appendChild(cardEl);
+
+        // Update nav button
+        var navBtn = container._navBtn;
+        navBtn.style.display = '';
+        if (num < total) {
+            navBtn.textContent = 'Next Step \u2192';
+        } else {
+            navBtn.textContent = 'Finish Drill';
+        }
+    }
+
+    function advanceDrillStep(container) {
+        var state = container._drillState;
+        state.current++;
+
+        if (state.current >= state.steps.length) {
+            // Show completion state
+            showDrillComplete(container);
+        } else {
+            renderDrillStep(container);
+        }
+    }
+
+    function showDrillComplete(container) {
+        var state = container._drillState;
+
+        // Hide step indicator and nav button
+        container._stepIndicator.innerHTML = '';
+        container._navBtn.style.display = 'none';
+
+        // Replace step content with completion message
+        var content = container._stepContent;
+        content.innerHTML = '';
+
+        var complete = document.createElement('div');
+        complete.className = 'drill-complete';
+        complete.textContent = '\u2713 Drill complete';
+
+        var sub = document.createElement('div');
+        sub.className = 'drill-complete-sub';
+        sub.textContent = state.steps.length + ' steps completed for ' + state.concept;
+        complete.appendChild(sub);
+
+        var closeBtn = document.createElement('button');
+        closeBtn.className = 'drill-next-btn';
+        closeBtn.textContent = 'Close';
+        closeBtn.style.marginTop = '1rem';
+        closeBtn.addEventListener('click', function() {
+            container.remove();
+        });
+
+        content.appendChild(complete);
+        content.appendChild(closeBtn);
     }
 
     // ---------------------------------------------------------------------------
@@ -425,7 +364,7 @@
             inlineEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
             // Brief highlight
             inlineEl.style.transition = 'box-shadow 0.3s';
-            inlineEl.style.boxShadow = '0 0 0 3px var(--orange)';
+            inlineEl.style.boxShadow = '0 0 0 3px var(--accent)';
             setTimeout(function() {
                 inlineEl.style.boxShadow = '';
             }, 2000);
@@ -447,7 +386,6 @@
     // ---------------------------------------------------------------------------
 
     function init() {
-        injectStyles();
         // Render mastery panel once module data is available
         if (window.variantsDataEmbedded) {
             renderConceptMasteryPanel();
