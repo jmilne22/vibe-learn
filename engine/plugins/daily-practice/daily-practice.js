@@ -201,7 +201,7 @@
                     hint: 'dp-start-hint'
                 },
                 itemLabel: 'Exercise',
-                accentColor: 'orange',
+                accentColor: 'accent',
                 onRender: renderCurrentExercise,
                 extraShowOnStart: ['dp-nav'],
                 onSessionStart: function() {
@@ -228,7 +228,7 @@
                 hint: 'dp-start-hint'
             },
             itemLabel: 'Exercise',
-            accentColor: 'orange',
+            accentColor: 'accent',
             onRender: renderCurrentExercise,
             extraShowOnStart: ['dp-nav'],
             onSessionStart: function() {
