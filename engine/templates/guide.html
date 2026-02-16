@@ -437,7 +437,7 @@ $ npm run build</div>
 
             <p>The scaffold command creates a course directory with the right file structure.
                From there, you either write content manually, use an AI tool to generate it,
-               or use the visual course builder. The build compiles everything into static HTML you can host anywhere.</p>
+               The build compiles everything into static HTML you can host anywhere.</p>
 
             <h3 id="how-it-works">How it works</h3>
             <ol>
@@ -446,11 +446,7 @@ $ npm run build</div>
                     a starter lesson, and the directory structure for exercises, flashcards, and assets.</li>
                 <li><strong>Generate content.</strong> Open <span class="fp">STARTER_PROMPT.md</span> and paste it into
                     Claude Code, Cursor, Copilot, Augment, or any AI coding tool. It contains full schemas for every content type.
-                    The AI generates lessons, exercises, flashcards, and optional extras. See <a href="#ai-tools">section 2</a> for tool-specific workflows.
-                    <br><br>
-                    Alternatively, run <span class="fp">npm run builder</span> to launch a local web-based course editor
-                    with form-based editors for every content type, live markdown preview, and one-click builds.
-                    No YAML knowledge required. <em style="color: var(--orange);">(Work in progress)</em></li>
+                    The AI generates lessons, exercises, flashcards, and optional extras. See <a href="#ai-tools">section 2</a> for tool-specific workflows.</li>
                 <li><strong>Build.</strong> <span class="fp">npm run build</span> compiles markdown + YAML into a
                     self-contained static site. Output goes to <span class="fp">dist/</span>. Host it anywhere.</li>
             </ol>
@@ -597,21 +593,6 @@ $ npm run build</div>
                     Generate one module at a time (lesson + exercises + flashcards for that module) rather than
                     the entire course at once. This produces better results and avoids hitting context limits.
                 </div>
-            </div>
-
-            <!-- Course Builder -->
-            <div class="tool-card" id="tool-builder">
-                <h4>Course Builder <span style="font-size:0.75rem; color:var(--orange); font-family:'JetBrains Mono',monospace; margin-left:0.5rem;">(WIP)</span></h4>
-                <div class="tool-cmd">npm run builder</div>
-                <p>A local web-based editor for creating courses without writing YAML by hand. No AI required.</p>
-                <ol>
-                    <li>Run <span class="fp">npm run builder</span> &mdash; opens at <span class="fp">http://localhost:3456</span></li>
-                    <li>Create a new course or select an existing one</li>
-                    <li>Use form-based editors for modules, lessons (with live markdown preview), exercises, flashcards, algorithms, and challenges</li>
-                    <li>Click <strong>Build</strong> to compile, then serve <span class="fp">dist/</span> to preview</li>
-                </ol>
-                <p>The builder reads and writes the same files as AI tools &mdash; you can switch between the builder and
-                   hand-editing YAML at any time. Every editor tab includes a raw YAML toggle for power users.</p>
             </div>
 
             <h3 id="ai-tips">Getting better results</h3>

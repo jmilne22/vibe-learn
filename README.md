@@ -8,16 +8,6 @@ Most courses teach a language in the abstract — syntax, toy exercises, nothing
 >
 > **Everything is intentionally local.** Zero backend, zero accounts, zero data collection. All progress is stored in your browser's localStorage and never leaves your machine.
 
-## Create a course with the visual builder
-
-For a no-code workflow, use the built-in web-based course builder:
-
-```bash
-npm run builder
-```
-
-Open `http://localhost:3456` to create and edit courses through a form-based UI. The builder provides editors for every content type (lessons with live markdown preview, exercises, flashcards, algorithms, challenges), and can trigger builds directly. No new dependencies — uses Node's built-in `http` module to serve a single-page app.
-
 ## Create a course with AI
 
 The fastest way to create a course:
