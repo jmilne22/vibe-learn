@@ -228,3 +228,60 @@
 [data-theme="light"] .code-labeled {
     border-color: rgba(122, 98, 200, 0.15);
 }
+
+/* Selection color */
+[data-theme="light"] ::selection {
+    background: rgba(122, 98, 200, 0.25);
+    color: #1E1830;
+}
+
+/* Table row hover */
+[data-theme="light"] .lesson table tr:hover td {
+    background: rgba(122, 98, 200, 0.05);
+}
+
+/* Lesson link underlines */
+[data-theme="light"] .lesson a {
+    text-decoration-color: rgba(122, 98, 200, 0.3);
+}
+
+[data-theme="light"] .lesson a:hover {
+    text-decoration-color: var(--amethyst);
+}
+
+/* H2 section divider gradient */
+[data-theme="light"] .lesson h2 {
+    background-image: linear-gradient(90deg, var(--amethyst-dim), rgba(122, 98, 200, 0.2), transparent);
+}
+
+/* Blockquote gradient bar */
+[data-theme="light"] .lesson blockquote::before {
+    background: linear-gradient(180deg, var(--amber), var(--gold));
+}
+
+/* Code scrollbars */
+[data-theme="light"] pre::-webkit-scrollbar-thumb {
+    background: rgba(122, 98, 200, 0.15);
+}
+
+[data-theme="light"] pre::-webkit-scrollbar-thumb:hover {
+    background: rgba(122, 98, 200, 0.3);
+}
+
+/* Sidebar scrollbars */
+[data-theme="light"] .sidebar {
+    scrollbar-color: rgba(122, 98, 200, 0.12) transparent;
+}
+
+[data-theme="light"] .sidebar::-webkit-scrollbar-thumb {
+    background: rgba(122, 98, 200, 0.12);
+}
+
+[data-theme="light"] .sidebar::-webkit-scrollbar-thumb:hover {
+    background: rgba(122, 98, 200, 0.25);
+}
+
+/* Scroll progress glow */
+[data-theme="light"] .scroll-progress {
+    box-shadow: 0 0 6px rgba(122, 98, 200, 0.3);
+}

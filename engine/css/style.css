@@ -135,19 +135,29 @@
     left: 0;
     width: 0%;
     height: 3px;
-    background: linear-gradient(90deg, var(--amethyst-dim), var(--amethyst));
+    background: linear-gradient(90deg, var(--amethyst-dim), var(--amethyst), var(--lavender));
     z-index: 9999;
     pointer-events: none;
     transition: width 0.1s linear;
+    box-shadow: 0 0 8px rgba(167, 139, 250, 0.4);
 }
 
 /* ============================================
    2. Reset and Base Styles
    ============================================ */
+html {
+    scroll-behavior: smooth;
+}
+
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+}
+
+::selection {
+    background: rgba(167, 139, 250, 0.3);
+    color: #fff;
 }
 
 body {
@@ -159,6 +169,8 @@ body {
     background-image: radial-gradient(circle at 20% 50%, rgba(167, 139, 250, 0.03) 0%, transparent 50%),
                       radial-gradient(circle at 80% 20%, rgba(196, 168, 232, 0.02) 0%, transparent 50%);
     background-attachment: fixed;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 /* ============================================
@@ -311,6 +323,24 @@ pre {
     word-wrap: break-word;
     tab-size: 4;
     -moz-tab-size: 4;
+}
+
+/* Custom scrollbars for code blocks */
+pre::-webkit-scrollbar {
+    height: 6px;
+}
+
+pre::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+pre::-webkit-scrollbar-thumb {
+    background: rgba(167, 139, 250, 0.2);
+    border-radius: 3px;
+}
+
+pre::-webkit-scrollbar-thumb:hover {
+    background: rgba(167, 139, 250, 0.4);
 }
 
 /* Markdown-generated code blocks (pre > code) */
@@ -708,10 +738,13 @@ details summary::before {
     content: "\25B6 ";
     font-size: 0.8em;
     margin-right: 0.25rem;
+    display: inline-block;
+    transition: transform var(--transition-normal);
 }
 
 details[open] summary::before {
-    content: "\25BC ";
+    content: "\25B6 ";
+    transform: rotate(90deg);
 }
 
 details summary:hover {
@@ -767,6 +800,7 @@ details .hint-content pre {
 .nav-btn:hover {
     border-color: var(--green-bright);
     box-shadow: var(--shadow-sm);
+    transform: translateY(-2px);
 }
 
 .nav-btn.primary {
@@ -830,7 +864,11 @@ h2 {
 .lesson h2 {
     margin-top: 4rem;
     padding-top: 2.5rem;
-    border-top: 1px solid var(--border-subtle);
+    border-top: none;
+    background-image: linear-gradient(90deg, var(--amethyst-dim), rgba(167, 139, 250, 0.15), transparent);
+    background-size: 100% 1px;
+    background-repeat: no-repeat;
+    background-position: top;
 }
 
 /* More breathing room AFTER code blocks than before */
@@ -865,12 +903,25 @@ h2 {
 
 .lesson blockquote {
     background: rgba(224, 151, 106, 0.08);
-    border-left: 4px solid var(--amber);
+    border-left: none;
     border-radius: 0 var(--radius-md) var(--radius-md) 0;
     padding: var(--space-4) var(--space-5);
+    padding-left: calc(var(--space-5) + 4px);
     margin: var(--space-8) 0;
     color: var(--text-secondary);
     box-shadow: var(--shadow-xs);
+    position: relative;
+}
+
+.lesson blockquote::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    border-radius: 4px 0 0 4px;
+    background: linear-gradient(180deg, var(--amber), var(--gold));
 }
 
 .lesson blockquote p:last-child {
@@ -923,6 +974,11 @@ h2 {
     background: rgba(255, 255, 255, 0.02);
 }
 
+.lesson table tr:hover td {
+    background: rgba(167, 139, 250, 0.05);
+    transition: background var(--transition-fast);
+}
+
 .lesson table code {
     font-size: 0.82em;
 }
@@ -943,6 +999,18 @@ a {
 
 a:hover {
     color: var(--accent-hover);
+}
+
+.lesson a {
+    text-decoration: underline;
+    text-decoration-color: rgba(167, 139, 250, 0.3);
+    text-underline-offset: 2px;
+    text-decoration-thickness: 1px;
+    transition: color var(--transition-normal), text-decoration-color var(--transition-normal);
+}
+
+.lesson a:hover {
+    text-decoration-color: var(--accent-hover);
 }
 
 /* ============================================
@@ -1281,6 +1349,25 @@ body.focus-mode .code-compare {
     transform: translateX(-100%);
     transition: transform var(--transition-slow);
     box-shadow: var(--shadow-lg);
+    scrollbar-width: thin;
+    scrollbar-color: rgba(167, 139, 250, 0.15) transparent;
+}
+
+.sidebar::-webkit-scrollbar {
+    width: 4px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+    background: rgba(167, 139, 250, 0.15);
+    border-radius: 2px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+    background: rgba(167, 139, 250, 0.3);
 }
 
 .sidebar.open {
