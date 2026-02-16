@@ -264,15 +264,16 @@ nav.top-nav a:hover {
    8. Code Blocks with Syntax Highlighting
    ============================================ */
 .code-block {
-    background: #1E1B2E;
-    border: 1px solid rgba(167, 139, 250, 0.15);
+    background: #16132A;
+    border: 1px solid rgba(167, 139, 250, 0.18);
     border-radius: var(--radius-md);
     padding: var(--space-6);
-    margin: var(--space-6) 0;
+    margin: var(--space-8) 0;
     overflow-x: auto;
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.9rem;
     line-height: 1.6;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(167, 139, 250, 0.06);
 }
 
 .code-block code {
@@ -315,22 +316,22 @@ pre {
 /* Markdown-generated code blocks (pre > code) */
 .lesson pre {
     position: relative;
-    background: #1E1B2E;
-    border: 1px solid rgba(167, 139, 250, 0.15);
+    background: #16132A;
+    border: 1px solid rgba(167, 139, 250, 0.18);
     border-left: 3px solid var(--amethyst);
     border-radius: var(--radius-md);
     padding: var(--space-6);
-    margin: var(--space-6) 0;
+    margin: var(--space-8) 0;
     overflow-x: auto;
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.9rem;
     line-height: 1.6;
-    box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.03);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(167, 139, 250, 0.06);
     transition: box-shadow var(--transition-normal);
 }
 
 .lesson pre:hover {
-    box-shadow: var(--shadow-sm), 0 0 20px rgba(167, 139, 250, 0.06);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35), 0 0 20px rgba(167, 139, 250, 0.08);
 }
 
 .code-copy-btn {
@@ -421,15 +422,15 @@ pre {
 
 /* Language label header */
 .code-header {
-    background: #242038;
-    padding: 0.4rem var(--space-4);
+    background: #1E1A34;
+    padding: 0.45rem var(--space-4);
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.7rem;
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--amethyst);
-    border-bottom: 1px solid rgba(167, 139, 250, 0.2);
+    border-bottom: 1px solid rgba(167, 139, 250, 0.25);
 }
 
 /* Syntax highlighting (highlight.js classes using theme variables) */
@@ -515,50 +516,60 @@ pre {
    10. Tips and Warnings
    ============================================ */
 .tip, .warning, .info {
-    padding: var(--space-5);
+    padding: var(--space-5) var(--space-5) var(--space-5) var(--space-6);
     border-radius: var(--radius-md);
-    margin: var(--space-6) 0;
-    border-left: 3px solid;
-    box-shadow: var(--shadow-xs);
+    margin: var(--space-8) 0;
+    border-left: 4px solid;
+    box-shadow: var(--shadow-sm);
+}
+
+.tip, .warning, .info {
+    /* shared label style */
+}
+
+.tip::before, .warning::before, .info::before {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.15rem 0.5rem;
+    border-radius: 3px;
+    margin-bottom: var(--space-3);
 }
 
 .tip {
-    background: rgba(140, 198, 140, 0.07);
+    background: rgba(140, 198, 140, 0.10);
     border-left-color: var(--sage);
 }
 
 .tip::before {
     content: 'Tip';
-    display: block;
-    font-weight: 600;
     color: var(--sage);
-    margin-bottom: var(--space-2);
+    background: rgba(140, 198, 140, 0.12);
 }
 
 .warning {
-    background: rgba(224, 96, 112, 0.07);
+    background: rgba(224, 96, 112, 0.10);
     border-left-color: var(--coral);
 }
 
 .warning::before {
     content: 'Warning';
-    display: block;
-    font-weight: 600;
     color: var(--coral);
-    margin-bottom: var(--space-2);
+    background: rgba(224, 96, 112, 0.12);
 }
 
 .info {
-    background: rgba(124, 180, 224, 0.07);
+    background: rgba(124, 180, 224, 0.10);
     border-left-color: var(--slate);
 }
 
 .info::before {
     content: 'Note';
-    display: block;
-    font-weight: 600;
     color: var(--slate);
-    margin-bottom: var(--space-2);
+    background: rgba(124, 180, 224, 0.12);
 }
 
 /* ============================================
@@ -849,12 +860,13 @@ h2 {
 }
 
 .lesson blockquote {
-    background: rgba(224, 151, 106, 0.06);
-    border-left: 3px solid var(--amber);
+    background: rgba(224, 151, 106, 0.08);
+    border-left: 4px solid var(--amber);
     border-radius: 0 var(--radius-md) var(--radius-md) 0;
     padding: var(--space-4) var(--space-5);
-    margin: var(--space-6) 0;
+    margin: var(--space-8) 0;
     color: var(--text-secondary);
+    box-shadow: var(--shadow-xs);
 }
 
 .lesson blockquote p:last-child {
