@@ -2,7 +2,7 @@
   "name": "analytics",
   "label": "Analytics",
   "shortLabel": "AN",
-  "sidebarColor": "var(--orange)",
+  "sidebarColor": "var(--accent)",
   "sidebarOrder": 3,
   "template": "analytics.html",
   "scripts": ["analytics.js"],

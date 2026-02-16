@@ -1752,16 +1752,16 @@ body.sidebar-open .sidebar-toggle:hover {
 }
 
 .sidebar-link.sidebar-project-link {
-    color: var(--orange);
+    color: var(--teal);
 }
 
 .sidebar-link.sidebar-project-link:hover {
-    color: var(--orange);
+    color: var(--teal);
 }
 
 .sidebar-link.sidebar-project-link.active {
-    color: var(--orange);
-    border-left-color: var(--orange);
+    color: var(--teal);
+    border-left-color: var(--teal);
 }
 
 .sidebar-link.completed::after {

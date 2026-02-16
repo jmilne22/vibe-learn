@@ -2,7 +2,7 @@
   "name": "daily-practice",
   "label": "Daily Practice",
   "shortLabel": "DP",
-  "sidebarColor": "var(--orange)",
+  "sidebarColor": "var(--accent)",
   "sidebarOrder": 2,
   "template": "daily-practice.html",
   "scripts": ["daily-practice.js"],
