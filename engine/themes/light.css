@@ -1,68 +1,230 @@
 [data-theme="light"] {
-    /* Surface layers — warm off-white */
-    --bg-base:       #FAF8F5;
+    /* Surface layers — purple-tinted whites */
+    --bg-base:       #F8F6FB;
     --bg-surface:    #FFFFFF;
-    --bg-elevated:   #F2EFE9;
-    --bg-overlay:    #E8E4DC;
-    --bg-muted:      #DDD8CF;
+    --bg-elevated:   #EFECF5;
+    --bg-overlay:    #E4E0F0;
+    --bg-muted:      #D8D2E6;
 
-    /* Borders — warm */
-    --border-subtle:  #E8E4DC;
-    --border-default: #D4CFC4;
-    --border-strong:  #B5AE9E;
+    /* Borders */
+    --border-subtle:  #E4E0F0;
+    --border-default: #D0CAE0;
+    --border-strong:  #B5AEC8;
 
     /* Text hierarchy */
-    --text-primary:   #2C2618;
-    --text-secondary: #6B6050;
-    --text-tertiary:  #908570;
-    --text-ghost:     #B5AE9E;
+    --text-primary:   #1E1830;
+    --text-secondary: #5E5478;
+    --text-tertiary:  #867CA0;
+    --text-ghost:     #B5AEC8;
 
-    /* Darker accents for light bg readability */
-    --forest:       #3A7A58;
-    --forest-dim:   #2D6146;
-    --forest-glow:  rgba(58, 122, 88, 0.12);
-    --forest-subtle: rgba(58, 122, 88, 0.06);
-    --clay:         #B56A4A;
-    --clay-dim:     #9A5838;
-    --clay-glow:    rgba(181, 106, 74, 0.12);
-    --sand:         #C4A87C;
-    --moss:         #6E9260;
-    --river:        #4D8494;
-    --river-glow:   rgba(77, 132, 148, 0.12);
-    --ember:        #C04840;
-    --ember-glow:   rgba(192, 72, 64, 0.12);
-    --lichen:       #7B6EA8;
-    --lichen-glow:  rgba(123, 110, 168, 0.12);
+    /* Accent palette — darker for light-bg readability */
+    --amethyst:       #7A62C8;
+    --amethyst-dim:   #6650B0;
+    --amethyst-glow:  rgba(122, 98, 200, 0.12);
+    --amethyst-subtle: rgba(122, 98, 200, 0.06);
+    --amber:          #C87E52;
+    --amber-dim:      #B06A40;
+    --amber-glow:     rgba(200, 126, 82, 0.12);
+    --slate:          #4A90C0;
+    --slate-glow:     rgba(74, 144, 192, 0.12);
+    --sage:           #5A8F5A;
+    --sage-glow:      rgba(90, 143, 90, 0.12);
+    --gold:           #A89058;
+    --coral:          #C04850;
+    --coral-glow:     rgba(192, 72, 80, 0.12);
+    --lavender:       #8B70B8;
+    --lavender-glow:  rgba(139, 112, 184, 0.12);
+
+    /* Syntax highlighting — darker for light bg */
+    --syntax-keyword:  #8B70B8;
+    --syntax-string:   #4A8F4A;
+    --syntax-function: #3D7A8C;
+    --syntax-type:     #9A7E4A;
+    --syntax-number:   #B56A4A;
+    --syntax-comment:  #867CA0;
 
     /* Semantic shortcuts */
-    --accent: var(--forest);
-    --accent-hover: #2D6146;
+    --accent: var(--amethyst);
+    --accent-hover: #6650B0;
     --text: var(--text-primary);
-    --shadow-accent: 0 0 16px rgba(58, 122, 88, 0.12);
+    --shadow-accent: 0 0 16px rgba(122, 98, 200, 0.12);
 
-    /* Alias overrides for light mode */
-    --green-bright: var(--forest);
-    --green-dim:    var(--forest-dim);
-    --green-glow:   var(--forest-glow);
-    --green-subtle: var(--forest-subtle);
-    --orange:       var(--clay);
-    --orange-glow:  var(--clay-glow);
-    --purple:       var(--lichen);
-    --purple-glow:  var(--lichen-glow);
-    --blue:         var(--river);
-    --blue-glow:    var(--river-glow);
-    --cyan:         var(--river);
-    --cyan-glow:    var(--river-glow);
-    --red:          var(--ember);
-    --red-glow:     var(--ember-glow);
+    /* Old name aliases for JS/template compatibility */
+    --forest:       var(--amethyst);
+    --forest-dim:   var(--amethyst-dim);
+    --forest-glow:  var(--amethyst-glow);
+    --forest-subtle: var(--amethyst-subtle);
+    --clay:         var(--amber);
+    --clay-dim:     var(--amber-dim);
+    --clay-glow:    var(--amber-glow);
+    --sand:         var(--gold);
+    --moss:         var(--sage);
+    --river:        var(--slate);
+    --river-glow:   var(--slate-glow);
+    --ember:        var(--coral);
+    --ember-glow:   var(--coral-glow);
+    --lichen:       var(--lavender);
+    --lichen-glow:  var(--lavender-glow);
+    --green-bright: var(--amethyst);
+    --green-dim:    var(--amethyst-dim);
+    --green-glow:   var(--amethyst-glow);
+    --green-subtle: var(--amethyst-subtle);
+    --orange:       var(--amber);
+    --orange-glow:  var(--amber-glow);
+    --purple:       var(--lavender);
+    --purple-glow:  var(--lavender-glow);
+    --blue:         var(--slate);
+    --blue-glow:    var(--slate-glow);
+    --cyan:         var(--slate);
+    --cyan-glow:    var(--slate-glow);
+    --red:          var(--coral);
+    --red-glow:     var(--coral-glow);
 
-    /* Light shadows */
-    --shadow-xs: 0 1px 2px rgba(44, 38, 24, 0.05);
-    --shadow-sm: 0 2px 6px rgba(44, 38, 24, 0.06), 0 1px 2px rgba(44, 38, 24, 0.04);
-    --shadow-md: 0 4px 12px rgba(44, 38, 24, 0.08), 0 2px 4px rgba(44, 38, 24, 0.04);
-    --shadow-lg: 0 8px 24px rgba(44, 38, 24, 0.1), 0 4px 8px rgba(44, 38, 24, 0.04);
-    --shadow-xl: 0 16px 48px rgba(44, 38, 24, 0.12), 0 8px 16px rgba(44, 38, 24, 0.06);
-    --shadow-glow-green: 0 0 16px rgba(58, 122, 88, 0.12);
-    --shadow-glow-orange: 0 0 16px rgba(181, 106, 74, 0.12);
-    --shadow-glow-purple: 0 0 16px rgba(123, 110, 168, 0.12);
+    /* Light shadows — purple-tinted */
+    --shadow-xs: 0 1px 2px rgba(30, 24, 48, 0.05);
+    --shadow-sm: 0 2px 6px rgba(30, 24, 48, 0.06), 0 1px 2px rgba(30, 24, 48, 0.04);
+    --shadow-md: 0 4px 12px rgba(30, 24, 48, 0.08), 0 2px 4px rgba(30, 24, 48, 0.04);
+    --shadow-lg: 0 8px 24px rgba(30, 24, 48, 0.1), 0 4px 8px rgba(30, 24, 48, 0.04);
+    --shadow-xl: 0 16px 48px rgba(30, 24, 48, 0.12), 0 8px 16px rgba(30, 24, 48, 0.06);
+    --shadow-glow-green: 0 0 16px rgba(122, 98, 200, 0.12);
+    --shadow-glow-orange: 0 0 16px rgba(200, 126, 82, 0.12);
+    --shadow-glow-purple: 0 0 16px rgba(139, 112, 184, 0.12);
+}
+
+/* Light theme scoped overrides for tinted backgrounds */
+[data-theme="light"] body {
+    background-image: radial-gradient(circle at 20% 50%, rgba(122, 98, 200, 0.04) 0%, transparent 50%),
+                      radial-gradient(circle at 80% 20%, rgba(139, 112, 184, 0.03) 0%, transparent 50%);
+}
+
+[data-theme="light"] .code-block,
+[data-theme="light"] .lesson pre {
+    background: #EDEAF6;
+    border-color: rgba(122, 98, 200, 0.20);
+    box-shadow: 0 2px 8px rgba(30, 24, 48, 0.08), inset 0 1px 0 rgba(122, 98, 200, 0.04);
+}
+
+[data-theme="light"] .lesson pre {
+    border-left-color: var(--amethyst);
+}
+
+[data-theme="light"] .lesson pre:hover {
+    box-shadow: 0 4px 16px rgba(30, 24, 48, 0.10), 0 0 16px rgba(122, 98, 200, 0.06);
+}
+
+[data-theme="light"] .code-header {
+    background: #E2DEF2;
+    border-bottom-color: rgba(122, 98, 200, 0.25);
+    color: var(--amethyst);
+}
+
+[data-theme="light"] code:not(.code-block code):not(pre code) {
+    background: rgba(122, 98, 200, 0.08);
+    color: var(--amethyst);
+    border-color: rgba(122, 98, 200, 0.18);
+}
+
+[data-theme="light"] .lesson blockquote {
+    background: rgba(200, 126, 82, 0.08);
+    border-left-color: var(--amber);
+}
+
+[data-theme="light"] .lesson table {
+    border-color: rgba(122, 98, 200, 0.15);
+}
+
+[data-theme="light"] .lesson table th {
+    background: rgba(122, 98, 200, 0.08);
+    color: var(--amethyst);
+}
+
+[data-theme="light"] .exercise {
+    background: rgba(200, 126, 82, 0.05);
+    border-color: rgba(200, 126, 82, 0.15);
+}
+
+[data-theme="light"] .tip {
+    background: rgba(90, 143, 90, 0.10);
+}
+
+[data-theme="light"] .tip::before {
+    background: rgba(90, 143, 90, 0.10);
+}
+
+[data-theme="light"] .warning {
+    background: rgba(192, 72, 80, 0.10);
+}
+
+[data-theme="light"] .warning::before {
+    background: rgba(192, 72, 80, 0.10);
+}
+
+[data-theme="light"] .info {
+    background: rgba(74, 144, 192, 0.10);
+}
+
+[data-theme="light"] .info::before {
+    background: rgba(74, 144, 192, 0.10);
+}
+
+[data-theme="light"] .visual-box {
+    background: rgba(74, 144, 192, 0.05);
+    border-color: rgba(74, 144, 192, 0.15);
+}
+
+[data-theme="light"] .sidebar {
+    background: linear-gradient(180deg, var(--bg-surface) 0%, #F0ECF8 100%);
+    border-right-color: rgba(122, 98, 200, 0.12);
+}
+
+[data-theme="light"] .sidebar-header {
+    border-bottom-color: rgba(122, 98, 200, 0.15);
+}
+
+[data-theme="light"] .sidebar-link.active {
+    background: rgba(122, 98, 200, 0.08);
+}
+
+[data-theme="light"] .today-focus {
+    background: rgba(200, 126, 82, 0.04);
+    border-color: rgba(200, 126, 82, 0.15);
+}
+
+[data-theme="light"] .dashboard-panel {
+    background: rgba(122, 98, 200, 0.03);
+    border-color: rgba(122, 98, 200, 0.12);
+}
+
+[data-theme="light"] .stat-chip {
+    background: rgba(74, 144, 192, 0.06);
+    border-color: rgba(74, 144, 192, 0.15);
+}
+
+[data-theme="light"] .stats-detail-content {
+    background: rgba(139, 112, 184, 0.03);
+    border-color: rgba(139, 112, 184, 0.12);
+}
+
+[data-theme="light"] .module-item {
+    background: rgba(168, 144, 88, 0.03);
+    border-color: rgba(168, 144, 88, 0.12);
+}
+
+[data-theme="light"] .module-item:hover {
+    background: rgba(200, 126, 82, 0.05);
+    border-color: var(--amber);
+}
+
+[data-theme="light"] .inline-exercises {
+    background: rgba(122, 98, 200, 0.04);
+    box-shadow: 0 0 24px rgba(122, 98, 200, 0.04);
+}
+
+[data-theme="light"] .exercise-completed {
+    background: rgba(90, 143, 90, 0.03);
+}
+
+[data-theme="light"] .code-compare,
+[data-theme="light"] .code-labeled {
+    border-color: rgba(122, 98, 200, 0.15);
 }
