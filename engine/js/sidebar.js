@@ -25,6 +25,19 @@
         }
     }
 
+    // Check if a module has been started (has progress data)
+    function isModuleStarted(moduleId) {
+        try {
+            var progressKey = window.CourseConfigHelper ? window.CourseConfigHelper.storageKey('progress') : 'go-course-progress';
+            var raw = localStorage.getItem(progressKey);
+            if (!raw) return false;
+            var progress = JSON.parse(raw);
+            return !!(progress[moduleId] && progress[moduleId].lastStudied);
+        } catch (e) {
+            return false;
+        }
+    }
+
     // Get current page
     function getCurrentPage() {
         const path = window.location.pathname;
@@ -105,10 +118,15 @@
             const linkClass = page.isProject ? 'sidebar-link sidebar-project-link' : 'sidebar-link';
 
             const displayTitle = page.isProject ? `🔨 ${page.title}` : page.title;
+            const hasStarted = !page.isProject && page.id !== undefined && isModuleStarted(page.id);
+            let dotClass = 'sidebar-dot';
+            if (isComplete) dotClass += ' complete';
+            else if (hasStarted) dotClass += ' started';
             html += `
                 <a href="${page.file}" class="${linkClass}${isActive ? ' active' : ''}${isComplete ? ' completed' : ''}">
                     <span class="sidebar-module-num">${page.num}</span>
                     ${displayTitle}
+                    <span class="${dotClass}"></span>
                 </a>
             `;
 

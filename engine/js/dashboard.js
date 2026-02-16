@@ -60,8 +60,42 @@ function updateStats() {
 
     // SRS due count
     const dueEl = document.getElementById('due-count');
-    if (dueEl && window.SRS) {
-        dueEl.textContent = window.SRS.getDueCount();
+    var dueCount = 0;
+    if (window.SRS) {
+        dueCount = window.SRS.getDueCount();
+    }
+    if (dueEl) {
+        dueEl.textContent = dueCount;
+    }
+
+    // Today's Focus section
+    var todayDueCount = document.getElementById('today-due-count');
+    if (todayDueCount) {
+        todayDueCount.textContent = dueCount;
+        if (dueCount === 0) {
+            todayDueCount.classList.add('zero');
+        } else {
+            todayDueCount.classList.remove('zero');
+        }
+    }
+
+    // Segmented progress bar
+    var segmentsEl = document.getElementById('progress-segments');
+    if (segmentsEl && moduleItems.length > 0) {
+        segmentsEl.innerHTML = '';
+        Array.from(moduleItems).filter(function(el) {
+            return /^\d+$/.test(el.dataset.module);
+        }).forEach(function(el) {
+            var mid = el.dataset.module;
+            var seg = document.createElement('div');
+            seg.className = 'progress-segment';
+            if (progress[mid] && progress[mid].completed) {
+                seg.classList.add('complete');
+            } else if (progress[mid] && progress[mid].lastStudied) {
+                seg.classList.add('in-progress');
+            }
+            segmentsEl.appendChild(seg);
+        });
     }
 
     // Streak stats

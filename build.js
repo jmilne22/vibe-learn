@@ -481,8 +481,10 @@ function buildCourse(slug) {
 
         const currentFile = mod.file + '.html';
 
+        const courseNameShort = course.name.split(/\s+/)[0].substring(0, 20);
         let page = moduleTemplate
             .replace(/\{\{COURSE_NAME\}\}/g, course.name)
+            .replace(/\{\{COURSE_NAME_SHORT\}\}/g, courseNameShort)
             .replace(/\{\{TITLE\}\}/g, mod.title)
             .replace(/\{\{MODULE_NUM\}\}/g, mod.num)
             .replace(/\{\{MODULE_ID\}\}/g, String(mod.id))
@@ -945,7 +947,7 @@ function buildLandingPage(courseInfos) {
     const landingTemplate = loadTemplate('landing.html');
 
     // Build course cards HTML (skip hidden courses)
-    const accentPalette = ['#34d399', '#60a5fa', '#f59e0b', '#a78bfa', '#67e8f9', '#f87171'];
+    const accentPalette = ['#4A9B6F', '#6B9DAE', '#C67B5C', '#9B8EC4', '#8AA878', '#D4605A'];
     let cardsHtml = '';
     courseInfos.filter(info => !info.hidden).forEach((info, index) => {
         const accent = accentPalette[index % accentPalette.length];
