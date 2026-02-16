@@ -784,11 +784,11 @@ details .hint-content pre {
    13. Lists and Inline Code
    ============================================ */
 ul, ol {
-    margin: var(--space-4) 0 var(--space-4) var(--space-8);
+    margin: var(--space-4) 0 var(--space-6) var(--space-8);
 }
 
 li {
-    margin-bottom: var(--space-2);
+    margin-bottom: var(--space-3);
 }
 
 .lesson li > strong:first-child {
@@ -816,6 +816,10 @@ h3, h4 { line-height: 1.3; }
 h2, h3, h4 {
     margin-top: var(--space-8);
     margin-bottom: var(--space-4);
+}
+
+.lesson h3 {
+    margin-top: var(--space-12);
 }
 
 h2 {
