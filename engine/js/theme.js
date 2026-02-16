@@ -28,53 +28,14 @@
         }
     }
 
-    const themeGroups = [
-        {
-            label: 'Factorio',
-            options: [
-                { value: 'factorio-dark', label: 'Dark' }
-            ]
-        },
-        {
-            label: 'Classic',
-            options: [
-                { value: 'dark', label: 'Dark' },
-                { value: 'oled-dark', label: 'OLED' },
-                { value: 'light', label: 'Light' }
-            ]
-        },
-        {
-            label: 'Gruvbox',
-            options: [
-                { value: 'gruvbox-dark', label: 'Dark' },
-                { value: 'gruvbox-light', label: 'Light' }
-            ]
-        },
-        {
-            label: 'Solarized',
-            options: [
-                { value: 'solarized-dark', label: 'Dark' },
-                { value: 'solarized-light', label: 'Light' }
-            ]
-        },
-        {
-            label: 'Everforest',
-            options: [
-                { value: 'everforest-dark', label: 'Dark' },
-                { value: 'everforest-light', label: 'Light' }
-            ]
-        },
-        {
-            label: 'Minimal',
-            options: [
-                { value: 'terminal', label: 'Dark' },
-                { value: 'terminal-light', label: 'Light' }
-            ]
-        }
-    ];
-
-    // All valid theme values
-    const validThemes = new Set(themeGroups.flatMap(g => g.options.map(o => o.value)));
+    // Migrate old theme values to dark or light
+    function migrateTheme(saved) {
+        if (!saved) return null;
+        var lightThemes = { 'light': 1, 'gruvbox-light': 1, 'solarized-light': 1, 'everforest-light': 1, 'terminal-light': 1 };
+        if (saved === 'dark' || saved === 'light') return saved;
+        if (lightThemes[saved]) return 'light';
+        return 'dark'; // factorio-dark, oled-dark, gruvbox-dark, solarized-dark, everforest-dark, terminal, etc.
+    }
 
     function _sk(suffix) {
         return window.CourseConfigHelper ? window.CourseConfigHelper.storageKey(suffix) : 'vibe-learn-' + suffix;
@@ -85,23 +46,23 @@
         return 'vibe-learn-theme';
     }
 
-    // Check for saved theme preference or default to dark
+    // Check for saved theme preference with prefers-color-scheme fallback
     function getPreferredTheme() {
-        // Try platform-wide key first, then fall back to per-course key
-        const saved = safeGet(_themeKey()) || safeGet(_sk('theme'));
-        if (saved && validThemes.has(saved)) {
-            return saved;
+        var saved = safeGet(_themeKey()) || safeGet(_sk('theme'));
+        var migrated = migrateTheme(saved);
+        if (migrated) {
+            // Persist the migrated value
+            if (migrated !== saved) safeSet(_themeKey(), migrated);
+            return migrated;
         }
-        // Default to Factorio
-        return 'factorio-dark';
+        // Default: honor system preference
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+            return 'light';
+        }
+        return 'dark';
     }
 
-    // Theme-specific Google Fonts URLs (loaded async, not via @import)
-    var themeFonts = {
-        'factorio-dark': 'https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Titillium+Web:wght@400;600;700&display=swap'
-    };
-
-    // Apply theme to document and swap the theme CSS + fonts
+    // Apply theme to document
     function setTheme(theme) {
         if (theme === 'dark') {
             document.documentElement.removeAttribute('data-theme');
@@ -117,17 +78,6 @@
                 document.head.appendChild(link);
             }
             link.href = 'themes/' + theme + '.css';
-        }
-
-        // Swap theme font
-        var oldFont = document.getElementById('theme-font');
-        if (oldFont) oldFont.remove();
-        if (themeFonts[theme]) {
-            var fontLink = document.createElement('link');
-            fontLink.rel = 'stylesheet';
-            fontLink.id = 'theme-font';
-            fontLink.href = themeFonts[theme];
-            document.head.appendChild(fontLink);
         }
 
         safeSet(_themeKey(), theme);
@@ -208,31 +158,15 @@
         const wrapper = document.createElement('div');
         wrapper.className = 'theme-picker';
 
-        const label = document.createElement('div');
-        label.className = 'theme-picker-label';
-        label.textContent = 'Theme';
-
-        const select = document.createElement('select');
-        select.className = 'theme-select';
-        select.setAttribute('aria-label', 'Select color theme');
-
-        themeGroups.forEach(group => {
-            const optgroup = document.createElement('optgroup');
-            optgroup.label = group.label;
-            group.options.forEach(theme => {
-                const option = document.createElement('option');
-                option.value = theme.value;
-                option.textContent = theme.label;
-                optgroup.appendChild(option);
-            });
-            select.appendChild(optgroup);
-        });
-
-        select.value = getPreferredTheme();
-        updateThemeLabel(select.value, label);
-        select.addEventListener('change', () => {
-            setTheme(select.value);
-            updateThemeLabel(select.value, label);
+        // Sun/moon toggle button
+        const toggle = document.createElement('button');
+        toggle.className = 'theme-toggle';
+        toggle.type = 'button';
+        toggle.setAttribute('aria-label', 'Toggle dark/light theme');
+        toggle.innerHTML = '<span class="icon-sun">&#9788;</span><span class="icon-moon">&#9790;</span>';
+        toggle.addEventListener('click', function() {
+            var current = getPreferredTheme();
+            setTheme(current === 'light' ? 'dark' : 'light');
         });
 
         const isLandingPage = !!document.querySelector('.landing');
@@ -243,8 +177,7 @@
             createShowTimerToggle(actions);
         }
 
-        wrapper.appendChild(label);
-        wrapper.appendChild(select);
+        wrapper.appendChild(toggle);
         if (actions.childNodes.length > 0) {
             wrapper.appendChild(actions);
         }
@@ -252,17 +185,6 @@
         if (!isLandingPage) {
             createFocusToggleFallback();
         }
-    }
-
-    function updateThemeLabel(value, labelEl) {
-        for (const group of themeGroups) {
-            const match = group.options.find(option => option.value === value);
-            if (match) {
-                labelEl.textContent = `${group.label} • ${match.label}`;
-                return;
-            }
-        }
-        labelEl.textContent = 'Theme';
     }
 
     // Wait for DOM
@@ -280,7 +202,7 @@
 
     // Listen for system theme changes (only if no saved preference)
     window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', function(e) {
-        if (!safeGet(_sk('theme'))) {
+        if (!safeGet(_themeKey())) {
             setTheme(e.matches ? 'light' : 'dark');
         }
     });

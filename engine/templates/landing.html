@@ -62,7 +62,7 @@
             display: inline-block;
             padding: 0.7rem 1.75rem;
             background: var(--green-bright);
-            color: #000;
+            color: var(--text-main);
             font-weight: 700;
             font-size: 0.9rem;
             border-radius: 8px;
@@ -230,6 +230,26 @@
             font-size: 0.75rem;
             color: var(--green-dim);
         }
+        .course-progress-indicator {
+            display: none;
+            align-items: center;
+            gap: 0.4rem;
+            margin-top: 0.5rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            color: var(--green-bright);
+        }
+        .course-progress-indicator::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: var(--green-bright);
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .course-progress-indicator.has-progress {
+            display: inline-flex;
+        }
 
         /* --- Feature grid --- */
         .features {
@@ -326,7 +346,7 @@
             display: inline-block;
             padding: 0.75rem 2rem;
             background: var(--green-bright);
-            color: #000;
+            color: var(--text-main);
             font-weight: 700;
             font-size: 0.95rem;
             border-radius: 8px;
@@ -549,5 +569,27 @@
         </div>
     </div>
     <script src="theme.js"></script>
+    <script>
+    (function() {
+        var cards = document.querySelectorAll('.course-card[data-slug]');
+        cards.forEach(function(card) {
+            var slug = card.dataset.slug;
+            try {
+                var key = slug + '-progress';
+                var raw = localStorage.getItem(key);
+                if (!raw) return;
+                var progress = JSON.parse(raw);
+                var completed = Object.values(progress).filter(function(p) { return p.completed; }).length;
+                if (completed > 0) {
+                    var indicator = card.querySelector('.course-progress-indicator');
+                    if (indicator) {
+                        indicator.textContent = completed + ' module' + (completed === 1 ? '' : 's') + ' completed';
+                        indicator.classList.add('has-progress');
+                    }
+                }
+            } catch(e) {}
+        });
+    })();
+    </script>
 </body>
 </html>

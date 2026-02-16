@@ -3,6 +3,28 @@
     // All pages in order - projects appear after their parent module
     var pages = (window.CourseConfigHelper && window.CourseConfigHelper.sidebarPages) || [];
 
+    // Check if a module has all exercises completed via localStorage
+    function isModuleComplete(moduleId) {
+        try {
+            var prefix = window.CourseConfigHelper ? window.CourseConfigHelper.storageKey('exercise-progress') : 'go-course-exercise-progress';
+            var raw = localStorage.getItem(prefix);
+            if (!raw) return false;
+            var progress = JSON.parse(raw);
+            var pattern = 'm' + moduleId + '_';
+            var total = 0;
+            var completed = 0;
+            Object.keys(progress).forEach(function(key) {
+                if (key.indexOf(pattern) === 0) {
+                    total++;
+                    if (progress[key] && progress[key].status === 'completed') completed++;
+                }
+            });
+            return total > 0 && completed === total;
+        } catch (e) {
+            return false;
+        }
+    }
+
     // Get current page
     function getCurrentPage() {
         const path = window.location.pathname;
@@ -11,11 +33,9 @@
     }
 
 
-    // Check if sidebar should be open by default (desktop only)
+    // Desktop: always open. Mobile: always closed.
     function shouldBeOpen() {
-        if (window.innerWidth <= 900) return false;
-        const saved = localStorage.getItem(window.CourseConfigHelper ? window.CourseConfigHelper.storageKey('sidebar') : 'go-course-sidebar');
-        return saved === 'open';
+        return window.innerWidth > 900;
     }
 
     // Get sections from current page (h2 elements inside .lesson)
@@ -81,11 +101,12 @@
         // Skip feature items (DP, FC, WC) — already rendered above
         pages.filter(page => page.type !== 'feature').forEach(page => {
             const isActive = currentPage === page.file;
+            const isComplete = !page.isProject && page.id !== undefined && isModuleComplete(page.id);
             const linkClass = page.isProject ? 'sidebar-link sidebar-project-link' : 'sidebar-link';
 
             const displayTitle = page.isProject ? `🔨 ${page.title}` : page.title;
             html += `
-                <a href="${page.file}" class="${linkClass}${isActive ? ' active' : ''}">
+                <a href="${page.file}" class="${linkClass}${isActive ? ' active' : ''}${isComplete ? ' completed' : ''}">
                     <span class="sidebar-module-num">${page.num}</span>
                     ${displayTitle}
                 </a>
@@ -119,16 +140,23 @@
         document.body.appendChild(toggle);
     }
 
-    // Toggle sidebar
+    // Toggle sidebar (mobile only — desktop sidebar is always visible via CSS)
     function toggleSidebar() {
         const sidebar = document.querySelector('.sidebar');
         const isOpen = sidebar.classList.toggle('open');
         document.body.classList.toggle('sidebar-open', isOpen);
+    }
 
-        // Save state (desktop only)
-        if (window.innerWidth > 900) {
-            localStorage.setItem(window.CourseConfigHelper ? window.CourseConfigHelper.storageKey('sidebar') : 'go-course-sidebar', isOpen ? 'open' : 'closed');
-        }
+    // Scroll progress bar
+    function setupScrollProgress() {
+        var bar = document.querySelector('.scroll-progress');
+        if (!bar) return;
+        window.addEventListener('scroll', function() {
+            var scrollTop = window.scrollY;
+            var docHeight = document.documentElement.scrollHeight - window.innerHeight;
+            var percent = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+            bar.style.width = Math.min(percent, 100) + '%';
+        }, { passive: true });
     }
 
     // Track scroll position to highlight current section
@@ -174,6 +202,7 @@
         document.body.classList.add('has-sidebar');
         createSidebar();
         setupScrollTracking();
+        setupScrollProgress();
     }
 
     // Wait for DOM

@@ -34,8 +34,10 @@ function updateStats() {
     const completed = Object.values(progress).filter(function (p) { return p.completed; }).length;
     const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-    document.getElementById('completed-count').textContent = completed;
-    document.getElementById('progress-percent').textContent = percent + '%';
+    var completedEl = document.getElementById('completed-count');
+    if (completedEl) completedEl.textContent = completed;
+    var percentEl = document.getElementById('progress-percent');
+    if (percentEl) percentEl.textContent = percent + '%';
 
     // Exercise-level progress from progress.js API
     const exerciseProgress = window.ExerciseProgress ? window.ExerciseProgress.loadAll() : {};

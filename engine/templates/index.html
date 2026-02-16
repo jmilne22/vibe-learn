@@ -60,20 +60,24 @@
 
         <div id="focus-toggle-slot" class="focus-toggle-slot"></div>
 
-        <div class="stats-panel">
-            <div class="stats-row">
-                <div class="stat-item"><span class="stat-value" id="completed-count">0</span><span class="stat-label">Modules</span></div>
-                <div class="stat-item"><span class="stat-value" id="exercises-count">0</span><span class="stat-label">Exercises</span></div>
-                <div class="stat-item"><span class="stat-value" id="progress-percent">0%</span><span class="stat-label">Progress</span></div>
-                <div class="stat-item"><span class="stat-value" id="due-count">0</span><span class="stat-label">Due for Review</span></div>
-            </div>
-            <div class="stats-row">
-                <div class="stat-item"><span class="stat-value" id="streak-current">0</span><span class="stat-label">Day Streak</span></div>
-                <div class="stat-item"><span class="stat-value" id="streak-longest">0</span><span class="stat-label">Best Streak</span></div>
-                <div class="stat-item"><span class="stat-value" id="streak-today">0</span><span class="stat-label">Today</span></div>
-            </div>
-            <div id="activity-heatmap"></div>
+        <div class="stats-strip">
+            <span class="stat-chip"><span class="stat-chip-value" id="streak-current">0</span> day streak</span>
+            <span class="stat-chip"><span class="stat-chip-value" id="progress-percent">0%</span> complete</span>
+            <span class="stat-chip"><span class="stat-chip-value" id="exercises-count">0</span> exercises</span>
+            <span class="stat-chip"><span class="stat-chip-value" id="due-count">0</span> due</span>
         </div>
+
+        <details class="stats-detail">
+            <summary>Detailed Stats</summary>
+            <div class="stats-detail-content">
+                <div class="stats-row">
+                    <div class="stat-item"><span class="stat-value" id="completed-count">0</span><span class="stat-label">Modules</span></div>
+                    <div class="stat-item"><span class="stat-value" id="streak-longest">0</span><span class="stat-label">Best Streak</span></div>
+                    <div class="stat-item"><span class="stat-value" id="streak-today">0</span><span class="stat-label">Today</span></div>
+                </div>
+                <div id="activity-heatmap"></div>
+            </div>
+        </details>
 
         <div class="module-list">
 {{MODULE_LIST}}

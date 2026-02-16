@@ -186,14 +186,11 @@ const themeFiles = fs.readdirSync(
     fs.existsSync(THEMES_DIR) ? THEMES_DIR : path.join(ROOT, 'themes')
 ).filter(f => f.endsWith('.css')).sort();
 
-// Static <link> for the default theme (render-blocking so no flash).
-// Inline script adjusts href if the user saved a different theme, sets
-// data-theme + has-sidebar on <html>, and loads theme fonts async.
-// Font URLs are mapped here so the @import is not inside render-blocking CSS.
-const themeInitLink = `    <link id="theme-css" rel="stylesheet" href="themes/factorio-dark.css">`;
-const themeInitScript = `    <script>(function(){var d=document.documentElement,l=document.getElementById('theme-css');var fonts={'factorio-dark':'https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Titillium+Web:wght@400;600;700&display=swap'};try{var t=localStorage.getItem('vibe-learn-theme')||'factorio-dark';if(t==='dark'){d.removeAttribute('data-theme');l.removeAttribute('href')}else{d.setAttribute('data-theme',t);if(t!=='factorio-dark')l.href='themes/'+t+'.css'}if(fonts[t]){var f=document.createElement('link');f.rel='stylesheet';f.href=fonts[t];document.head.appendChild(f)}}catch(e){}var p=location.pathname.split('/').pop()||'index.html';if(p!=='index.html')d.classList.add('has-sidebar')})()</script>`;
+// Inline script checks localStorage for theme, honors prefers-color-scheme,
+// and dynamically loads themes/light.css only when needed. No render-blocking link.
+const themeInitScript = `    <script>(function(){var d=document.documentElement;var lights={'light':1,'gruvbox-light':1,'solarized-light':1,'everforest-light':1,'terminal-light':1};try{var t=localStorage.getItem('vibe-learn-theme');if(t&&t!=='dark'&&t!=='light'){t=lights[t]?'light':'dark';localStorage.setItem('vibe-learn-theme',t)}if(!t){t=window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'}if(t==='light'){d.setAttribute('data-theme','light');var l=document.createElement('link');l.rel='stylesheet';l.id='theme-css';l.href='themes/light.css';document.head.appendChild(l)}}catch(e){}var p=location.pathname.split('/').pop()||'index.html';if(p!=='index.html')d.classList.add('has-sidebar')})()</script>`;
 
-const themeLinksHtml = themeInitLink + '\n' + themeInitScript;
+const themeLinksHtml = themeInitScript;
 
 // ---------------------------------------------------------------------------
 // Post-process: transform labeled code blocks into styled comparisons
@@ -948,15 +945,19 @@ function buildLandingPage(courseInfos) {
     const landingTemplate = loadTemplate('landing.html');
 
     // Build course cards HTML (skip hidden courses)
+    const accentPalette = ['#34d399', '#60a5fa', '#f59e0b', '#a78bfa', '#67e8f9', '#f87171'];
     let cardsHtml = '';
-    courseInfos.filter(info => !info.hidden).forEach(info => {
-        cardsHtml += `            <a href="${info.slug}/index.html" class="course-card">\n`;
+    courseInfos.filter(info => !info.hidden).forEach((info, index) => {
+        const accent = accentPalette[index % accentPalette.length];
+        const timeEstimate = info.moduleCount <= 4 ? '~2-4 hours' : info.moduleCount <= 8 ? '~5-10 hours' : '~10-20 hours';
+        cardsHtml += `            <a href="${info.slug}/index.html" class="course-card" data-slug="${info.slug}" style="border-top: 4px solid ${accent};">\n`;
         cardsHtml += `                <div class="course-name">${info.name}</div>\n`;
         cardsHtml += `                <div class="course-desc">${info.description}</div>\n`;
         if (info.status) {
             cardsHtml += `                <div class="course-status">${info.status}</div>\n`;
         }
-        cardsHtml += `                <div class="course-meta">${info.moduleCount} modules</div>\n`;
+        cardsHtml += `                <div class="course-meta">${info.moduleCount} modules &middot; ${timeEstimate}</div>\n`;
+        cardsHtml += `                <div class="course-progress-indicator" id="progress-${info.slug}"></div>\n`;
         cardsHtml += `            </a>\n`;
     });
 

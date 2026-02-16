@@ -458,7 +458,7 @@ $ npm run build</div>
                 <li><strong>Analytics dashboard</strong> with mastery overview, module health grid, action items, and detail panels</li>
                 <li><strong>Algorithm practice</strong> with session-based drills and pattern primers</li>
                 <li><strong>Real-world challenges</strong> with requirements, acceptance criteria, and progressive hints</li>
-                <li><strong>10 color themes</strong> switchable from the sidebar</li>
+                <li><strong>Dark &amp; Light themes</strong> with a one-click toggle</li>
                 <li><strong>Plugin auto-discovery</strong> &mdash; drop a content file in the right place and the feature activates</li>
             </ul>
 
@@ -1134,21 +1134,21 @@ variants:
         <div class="guide-section" id="themes">
             <div class="section-label">// 7 &mdash; themes</div>
             <p class="section-lead">
-                9 built-in color themes, switchable from the sidebar. The selection persists in localStorage.
+                Two themes &mdash; Dark and Light &mdash; switchable via the sun/moon toggle in the top-right corner.
+                The selection persists in localStorage and defaults to your system preference (<span class="fp">prefers-color-scheme</span>).
             </p>
             <table class="guide-table">
-                <thead><tr><th>Group</th><th>Variants</th></tr></thead>
+                <thead><tr><th>Theme</th><th>Description</th></tr></thead>
                 <tbody>
-                    <tr><td>Factorio</td><td>Dark</td></tr>
-                    <tr><td>Classic</td><td>Dark, OLED, Light</td></tr>
-                    <tr><td>Gruvbox</td><td>Dark, Light</td></tr>
-                    <tr><td>Solarized</td><td>Dark, Light</td></tr>
-                    <tr><td>Everforest</td><td>Dark, Light</td></tr>
+                    <tr><td>Dark</td><td>Default. Uses CSS variables defined in <span class="fp">:root</span> in <span class="fp">style.css</span>.</td></tr>
+                    <tr><td>Light</td><td>Loaded from <span class="fp">themes/light.css</span>. Overrides variables on <span class="fp">[data-theme="light"]</span>.</td></tr>
                 </tbody>
             </table>
             <p>Themes work by overriding CSS variables on a <span class="fp">[data-theme]</span> selector on <span class="fp">&lt;html&gt;</span>.
                Every page &mdash; lessons, exercises, plugin pages &mdash; automatically inherits the user's chosen theme.
                No per-page or per-course configuration is needed.</p>
+            <p>If a user had previously selected a legacy theme (Factorio, Gruvbox, Solarized, Everforest, Terminal),
+               it is automatically migrated to Dark or Light on the next page load.</p>
         </div>
 
         <hr class="section-divider">
