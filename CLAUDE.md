@@ -8,7 +8,6 @@ to static HTML by `node build.js`. No framework, no backend.
 - `npm run build` — build all courses
 - `node build.js <slug>` — build a single course
 - `npm run new-course -- <slug>` — scaffold an empty course
-- `npm run builder` — launch web-based course editor at http://localhost:3456
 
 ## Creating a Course
 Read STARTER_PROMPT.md — it contains the complete generation prompt
