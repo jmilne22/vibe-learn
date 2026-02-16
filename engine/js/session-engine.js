@@ -174,7 +174,7 @@
             results: { completed: 0, skipped: 0 },
             ids: opts.ids || {},
             itemLabel: opts.itemLabel || 'Exercise',
-            accentColor: opts.accentColor || 'orange',
+            accentColor: opts.accentColor || 'accent',
             onRender: opts.onRender || null,
             extraHideOnStart: opts.extraHideOnStart || [],
             extraShowOnStart: opts.extraShowOnStart || [],

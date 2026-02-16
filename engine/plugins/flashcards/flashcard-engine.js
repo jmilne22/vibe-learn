@@ -78,7 +78,7 @@
         if (!el) {
             el = document.createElement('p');
             el.id = 'fc-start-hint';
-            el.style.cssText = 'color: var(--orange); font-size: 0.85rem; margin-top: 0.5rem;';
+            el.style.cssText = 'color: var(--accent); font-size: 0.85rem; margin-top: 0.5rem;';
             var configEl = document.getElementById('fc-config');
             if (configEl) configEl.appendChild(el);
         }

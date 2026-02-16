@@ -2137,7 +2137,7 @@ footer {
 }
 
 .quick-btn:hover {
-    border-color: var(--orange);
+    border-color: var(--accent);
     transform: translateY(-2px);
     box-shadow: var(--shadow-sm);
 }
@@ -2669,7 +2669,7 @@ footer {
     font-size: 1.5rem;
     font-weight: 700;
     font-family: 'JetBrains Mono', monospace;
-    color: var(--session-accent, var(--orange));
+    color: var(--session-accent, var(--accent));
 }
 .session-stat-label {
     font-size: 0.8rem;
@@ -2713,12 +2713,12 @@ footer {
     font-family: 'JetBrains Mono', monospace;
 }
 .session-option:hover {
-    border-color: var(--session-accent, var(--orange));
-    color: var(--session-accent, var(--orange));
+    border-color: var(--session-accent, var(--accent));
+    color: var(--session-accent, var(--accent));
 }
 .session-option.active {
-    background: var(--session-accent, var(--orange));
-    border-color: var(--session-accent, var(--orange));
+    background: var(--session-accent, var(--accent));
+    border-color: var(--session-accent, var(--accent));
     color: white;
     font-weight: 600;
 }
@@ -2736,7 +2736,7 @@ footer {
     justify-content: center;
     gap: var(--space-2);
     padding: var(--space-3) var(--space-8);
-    background: var(--session-accent, var(--orange));
+    background: var(--session-accent, var(--accent));
     color: #fff;
     border: none;
     border-radius: var(--radius-md);
@@ -2763,7 +2763,7 @@ footer {
     color: var(--text-secondary);
 }
 .session-header-progress strong {
-    color: var(--session-accent, var(--orange));
+    color: var(--session-accent, var(--accent));
 }
 .session-category {
     font-size: 0.8rem;
@@ -2791,7 +2791,7 @@ footer {
 }
 .session-next-btn {
     padding: 0.6rem var(--space-6);
-    background: var(--session-accent, var(--orange));
+    background: var(--session-accent, var(--accent));
     color: white;
     border: none;
     border-radius: 6px;
@@ -2803,7 +2803,7 @@ footer {
 }
 .session-next-btn:hover {
     filter: brightness(1.2);
-    box-shadow: var(--shadow-glow-orange);
+    box-shadow: var(--shadow-glow-green);
 }
 .session-skip-btn {
     padding: 0.6rem var(--space-6);
@@ -2822,14 +2822,14 @@ footer {
 }
 .session-complete {
     background: var(--bg-surface);
-    border: 1px solid var(--session-accent, var(--orange));
+    border: 1px solid var(--session-accent, var(--accent));
     border-radius: var(--radius-lg);
     padding: var(--space-8);
     text-align: center;
     margin: var(--space-8) 0;
 }
 .session-complete h2 {
-    color: var(--session-accent, var(--orange));
+    color: var(--session-accent, var(--accent));
     margin-bottom: var(--space-4);
 }
 .session-complete-stats {
