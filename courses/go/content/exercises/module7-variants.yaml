@@ -347,16 +347,16 @@ variants:
             - input: ./envprint -export HOME
               output: export HOME="/home/user"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 How does <code>os.Environ()</code> return environment variables? What format are they in, and how do you
                 extract the key and value?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 <code>os.Environ()</code> returns <code>[]string</code> in <code>KEY=value</code> format. Use
                 <code>strings.SplitN(env, "=", 2)</code> to separate key and value (SplitN limits splits in case value
                 contains '=').
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Parse -export flag
                 2. Get filter args from flag.Args()
@@ -421,13 +421,13 @@ variants:
             - input: ./envgrep -i -keys home
               output: HOME
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: How do you search within both the key and value? How do you implement case-insensitive matching?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Use <code>strings.Contains()</code> for substring matching. For case-insensitive search, convert both
                 the search term and the env var to lowercase with <code>strings.ToLower()</code>.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Parse flags (-i, -keys) and get search pattern
                 2. For each env var:
@@ -487,15 +487,15 @@ variants:
             - input: ./envdiff LANG=fake
               output: "LANG: MISMATCH (got \"en_US.UTF-8\", want \"fake\")"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 How do you get the value of a specific environment variable? How do you parse the expected value from
                 the command-line argument?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Use <code>os.Getenv(key)</code> to get a single env var. Split each argument with
                 <code>strings.SplitN(arg, "=", 2)</code> to extract the key and expected value.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. For each argument:
                    - Split into key and expected value
@@ -546,13 +546,13 @@ variants:
                   "HOME": "/home/user"
                 }
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: How do you build a JSON object from a map in Go? What standard library package handles JSON encoding?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Build a <code>map[string]string</code> of the desired env vars. Use <code>json.Marshal()</code> or
                 <code>json.MarshalIndent()</code> for pretty printing.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Collect env vars into a map
                 2. Filter by arguments if any
@@ -635,13 +635,13 @@ variants:
             - input: ./calc 7 * 3
               output: "21"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: How do you convert string arguments to numbers? How do you handle the different operators?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Use <code>strconv.ParseFloat(s, 64)</code> to convert strings to numbers. A <code>switch</code> on the
                 operator string handles the four cases. Check for division by zero before dividing.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Validate: exactly 3 arguments needed
                 2. Parse first and third args as float64
@@ -712,13 +712,13 @@ variants:
             - input: ./tempconv 50 X
               output: "unknown unit: X (exit 1)"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: What are the formulas for C-to-F and F-to-C conversion? How do you validate the unit argument?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 C to F: <code>value*9/5 + 32</code>. F to C: <code>(value - 32) * 5/9</code>. Use
                 <code>strings.ToUpper()</code> to normalize the unit.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Parse value and unit from args
                 2. Switch on unit:
@@ -774,13 +774,13 @@ variants:
             - input: ./baseconv 255 oct
               output: "377"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: How do you convert an integer to different bases in Go? Is there a formatting verb or function for this?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Use <code>strconv.FormatInt(n, base)</code> where base is 2, 8, or 16. Alternatively, use
                 <code>fmt.Sprintf</code> with <code>%x</code>, <code>%o</code>, or <code>%b</code>.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Parse integer from first argument
                 2. Switch on base name:
@@ -838,15 +838,15 @@ variants:
             - input: ./unitcalc 120 s min
               output: "2.000"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 How do you structure conversion between related units? What data structure maps a unit to its base
                 value?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Define conversion factors to a base unit. For distance: m=1, km=1000. Convert to base unit first, then
                 to target: <code>value * fromFactor / toFactor</code>.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Define unit groups with factors:
                    distance: m=1, km=1000

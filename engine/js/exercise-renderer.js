@@ -16,8 +16,7 @@
     }
 
     function getDifficultyStars(difficulty) {
-        const stars = Math.min(Math.max(difficulty || 1, 1), 5);
-        return '\u2B50'.repeat(stars);
+        return Icons.stars(difficulty);
     }
 
     function getVariantDifficulty(variant, challenge) {
@@ -58,7 +57,8 @@
         if (!hints || hints.length === 0) return '';
         let html = '';
         hints.forEach(hint => {
-            const title = typeof hint === 'object' ? hint.title : '\uD83D\uDCA1 Hint';
+            const rawTitle = typeof hint === 'object' ? hint.title : 'Hint';
+            const title = Icons.lightbulb + ' ' + rawTitle;
             const content = typeof hint === 'object' ? hint.content : hint;
             html += `<details>
                 <summary>${title}</summary>
@@ -72,7 +72,7 @@
     function renderDocLinks(docLinks) {
         if (!docLinks || docLinks.length === 0) return '';
         return `<details>
-                <summary>\uD83D\uDCDA Documentation</summary>
+                <summary>${Icons.books} Documentation</summary>
                 <div class="hint-content">
                     <p style="margin-bottom: 0.5rem; color: var(--text-secondary);">Relevant Go docs:</p>
                     <ul style="margin: 0; padding-left: 1.5rem;">
@@ -87,7 +87,7 @@
     // Render solution details block with optional annotations
     function renderSolution(solution, annotations) {
         let html = `<details>
-            <summary>\u2705 Solution</summary>
+            <summary>${Icons.checkCircle} Solution</summary>
             <div class="hint-content">
                 <pre>${escapeHtml(solution)}</pre>
                 ${renderAnnotations(annotations)}
@@ -156,7 +156,7 @@
 
         const textareaId = `notes-${exerciseId}_${variantId}`;
         return `<details class="personal-notes">
-            <summary>\uD83D\uDCDD Personal Notes</summary>
+            <summary>${Icons.pencil} Personal Notes</summary>
             <div class="hint-content">
                 <textarea class="personal-notes-textarea" id="${textareaId}"
                     placeholder="Write your notes about this exercise..."

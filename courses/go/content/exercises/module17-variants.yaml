@@ -295,15 +295,15 @@ variants:
             - input: "\"diff\", []string{\"a\", \"b\", \"c\"}, []string{\"b\", \"c\", \"d\"}"
               output: "[\"a\"]"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 What does each set operation mean? Union = everything from both. Intersection = only shared. Difference
                 = in A but not B.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Build map sets from both slices. Use a switch statement on the operation string. For union, combine both
                 sets. For intersect, find common keys. For diff, find keys only in A.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Build setA and setB from slices
                 2. Switch on op:
@@ -372,15 +372,15 @@ variants:
             - input: "\"revoke\", []string{\"read\", \"write\", \"admin\"}, []string{\"admin\"}"
               output: "[\"read\", \"write\"]"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 Grant adds new permissions (union). Restrict keeps only allowed permissions (intersection). Revoke
                 removes specific permissions (difference).
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Map each operation name to its set operation. Build sets from both slices, then apply the appropriate
                 logic.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Build sets from current and modifier slices
                 2. Switch on op:
@@ -448,13 +448,13 @@ variants:
             - input: "\"disable\", []string{\"dark-mode\", \"beta-ui\", \"new-api\"}, []string{\"beta-ui\"}"
               output: "[\"dark-mode\", \"new-api\"]"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 Enable adds flags (union), common finds shared flags (intersection), disable removes flags (difference).
                 Which set operation matches each?
-            - title: 💡 Hint
+            - title: Hint
               content: Build sets from both slices. Switch on the operation and apply the matching set operation.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Build map sets from active and targets
                 2. Switch on op:
@@ -523,13 +523,13 @@ variants:
             - input: "\"missing\", []string{\"flour\", \"sugar\", \"eggs\"}, []string{\"sugar\"}"
               output: "[\"eggs\", \"flour\"]"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 Combine merges all ingredients (union). Overlap finds what you already have (intersection). Missing
                 finds what you need to buy (difference).
-            - title: 💡 Hint
+            - title: Hint
               content: Build sets from both slices. Apply the matching set operation based on the op string.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Build map sets from recipe and pantry
                 2. Switch on op:
@@ -609,13 +609,13 @@ variants:
             - input: "[]string{\"a\", \"b\"}, []string{}"
               output: added=[], removed=["a", "b"], unchanged=[]
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 How do you classify each item? It's added if it's in 'after' but not 'before'. Removed if in 'before'
                 but not 'after'. Unchanged if in both.
-            - title: 💡 Hint
+            - title: Hint
               content: Build a set from 'before' and a set from 'after'. Iterate each set checking membership in the other.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Build beforeSet and afterSet
                 2. For each item in afterSet:
@@ -678,15 +678,15 @@ variants:
             - input: "map[string]string{\"a\": \"1\"}, map[string]string{\"a\": \"1\"}"
               output: added=[], removed=[], modified=[]
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 This is like a diff but with an extra category: modified. A key is modified if it exists in both maps
                 but has a different value.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Iterate the old map: if a key is not in new, it was removed. If it is in new but with a different value,
                 it was modified. Then iterate new for keys not in old (added).
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. For each key in old:
                    - Not in new? -> removed
@@ -736,13 +736,13 @@ variants:
             - input: "[]string{\"Alice\"}, []string{\"Alice\"}"
               output: "\"Joined: (none)\\nLeft: (none)\\nStayed: Alice\""
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: First compute the three categories (joined, left, stayed), then format them into a report string.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Use set operations to find joined (in new, not old), left (in old, not new), stayed (in both). Then use
                 strings.Join to format each list.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Build oldSet and newSet
                 2. Compute joined, left, stayed slices
@@ -809,15 +809,15 @@ variants:
             - input: "map[string]int{\"a\": 10}, map[string]int{\"a\": 5}"
               output: "new={}, removed={}, increased={}, decreased={\"a\": [10, 5]}"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 This extends the diff pattern with quantity awareness. Items can be new, removed, or present in both
                 with a changed count.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Iterate 'before': if not in 'after', it was removed. If in 'after' with higher count, it increased. If
                 lower, decreased. Then check 'after' for new items.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Initialize result maps with make()
                 2. For each item in before:

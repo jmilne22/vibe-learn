@@ -1,7 +1,7 @@
-- [📦 Standard Library](https://pkg.go.dev/std)
-- [📖 Official Docs](https://go.dev/doc/)
-- [📝 Go Blog](https://go.dev/blog/)
-- [🎮 Go Playground](https://go.dev/play/)
+- [Standard Library](https://pkg.go.dev/std)
+- [Official Docs](https://go.dev/doc/)
+- [Go Blog](https://go.dev/blog/)
+- [Go Playground](https://go.dev/play/)
 
 ## Go Commands
 

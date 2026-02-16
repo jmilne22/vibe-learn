@@ -177,7 +177,7 @@ cmd := exec.Command("./script.sh")
 cmd.Env = append(os.Environ(), "CUSTOM=value")
 ```
 
-### 🔨 Project: Task Runner
+### Project: Task Runner
 
 Put your skills to work! Build a task runner that reads YAML configs and executes shell commands.
 
@@ -193,7 +193,7 @@ Practice individual concepts you just learned.
             <noscript><p class="js-required">JavaScript is required for the interactive exercises.</p></noscript>
             </div>
 
-### 💪 Challenges
+### Challenges
 
 Combine concepts and learn patterns. Each challenge has multiple variants at different difficulties.
 

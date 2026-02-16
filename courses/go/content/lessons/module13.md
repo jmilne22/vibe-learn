@@ -179,7 +179,7 @@ func Chain(h http.Handler, middlewares ...Middleware) http.Handler {
 handler := Chain(myHandler, LoggingMiddleware, AuthMiddleware)
 ```
 
-### 🔨 Project: GitHub CLI Tool
+### Project: GitHub CLI Tool
 
 Put your skills to work! Build a CLI that interacts with the GitHub API.
 
@@ -195,7 +195,7 @@ Practice individual concepts you just learned.
             <noscript><p class="js-required">JavaScript is required for the interactive exercises.</p></noscript>
             </div>
 
-### 💪 Challenges
+### Challenges
 
 Combine concepts and learn patterns. Each challenge has multiple variants at different difficulties.
 

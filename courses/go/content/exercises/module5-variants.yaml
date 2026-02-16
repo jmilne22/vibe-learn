@@ -154,13 +154,13 @@ variants:
             - input: c := NewCache(); c.Get("missing")
               output: "\"\", false"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: What underlying data structure naturally maps keys to values? How do you check if a key exists in Go?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Use a struct wrapping a <code>map[string]string</code>. The comma-ok pattern <code>val, ok :=
                 m[key]</code> gives you both the value and existence.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Define Cache struct with a map field
                 2. NewCache initializes the map with make()
@@ -205,13 +205,13 @@ variants:
             - input: c := NewCache(); c.GetOrDefault("lang", "Rust")
               output: "\"Rust\""
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 How do you distinguish between a key that exists with an empty value and a key that does not exist at
                 all?
-            - title: 💡 Hint
+            - title: Hint
               content: Use the comma-ok pattern. If <code>ok</code> is false, return the default value instead.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Look up key with comma-ok
                 2. If ok is true, return the stored value
@@ -261,13 +261,13 @@ variants:
             - input: c := NewCache(); c.Set("a", "1"); c.Delete("a"); c.Get("a")
               output: "\"\", false"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: How do you remove a key from a map in Go? How can you tell if the key was there before you removed it?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Use <code>delete(m, key)</code> to remove a map entry. Check existence with the comma-ok pattern before
                 deleting to know the return value.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Delete: check if key exists, delete it, return whether it existed
                 2. Get: comma-ok lookup
@@ -321,15 +321,15 @@ variants:
             - input: c := NewCache(1); c.Set("a", "1"); c.Set("a", "2"); c.Get("a")
               output: true, true, ("2", true)
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 How do you track the capacity? When should a Set be rejected vs allowed? What about updating an existing
                 key?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Store <code>maxSize</code> in the struct. In Set, check if the key already exists (update is OK) or if
                 <code>len(data) < maxSize</code> (room for new key).
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Store maxSize in struct alongside the map
                 2. Set: if key exists, update and return true

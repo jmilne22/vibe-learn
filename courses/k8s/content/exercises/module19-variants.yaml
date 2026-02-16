@@ -1286,15 +1286,15 @@ variants:
             - input: "During deployment: how many total Pods?"
               output: "8 Pods (4 blue + 4 green)"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: >-
                 Which strategy provides both zero downtime AND instant rollback? Rolling updates have slow
                 rollbacks (undo rollout). Recreate has downtime. Which leaves...
-            - title: "💡 Hint"
+            - title: "Hint"
               content: >-
                 Blue-green deployments give instant rollback by switching the Service selector. Deploy the new
                 version as a separate Deployment, test it, then switch the Service.
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>1. Blue Deployment (current) with version: blue label
                 2. Green Deployment (new) with version: green label
@@ -1374,15 +1374,15 @@ variants:
             - input: "How does each step work?"
               output: "Kill 1 old Pod, wait for 1 new Pod to be Ready, repeat"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: >-
                 If you cannot run extra Pods (no surge), what is the only way to make progress? You must remove
                 an old Pod before creating a new one.
-            - title: "💡 Hint"
+            - title: "Hint"
               content: >-
                 Set <code>maxSurge: 0</code> so no extra Pods are created, and <code>maxUnavailable: 1</code>
                 so one old Pod is killed to make room for a new one.
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>strategy:
                   type: RollingUpdate
@@ -1431,16 +1431,16 @@ variants:
             - input: "What happens during the update?"
               output: "All old Pods are terminated, then new Pods are created"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: >-
                 If old and new versions cannot coexist, RollingUpdate is not safe (it runs both simultaneously).
                 Blue-green is also risky because both versions would be running. What strategy kills old Pods
                 first?
-            - title: "💡 Hint"
+            - title: "Hint"
               content: >-
                 The <code>Recreate</code> strategy terminates all old Pods before creating new ones. This
                 guarantees no overlap between versions.
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>strategy:
                   type: Recreate
@@ -1483,15 +1483,15 @@ variants:
             - input: "Service selector"
               output: "Only selects on app label, matching both Deployments"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: >-
                 With native Kubernetes Services, traffic is distributed roughly evenly across all matching Pods.
                 To get ~10% canary traffic, how many Pods of each version do you need?
-            - title: "💡 Hint"
+            - title: "Hint"
               content: >-
                 Create two Deployments sharing the same <code>app</code> label. The stable has 9 replicas, the
                 canary has 1 replica. The Service selects only on the shared <code>app</code> label.
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>1. Stable Deployment: 9 replicas, labels: app=web, track=stable
                 2. Canary Deployment: 1 replica, labels: app=web, track=canary
@@ -1569,15 +1569,15 @@ variants:
             - input: "Allowed disruptions for PDB"
               output: "2 (6 running - 4 minimum = 2 allowed)"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: >-
                 The Deployment strategy protects you during rollouts. The PDB protects you during node drains
                 and cluster upgrades. You need both for full protection.
-            - title: "💡 Hint"
+            - title: "Hint"
               content: >-
                 The PDB selector must match the Deployment's Pod labels. Set <code>minAvailable: 4</code> to
                 allow 2 Pods to be evicted simultaneously during maintenance.
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>1. Deployment with safe rolling update strategy
                 2. PDB with minAvailable matching your SLO
@@ -1635,15 +1635,15 @@ variants:
             - input: "PDB during node drain"
               output: "maxUnavailable: 0 blocks all voluntary evictions"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: >-
                 With no spare GPU resources, you cannot run extra Pods. The only option is to stop old Pods
                 before starting new ones. And since GPU Pods are precious, you want a PDB to block node drains.
-            - title: "💡 Hint"
+            - title: "Hint"
               content: >-
                 Use <code>Recreate</code> for the Deployment strategy. Add a PDB with
                 <code>maxUnavailable: 0</code> to prevent node drains from disrupting the GPU Pods.
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>1. Deployment with strategy: Recreate (accepts downtime)
                 2. PDB with maxUnavailable: 0 (blocks node drains)
@@ -1701,16 +1701,16 @@ variants:
             - input: "Required Ingress annotation"
               output: "nginx.ingress.kubernetes.io/canary: 'true' and canary-by-header"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: >-
                 A/B testing routes specific users to the new version based on criteria like headers. nginx
                 Ingress Controller supports this via canary annotations.
-            - title: "💡 Hint"
+            - title: "Hint"
               content: >-
                 Create a main Ingress for stable traffic and a second Ingress with
                 <code>nginx.ingress.kubernetes.io/canary: "true"</code> and
                 <code>canary-by-header: "X-Beta"</code> pointing to the canary Service.
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>1. Stable Deployment + Service
                 2. Canary Deployment + Service
@@ -1847,15 +1847,15 @@ variants:
             - input: "Approximate canary traffic percentage"
               output: "~20% (1 out of 5 Pods)"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: >-
                 With native K8s Services, each Pod gets roughly equal traffic. To get ~20% canary, you need
                 1 canary Pod for every 4 stable Pods.
-            - title: "💡 Hint"
+            - title: "Hint"
               content: >-
                 Both Deployments share the same <code>app</code> label. The Service selects only on
                 <code>app</code>, so traffic reaches both stable and canary Pods.
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>Stable: 4 replicas (app=product-svc, track=stable)
                 Canary: 1 replica  (app=product-svc, track=canary)
@@ -1932,15 +1932,15 @@ variants:
             - input: "Is traffic split independent of replica count?"
               output: "Yes, Gateway API uses explicit weights"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: >-
                 Native K8s canary is limited to replica ratios. For exact 5% traffic, you need a traffic
                 management layer. Gateway API HTTPRoute supports weight-based splitting.
-            - title: "💡 Hint"
+            - title: "Hint"
               content: >-
                 Write an HTTPRoute with <code>backendRefs</code> listing both Services with
                 <code>weight: 95</code> and <code>weight: 5</code>.
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>apiVersion: gateway.networking.k8s.io/v1
                 kind: HTTPRoute
@@ -1985,15 +1985,15 @@ variants:
             - input: "Step 3: 100% canary"
               output: "stable=0, canary=10"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: >-
                 With replica-ratio canary, changing the traffic split means scaling the two Deployments. To
                 maintain capacity, the total should stay at 10.
-            - title: "💡 Hint"
+            - title: "Hint"
               content: >-
                 Use <code>kubectl scale deployment feed-stable --replicas=5</code> and
                 <code>kubectl scale deployment feed-canary --replicas=5</code> for 50%.
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre># 50% canary
                 kubectl scale deployment feed-stable --replicas=5
@@ -2034,16 +2034,16 @@ variants:
             - input: "Stage 4 (full promotion)"
               output: "stable=0, canary=100"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: >-
                 Gateway API traffic splitting is independent of replica counts. You just change the weight
                 values in the HTTPRoute to shift traffic.
-            - title: "💡 Hint"
+            - title: "Hint"
               content: >-
                 Patch the HTTPRoute at each stage by changing the <code>weight</code> values in
                 <code>backendRefs</code>. The weights don't need to sum to 100 (Kubernetes normalizes them)
                 but it's conventional.
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>Stage 1: weight: 95 / weight: 5
                 Stage 2: weight: 75 / weight: 25
@@ -2125,15 +2125,15 @@ variants:
             - input: "Number of canary steps"
               output: "7 (setWeight, pause, setWeight, pause, setWeight, pause, setWeight)"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: >-
                 Argo Rollouts replaces Deployment with a Rollout CRD. The canary steps define an automated
                 progression of traffic shifts and pauses.
-            - title: "💡 Hint"
+            - title: "Hint"
               content: >-
                 The <code>strategy.canary.steps</code> array uses <code>setWeight</code> and <code>pause</code>
                 entries. Pauses use <code>{duration: 2m}</code> syntax.
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>strategy:
                   canary:
@@ -2194,15 +2194,15 @@ variants:
             - input: "If analysis fails, what happens?"
               output: "Rollout is automatically aborted and canary is scaled down"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: >-
                 Argo Rollouts can automatically promote or abort based on metric analysis. The
                 AnalysisTemplate defines what to measure and what thresholds to use.
-            - title: "💡 Hint"
+            - title: "Hint"
               content: >-
                 Use <code>- analysis: {templates: [{templateName: success-rate}]}</code> in the Rollout steps.
                 The AnalysisTemplate uses a Prometheus provider to check HTTP success rate.
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>Rollout steps:
                   - setWeight: 10
@@ -2298,15 +2298,15 @@ variants:
             - input: "Step 6: kill last old Pod"
               output: "0 v1, 3 v2, total=3"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: >-
                 With maxUnavailable=0, Kubernetes can never drop below 3 available Pods. With maxSurge=1, it
                 can have at most 4. So it creates 1 new, then kills 1 old, alternating.
-            - title: "💡 Hint"
+            - title: "Hint"
               content: >-
                 The pattern is: create → kill → create → kill → create → kill. At each create step, total=4.
                 At each kill step, total=3. Available Pods never drop below 3.
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>Max Pods = replicas + maxSurge = 3 + 1 = 4
                 Min Available = replicas - maxUnavailable = 3 - 0 = 3
@@ -2345,15 +2345,15 @@ variants:
             - input: "Final state"
               output: "0 v1, 4 v2, total=4"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: >-
                 With maxSurge=0, no extra Pods can be created. The only way to make progress is to kill an old
                 Pod first (maxUnavailable=1 allows one Pod to be down).
-            - title: "💡 Hint"
+            - title: "Hint"
               content: >-
                 The pattern is: kill → create → kill → create → kill → create → kill → create. At each kill
                 step, total=3. At each create step, total=4. Available never drops below 3.
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>Max Pods = replicas + maxSurge = 4 + 0 = 4
                 Min Available = replicas - maxUnavailable = 4 - 1 = 3
@@ -2392,15 +2392,15 @@ variants:
             - input: "Step 1"
               output: "Kill 1 old, create 2 new simultaneously → 3 v1, 2 v2, total=5"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: >-
                 With both maxSurge and maxUnavailable > 0, Kubernetes can simultaneously create new Pods and
                 kill old ones. This makes the rollout faster but uses more resources.
-            - title: "💡 Hint"
+            - title: "Hint"
               content: >-
                 Max total = replicas + maxSurge = 6. Min available = replicas - maxUnavailable = 3. Kubernetes
                 can create up to 2 extra Pods and kill up to 1 at the same time.
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>Max Pods = 4 + 2 = 6
                 Min Available = 4 - 1 = 3
@@ -2440,15 +2440,15 @@ variants:
             - input: "Minimum available Pods"
               output: "6 (maxUnavailable=0, all must stay available)"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: >-
                 Percentage values are converted to absolute numbers. maxSurge rounds up (ceil), maxUnavailable
                 also rounds up. 50% of 6 = 3.
-            - title: "💡 Hint"
+            - title: "Hint"
               content: >-
                 With 3 surge capacity and 0 unavailable, Kubernetes creates 3 new Pods first (total=9), then
                 kills 3 old Pods as new ones become Ready.
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>maxSurge = ceil(6 * 0.50) = 3
                 maxUnavailable = 0
@@ -2491,15 +2491,15 @@ variants:
             - input: "Minimum available Pods"
               output: "3 (5 - 2)"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: >-
                 Both maxSurge and maxUnavailable round up when converting from percentage. 25% of 5 = 1.25,
                 which rounds up to 2.
-            - title: "💡 Hint"
+            - title: "Hint"
               content: >-
                 Max total = 5 + ceil(5 * 0.25) = 5 + 2 = 7. Min available = 5 - ceil(5 * 0.25) = 5 - 2 = 3.
                 Kubernetes can simultaneously have 2 extra Pods and 2 old Pods terminating.
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>maxSurge = ceil(5 * 0.25) = ceil(1.25) = 2
                 maxUnavailable = ceil(5 * 0.25) = ceil(1.25) = 2
@@ -2542,15 +2542,15 @@ variants:
             - input: "Corrected configuration"
               output: "maxSurge: 0, maxUnavailable: 1"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: >-
                 For a rollout to progress, it must either create a new Pod (needs surge > 0) OR kill an old Pod
                 (needs unavailable > 0). If both are zero, it is deadlocked.
-            - title: "💡 Hint"
+            - title: "Hint"
               content: >-
                 At least one of maxSurge or maxUnavailable must be greater than 0. The safest minimal fix is
                 <code>maxSurge: 0, maxUnavailable: 1</code> or <code>maxSurge: 1, maxUnavailable: 0</code>.
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre># INVALID — rollout cannot progress
                 maxSurge: 0
@@ -2612,15 +2612,15 @@ variants:
             - input: "How is this like blue-green?"
               output: "All new Pods are created before any old Pods are terminated"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: >-
                 With 100% surge and 0 unavailable, Kubernetes creates all 10 new Pods first (reaching 20
                 total), then kills all 10 old Pods. This is essentially blue-green within a single Deployment.
-            - title: "💡 Hint"
+            - title: "Hint"
               content: >-
                 The key difference from actual blue-green: traffic gradually shifts as new Pods become Ready
                 and old Pods are terminated. There is no instant cutover with a Service selector switch.
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>maxSurge = 10 (100% of 10)
                 Max total = 10 + 10 = 20 (peak)
@@ -2660,16 +2660,16 @@ variants:
             - input: "How many Pods change in the first step?"
               output: "Up to 5 (kill 2 old + create 3 new simultaneously)"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: >-
                 With both high maxSurge and maxUnavailable, Kubernetes can create many new Pods and kill many
                 old Pods in parallel. This is the fastest rolling update at the cost of resources and temporary
                 reduced capacity.
-            - title: "💡 Hint"
+            - title: "Hint"
               content: >-
                 In the first step, Kubernetes can kill 2 old Pods (maxUnavailable) and create 3 new Pods
                 (maxSurge) at the same time. That is 5 Pods changing in one step.
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>Max total = 8 + 3 = 11
                 Min available = 8 - 2 = 6

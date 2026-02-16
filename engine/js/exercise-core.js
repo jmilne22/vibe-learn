@@ -87,7 +87,7 @@
                 cursor: not-allowed;
             }
             details.thinking-locked summary::after {
-                content: ' \uD83D\uDD12';
+                content: none;
             }
             .concept-filter {
                 margin-bottom: 1rem;
@@ -296,8 +296,7 @@
     }
 
     function getDifficultyStars(difficulty) {
-        var stars = Math.min(Math.max(difficulty || 1, 1), 5);
-        return '\u2B50'.repeat(stars);
+        return Icons.stars(difficulty);
     }
 
     function getVariantDifficulty(variant, challenge) {
@@ -326,15 +325,24 @@
 
         var btn = document.createElement('button');
         btn.className = 'thinking-timer-btn';
-        btn.innerHTML = '\uD83E\uDDE0 Start ' + seconds + 's thinking timer';
+        btn.innerHTML = Icons.brain + ' Start ' + seconds + 's thinking timer';
         container.insertBefore(btn, allDetails[0]);
 
         btn.addEventListener('click', function() {
-            details.forEach(function(d) { d.classList.add('thinking-locked'); });
+            details.forEach(function(d) {
+                d.classList.add('thinking-locked');
+                var summary = d.querySelector('summary');
+                if (summary && !summary.querySelector('.lock-icon')) {
+                    var span = document.createElement('span');
+                    span.className = 'lock-icon';
+                    span.innerHTML = ' ' + Icons.lock;
+                    summary.appendChild(span);
+                }
+            });
 
             var timerDiv = document.createElement('div');
             timerDiv.className = 'thinking-timer';
-            timerDiv.innerHTML = '<span class="timer-icon">\uD83E\uDDE0</span> Think first: <span class="timer-countdown">' + seconds + '</span>s';
+            timerDiv.innerHTML = '<span class="timer-icon">' + Icons.brain + '</span> Think first: <span class="timer-countdown">' + seconds + '</span>s';
             btn.replaceWith(timerDiv);
 
             var remaining = seconds;
@@ -345,8 +353,12 @@
                 countdownSpan.textContent = remaining;
                 if (remaining <= 0) {
                     clearInterval(interval);
-                    details.forEach(function(d) { d.classList.remove('thinking-locked'); });
-                    timerDiv.innerHTML = '\u2705 Hints unlocked!';
+                    details.forEach(function(d) {
+                        d.classList.remove('thinking-locked');
+                        var lockIcon = d.querySelector('.lock-icon');
+                        if (lockIcon) lockIcon.remove();
+                    });
+                    timerDiv.innerHTML = Icons.checkCircle + ' Hints unlocked!';
                     timerDiv.classList.add('timer-done');
                     setTimeout(function() { timerDiv.remove(); }, 2000);
                 }
@@ -364,18 +376,18 @@
         var selectorDiv = document.createElement('div');
         selectorDiv.className = 'difficulty-mode-selector';
         selectorDiv.innerHTML =
-            '<span class="difficulty-mode-label">\uD83C\uDF9A\uFE0F Difficulty Mode:</span>' +
+            '<span class="difficulty-mode-label">' + Icons.sliders + ' Difficulty Mode:</span>' +
             '<div class="difficulty-mode-buttons">' +
                 '<button class="difficulty-mode-btn easy' + (currentMode === 'easy' ? ' active' : '') + '" data-mode="easy">' +
-                    '<div>\u2B50 Easy</div><span class="mode-desc">Only easy variants</span></button>' +
+                    '<div>' + Icons.star + ' Easy</div><span class="mode-desc">Only easy variants</span></button>' +
                 '<button class="difficulty-mode-btn' + (currentMode === 'mixed' ? ' active' : '') + '" data-mode="mixed">' +
-                    '<div>\uD83C\uDFB2 Mixed</div><span class="mode-desc">Random mix</span></button>' +
+                    '<div>' + Icons.dice + ' Mixed</div><span class="mode-desc">Random mix</span></button>' +
                 '<button class="difficulty-mode-btn' + (currentMode === 'balanced' ? ' active' : '') + '" data-mode="balanced">' +
-                    '<div>\u2696\uFE0F Balanced</div><span class="mode-desc">35% easy, 40% med, 25% hard</span></button>' +
+                    '<div>' + Icons.scales + ' Balanced</div><span class="mode-desc">35% easy, 40% med, 25% hard</span></button>' +
                 '<button class="difficulty-mode-btn' + (currentMode === 'progressive' ? ' active' : '') + '" data-mode="progressive">' +
-                    '<div>\uD83D\uDCC8 Progressive</div><span class="mode-desc">Easy \u2192 Medium \u2192 Hard</span></button>' +
+                    '<div>' + Icons.chartUp + ' Progressive</div><span class="mode-desc">Easy \u2192 Medium \u2192 Hard</span></button>' +
                 '<button class="difficulty-mode-btn hard' + (currentMode === 'hard' ? ' active' : '') + '" data-mode="hard">' +
-                    '<div>\u2B50\u2B50\u2B50 Hard</div><span class="mode-desc">Only hard variants</span></button>' +
+                    '<div>' + Icons.stars(3) + ' Hard</div><span class="mode-desc">Only hard variants</span></button>' +
             '</div>';
 
         selectorDiv.querySelectorAll('.difficulty-mode-btn').forEach(function(btn) {
@@ -399,7 +411,7 @@
 
         var btn = document.createElement('button');
         if (id) btn.id = id;
-        btn.textContent = '\uD83C\uDFB2 Shuffle';
+        btn.innerHTML = Icons.dice + ' Shuffle';
         btn.style.cssText = 'background:var(--bg-surface);color:var(--' + color + ');border:1px solid var(--' + color + ');padding:0.2rem 0.7rem;border-radius:4px;font-size:0.75rem;font-family:"JetBrains Mono",monospace;cursor:pointer;transition:all 0.2s;font-weight:400;';
         btn.addEventListener('mouseenter', function() {
             btn.style.background = 'var(--' + color + ')';
@@ -427,7 +439,7 @@
 
     function createConceptFilter(opts) {
         var concepts = opts.concepts || [];
-        var label = opts.label || '\uD83C\uDFAF Focus on a specific pattern:';
+        var label = opts.label || (Icons.target + ' Focus on a specific pattern:');
         var allLabel = opts.allLabel || 'All Patterns';
         var onChange = opts.onChange;
 
@@ -697,12 +709,12 @@
     function flashShuffleBtn(btnId, color) {
         var btn = document.getElementById(btnId);
         if (!btn) return;
-        btn.textContent = '\u2713 Shuffled!';
+        btn.innerHTML = Icons.check + ' Shuffled!';
         btn.style.background = 'var(--green-bright)';
         btn.style.color = 'var(--bg-base)';
         if (color !== 'green-bright') btn.style.borderColor = 'var(--green-bright)';
         setTimeout(function() {
-            btn.textContent = '\uD83C\uDFB2 Shuffle';
+            btn.innerHTML = Icons.dice + ' Shuffle';
             btn.style.background = 'var(--bg-surface)';
             btn.style.color = 'var(--' + color + ')';
             btn.style.borderColor = 'var(--' + color + ')';

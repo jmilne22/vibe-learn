@@ -253,9 +253,9 @@ variants:
                 parsePodJSON([]byte(`{"metadata":{"name":"web","namespace":"prod"},"spec":{"containers":[{"name":"app","image":"nginx"}]}}`))
               output: (Pod{Name:"web",Namespace:"prod",Image:"nginx"}, nil)
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: You need intermediate structs that mirror the JSON structure, then extract the fields you want.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Define a <code>rawPod</code> struct matching the JSON shape, unmarshal into that, then build your flat
                 Pod from its fields. Use <code>Containers[0].Image</code> for the image.
@@ -314,9 +314,9 @@ variants:
                 Service\nmetadata:\n  name: api"))
               output: ([{v1 Pod web} {v1 Service api}], nil)
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: Split on '---' first, then parse each chunk separately. Watch out for empty chunks.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Use <code>bytes.Split(data, []byte("---"))</code>. For each chunk, <code>bytes.TrimSpace</code> and skip
                 empty ones. Unmarshal each into a Manifest.
@@ -366,9 +366,9 @@ variants:
             - input: mergeConfigs(["missing.yaml"])
               output: error containing filename
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: Read each file, unmarshal to map[string]any, then merge maps. For nested maps, recurse.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Write a helper <code>mergeMaps(base, override map[string]any)</code> that iterates override keys. If
                 both values are maps, recurse. Otherwise, override wins.
@@ -432,9 +432,9 @@ variants:
             - input: validateLabels(map[string]string{strings.Repeat("a",64):"web"})
               output: "[\"key too long\"]"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: Loop through all key-value pairs, check each against the rules, collect errors.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 For character validation, use a regex or loop through runes checking <code>unicode.IsLetter</code>,
                 <code>unicode.IsDigit</code>, and allowed special chars.
@@ -478,9 +478,9 @@ variants:
             - input: lintDeployment(latestTagYAML)
               output: ([{warning, "image uses :latest"}], nil)
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: Parse into a struct or map[string]any. Run each check. Each check appends to results.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Parse to a struct matching the Deployment shape. For the :latest check, use
                 <code>strings.HasSuffix(image, ":latest") || !strings.Contains(image, ":")</code> — untagged images
@@ -560,11 +560,11 @@ variants:
             - input: lintFiles([]string{"warn.yaml"}, true)
               output: (2, nil)
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 Loop through files, detect format, parse, validate, collect results. At the end, determine exit code
                 from the highest severity.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Track <code>maxSeverity</code> across all files. If strict and any warnings exist, promote to error. Map
                 severity to exit code at the end.
@@ -643,9 +643,9 @@ variants:
             - input: grepLog("missing.log", "ERROR")
               output: "error: file not found"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: Open file, scan lines, check each with strings.Contains, collect matches.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Use <code>strings.Contains(line, pattern)</code> for simple matching. Don't forget <code>defer
                 f.Close()</code> and <code>scanner.Err()</code>.
@@ -689,9 +689,9 @@ variants:
             - input: dirStats("./manifests")
               output: Stats{Files:10, Bytes:4096, ByExt:map[.yaml:8 .json:2]}
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: WalkDir gives you each entry. For files, get Info() for size. Track extension counts in a map.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Call <code>d.Info()</code> to get file size via <code>info.Size()</code>. Use
                 <code>filepath.Ext(path)</code> for extension. Accumulate into your Stats struct.
@@ -746,9 +746,9 @@ variants:
             - input: loadAllConfigs("./bad") // contains invalid YAML
               output: error containing filename
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: Combine directory walking with YAML parsing. The filepath becomes the map key.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 WalkDir to find files, ReadFile each, yaml.Unmarshal into <code>map[string]any</code>. Wrap errors with
                 filepath context.

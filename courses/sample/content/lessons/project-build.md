@@ -79,7 +79,7 @@ Don't forget to add the exercise containers to your lesson markdown:
 <noscript><p>JavaScript required.</p></noscript>
 </div>
 
-### 💪 Challenges
+### Challenges
 
 <div id="challenges-container">
 <noscript><p>JavaScript required.</p></noscript>

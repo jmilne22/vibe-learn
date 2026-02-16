@@ -117,7 +117,7 @@
             const isComplete = !page.isProject && page.id !== undefined && isModuleComplete(page.id);
             const linkClass = page.isProject ? 'sidebar-link sidebar-project-link' : 'sidebar-link';
 
-            const displayTitle = page.isProject ? `🔨 ${page.title}` : page.title;
+            const displayTitle = page.isProject ? (Icons.hammer + ' ' + page.title) : page.title;
             const hasStarted = !page.isProject && page.id !== undefined && isModuleStarted(page.id);
             let dotClass = 'sidebar-dot';
             if (isComplete) dotClass += ' complete';
@@ -153,7 +153,7 @@
         const toggle = document.createElement('button');
         toggle.className = 'sidebar-toggle';
         toggle.setAttribute('aria-label', 'Toggle navigation');
-        toggle.innerHTML = '☰';
+        toggle.innerHTML = Icons.menu;
         toggle.addEventListener('click', toggleSidebar);
         document.body.appendChild(toggle);
     }

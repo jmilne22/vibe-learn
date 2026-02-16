@@ -202,7 +202,7 @@ func main() {
 }
 ```
 
-### 🔨 Project: Parallel Downloader
+### Project: Parallel Downloader
 
 Put your skills to work! Build a concurrent file downloader with worker pools and progress tracking.
 
@@ -218,7 +218,7 @@ Practice individual concepts you just learned.
             <noscript><p class="js-required">JavaScript is required for the interactive exercises.</p></noscript>
             </div>
 
-### 💪 Challenges
+### Challenges
 
 Combine concepts and learn patterns. Each challenge has multiple variants at different difficulties.
 

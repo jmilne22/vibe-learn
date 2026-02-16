@@ -682,9 +682,9 @@ variants:
                 groupByNamespace([]Pod{{"web","prod","Running",512},{"api","prod","Running",256},{"db","data","Running",1024}})
               output: map[data:[{db data Running 1024}] prod:[{web prod Running 512} {api prod Running 256}]]
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: What map key groups pods together? What's the value type for multiple pods per namespace?
-            - title: 💡 Hint
+            - title: Hint
               content: Use <code>map[string][]Pod</code>. Append each pod to the slice at <code>m[pod.Namespace]</code>.
           solution: |-
             func groupByNamespace(pods []Pod) map[string][]Pod {
@@ -712,9 +712,9 @@ variants:
             - input: podSummary([]Pod{{"a","ns","Running",512},{"b","ns","Pending",256},{"c","ns","Running",1024}})
               output: "\"Pods: 3 (2 running), Memory: 1792MB (avg 597MB)\""
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: You need running count and total memory. Can you compute both in one pass?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Loop once, track <code>running</code> count and <code>totalMem</code>. Average is <code>totalMem /
                 len(pods)</code>. Use <code>fmt.Sprintf</code> to format.
@@ -757,9 +757,9 @@ variants:
             - input: scheduleWithinQuota([]Pod{{Name:"x",MemoryMB:2000,CPUM:100}}, 1024, 300)
               output: "[]"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: Track running totals. Before adding each pod, check if it would push either total over the limit.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Loop through pods. Before appending, check <code>usedMem + pod.MemoryMB <= maxMemMB && usedCPU +
                 pod.CPUM <= maxCPUM</code>. If it exceeds, stop (don't skip — ordering matters).
@@ -808,9 +808,9 @@ variants:
             - input: d := Deployment{"api",3,0}; d.Scale(5); d.MarkReady(3); d.IsComplete()
               output: "false"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: MarkReady needs to clamp — you can't have more ready than total replicas.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Scale: <code>if n < 0 { n = 0 }</code>. MarkReady: <code>if n > d.Replicas { n = d.Replicas }</code>.
                 IsComplete: <code>return d.Ready == d.Replicas</code>.
@@ -864,9 +864,9 @@ variants:
             - input: n := Node{"n1",64,16,60,14}; n.Allocate(32,8)
               output: "error: insufficient memory"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: Allocate must check BEFORE updating. Release must not go below zero.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Allocate: check <code>n.UsedMemGB + mem > n.MemoryGB</code> before modifying. Utilization:
                 <code>float64(n.UsedMemGB) / float64(n.MemoryGB) * 100</code>.
@@ -930,9 +930,9 @@ variants:
                 r.ListNamespaces()
               output: "[data prod]"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: You need a constructor (NewRegistry) to initialize the map. Lookup searches within a namespace.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Register: <code>r.services[svc.Namespace] = append(...)</code>. Lookup: iterate
                 <code>r.services[namespace]</code> to find by name. ListNamespaces: collect map keys,
@@ -1003,11 +1003,11 @@ variants:
             - input: summarize([]fmt.Stringer{Pod{"web","prod","Running"}, Service{"api","prod",8080}})
               output: "\"prod/web (Running)\\nprod/api :8080\""
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 Both types need String() string. The function doesn't care about the concrete type — it just calls
                 String().
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Build a <code>[]string</code> from calling <code>item.String()</code> on each, then
                 <code>strings.Join(result, "\n")</code>.
@@ -1054,11 +1054,11 @@ variants:
             - input: healthReport([]HealthChecker{Pod{"web","Running"}, Node{"node-1","NotReady"}, Endpoint{"api",200}})
               output: "\"web: healthy\\nnode-1: unhealthy\\napi: healthy\""
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 Three different types, one interface. The report function doesn't need to know the concrete types at
                 all.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Each type implements <code>Name() string</code> and <code>IsHealthy() bool</code>. In the report, use a
                 ternary-like pattern: <code>status := "healthy"</code>, then <code>if !item.IsHealthy() { status =
@@ -1125,9 +1125,9 @@ variants:
             - input: validatePipeline([]Validator{Pod{"","",0}})
               output: map[0:pod name cannot be empty]
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: Each type validates differently. The pipeline collects failures with their positions.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Loop with index. Call <code>item.Validate()</code>. If non-nil, store in <code>result[i] = err</code>.
                 Only return the map if non-empty.
@@ -1225,9 +1225,9 @@ variants:
             - input: s := Service{Name:"api"}; s.HasLabel("app")
               output: "false"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: Embedding promotes methods. Both Pod and Service get AddLabel/HasLabel without writing them.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Embed <code>Labeled</code> in Pod and Service. Write <code>AddLabel</code> and <code>HasLabel</code> as
                 pointer receiver methods on Labeled. Remember to init the map in AddLabel if nil.
@@ -1284,11 +1284,11 @@ variants:
                 p.Describe()
               output: "\"Pod prod/web (Running) image=nginx:1.25 mem=512MB\""
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 Pod embeds ObjectMeta and PodSpec. Describe() accesses fields from both embedded types plus Pod's own
                 Status.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Use <code>fmt.Sprintf("Pod %s (%s) image=%s mem=%dMB", p.FullName(), p.Status, p.Image,
                 p.MemoryMB)</code>. All fields are promoted.
@@ -1341,11 +1341,11 @@ variants:
                 Node{Metadata{"n1","",nil},Healthable{"Ready"},64}})
               output: "\"Pod prod/web (Running) [nginx]\\nNode n1 (Ready) [64GB]\""
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 Both types embed Metadata and Healthable. Each has a different String() because they display
                 type-specific fields.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Pod's String: <code>"Pod %s/%s (%s) [%s]"</code>. Node's String: <code>"Node %s (%s) [%dGB]"</code>.
                 inventoryReport just joins String() outputs with newlines.
@@ -1421,11 +1421,11 @@ variants:
             - input: topByMemory([]string{"a","b"}, []int{100,200}, 5)
               output: "[\"b\", \"a\"]"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 You have two parallel slices that need to stay paired during sorting. What data structure lets you bundle
                 a name and a value together so they move as one unit?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Zip the parallel slices into structs so they stay paired when sorted. After sorting, extract just the
                 names from the top entries. Don't forget the edge case where n is larger than the input.
@@ -1474,11 +1474,11 @@ variants:
             - input: resourceTable([]string{"web","api"}, []float64{45.2, 82.3}, []int{256, 512})
               output: "\"api           82.3%    512MB\\nweb           45.2%    256MB\""
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 Same zip-sort-format pattern as Top N, but with three parallel slices and formatted output. The tricky
                 part is getting the format string right.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 After zipping and sorting, check the Printing section in Module 1 for width specifiers (left-aligned
                 strings, right-aligned numbers) and how to print a literal percent sign.
@@ -1523,11 +1523,11 @@ variants:
             - input: logReportByCount([]string{"DEBUG x", "DEBUG y", "DEBUG z"})
               output: "\"DEBUG: 3\""
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 In Module 1 you sorted alphabetically with sorted-keys. Now you need to sort by count descending —
                 which requires bundling key-value pairs into a struct.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Count with a map, then zip into a struct slice. Sort with a comparator that compares counts descending,
                 breaking ties alphabetically. Format with Sprintf.

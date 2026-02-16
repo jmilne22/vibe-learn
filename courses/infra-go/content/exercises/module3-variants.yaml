@@ -410,9 +410,9 @@ variants:
             - input: parseConfig([]string{"host=localhost", "badline"})
               output: "(nil, \"line 2: missing '='\")"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: Loop with index. Split on first '='. What if a line has no '='?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Use <code>strings.SplitN(line, "=", 2)</code>. If len(parts) != 2, return <code>fmt.Errorf("line %d:
                 missing '='", i+1)</code>.
@@ -454,9 +454,9 @@ variants:
             - input: processMetric("foo|abc|a=b")
               output: "(Metric{}, \"parsing value: ...\")"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: Split on '|' first, then validate each part. Wrap errors with which step failed.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Split on <code>"|"</code> to get 3 parts. Parse value with <code>strconv.Atoi</code>. Parse labels by
                 splitting on <code>","</code> then <code>"="</code>. Wrap each error: <code>fmt.Errorf("parsing value:
@@ -524,11 +524,11 @@ variants:
                 "3 validation errors: node[0]: name required; node[1]: memory must be positive; node[2]: invalid status
                 \"Unknown\""
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 Collect errors into a slice. At the end, if non-empty, join them into one error. Think about the output
                 format.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Build <code>var errs []string</code>. For each node, validate and append <code>fmt.Sprintf("node[%d]:
                 %s", i, msg)</code>. At the end: <code>fmt.Errorf("%d validation errors: %s", len(errs),
@@ -596,9 +596,9 @@ variants:
             - input: s := NewPodStore(); s.Add(Pod{Name:"web"}); s.Add(Pod{Name:"web"})
               output: ErrAlreadyExists
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: The store is a map. Add checks if key exists. Get checks if key is missing.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Add: <code>if _, ok := s.pods[pod.Name]; ok { return ErrAlreadyExists }</code>. Get: <code>pod, ok :=
                 s.pods[name]; if !ok { return Pod{}, ErrNotFound }</code>.
@@ -657,11 +657,11 @@ variants:
             - input: s := NewConfigStore(); s.Set("", "val")
               output: ConfigError with Op:"set"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 ConfigError wraps the underlying error. Callers can use errors.As to get the ConfigError, then errors.Is
                 on its Err field.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 ConfigError needs <code>Error() string</code> and <code>Unwrap() error</code>. Unwrap returns
                 <code>e.Err</code> so errors.Is works through it.
@@ -747,11 +747,11 @@ variants:
             - input: h.HandleGet("broken", "prod") // store returns unexpected error
               output: (500, "internal error")
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 Each layer adds context with %w. The handler at the top uses errors.Is to make decisions. The original
                 sentinel survives all the wrapping.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Store: <code>return fmt.Errorf("store: %w", ErrNotFound)</code>. Service: <code>return fmt.Errorf("pod
                 %s/%s: %w", ns, name, err)</code>. Handler: <code>if errors.Is(err, ErrNotFound) { return 404, ...
@@ -829,9 +829,9 @@ variants:
             - input: parseLabels("broken")
               output: error
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: What's your test struct? You need input, expected output (map), and error expectation.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Use <code>wantErr bool</code> and <code>want map[string]string</code> in the struct. Compare maps with
                 <code>reflect.DeepEqual</code> or manual key-by-key comparison.
@@ -893,11 +893,11 @@ variants:
             - input: validateResource("", 512, 250)
               output: "\"name is required\""
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 You want to verify not just that errors occur, but that the error message is correct. Use
                 strings.Contains.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Struct: <code>{ name, resName string; memMB, cpuM int; wantErr string }</code>. If wantErr is empty,
                 expect nil. Otherwise, check <code>strings.Contains(err.Error(), tt.wantErr)</code>.
@@ -961,11 +961,11 @@ variants:
             - input: // Add duplicate pod
               output: errors.Is(err, ErrAlreadyExists) == true
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 Each test case needs its own store setup. Some tests need pre-populated data. Use a setup function in
                 the test struct.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Add a <code>setup func(*PodStore)</code> field to populate the store before each test. Check sentinels
                 with <code>errors.Is</code> and messages with <code>strings.Contains</code>.
@@ -1062,9 +1062,9 @@ variants:
             - input: lintConfig([]ConfigEntry{{"host","a"},{"host","b"}})
               output: "[]LintError{{Key:\"host\", Message:\"duplicate key\"}}"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: How do you compare slices of structs in tests? You need to check count and content.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Use <code>wantCount int</code> and <code>wantKeys []string</code> in the test struct. Check
                 <code>len(got) == tt.wantCount</code>, then verify each error's Key.
@@ -1139,11 +1139,11 @@ variants:
             - input: parseMetricLine("")
               output: error
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 You need to test the happy path AND every way parsing can fail. Each failure mode should have its own
                 test case.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Struct: <code>{ name, input string; wantName string; wantValue int; wantLabels map[string]string;
                 wantErr bool }</code>. For success cases, check all three fields.
@@ -1223,9 +1223,9 @@ variants:
             - input: // Full lifecycle test
               output: All phases pass
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: This is NOT table-driven — it's a sequence of steps. Use t.Run for logical phases so failures are clear.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Phase 1: Add pods in a loop. Phase 2: <code>store.Count() == 5</code>. Phase 3: Get each, verify name.
                 Phase 4: Delete one, verify ErrNotFound on re-get. Phase 5: <code>store.Count() == 4</code>.

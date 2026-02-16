@@ -620,11 +620,11 @@ variants:
             - input: "docker build -t myapp:optimized ."
               output: "Final image contains only production deps and built assets, no dev dependencies or source"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: "Multi-stage builds let you use one image for building and a different one for running. What files does your production app actually need?"
-            - title: "💡 Hint"
+            - title: "Hint"
               content: "Name the first stage with <code>FROM node:20-alpine AS builder</code>. In the second stage, use <code>COPY --from=builder /app/dist ./dist</code> to copy only the build output."
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>1. Stage 1 (builder): full build environment
                    - Install ALL dependencies
@@ -657,11 +657,11 @@ variants:
             - input: "docker build -t mygoapp:scratch ."
               output: "Final image contains only the static binary, image size under 15MB"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: "Go can produce fully static binaries that don't need ANY runtime libraries. What's the smallest possible base image?"
-            - title: "💡 Hint"
+            - title: "Hint"
               content: "Use <code>CGO_ENABLED=0</code> and <code>-ldflags='-s -w'</code> to build a static, stripped binary. The <code>scratch</code> image is literally empty."
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>1. Stage 1: build static binary
                    - CGO_ENABLED=0 go build -ldflags='-s -w'
@@ -689,11 +689,11 @@ variants:
             - input: "docker images myapp"
               output: "Image size reduced from ~1GB to ~150-200MB"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: "The full python:3.12 image includes compilers, dev tools, and other things you don't need at runtime. What's the smallest Python base image you can use?"
-            - title: "💡 Hint"
+            - title: "Hint"
               content: "Use <code>python:3.12-slim</code> instead. Add <code>--no-cache-dir</code> to pip install to avoid storing downloaded packages in the image."
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>1. Use slim or alpine base image
                 2. pip install --no-cache-dir
@@ -714,11 +714,11 @@ variants:
             - input: "docker exec myapp whoami"
               output: "appuser (not root)"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: "Running containers as root is a security risk. If an attacker breaks out of the container, they're root on the host. How do you create and switch to a non-root user?"
-            - title: "💡 Hint"
+            - title: "Hint"
               content: "Use <code>RUN addgroup -S appgroup && adduser -S appuser -G appgroup</code> on Alpine. Then <code>USER appuser</code> to switch. Make sure files are owned correctly."
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>1. Create group and user
                 2. Set WORKDIR
@@ -746,11 +746,11 @@ variants:
             - input: "docker images javaapp"
               output: "Final image uses JRE (~200MB) not JDK (~400MB), no Maven or source code"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: "You need the full JDK and Maven to build, but only the JRE to run. How can multi-stage builds help?"
-            - title: "💡 Hint"
+            - title: "Hint"
               content: "Build stage uses JDK + Maven. Runtime stage uses JRE only. Copy just the JAR file between stages."
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>1. Stage 1 (JDK + Maven): compile and package
                    - Copy pom.xml, download deps
@@ -779,11 +779,11 @@ variants:
             - input: "Security scan of image"
               output: "Non-root user, no hardcoded secrets, alpine base, exec form CMD"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: "Count the security issues: Who is running the process? What secrets are baked into the image? Is the base image larger than needed?"
-            - title: "💡 Hint"
+            - title: "Hint"
               content: "Use alpine base, create non-root user, remove hardcoded secrets (use runtime env vars instead), use exec form CMD, order layers properly."
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>1. Use minimal base (alpine)
                 2. Create non-root user
@@ -811,11 +811,11 @@ variants:
             - input: "docker images pyapp"
               output: "Final image has no gcc/build-essential, only runtime deps and virtualenv"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: "Some Python packages need compilation (gcc, build headers). You need these tools to install, but not to run. How do you separate build-time from run-time?"
-            - title: "💡 Hint"
+            - title: "Hint"
               content: "Create a virtualenv in the builder stage. Copy the entire virtualenv directory to the runtime stage. Set PATH to use the virtualenv's Python."
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>1. Stage 1 (builder): install build tools + deps
                    - python -m venv /opt/venv
@@ -849,11 +849,11 @@ variants:
             - input: "Change main.go, rebuild"
               output: "go mod download step is cached (skipped), only build step reruns"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: "Docker caches each layer. If a layer changes, all subsequent layers are rebuilt. Which files change most often? Which change rarely?"
-            - title: "💡 Hint"
+            - title: "Hint"
               content: "Copy go.mod and go.sum first, run go mod download, THEN copy the rest of the source. Dependencies rarely change, but source changes on every build."
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>1. Copy dependency manifests (go.mod, go.sum)
                 2. Download dependencies (cached layer)
@@ -885,11 +885,11 @@ variants:
             - input: "kubectl exec webapp -- env | grep LOG_LEVEL"
               output: "LOG_LEVEL=info"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: "You need to combine several Pod spec features: env vars, labels, resource requests. Where does each one go in the YAML structure?"
-            - title: "💡 Hint"
+            - title: "Hint"
               content: "Labels go in <code>metadata.labels</code>. Env vars and resources go inside <code>spec.containers[]</code>. Resource requests go under <code>resources.requests</code>."
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>apiVersion: v1
                 kind: Pod
@@ -936,11 +936,11 @@ variants:
             - input: "kubectl apply -f mysql.yaml"
               output: "Pod running with MySQL, data volume mounted at /var/lib/mysql"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: "Databases need persistent storage. Even though emptyDir is not truly persistent (it's deleted with the Pod), it shows the volume mounting pattern."
-            - title: "💡 Hint"
+            - title: "Hint"
               content: "Define volumes at <code>spec.volumes</code> level. Mount them inside containers with <code>volumeMounts</code>. An emptyDir volume has type <code>emptyDir: {}</code>."
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>spec:
                   volumes:
@@ -983,11 +983,11 @@ variants:
             - input: "kubectl apply -f webapp.yaml"
               output: "Init container runs first, waits for db-service DNS, then main container starts"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: "Init containers run before the main containers and must complete successfully. They're perfect for setup tasks or waiting for dependencies."
-            - title: "💡 Hint"
+            - title: "Hint"
               content: "Init containers go in <code>spec.initContainers</code> (same structure as <code>containers</code>). They run in order and must exit 0 before main containers start."
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>spec:
                   initContainers:
@@ -1024,11 +1024,11 @@ variants:
             - input: "kubectl logs app-with-logging -c log-reader"
               output: "Shows the log output written by the app container"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: "Containers in the same Pod can share volumes. This is the classic sidecar pattern: one container generates data, another processes it."
-            - title: "💡 Hint"
+            - title: "Hint"
               content: "Define one emptyDir volume. Mount it in both containers at the same or different paths. The app writes, the sidecar reads."
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>spec:
                   volumes:
@@ -1072,11 +1072,11 @@ variants:
             - input: "kubectl describe pod web"
               output: "Liveness probe configured: http-get http://:80/ delay=5s period=10s"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: "Liveness probes tell Kubernetes when to restart a container. If the probe fails, the container is killed and restarted."
-            - title: "💡 Hint"
+            - title: "Hint"
               content: "Add <code>livenessProbe</code> to the container spec. Use <code>httpGet</code> with <code>path</code> and <code>port</code>. Set <code>initialDelaySeconds</code> and <code>periodSeconds</code>."
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>containers:
                 - name: ...
@@ -1114,11 +1114,11 @@ variants:
             - input: "kubectl describe pod api"
               output: "Both readiness and liveness probes configured on /healthz"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: "Readiness probes control traffic routing (is the pod ready to receive traffic?). Liveness probes control restarts (is the pod still alive?). You usually want both."
-            - title: "💡 Hint"
+            - title: "Hint"
               content: "Add both <code>readinessProbe</code> and <code>livenessProbe</code> to the container. Readiness should have a shorter initial delay so traffic routing is quick."
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>containers:
                 - name: api
@@ -1162,11 +1162,11 @@ variants:
             - input: "kubectl apply -f fullapp.yaml && kubectl describe pod fullapp"
               output: "Pod with all env vars, resource constraints, both probes, correct labels"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: "This combines everything: metadata, env vars, resources, and probes. Take it section by section."
-            - title: "💡 Hint"
+            - title: "Hint"
               content: "Build the manifest piece by piece: start with the basic structure (apiVersion, kind, metadata), then add the container with ports, env, resources, and finally probes."
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>1. metadata: name, labels
                 2. container: image, ports
@@ -1228,11 +1228,11 @@ variants:
             - input: "kubectl describe pod myapp shows ImagePullBackOff"
               output: "Image tag has a typo: 'latset' should be 'latest'. Fix the image name."
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: "ImagePullBackOff means Kubernetes cannot pull the container image. Look carefully at the image name in the error message."
-            - title: "💡 Hint"
+            - title: "Hint"
               content: "The image tag has a typo: <code>latset</code> instead of <code>latest</code>. Delete the pod and recreate with the correct image, or edit the pod spec."
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>1. Read the error message carefully
                 2. Check image name and tag for typos
@@ -1255,11 +1255,11 @@ variants:
             - input: "kubectl get pods shows CrashLoopBackOff, RESTARTS=5"
               output: "The application file server.js is missing from the container image. Check Dockerfile COPY instructions."
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: "CrashLoopBackOff means the container starts, crashes, and Kubernetes keeps restarting it. The logs show why it's crashing."
-            - title: "💡 Hint"
+            - title: "Hint"
               content: "The Node.js app can't find server.js. This is likely a Dockerfile issue: the COPY instruction might be missing files, or the WORKDIR is wrong."
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>1. kubectl logs myapp -- read crash logs
                 2. kubectl logs myapp --previous -- read previous crash
@@ -1285,11 +1285,11 @@ variants:
             - input: "kubectl get pods shows STATUS=Pending"
               output: "Pod requests more memory than any node has available. Reduce resource requests or add capacity."
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: "Pending means the scheduler cannot find a node to place the Pod. The event message tells you why."
-            - title: "💡 Hint"
+            - title: "Hint"
               content: "The node doesn't have enough memory for this Pod's resource requests. Options: reduce the memory request in the Pod spec, free up memory by deleting other pods, or add more nodes."
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>1. kubectl describe pod -- read FailedScheduling reason
                 2. kubectl describe node -- check allocatable resources
@@ -1315,11 +1315,11 @@ variants:
             - input: "kubectl describe pod myapp shows CreateContainerConfigError"
               output: "Pod references secret 'db-credentials' which doesn't exist. Create the secret first."
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: "CreateContainerConfigError means Kubernetes can't configure the container before starting it. Usually a missing ConfigMap or Secret."
-            - title: "💡 Hint"
+            - title: "Hint"
               content: "The Pod references a Secret called <code>db-credentials</code> that doesn't exist. Create it with <code>kubectl create secret</code>."
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>1. kubectl describe pod -- find the missing resource
                 2. kubectl get secrets -- verify it's missing
@@ -1344,11 +1344,11 @@ variants:
             - input: "kubectl describe pod shows OOMKilled, Exit Code 137"
               output: "Container exceeded its 64Mi memory limit. Increase memory limit or fix memory leak in application."
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: "OOMKilled means Out Of Memory Killed. Exit code 137 = 128 + 9 (SIGKILL). The container used more memory than its limit allows."
-            - title: "💡 Hint"
+            - title: "Hint"
               content: "The memory limit of 64Mi is too low for the application. Either increase the limit or investigate why the app uses so much memory. Use <code>kubectl top pod</code> to see current usage."
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>1. kubectl describe pod -- confirm OOMKilled
                 2. kubectl top pod -- check memory usage
@@ -1376,11 +1376,11 @@ variants:
             - input: "kubectl port-forward pod/myapp 8080:3000 -> connection refused"
               output: "containerPort in YAML (3000) doesn't match actual app port (8080). Fix port-forward or YAML."
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: "<code>containerPort</code> in the Pod spec is informational only -- it doesn't actually open or restrict ports. The real issue is which port the app is listening on."
-            - title: "💡 Hint"
+            - title: "Hint"
               content: "The port-forward is targeting port 3000 in the container, but the app listens on 8080. Either change the port-forward command or update the Pod YAML to match the actual port."
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>1. kubectl logs myapp -- check what port app reports
                 2. Quick fix: kubectl port-forward pod/myapp 8080:8080
@@ -1403,11 +1403,11 @@ variants:
             - input: "kubectl describe pod shows ErrImageNeverPull"
               output: "Image not available locally on the node. Build/load the image into the cluster's Docker daemon."
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: "<code>imagePullPolicy: Never</code> means don't try to pull from a registry -- only use images already on the node. If the image isn't there, it fails."
-            - title: "💡 Hint"
+            - title: "Hint"
               content: "For minikube: use <code>eval $(minikube docker-env)</code> to point your Docker CLI to minikube's daemon, then build the image. For kind: use <code>kind load docker-image</code>."
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre># For minikube:
                 eval $(minikube docker-env)

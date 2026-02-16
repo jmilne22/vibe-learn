@@ -167,9 +167,9 @@ variants:
             - input: client.GetRepo(ctx, "hashicorp", "terraform")
               output: (Repo{Name:"terraform", Stars:40000, Language:"Go"}, nil)
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: Build URL from owner+repo. Use NewRequestWithContext. Check status. Decode JSON.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 URL: <code>fmt.Sprintf("https://api.github.com/repos/%s/%s", owner, repo)</code>. Decode into a struct
                 with json tags matching GitHub's API (<code>stargazers_count</code>, <code>language</code>).
@@ -238,9 +238,9 @@ variants:
             - input: c.ListNodes(ctx) // 401
               output: APIError{StatusCode:401, Message:"unauthorized"}
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: The do() helper builds request, adds auth, executes, checks status. ListNodes calls do() and decodes.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 In <code>do()</code>, if status >= 400, decode the error body into APIError, set StatusCode, return it.
                 Callers use <code>errors.As(err, &apiErr)</code> to check.
@@ -324,11 +324,11 @@ variants:
             - input: c.ListAllInstances(ctx) // single page
               output: ([]Instance with 5 items, nil)
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 Loop: fetch page, append results, check next_cursor. Stop when empty or page limit reached. Pass cursor
                 as query param.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Build URL with <code>url.Values</code> for the cursor param. Check <code>ctx.Err()</code> each iteration
                 for cancellation. Use a page counter and break at 100.
@@ -416,9 +416,9 @@ variants:
             - input: isRetryable(404)
               output: "false"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: "Integer ranges: 200-299, 300-399, etc. 429 is special (rate limited = transient)."
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Use <code>code / 100</code> to get the class (2, 3, 4, 5). For isRetryable, check <code>code == 429 ||
                 code >= 500</code>.
@@ -462,9 +462,9 @@ variants:
             - input: handleAPIError(plainTextResponse)
               output: "&APIError{500, \"\", \"Internal Server Error\"}"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: Read body bytes once. Try JSON decode. If it fails, use raw text as the message.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Read all bytes first with <code>io.ReadAll</code>. Try <code>json.Unmarshal</code> into a struct. If err
                 != nil, fall back to <code>string(body)</code> as message.
@@ -525,11 +525,11 @@ variants:
             - input: fetchWithRetry(ctx, client, url, 3) // all 503s
               output: (nil, "max retries exceeded")
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 Loop with attempts. On 5xx/429, close body and retry. Parse Retry-After for 429. Use select with
                 ctx.Done() for cancellation.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Backoff: <code>time.Duration(1<<attempt) * 100 * time.Millisecond</code>. For 429:
                 <code>strconv.Atoi(resp.Header.Get("Retry-After"))</code>. Use <code>select { case <-ctx.Done(): case

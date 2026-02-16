@@ -130,9 +130,9 @@ variants:
             - input: empty cluster
               output: empty map, nil
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: How do you list pods across all namespaces? What field gives you the pod phase?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Use empty string for namespace to list all: Pods("").List(...). Group by pod.Namespace, count by
                 string(pod.Status.Phase).
@@ -173,9 +173,9 @@ variants:
             - input: source ConfigMap deleted
               output: returns NotFound error (caller handles)
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: How do you list all namespaces? How do you handle the create-or-update pattern?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 List namespaces, skip the source namespace. For each target namespace: try Get — if NotFound, Create. If
                 exists, compare data and Update if different. This is the create-or-update pattern.
@@ -245,9 +245,9 @@ variants:
             - input: CR spec changed
               output: ConfigMap updated to match
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: What order should you check things? How do you tell if the resource is being deleted?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Check DeletionTimestamp first — if set, run cleanup and remove finalizer. Otherwise: add finalizer if
                 missing, ensure ConfigMap exists (create-or-update), update status. Use client.IgnoreNotFound for the

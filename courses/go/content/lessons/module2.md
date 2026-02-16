@@ -289,7 +289,7 @@ Practice individual concepts you just learned.
             <noscript><p class="js-required">JavaScript is required for the interactive exercises.</p></noscript>
             </div>
 
-### 💪 Challenges
+### Challenges
 
 Apply what you learned about slices, maps, and strings with hands-on coding challenges. Each challenge has multiple variants at different difficulties - shuffle to keep things fresh!
 

@@ -463,13 +463,13 @@ variants:
             - input: NewDataProcessor(&QuickSort{}), []int{5, 3, 8, 1}
               output: "[]int{1, 3, 5, 8}"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: How can you allow a struct to use different algorithms without knowing which one at compile time?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Store the Sorter interface as a field on DataProcessor. The Process method just calls the sorter's Sort
                 method.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Define Sorter interface with Sort([]int) []int
                 2. Implement BubbleSort and QuickSort
@@ -544,13 +544,13 @@ variants:
             - input: NewFileProcessor(&GzipCompressor{}), []byte("hello")
               output: compressed bytes (shorter or gzip header)
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: What if you want to swap compression algorithms without changing the file processing logic?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 The FileProcessor stores a Compressor interface. ProcessFile delegates to it. NoopCompressor just
                 returns data unchanged.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Define Compressor interface
                 2. Implement GzipCompressor using compress/gzip
@@ -614,11 +614,11 @@ variants:
             - input: NewOrder(&VIPPricing{}), 100.0
               output: "75.0"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: How can the same Order type compute different totals depending on who is buying?
-            - title: 💡 Hint
+            - title: Hint
               content: Store the PricingStrategy in Order. The Total method calls strategy.Calculate(basePrice).
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Define PricingStrategy interface
                 2. RegularPricing returns price unchanged
@@ -684,13 +684,13 @@ variants:
             - input: NewFormField("phone", &PhoneValidator{}), "1234567890"
               output: nil (valid)
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: How can the same form field type validate differently depending on what data it holds?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 FormField stores a Validator. SetValue calls Validate first. If valid, store the value; if not, return
                 the error.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Define Validator interface with Validate(string) error
                 2. EmailValidator checks strings.Contains(value, "@")
@@ -788,13 +788,13 @@ variants:
             - input: NewQuery("products").Select("name", "price").Where("price > %d", 100).Limit(20).String()
               output: "\"SELECT name, price FROM products WHERE price > 100 LIMIT 20\""
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: How do you make methods chainable? What must each method return?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Each method modifies the Query and returns *Query (pointer to self). This enables method chaining. Store
                 columns, where clauses, and limit as fields.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Query struct: table, cols []string, wheres []string, limit int
                 2. NewQuery sets table, default cols to ["*"]
@@ -872,13 +872,13 @@ variants:
             - input: NewElement("a").Attr("href", "/home").Text("Home").Render()
               output: "\"<a href=\\\"/home\\\">Home</a>\""
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: What data does an HTML element consist of? How do you assemble the opening tag with attributes?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Store tag, attrs (map or slice of pairs), classes ([]string), text, and children. Render assembles them:
                 opening tag + attrs + text + children + closing tag.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Element: tag, attrs map, classes []string, text, children
                 2. Each method modifies Element and returns *Element
@@ -962,13 +962,13 @@ variants:
             - input: NewRequest("POST", "https://api.example.com/users").Body(`{"name":"Go"}`).Build()
               output: "\"POST https://api.example.com/users\\n\\n{\\\"name\\\":\\\"Go\\\"}\""
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: What parts make up a full HTTP request? How do query parameters attach to a URL?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Store method, base URL, query params as key-value pairs, headers as key-value pairs, body, and timeout.
                 Build() assembles the URL with query string and formats the output.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. RequestBuilder: method, url, params, headers, body, timeout
                 2. QueryParam appends to params slice
@@ -1060,13 +1060,13 @@ variants:
             - input: "NewConfig().From(map[string]string{\"a\": \"1\"}).Set(\"b\", \"2\").Build()"
               output: "map[string]string{\"a\": \"1\", \"b\": \"2\"}"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: How do you store values of different types in a uniform way? What is the simplest common representation?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Store everything as map[string]string internally. SetInt uses strconv.Itoa, SetBool uses
                 strconv.FormatBool. From merges an existing map.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. ConfigBuilder has data map[string]string
                 2. Set stores string directly

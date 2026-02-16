@@ -440,7 +440,7 @@ function buildCourse(slug) {
     function buildExerciseScripts(moduleId) {
         const mod = modules.find(m => m.id === moduleId);
         if (!mod || !mod.hasExercises) return '';
-        return `    <script src="exercise-core.js"></script>\n    <script src="concept-index.js"></script>\n    <script src="course.js"></script>\n    <script src="exercise-renderer.js"></script>\n    <script src="module-loader.js"></script>\n    <script src="scaffold-drill.js"></script>`;
+        return `    <script src="icons.js"></script>\n    <script src="exercise-core.js"></script>\n    <script src="concept-index.js"></script>\n    <script src="course.js"></script>\n    <script src="exercise-renderer.js"></script>\n    <script src="module-loader.js"></script>\n    <script src="scaffold-drill.js"></script>`;
     }
 
     // 7. Generate module HTML pages
@@ -457,7 +457,9 @@ function buildCourse(slug) {
 
         // Inject jump-to-section box after the Exercises heading for modules with exercises
         if (mod.hasExercises) {
-            const jumpBox = `<div class="exercise-jump-box"><div class="exercise-jump-label">Jump to section:</div><div class="exercise-jump-links"><a href="#warmups">🔥 Warmups</a><a href="#challenges">💪 Challenges</a></div></div>`;
+            const fireIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;"><path d="M8 1C8 1 3 6 3 9.5a5 5 0 0010 0C13 6 8 1 8 1z"/><path d="M8 14c-1.5 0-2.5-1-2.5-2.5S8 8 8 8s2.5 1 2.5 3.5S9.5 14 8 14z" fill="currentColor"/></svg>';
+            const starIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;"><path d="M8 1.5l2 4 4.5.5-3.3 3 1 4.5L8 11l-4.2 2.5 1-4.5L1.5 6l4.5-.5z" fill="currentColor" stroke="currentColor"/></svg>';
+            const jumpBox = `<div class="exercise-jump-box"><div class="exercise-jump-label">Jump to section:</div><div class="exercise-jump-links"><a href="#warmups">${fireIcon} Warmups</a><a href="#challenges">${starIcon} Challenges</a></div></div>`;
             htmlContent = htmlContent.replace(
                 /(<h2[^>]*>Exercises<\/h2>)/i,
                 '$1\n' + jumpBox
@@ -469,13 +471,13 @@ function buildCourse(slug) {
                 '<div id="warmups"></div>$1'
             );
             htmlContent = htmlContent.replace(
-                /(<h3[^>]*>)(🔥\s*Warmups)/,
-                '<h3 id="warmups">$2'
+                /(<h3[^>]*>)(Warmups)/,
+                '<h3 id="warmups">' + fireIcon + ' $2'
             );
             // Challenges: add id to heading
             htmlContent = htmlContent.replace(
-                /(<h3[^>]*>)(💪\s*Challenges)/,
-                '<h3 id="challenges">$2'
+                /(<h3[^>]*>)(Challenges)/,
+                '<h3 id="challenges">' + starIcon + ' $2'
             );
         }
 
