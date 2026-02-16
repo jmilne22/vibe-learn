@@ -285,3 +285,17 @@
 [data-theme="light"] .scroll-progress {
     box-shadow: 0 0 6px rgba(122, 98, 200, 0.3);
 }
+
+/* Scaffold drill */
+[data-theme="light"] .drill-container {
+    background: rgba(122, 98, 200, 0.04);
+    border-color: rgba(122, 98, 200, 0.20);
+    border-left-color: var(--amethyst);
+}
+[data-theme="light"] .drill-container-header {
+    border-bottom-color: rgba(122, 98, 200, 0.12);
+}
+[data-theme="light"] .concept-mastery-panel {
+    background: rgba(122, 98, 200, 0.03);
+    border-color: rgba(122, 98, 200, 0.12);
+}

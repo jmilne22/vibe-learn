@@ -1984,3 +1984,224 @@ variants:
           solution: |-
             [1 2 3 99]
             4
+    - id: scaffold_numbers_format
+      concept: "Numbers & Percentages"
+      variants:
+        - id: v1
+          type: trace
+          title: "Predict the Rounding"
+          description: |-
+            What does this print?
+            <pre>val := 3.14159
+            fmt.Printf("%.2f\n", val)
+            fmt.Printf("%.0f\n", val)
+            fmt.Printf("%d\n", int(val))</pre>
+          solution: |-
+            3.14
+            3
+            3
+        - id: v2
+          type: fix
+          title: "Fix the Average"
+          description: |-
+            This should print the average as <code>2.5</code> but prints <code>2</code>:
+            <pre>nums := []int{1, 2, 3, 4}
+            sum := 0
+            for _, n := range nums {
+                sum += n
+            }
+            avg := sum / len(nums)
+            fmt.Println(avg)</pre>
+            Fix it.
+          hints: ["Both <code>sum</code> and <code>len(nums)</code> are ints — integer division truncates. Convert to float64 before dividing."]
+          solution: |-
+            // sum and len(nums) are both ints, so division truncates.
+            // Fix: convert before dividing.
+            avg := float64(sum) / float64(len(nums))
+            fmt.Println(avg) // 2.5
+        - id: v3
+          type: complete
+          title: "Complete the Formatter"
+          description: |-
+            Fill in the blanks to convert a string to a float and print it with two decimal places:
+            <pre>s := "3.14159"
+            val, err := strconv.____________(s, 64)
+            if err != nil {
+                fmt.Println("bad number")
+            }
+            fmt.Printf("_____\n", val) // 3.14</pre>
+          solution: |-
+            strconv.ParseFloat(s, 64)
+            // and
+            fmt.Printf("%.2f\n", val)
+        - id: v4
+          type: produce
+          title: "Compute an Average"
+          description: >-
+            Given <code>latencies := []int{120, 45, 200, 80, 55}</code>, calculate the average as a float and print it with one decimal place. Expected: <code>100.0</code>.
+          hints: ["Sum all values, then divide <code>float64(sum) / float64(len(latencies))</code>. Use <code>%.1f</code> to format."]
+          solution: |-
+            latencies := []int{120, 45, 200, 80, 55}
+            sum := 0
+            for _, v := range latencies {
+                sum += v
+            }
+            avg := float64(sum) / float64(len(latencies))
+            fmt.Printf("%.1f\n", avg) // 100.0
+    - id: scaffold_line_kv
+      concept: "Line Parsing"
+      variants:
+        - id: v1
+          type: trace
+          title: "Predict the Parse"
+          description: |-
+            What does this print?
+            <pre>input := "name=alice\nage=30\ncity=london"
+            m := make(map[string]string)
+            for _, line := range strings.Split(input, "\n") {
+                parts := strings.SplitN(line, "=", 2)
+                m[parts[0]] = parts[1]
+            }
+            fmt.Println(m["age"])
+            fmt.Println(len(m))</pre>
+          solution: |-
+            30
+            3
+        - id: v2
+          type: fix
+          title: "Fix the Key-Value Parser"
+          description: |-
+            This should parse <code>"key=value"</code> lines into a map, but it panics on the blank line:
+            <pre>input := "host=localhost\n\nport=5432"
+            m := make(map[string]string)
+            for _, line := range strings.Split(input, "\n") {
+                parts := strings.SplitN(line, "=", 2)
+                m[parts[0]] = parts[1]
+            }
+            fmt.Println(m)</pre>
+            Fix it to skip blank lines.
+          hints: ["When <code>line</code> is empty, <code>SplitN</code> returns one element — accessing <code>parts[1]</code> panics. Guard the assignment."]
+          solution: |-
+            // Check that SplitN actually produced two parts:
+            for _, line := range strings.Split(input, "\n") {
+                parts := strings.SplitN(line, "=", 2)
+                if len(parts) == 2 {
+                    m[parts[0]] = parts[1]
+                }
+            }
+        - id: v3
+          type: complete
+          title: "Complete the Config Parser"
+          description: |-
+            Fill in the blanks to parse config lines, skipping comments and blanks:
+            <pre>input := "# settings\nhost=localhost\n\nport=5432"
+            m := make(map[string]string)
+            for _, line := range strings.Split(input, "\n") {
+                line = strings.TrimSpace(line)
+                if line == "" || _________________________ {
+                    _________
+                }
+                parts := strings.SplitN(line, "=", 2)
+                if len(parts) == 2 {
+                    m[parts[0]] = parts[1]
+                }
+            }</pre>
+          solution: |-
+            if line == "" || strings.HasPrefix(line, "#") {
+                continue
+            }
+        - id: v4
+          type: produce
+          title: "Parse Environment Variables"
+          description: >-
+            Given <code>env := "APP_NAME=myservice\nAPP_PORT=8080\nAPP_DEBUG=true"</code>, parse it into a <code>map[string]string</code> and print the value of <code>APP_PORT</code>.
+          hints: ["Split on newlines, then split each line on <code>=</code> with a limit of 2. Build a map from the key-value pairs."]
+          solution: |-
+            env := "APP_NAME=myservice\nAPP_PORT=8080\nAPP_DEBUG=true"
+            m := make(map[string]string)
+            for _, line := range strings.Split(env, "\n") {
+                parts := strings.SplitN(line, "=", 2)
+                if len(parts) == 2 {
+                    m[parts[0]] = parts[1]
+                }
+            }
+            fmt.Println(m["APP_PORT"]) // 8080
+    - id: scaffold_combining
+      concept: "Combining Patterns"
+      variants:
+        - id: v1
+          type: trace
+          title: "Predict the Pipeline"
+          description: |-
+            Trace through this code — what does it print?
+            <pre>lines := []string{"INFO ok", "ERROR bad", "INFO done", "ERROR oom"}
+            counts := make(map[string]int)
+            for _, line := range lines {
+                level := strings.Fields(line)[0]
+                counts[level]++
+            }
+            keys := make([]string, 0, len(counts))
+            for k := range counts {
+                keys = append(keys, k)
+            }
+            sort.Strings(keys)
+            fmt.Println(keys[0], counts[keys[0]])</pre>
+          solution: "ERROR 2"
+        - id: v2
+          type: fix
+          title: "Fix the Group and Sort"
+          description: |-
+            This should group names by first letter and print each group sorted, but the output has duplicate keys because of casing:
+            <pre>names := []string{"Alice", "bob", "anna", "Ben"}
+            groups := make(map[string][]string)
+            for _, n := range names {
+                key := n[:1]
+                groups[key] = append(groups[key], n)
+            }
+            fmt.Println(groups)</pre>
+            It creates separate <code>"A"</code> and <code>"a"</code> keys. Fix the grouping key to be case-insensitive.
+          hints: ["Normalise the key to lowercase with <code>strings.ToLower</code> so <code>\"Alice\"</code> and <code>\"anna\"</code> share the <code>\"a\"</code> bucket."]
+          solution: |-
+            // Normalise key to lowercase:
+            key := strings.ToLower(n[:1])
+            groups[key] = append(groups[key], n)
+        - id: v3
+          type: complete
+          title: "Complete the Pipeline"
+          description: |-
+            Fill in the blanks to count pod statuses, then print only statuses with count > 1:
+            <pre>pods := []string{"Running", "Failed", "Running", "Pending", "Running"}
+            counts := make(map[string]int)
+            for _, p := range pods {
+                ___________
+            }
+            for status, n := range counts {
+                if _________ {
+                    fmt.Printf("%s: %d\n", status, n)
+                }
+            }</pre>
+          solution: |-
+            counts[p]++
+            // and
+            if n > 1 {
+        - id: v4
+          type: produce
+          title: "Top Error from Logs"
+          description: >-
+            Given <code>logs := []string{"disk full", "timeout", "disk full", "oom", "timeout", "disk full"}</code>, count each error, find the most frequent one, and print it as <code>"disk full (3)"</code>.
+          hints: ["Count with a map, then loop the map to find the max. Track the winning key and count."]
+          solution: |-
+            logs := []string{"disk full", "timeout", "disk full", "oom", "timeout", "disk full"}
+            counts := make(map[string]int)
+            for _, e := range logs {
+                counts[e]++
+            }
+            topErr := ""
+            topN := 0
+            for e, n := range counts {
+                if n > topN {
+                    topN = n
+                    topErr = e
+                }
+            }
+            fmt.Printf("%s (%d)\n", topErr, topN)
