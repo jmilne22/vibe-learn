@@ -54,7 +54,7 @@
                 'border-radius: 10px;' +
                 'padding: 1.25rem;' +
                 'margin-top: 1rem;' +
-                'background: var(--bg-card);' +
+                'background: var(--bg-surface);' +
             '}' +
             '.drill-container-header {' +
                 'display: flex;' +
@@ -62,7 +62,7 @@
                 'gap: 0.5rem;' +
                 'margin-bottom: 1rem;' +
                 'padding-bottom: 0.75rem;' +
-                'border-bottom: 1px solid var(--bg-lighter);' +
+                'border-bottom: 1px solid var(--border-default);' +
             '}' +
             '.drill-container-title {' +
                 'font-weight: 600;' +
@@ -71,13 +71,13 @@
             '}' +
             '.drill-container-subtitle {' +
                 'font-size: 0.8rem;' +
-                'color: var(--text-dim);' +
+                'color: var(--text-secondary);' +
             '}' +
             '.drill-close-btn {' +
                 'margin-left: auto;' +
                 'background: transparent;' +
-                'border: 1px solid var(--text-dim);' +
-                'color: var(--text-dim);' +
+                'border: 1px solid var(--text-secondary);' +
+                'color: var(--text-secondary);' +
                 'padding: 0.2rem 0.6rem;' +
                 'border-radius: 4px;' +
                 'font-size: 0.75rem;' +
@@ -97,13 +97,13 @@
                 'border-radius: 4px;' +
                 'margin-bottom: 0.5rem;' +
             '}' +
-            '.drill-type-trace { background: var(--cyan); color: var(--bg-dark); }' +
+            '.drill-type-trace { background: var(--cyan); color: var(--bg-base); }' +
             '.drill-type-fix { background: var(--orange); color: white; }' +
             '.drill-type-complete { background: var(--purple); color: white; }' +
-            '.drill-type-produce { background: var(--green-bright); color: var(--bg-dark); }' +
+            '.drill-type-produce { background: var(--green-bright); color: var(--bg-base); }' +
             '.drill-container .exercise {' +
                 'border: none;' +
-                'border-bottom: 1px solid var(--bg-lighter);' +
+                'border-bottom: 1px solid var(--border-default);' +
                 'padding: 0.75rem 0;' +
                 'margin: 0;' +
             '}' +
@@ -113,8 +113,8 @@
                 'margin-bottom: 0.4rem;' +
             '}' +
             '.concept-mastery-panel {' +
-                'background: var(--bg-card);' +
-                'border: 1px solid var(--bg-lighter);' +
+                'background: var(--bg-surface);' +
+                'border: 1px solid var(--border-default);' +
                 'border-radius: 10px;' +
                 'padding: 1.25rem;' +
                 'margin-bottom: 1.5rem;' +
@@ -130,7 +130,7 @@
                 'align-items: center;' +
                 'gap: 0.75rem;' +
                 'padding: 0.5rem 0;' +
-                'border-bottom: 1px solid var(--bg-lighter);' +
+                'border-bottom: 1px solid var(--border-default);' +
             '}' +
             '.concept-mastery-item:last-child { border-bottom: none; }' +
             '.concept-mastery-name {' +
@@ -142,7 +142,7 @@
             '.concept-mastery-bar-container {' +
                 'width: 80px;' +
                 'height: 6px;' +
-                'background: var(--bg-lighter);' +
+                'background: var(--border-default);' +
                 'border-radius: 3px;' +
                 'overflow: hidden;' +
                 'flex-shrink: 0;' +

@@ -104,14 +104,14 @@
             case 'Good':     return 'var(--cyan)';
             case 'Moderate': return 'var(--orange)';
             case 'Weak':     return 'var(--red)';
-            case 'Too early': return 'var(--text-dim)';
-            default:         return 'var(--text-dim)';
+            case 'Too early': return 'var(--text-secondary)';
+            default:         return 'var(--text-secondary)';
         }
     }
 
     /** Text color for strength badges: dark text on bright backgrounds, light on dim */
     function badgeTextColor(label) {
-        return label === 'Too early' ? 'var(--text-main)' : '#111';
+        return label === 'Too early' ? 'var(--text-primary)' : '#111';
     }
 
     /** Minimum reviews per module before showing a strength label */
@@ -196,7 +196,7 @@
     function trendArrow(current, previous, higherIsBetter) {
         if (previous === null || previous === undefined) return '';
         var diff = current - previous;
-        if (diff === 0) return ' <span title="No change from last week" style="font-size: 0.7rem; color: var(--text-dim);">\u2192</span>';
+        if (diff === 0) return ' <span title="No change from last week" style="font-size: 0.7rem; color: var(--text-secondary);">\u2192</span>';
         var good = higherIsBetter ? diff > 0 : diff < 0;
         var arrow = diff > 0 ? '\u2191' : '\u2193';
         var color = good ? 'var(--green-bright)' : 'var(--red)';
@@ -410,7 +410,7 @@
 
     function renderSparkline(snapshots) {
         var dates = Object.keys(snapshots).sort();
-        if (dates.length < 2) return '<span style="color: var(--text-dim); font-size: 0.75rem;">Need 2+ days of data</span>';
+        if (dates.length < 2) return '<span style="color: var(--text-secondary); font-size: 0.75rem;">Need 2+ days of data</span>';
 
         var W = 120, H = 40, PAD = 4;
         var values = [];
@@ -532,7 +532,7 @@
                 // Not started
                 var modName = (window.CourseConfigHelper && window.CourseConfigHelper.moduleNames && window.CourseConfigHelper.moduleNames[modId]) || ('Module ' + modId);
                 gridHTML +=
-                    '<a href="' + link + '" class="mgrid-cell" style="background: var(--bg-lighter); color: var(--text-dim);">' +
+                    '<a href="' + link + '" class="mgrid-cell" style="background: var(--bg-muted); color: var(--text-secondary);">' +
                         '<span class="mgrid-label" style="background: none; color: inherit;">' + cellLabel + '</span>' +
                         '<span class="mgrid-tooltip">' + modName + ' \u2014 Not started</span>' +
                     '</a>';
@@ -692,15 +692,15 @@
             var isTooEarly = mod.label === 'Too early';
             var rowClass = isTooEarly ? 'too-early-item' : '';
             var pct = isTooEarly ? 0 : Math.min(100, Math.round((mod.avgEase / 3.0) * 100));
-            var easeDisplay = isTooEarly ? '' : '<span style="color: var(--text-dim); font-size: 0.85rem; min-width: 4rem;">' + mod.avgEase + '</span>';
+            var easeDisplay = isTooEarly ? '' : '<span style="color: var(--text-secondary); font-size: 0.85rem; min-width: 4rem;">' + mod.avgEase + '</span>';
             var modLabel = mod.num === 'algo' ? 'AL' : 'M' + mod.num;
             var moduleLink = mod.num === 'algo' ? 'algorithms.html' : 'module' + mod.num + '.html';
             html +=
                 '<div class="' + rowClass + '" style="display: flex; align-items: center; gap: 1rem; padding: 0.75rem; border-radius: 6px; margin-bottom: 0.5rem; border-left: 3px solid ' + mod.color + ';">' +
-                    '<a href="' + moduleLink + '" style="color: var(--text-dim); min-width: 2rem; text-decoration: none;">' + modLabel + '</a>' +
+                    '<a href="' + moduleLink + '" style="color: var(--text-secondary); min-width: 2rem; text-decoration: none;">' + modLabel + '</a>' +
                     '<span style="flex: 1;">' + mod.name + '</span>' +
-                    '<span style="color: var(--text-dim); font-size: 0.8rem;">' + mod.count + ' reviewed</span>' +
-                    '<div style="width: 120px; height: 8px; background: var(--bg-lighter); border-radius: 4px; overflow: hidden;">' +
+                    '<span style="color: var(--text-secondary); font-size: 0.8rem;">' + mod.count + ' reviewed</span>' +
+                    '<div style="width: 120px; height: 8px; background: var(--bg-muted); border-radius: 4px; overflow: hidden;">' +
                         '<div style="width: ' + pct + '%; height: 100%; background: ' + mod.color + '; border-radius: 4px;"></div>' +
                     '</div>' +
                     easeDisplay +
@@ -716,7 +716,7 @@
             '<p class="detail-desc">Per-concept breakdown. Needs 3+ review sessions to rate. Weakest first.</p>';
 
         if (report.concepts.length === 0) {
-            html += '<div style="padding: 1rem; text-align: center; color: var(--text-dim);">No concept data yet.</div>';
+            html += '<div style="padding: 1rem; text-align: center; color: var(--text-secondary);">No concept data yet.</div>';
         } else {
             var hasTooEarlyConcepts = false;
             for (var ic = 0; ic < report.concepts.length; ic++) {
@@ -735,9 +735,9 @@
                 var cIsTooEarly = con.label === 'Too early';
                 var cRowClass = cIsTooEarly ? 'too-early-item' : '';
                 var cPct = Math.min(100, Math.round((con.avgEase / 3.0) * 100));
-                var cBarColor = cIsTooEarly ? 'var(--text-dim)' : con.color;
+                var cBarColor = cIsTooEarly ? 'var(--text-secondary)' : con.color;
                 var cBarOpacity = cIsTooEarly ? 'opacity: 0.35;' : '';
-                var cEaseDisplay = '<span style="color: var(--text-dim); font-size: 0.8rem; min-width: 3.5rem;' + (cIsTooEarly ? ' opacity: 0.5;' : '') + '">' + con.avgEase + '</span>';
+                var cEaseDisplay = '<span style="color: var(--text-secondary); font-size: 0.8rem; min-width: 3.5rem;' + (cIsTooEarly ? ' opacity: 0.5;' : '') + '">' + con.avgEase + '</span>';
                 var cModLinks = conceptLinksMap[con.moduleNum] || {};
                 var anchor = cModLinks[con.concept] || '';
                 var conLink = (con.moduleNum === 'algo' ? 'algorithms.html' : 'module' + con.moduleNum + '.html') + anchor;
@@ -745,10 +745,10 @@
                 var reviewWord = con.count === 1 ? ' review' : ' reviews';
                 html +=
                     '<div class="' + cRowClass + '" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.75rem; border-radius: 5px; margin-bottom: 0.4rem; border-left: 3px solid ' + con.color + '; font-size: 0.9rem;">' +
-                        '<a href="' + conLink + '" style="color: var(--text-dim); min-width: 2rem; text-decoration: none;">' + conLabel + '</a>' +
+                        '<a href="' + conLink + '" style="color: var(--text-secondary); min-width: 2rem; text-decoration: none;">' + conLabel + '</a>' +
                         '<a href="' + conLink + '" style="flex: 1; color: inherit; text-decoration: none;">' + con.concept + '</a>' +
-                        '<span style="color: var(--text-dim); font-size: 0.75rem;">' + con.count + reviewWord + '</span>' +
-                        '<div style="width: 100px; height: 6px; background: var(--bg-lighter); border-radius: 3px; overflow: hidden;">' +
+                        '<span style="color: var(--text-secondary); font-size: 0.75rem;">' + con.count + reviewWord + '</span>' +
+                        '<div style="width: 100px; height: 6px; background: var(--bg-muted); border-radius: 3px; overflow: hidden;">' +
                             '<div style="width: ' + cPct + '%; height: 100%; background: ' + cBarColor + '; border-radius: 3px;' + cBarOpacity + '"></div>' +
                         '</div>' +
                         cEaseDisplay +
@@ -766,7 +766,7 @@
             '<p class="detail-desc">Top 10 exercises with the lowest ease factors.</p>';
 
         if (report.weakest.length === 0) {
-            html += '<div style="padding: 1rem; text-align: center; color: var(--text-dim);">No weak exercises yet. Keep practising and struggling exercises will surface.</div>';
+            html += '<div style="padding: 1rem; text-align: center; color: var(--text-secondary);">No weak exercises yet. Keep practising and struggling exercises will surface.</div>';
         } else {
             for (var w = 0; w < report.weakest.length; w++) {
                 var ex = report.weakest[w];
@@ -776,7 +776,7 @@
                     '<div style="display: flex; align-items: center; gap: 1rem; padding: 0.75rem; border-radius: 6px; margin-bottom: 0.5rem;">' +
                         '<span style="color: var(--red); font-weight: 700; min-width: 2rem;">#' + rank + '</span>' +
                         '<span style="flex: 1;">' + prettifyKey(ex.key, ex) + '</span>' +
-                        '<span style="color: var(--text-dim); font-size: 0.85rem;">Ease: ' + ex.easeFactor + '</span>' +
+                        '<span style="color: var(--text-secondary); font-size: 0.85rem;">Ease: ' + ex.easeFactor + '</span>' +
                         '<span style="color: var(--orange); font-size: 0.85rem;">' + status + '</span>' +
                         exercisePracticeLink(ex.key) +
                     '</div>';
@@ -798,20 +798,20 @@
         html +=
             '<div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem;">' +
                 '<span style="min-width: 6rem; color: var(--green-bright);">Got it</span>' +
-                '<div style="flex: 1; height: 24px; background: var(--bg-lighter); border-radius: 4px; overflow: hidden;">' +
-                    '<div style="width: ' + pctGot + '%; height: 100%; background: var(--green-bright); border-radius: 4px; display: flex; align-items: center; padding-left: 8px; color: var(--bg-dark); font-weight: 700; font-size: 0.8rem;">' + report.ratings.gotIt + '</div>' +
+                '<div style="flex: 1; height: 24px; background: var(--bg-muted); border-radius: 4px; overflow: hidden;">' +
+                    '<div style="width: ' + pctGot + '%; height: 100%; background: var(--green-bright); border-radius: 4px; display: flex; align-items: center; padding-left: 8px; color: var(--bg-base); font-weight: 700; font-size: 0.8rem;">' + report.ratings.gotIt + '</div>' +
                 '</div>' +
             '</div>' +
             '<div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem;">' +
                 '<span style="min-width: 6rem; color: var(--orange);">Struggled</span>' +
-                '<div style="flex: 1; height: 24px; background: var(--bg-lighter); border-radius: 4px; overflow: hidden;">' +
-                    '<div style="width: ' + pctStr + '%; height: 100%; background: var(--orange); border-radius: 4px; display: flex; align-items: center; padding-left: 8px; color: var(--bg-dark); font-weight: 700; font-size: 0.8rem;">' + report.ratings.struggled + '</div>' +
+                '<div style="flex: 1; height: 24px; background: var(--bg-muted); border-radius: 4px; overflow: hidden;">' +
+                    '<div style="width: ' + pctStr + '%; height: 100%; background: var(--orange); border-radius: 4px; display: flex; align-items: center; padding-left: 8px; color: var(--bg-base); font-weight: 700; font-size: 0.8rem;">' + report.ratings.struggled + '</div>' +
                 '</div>' +
             '</div>' +
             '<div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem;">' +
                 '<span style="min-width: 6rem; color: var(--red);">Needed solution</span>' +
-                '<div style="flex: 1; height: 24px; background: var(--bg-lighter); border-radius: 4px; overflow: hidden;">' +
-                    '<div style="width: ' + pctPeek + '%; height: 100%; background: var(--red); border-radius: 4px; display: flex; align-items: center; padding-left: 8px; color: var(--bg-dark); font-weight: 700; font-size: 0.8rem;">' + report.ratings.peeked + '</div>' +
+                '<div style="flex: 1; height: 24px; background: var(--bg-muted); border-radius: 4px; overflow: hidden;">' +
+                    '<div style="width: ' + pctPeek + '%; height: 100%; background: var(--red); border-radius: 4px; display: flex; align-items: center; padding-left: 8px; color: var(--bg-base); font-weight: 700; font-size: 0.8rem;">' + report.ratings.peeked + '</div>' +
                 '</div>' +
             '</div>';
 

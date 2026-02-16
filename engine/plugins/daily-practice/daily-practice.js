@@ -242,7 +242,7 @@
 
         var container = document.getElementById('dp-exercise-container');
         if (container) {
-            container.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-dim);">Loading exercise data...</div>';
+            container.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-secondary);">Loading exercise data...</div>';
         }
 
         var targetModules = sessionConfig.modules === 'all'
@@ -421,7 +421,7 @@
             container.innerHTML =
                 '<div class="exercise" style="text-align: center; padding: 2rem;">' +
                     '<h4 style="margin-bottom: 0.5rem;">Module ' + item.moduleNum + ': ' + item.moduleName + '</h4>' +
-                    '<p style="color: var(--text-dim); margin-bottom: 1.25rem;">This exercise is available in the module page.</p>' +
+                    '<p style="color: var(--text-secondary); margin-bottom: 1.25rem;">This exercise is available in the module page.</p>' +
                     '<a href="module' + item.moduleNum + '.html" class="session-next-btn" style="text-decoration: none; display: inline-block;">' +
                         'Open Module ' + item.moduleNum + ' &rarr;' +
                     '</a>' +
@@ -587,7 +587,7 @@
         else if (days < 365) msg = 'Next review in ' + Math.round(days / 30) + ' month' + (Math.round(days / 30) === 1 ? '' : 's');
         else msg = 'Mastered — next review in ' + Math.round(days / 365) + '+ year' + (Math.round(days / 365) === 1 ? '' : 's');
         fb.textContent = msg;
-        fb.style.cssText = 'font-size: 0.78rem; color: var(--text-dim); margin-top: 0.4rem;';
+        fb.style.cssText = 'font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.4rem;';
         ratingEl.insertAdjacentElement('afterend', fb);
     });
 

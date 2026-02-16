@@ -87,8 +87,8 @@
         plugins.forEach(function(plugin) {
             var pluginFile = plugin.file || (plugin.name + '.html');
             var isActive = currentPage === pluginFile;
-            var color = plugin.sidebarColor || 'var(--text-dim)';
-            html += '\n            <a href="' + pluginFile + '" class="sidebar-link' + (isActive ? ' active' : '') + '" style="border-left-color: ' + (isActive ? color : 'transparent') + '; color: ' + (isActive ? color : 'var(--text-dim)') + ';">' +
+            var color = plugin.sidebarColor || 'var(--text-secondary)';
+            html += '\n            <a href="' + pluginFile + '" class="sidebar-link' + (isActive ? ' active' : '') + '" style="border-left-color: ' + (isActive ? color : 'transparent') + '; color: ' + (isActive ? color : 'var(--text-secondary)') + ';">' +
                 '<span class="sidebar-module-num" style="color: ' + color + ';">' + plugin.shortLabel + '</span>' +
                 plugin.label +
             '</a>';

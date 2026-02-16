@@ -225,7 +225,7 @@
         var html = '';
 
         if (warmups.length === 0) {
-            html = '<p style="color: var(--text-dim); text-align: center;">No warmups match this filter.</p>';
+            html = '<p style="color: var(--text-secondary); text-align: center;">No warmups match this filter.</p>';
             container.innerHTML = html;
             return;
         }
@@ -248,7 +248,7 @@
                 var conceptLink = window.conceptLinks[item.warmup.concept];
                 var conceptHtml = conceptLink
                     ? '<a href="' + conceptLink + '" class="concept-link" style="color: var(--green-dim); opacity: 0.8;">(' + item.warmup.concept + ' \u2197)</a>'
-                    : '<span style="font-size: 0.75rem; opacity: 0.6; color: var(--text-dim);">(' + item.warmup.concept + ')</span>';
+                    : '<span style="font-size: 0.75rem; opacity: 0.6; color: var(--text-secondary);">(' + item.warmup.concept + ')</span>';
 
                 item.variant.warmupId = item.warmup.id;
                 html += ER().renderExerciseCard({
@@ -277,7 +277,7 @@
             var conceptLink = window.conceptLinks[warmup.concept];
             var conceptHtml = conceptLink
                 ? '<a href="' + conceptLink + '" class="concept-link" style="color: var(--green-dim); opacity: 0.8;">(' + warmup.concept + ' \u2197)</a>'
-                : '<span style="font-size: 0.75rem; opacity: 0.6; color: var(--text-dim);">(' + warmup.concept + ')</span>';
+                : '<span style="font-size: 0.75rem; opacity: 0.6; color: var(--text-secondary);">(' + warmup.concept + ')</span>';
 
             variant.warmupId = warmup.id;
             html += ER().renderExerciseCard({
@@ -347,7 +347,7 @@
         var blockNames = (window.moduleData && window.moduleData.blockNames) || {};
 
         if (challenges.length === 0) {
-            html = '<p style="color: var(--text-dim); text-align: center;">No challenges match this filter.</p>';
+            html = '<p style="color: var(--text-secondary); text-align: center;">No challenges match this filter.</p>';
             container.innerHTML = html;
             return;
         }
@@ -720,7 +720,7 @@
                 var conceptLink = window.conceptLinks[warmup.concept];
                 var conceptHtml = conceptLink
                     ? '<a href="' + conceptLink + '" class="concept-link" style="color: var(--green-dim); opacity: 0.8;">(' + warmup.concept + ' \u2197)</a>'
-                    : '<span style="font-size: 0.75rem; opacity: 0.6; color: var(--text-dim);">(' + warmup.concept + ')</span>';
+                    : '<span style="font-size: 0.75rem; opacity: 0.6; color: var(--text-secondary);">(' + warmup.concept + ')</span>';
 
                 variant.warmupId = warmup.id;
                 html += ER().renderExerciseCard({
@@ -913,7 +913,7 @@
                 chalBtn.style.color = 'white';
             });
             chalBtn.addEventListener('mouseleave', function() {
-                chalBtn.style.background = 'var(--bg-card)';
+                chalBtn.style.background = 'var(--bg-surface)';
                 chalBtn.style.color = 'var(--orange)';
             });
         }

@@ -19,11 +19,17 @@
             margin: 2rem 0;
         }
         .stat-card {
-            background: var(--bg-card);
+            background: var(--bg-surface);
             padding: 1.5rem;
             border-radius: 8px;
-            border: 1px solid var(--bg-lighter);
+            border: 1px solid var(--border-default);
             text-align: center;
+            box-shadow: var(--shadow-xs);
+            transition: box-shadow var(--transition-normal, 0.2s ease), transform var(--transition-normal, 0.2s ease);
+        }
+        .stat-card:hover {
+            box-shadow: var(--shadow-sm);
+            transform: translateY(-1px);
         }
         .stat-value {
             font-size: 2rem;
@@ -32,12 +38,12 @@
         }
         .stat-sub {
             font-size: 0.8rem;
-            color: var(--text-dim);
+            color: var(--text-secondary);
             margin-top: 0.15rem;
         }
         .stat-label {
             font-size: 0.85rem;
-            color: var(--text-dim);
+            color: var(--text-secondary);
             margin-top: 0.25rem;
         }
         .sparkline-wrap { margin-top: 0.5rem; display: flex; justify-content: center; }
@@ -78,9 +84,9 @@
             bottom: calc(100% + 8px);
             left: 50%;
             transform: translateX(-50%);
-            background: var(--bg-dark);
-            color: var(--text-main);
-            border: 1px solid var(--bg-lighter);
+            background: var(--bg-base);
+            color: var(--text-primary);
+            border: 1px solid var(--border-default);
             border-radius: 6px;
             padding: 0.5rem 0.75rem;
             white-space: nowrap;
@@ -96,7 +102,7 @@
             left: 50%;
             transform: translateX(-50%);
             border: 5px solid transparent;
-            border-top-color: var(--bg-lighter);
+            border-top-color: var(--border-default);
         }
         .mgrid-cell:hover .mgrid-tooltip { display: block; }
 
@@ -107,8 +113,8 @@
             align-items: center;
             gap: 0.75rem;
             padding: 0.75rem 1rem;
-            background: var(--bg-card);
-            border: 1px solid var(--bg-lighter);
+            background: var(--bg-surface);
+            border: 1px solid var(--border-default);
             border-radius: 8px;
             margin-bottom: 0.5rem;
             font-size: 0.9rem;
@@ -129,10 +135,11 @@
 
         /* ── Row 4: Detail Panels ── */
         .detail-panel {
-            background: var(--bg-card);
-            border: 1px solid var(--bg-lighter);
+            background: var(--bg-surface);
+            border: 1px solid var(--border-default);
             border-radius: 8px;
             margin-bottom: 1rem;
+            box-shadow: var(--shadow-sm);
         }
         .detail-panel summary {
             padding: 1rem 1.5rem;
@@ -149,12 +156,12 @@
             content: '\25B6';
             font-size: 0.7rem;
             transition: transform 0.15s;
-            color: var(--text-dim);
+            color: var(--text-secondary);
         }
         .detail-panel[open] summary::before { transform: rotate(90deg); }
         .detail-panel .detail-body { padding: 0 1.5rem 1.25rem; }
         .detail-panel .detail-desc {
-            color: var(--text-dim);
+            color: var(--text-secondary);
             font-size: 0.85rem;
             margin-bottom: 1rem;
         }
@@ -164,7 +171,7 @@
             align-items: center;
             gap: 0.5rem;
             font-size: 0.8rem;
-            color: var(--text-dim);
+            color: var(--text-secondary);
             margin-bottom: 0.75rem;
             cursor: pointer;
         }
@@ -196,7 +203,7 @@
             font-size: 0.8rem;
             text-transform: uppercase;
             letter-spacing: 0.1em;
-            color: var(--text-dim);
+            color: var(--text-secondary);
             margin-bottom: 0.75rem;
         }
 

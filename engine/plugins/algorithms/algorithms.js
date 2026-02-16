@@ -156,7 +156,7 @@
         if (!data || !data.categories) {
             var container = document.getElementById('algo-config');
             if (container) {
-                container.innerHTML = '<p style="color: var(--text-dim); text-align: center; padding: 2rem;">No algorithm data available for this course.</p>';
+                container.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 2rem;">No algorithm data available for this course.</p>';
             }
             return;
         }
@@ -789,13 +789,13 @@
         // Overall lifetime stats
         if (patternDrillStats && patternDrillStats.total > 0) {
             var lifetimePct = Math.round((patternDrillStats.correct / patternDrillStats.total) * 100);
-            html += '<div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--bg-lighter);">' +
-                '<div style="color: var(--text-dim); font-size: 0.85rem; margin-bottom: 0.5rem;">Lifetime: ' +
+            html += '<div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-default);">' +
+                '<div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.5rem;">Lifetime: ' +
                 patternDrillStats.correct + '/' + patternDrillStats.total + ' (' + lifetimePct + '%)</div>';
 
             var catIds = Object.keys(patternDrillStats.byCategory);
             if (catIds.length > 0) {
-                html += '<div style="font-size: 0.8rem; color: var(--text-dim);">';
+                html += '<div style="font-size: 0.8rem; color: var(--text-secondary);">';
                 catIds.forEach(function(catId) {
                     var cs = patternDrillStats.byCategory[catId];
                     var cPct = cs.total > 0 ? Math.round((cs.correct / cs.total) * 100) : 0;
