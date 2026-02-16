@@ -49,13 +49,10 @@
             margin-bottom: 1rem;
             position: relative;
             z-index: 1;
-            background: linear-gradient(135deg, var(--text-primary) 0%, var(--amethyst) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: var(--text-primary);
         }
         .hero h1 .accent {
-            -webkit-text-fill-color: var(--forest);
+            color: var(--accent);
         }
         .hero-sub {
             color: var(--text-secondary);
@@ -235,8 +232,8 @@
         }
         .course-card:hover {
             border-color: var(--amethyst);
-            transform: translateY(-3px) rotate(-0.3deg);
-            box-shadow: var(--shadow-md), var(--shadow-accent);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
         }
         .course-card .course-name {
             font-size: 1.3rem;
@@ -467,7 +464,7 @@
     <div class="landing">
         <!-- Hero -->
         <div class="hero">
-            <div class="hero-brand">// vibe-learn</div>
+            <div class="hero-brand">vibe-learn</div>
             <h1>Build an interactive course<br><span class="accent">on anything</span></h1>
             <p class="hero-sub">
                 Most courses teach a language in the abstract &mdash; syntax, toy exercises, nothing real.
@@ -506,7 +503,7 @@
         </div>
 
         <!-- How it works -->
-        <div class="section-label">// how it works</div>
+        <div class="section-label">how it works</div>
         <div class="how-it-works">
             <div class="step">
                 <div class="step-num">01</div>
@@ -529,13 +526,13 @@
         </div>
 
         <!-- Courses -->
-        <div class="section-label">// built with vibe-learn</div>
+        <div class="section-label">built with vibe-learn</div>
         <div class="course-grid">
 {{COURSE_CARDS}}
         </div>
 
         <!-- Features -->
-        <div class="section-label">// what you get</div>
+        <div class="section-label">what you get</div>
         <div class="features">
             <div class="feature">
                 <div class="feature-icon">&gt;_</div>
@@ -561,7 +558,7 @@
 
         <!-- Zero config -->
         <div class="discovery">
-            <div class="section-label">// zero config</div>
+            <div class="section-label">zero config</div>
             <p class="discovery-intro">
                 Content files drive features &mdash; no registries, no config files, no wiring.
                 Drop files in the right place and the build figures out the rest.

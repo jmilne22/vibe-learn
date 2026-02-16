@@ -18,58 +18,14 @@
             <a href="../index.html" class="dashboard-back-link">&larr; All Courses</a>
         </div>
         <div class="module-header dashboard-header">
-            <div class="module-tag">// DASHBOARD</div>
+            <div class="module-tag">DASHBOARD</div>
             <h1>{{COURSE_NAME}}</h1>
-            <p class="module-desc">Track your progress through {{MODULE_COUNT}} modules</p>
         </div>
 
-        <div class="today-focus" id="today-focus">
-            <div class="today-focus-inner">
-                <div class="today-due" id="today-due">
-                    <span class="today-due-count" id="today-due-count">0</span>
-                    <span class="today-due-label">reviews due</span>
-                </div>
-                <a href="#" id="resume-btn" class="resume-btn">Continue learning &rarr;</a>
-            </div>
-        </div>
+        <!-- Hidden container for JS that writes today-due-count -->
+        <span id="today-due-count" hidden>0</span>
 
         <div class="progress-segments" id="progress-segments"></div>
-
-        <div class="dashboard-panel">
-            <div class="panel-actions">
-                <div class="session-controls">
-                    <select id="session-duration" class="session-duration">
-                        <option value="25-5-15">25/5/15</option>
-                        <option value="50-10-15">50/10/15</option>
-                        <option value="90-20-30">90/20/30</option>
-                    </select>
-                    <button class="session-start-btn" type="button" id="start-session-btn">Start</button>
-                </div>
-            </div>
-            <nav class="panel-nav">
-                <a href="module0.html" class="nav-pill">Quick Ref</a>
-{{PLUGIN_NAV_PILLS}}
-            </nav>
-        </div>
-
-        <div class="session-timer" id="session-timer" hidden>
-            <div class="session-timer-header">
-                <span class="session-title">Session in progress</span>
-                <span class="session-countdown" id="session-countdown">25:00</span>
-            </div>
-            <div class="session-progress">
-                <div class="session-progress-bar" id="session-progress"></div>
-            </div>
-            <div class="session-meta" id="session-label">Focus block • 25 min</div>
-            <div class="session-message" id="session-message"></div>
-            <div class="session-controls">
-                <button class="session-control-btn" type="button" data-session-action="toggle">Pause</button>
-                <button class="session-control-btn" type="button" data-session-action="reset">Reset timer</button>
-                <button class="session-control-btn" type="button" id="sound-toggle"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;"><path d="M6 13a2 2 0 004 0"/><path d="M4 7a4 4 0 018 0c0 2 1 3.5 2 4.5H2c1-1 2-2.5 2-4.5z"/></svg> Sound</button>
-            </div>
-        </div>
-
-        <div id="focus-toggle-slot" class="focus-toggle-slot"></div>
 
         <div class="stats-strip">
             <span class="stat-chip"><span class="stat-chip-value" id="streak-current">0</span> day streak</span>
@@ -89,6 +45,41 @@
                 <div id="activity-heatmap"></div>
             </div>
         </details>
+
+        <div class="dashboard-action-bar">
+            <a href="#" id="resume-btn" class="resume-btn">Continue learning &rarr;</a>
+            <div class="session-controls-row">
+                <select id="session-duration" class="session-duration">
+                    <option value="25-5-15">25/5/15</option>
+                    <option value="50-10-15">50/10/15</option>
+                    <option value="90-20-30">90/20/30</option>
+                </select>
+                <button class="session-start-btn" type="button" id="start-session-btn">Start</button>
+                <div id="focus-toggle-slot" class="focus-toggle-slot"></div>
+            </div>
+        </div>
+
+        <div class="session-timer" id="session-timer" hidden>
+            <div class="session-timer-header">
+                <span class="session-title">Session in progress</span>
+                <span class="session-countdown" id="session-countdown">25:00</span>
+            </div>
+            <div class="session-progress">
+                <div class="session-progress-bar" id="session-progress"></div>
+            </div>
+            <div class="session-meta" id="session-label">Focus block • 25 min</div>
+            <div class="session-message" id="session-message"></div>
+            <div class="session-controls">
+                <button class="session-control-btn" type="button" data-session-action="toggle">Pause</button>
+                <button class="session-control-btn" type="button" data-session-action="reset">Reset timer</button>
+                <button class="session-control-btn" type="button" id="sound-toggle"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;"><path d="M6 13a2 2 0 004 0"/><path d="M4 7a4 4 0 018 0c0 2 1 3.5 2 4.5H2c1-1 2-2.5 2-4.5z"/></svg> Sound</button>
+            </div>
+        </div>
+
+        <nav class="dashboard-nav">
+            <a href="module0.html" class="nav-pill">Quick Ref</a>
+{{PLUGIN_NAV_PILLS}}
+        </nav>
 
         <div class="module-list">
 {{MODULE_LIST}}

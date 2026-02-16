@@ -110,39 +110,108 @@
             html += '\n            <hr style="border: none; border-top: 1px solid var(--border); margin: 0.5rem 0;">';
         }
 
-        // All pages - with sections nested under active page
+        // All pages - group split modules into chapters, keep single modules flat
         // Skip feature items (DP, FC, WC) — already rendered above
-        pages.filter(page => page.type !== 'feature').forEach(page => {
-            const isActive = currentPage === page.file;
-            const isComplete = !page.isProject && page.id !== undefined && isModuleComplete(page.id);
-            const linkClass = page.isProject ? 'sidebar-link sidebar-project-link' : 'sidebar-link';
+        var contentPages = pages.filter(page => page.type !== 'feature');
 
-            const displayTitle = page.isProject ? (Icons.hammer + ' ' + page.title) : page.title;
-            const hasStarted = !page.isProject && page.id !== undefined && isModuleStarted(page.id);
-            let dotClass = 'sidebar-dot';
-            if (isComplete) dotClass += ' complete';
-            else if (hasStarted) dotClass += ' started';
-            html += `
+        // Determine which moduleId the current page belongs to
+        var currentModuleId = null;
+        contentPages.forEach(page => {
+            if (currentPage === page.file && page.moduleId !== undefined) {
+                currentModuleId = page.moduleId;
+            }
+        });
+
+        // Group consecutive section/exercises entries by moduleId into chapters
+        var i = 0;
+        while (i < contentPages.length) {
+            var page = contentPages[i];
+
+            if (page.type === 'section') {
+                // Start of a chapter group — collect all sections + exercises for this module
+                var chapterModuleId = page.moduleId;
+                var chapterTitle = page.chapterTitle;
+                var chapterSections = [];
+                while (i < contentPages.length && (contentPages[i].type === 'section' || contentPages[i].type === 'exercises') && contentPages[i].moduleId === chapterModuleId) {
+                    chapterSections.push(contentPages[i]);
+                    i++;
+                }
+
+                var isChapterActive = currentModuleId === chapterModuleId;
+                var isChapterComplete = isModuleComplete(chapterModuleId);
+                var chapterStarted = isModuleStarted(chapterModuleId);
+
+                // Chapter heading — links to first section
+                var firstSection = chapterSections[0];
+                let chDotClass = 'sidebar-dot';
+                if (isChapterComplete) chDotClass += ' complete';
+                else if (chapterStarted) chDotClass += ' started';
+                html += `
+                <div class="sidebar-chapter${isChapterActive ? ' active' : ''}">
+                    <a href="${firstSection.file}" class="sidebar-chapter-title${isChapterActive ? ' active' : ''}${isChapterComplete ? ' completed' : ''}">
+                        <span class="sidebar-module-num">${String(chapterModuleId).padStart(2, '0')}</span>
+                        ${chapterTitle}
+                        <span class="${chDotClass}"></span>
+                    </a>`;
+
+                // Show sections if chapter is active
+                if (isChapterActive) {
+                    html += `<div class="sidebar-chapter-sections">`;
+                    chapterSections.forEach(sec => {
+                        var isSecActive = currentPage === sec.file;
+                        var secLabel = sec.type === 'exercises' ? (Icons.star + ' Exercises') : sec.title;
+                        var secNum = sec.type === 'exercises' ? '' : ('<span class="sidebar-section-num">' + sec.num + '</span>');
+                        html += `
+                            <a href="${sec.file}" class="sidebar-section-link${isSecActive ? ' active' : ''}">
+                                ${secNum}${secLabel}
+                            </a>`;
+
+                        // If this section page is active, show H2 headings from page content
+                        if (isSecActive && sections.length > 0) {
+                            html += `<div class="sidebar-sections">`;
+                            sections.forEach(section => {
+                                html += `<a href="#${section.id}" class="sidebar-h2-link">${section.title}</a>`;
+                            });
+                            html += `</div>`;
+                        }
+                    });
+                    html += `</div>`;
+                }
+                html += `</div>`;
+            } else {
+                // Regular module or project page (not split)
+                var isActive = currentPage === page.file;
+                var isComplete = !page.isProject && page.id !== undefined && isModuleComplete(page.id);
+                var linkClass = page.isProject ? 'sidebar-link sidebar-project-link' : 'sidebar-link';
+
+                var displayTitle = page.isProject ? (Icons.hammer + ' ' + page.title) : page.title;
+                var hasStarted = !page.isProject && page.id !== undefined && isModuleStarted(page.id);
+                let dotClass = 'sidebar-dot';
+                if (isComplete) dotClass += ' complete';
+                else if (hasStarted) dotClass += ' started';
+                html += `
                 <a href="${page.file}" class="${linkClass}${isActive ? ' active' : ''}${isComplete ? ' completed' : ''}">
                     <span class="sidebar-module-num">${page.num}</span>
                     ${displayTitle}
                     <span class="${dotClass}"></span>
                 </a>
-            `;
+                `;
 
-            // If this page is active, show its sections
-            if (isActive && sections.length > 0) {
-                html += `<div class="sidebar-sections">`;
-                sections.forEach(section => {
-                    html += `
-                        <a href="#${section.id}" class="sidebar-section-link">
-                            ${section.title}
-                        </a>
-                    `;
-                });
-                html += `</div>`;
+                // If this page is active, show its h2 sections
+                if (isActive && sections.length > 0) {
+                    html += `<div class="sidebar-sections">`;
+                    sections.forEach(section => {
+                        html += `
+                            <a href="#${section.id}" class="sidebar-section-link">
+                                ${section.title}
+                            </a>
+                        `;
+                    });
+                    html += `</div>`;
+                }
+                i++;
             }
-        });
+        }
 
         html += `</div>`; // close sidebar-content
 

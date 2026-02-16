@@ -391,7 +391,8 @@
                 challenge: item.challenge,
                 type: item.type,
                 exerciseKey: item.key,
-                moduleLabel: 'M' + item.moduleNum
+                moduleLabel: 'M' + item.moduleNum,
+                expanded: true
             }) : null;
             if (html) {
                 container.innerHTML = html;
@@ -452,7 +453,8 @@
                     if (keyParts === warmup.id + '_' + wv.id) {
                         return window.ExerciseRenderer ? window.ExerciseRenderer.renderExerciseCard({
                             num: 1, variant: wv, challenge: null, type: 'warmup',
-                            exerciseKey: key, moduleLabel: 'M' + item.moduleNum
+                            exerciseKey: key, moduleLabel: 'M' + item.moduleNum,
+                            expanded: true
                         }) : null;
                     }
                 }
@@ -467,7 +469,8 @@
                     if (keyParts === challenge.id + '_' + cv.id) {
                         return window.ExerciseRenderer ? window.ExerciseRenderer.renderExerciseCard({
                             num: 1, variant: cv, challenge: challenge, type: 'challenge',
-                            exerciseKey: key, moduleLabel: 'M' + item.moduleNum
+                            exerciseKey: key, moduleLabel: 'M' + item.moduleNum,
+                            expanded: true
                         }) : null;
                     }
                 }
@@ -484,7 +487,8 @@
                     item.key = 'm' + item.moduleNum + '_' + sw.id + '_' + srv.id;
                     return window.ExerciseRenderer ? window.ExerciseRenderer.renderExerciseCard({
                         num: 1, variant: srv, challenge: null, type: 'warmup',
-                        exerciseKey: item.key, moduleLabel: 'M' + item.moduleNum
+                        exerciseKey: item.key, moduleLabel: 'M' + item.moduleNum,
+                        expanded: true
                     }) : null;
                 }
             }
@@ -498,7 +502,8 @@
                     item.key = 'm' + item.moduleNum + '_' + sc.id + '_' + scv.id;
                     return window.ExerciseRenderer ? window.ExerciseRenderer.renderExerciseCard({
                         num: 1, variant: scv, challenge: sc, type: 'challenge',
-                        exerciseKey: item.key, moduleLabel: 'M' + item.moduleNum
+                        exerciseKey: item.key, moduleLabel: 'M' + item.moduleNum,
+                        expanded: true
                     }) : null;
                 }
             }
@@ -514,7 +519,8 @@
                     item.key = 'm' + item.moduleNum + '_' + fw.id + '_' + rwv.id;
                     return window.ExerciseRenderer ? window.ExerciseRenderer.renderExerciseCard({
                         num: 1, variant: rwv, challenge: null, type: 'warmup',
-                        exerciseKey: item.key, moduleLabel: 'M' + item.moduleNum
+                        exerciseKey: item.key, moduleLabel: 'M' + item.moduleNum,
+                        expanded: true
                     }) : null;
                 }
             }
@@ -528,7 +534,8 @@
                     item.key = 'm' + item.moduleNum + '_' + fc.id + '_' + rcv.id;
                     return window.ExerciseRenderer ? window.ExerciseRenderer.renderExerciseCard({
                         num: 1, variant: rcv, challenge: fc, type: 'challenge',
-                        exerciseKey: item.key, moduleLabel: 'M' + item.moduleNum
+                        exerciseKey: item.key, moduleLabel: 'M' + item.moduleNum,
+                        expanded: true
                     }) : null;
                 }
             }

@@ -404,7 +404,8 @@
                 challenge: challengeObj,
                 type: 'challenge',
                 exerciseKey: item.key,
-                moduleLabel: item.category.name
+                moduleLabel: item.category.name,
+                expanded: true
             });
         }
 
