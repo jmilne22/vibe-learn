@@ -68,7 +68,7 @@
 
         var header = document.createElement('h3');
         header.style.cssText = 'display:flex;align-items:center;gap:0.75rem;';
-        header.textContent = '\uD83D\uDD25 Warmups';
+        header.innerHTML = Icons.fire + ' Warmups';
 
         var btn = EC.createShuffleBtn({ id: 'shuffle-warmups-btn', color: 'green-bright', onClick: function() { shuffleWarmups(); } });
         header.appendChild(btn);
@@ -101,7 +101,7 @@
         var concepts = EC.getUniqueConcepts(variantsData.warmups);
         var filterDiv = EC.createConceptFilter({
             concepts: concepts,
-            label: '\uD83C\uDFAF Focus on a specific concept:',
+            label: Icons.target + ' Focus on a specific concept:',
             allLabel: 'All Concepts',
             onChange: function(concept) {
                 currentWarmupConceptFilter = concept;
@@ -121,7 +121,7 @@
         var concepts = EC.getUniqueConcepts(variantsData.challenges);
         var filterDiv = EC.createConceptFilter({
             concepts: concepts,
-            label: '\uD83C\uDFAF Focus on a specific pattern:',
+            label: Icons.target + ' Focus on a specific pattern:',
             allLabel: 'All Patterns',
             onChange: function(concept) {
                 currentConceptFilter = concept;
@@ -310,13 +310,13 @@
             difficultyNav += '<div class="variant-btn-container">';
 
             if (hasEasierVariants) {
-                difficultyNav += '<button class="easier-variant-btn" data-challenge-id="' + challenge.id + '">\uD83D\uDCC9 Get Easier Version</button>';
+                difficultyNav += '<button class="easier-variant-btn" data-challenge-id="' + challenge.id + '">' + Icons.chartDown + ' Get Easier Version</button>';
             } else if (variantDiff === 1) {
                 difficultyNav += '<button class="easier-variant-btn" disabled title="This is already the easiest variant">\u2713 Already Easiest</button>';
             }
 
             if (hasHarderVariants) {
-                difficultyNav += '<button class="harder-variant-btn" data-challenge-id="' + challenge.id + '">\uD83D\uDCC8 Get Harder Version</button>';
+                difficultyNav += '<button class="harder-variant-btn" data-challenge-id="' + challenge.id + '">' + Icons.chartUp + ' Get Harder Version</button>';
             } else if (variantDiff === 3) {
                 difficultyNav += '<button class="harder-variant-btn" disabled title="This is already the hardest variant">\u2713 Already Hardest</button>';
             }
@@ -421,17 +421,17 @@
         if (total > 0) {
             var infoText = '';
             if (difficultyMode === 'easy') {
-                infoText = '\u2B50 Easy mode: ' + total + ' easy challenge' + (total !== 1 ? 's' : '');
+                infoText = Icons.star + ' Easy mode: ' + total + ' easy challenge' + (total !== 1 ? 's' : '');
             } else if (difficultyMode === 'hard') {
                 var hardCount = counts[3] + counts[4];
-                infoText = '\u2B50\u2B50\u2B50 Hard mode: ' + hardCount + ' hard challenge' + (hardCount !== 1 ? 's' : '');
+                infoText = Icons.stars(3) + ' Hard mode: ' + hardCount + ' hard challenge' + (hardCount !== 1 ? 's' : '');
             } else if (difficultyMode === 'balanced') {
                 var hardCount = counts[3] + counts[4];
-                infoText = '\u2696\uFE0F Distribution: \u2B50 ' + counts[1] + ' (' + Math.round(counts[1]/total*100) + '%) | \u2B50\u2B50 ' + counts[2] + ' (' + Math.round(counts[2]/total*100) + '%) | \u2B50\u2B50\u2B50 ' + hardCount + ' (' + Math.round(hardCount/total*100) + '%)';
+                infoText = Icons.scales + ' Distribution: ' + Icons.star + ' ' + counts[1] + ' (' + Math.round(counts[1]/total*100) + '%) | ' + Icons.stars(2) + ' ' + counts[2] + ' (' + Math.round(counts[2]/total*100) + '%) | ' + Icons.stars(3) + ' ' + hardCount + ' (' + Math.round(hardCount/total*100) + '%)';
             } else if (difficultyMode === 'progressive') {
-                infoText = '\uD83D\uDCC8 Progressive: ' + total + ' challenges with increasing difficulty';
+                infoText = Icons.chartUp + ' Progressive: ' + total + ' challenges with increasing difficulty';
             } else {
-                infoText = '\uD83C\uDFB2 Mixed: ' + total + ' random challenges';
+                infoText = Icons.dice + ' Mixed: ' + total + ' random challenges';
             }
 
             if (infoText) {

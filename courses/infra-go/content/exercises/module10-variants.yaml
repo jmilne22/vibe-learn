@@ -117,9 +117,9 @@ variants:
             - input: mgr.Cleanup()
               output: removes the cgroup directory
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: What's the format for cpu.max? How do you convert a percentage to quota/period?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 cpu.max format is "quota period" in microseconds. 50% = "50000 100000". Use os.WriteFile for each limit
                 file. Cleanup with os.Remove.
@@ -185,9 +185,9 @@ variants:
             - input: invalid JSON
               output: error
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: Should you return on the first validation error, or collect all errors?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Collect all errors in a slice. After checking all fields, join them into one error if any exist. This
                 gives the user complete feedback.
@@ -249,11 +249,11 @@ variants:
             - input: container.Stop(5 * time.Second)
               output: SIGTERM, wait, SIGKILL if needed
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 How do you track the running process so Stop() can signal it? What cleanup is needed even if the process
                 exits abnormally?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Store the *exec.Cmd and its Process in the struct. Start() uses cmd.Start() (not Run, so it doesn't
                 block). Stop() sends SIGTERM, starts a timer, and sends SIGKILL if the process doesn't exit. Use defer

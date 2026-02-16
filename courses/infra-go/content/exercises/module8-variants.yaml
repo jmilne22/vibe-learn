@@ -153,9 +153,9 @@ variants:
             - input: GET /healthz
               output: status 200, {"status":"ok"}
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: What Content-Type header should a JSON response have?
-            - title: 💡 Hint
+            - title: Hint
               content: Set Content-Type to application/json, WriteHeader(200), then json.NewEncoder(w).Encode the map.
           solution: |-
             func healthHandler(w http.ResponseWriter, r *http.Request) {
@@ -181,9 +181,9 @@ variants:
             - input: database returns error
               output: "status 503, {\"database\":\"unhealthy: connection refused\",\"cache\":\"healthy\"}"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: Should you stop checking after the first failure, or check all and aggregate?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Iterate all checks, build a results map. If any check fails, set status to 503. Write the aggregated
                 results as JSON.
@@ -228,9 +228,9 @@ variants:
             - input: GET /readyz, one check exceeds timeout
               output: "status 503, that check shows \"unhealthy: timeout\""
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: How do you enforce a per-check timeout? What if the check function blocks forever?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 For each check, create a context with timeout. Run the check in a goroutine, use select on the result
                 channel and ctx.Done(). Register both /healthz and /readyz on the mux.
@@ -299,9 +299,9 @@ variants:
             - input: OPTIONS /api/pods
               output: response has CORS header, handler still called
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: Should you set the header before or after calling the next handler?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Set <code>w.Header().Set("Access-Control-Allow-Origin", "*")</code> before calling
                 <code>next.ServeHTTP(w, r)</code>.
@@ -332,11 +332,11 @@ variants:
             - input: 10 each from two IPs, limit 10
               output: all pass (separate counters)
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 How do you get the client IP from an http.Request? How do you protect the shared map from concurrent
                 access?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Use <code>r.RemoteAddr</code> for the IP. Lock the mutex, check and increment. If over limit, return
                 429. Start a goroutine with <code>time.NewTicker</code> to reset the map every minute.
@@ -393,11 +393,11 @@ variants:
             - input: handler panics
               output: recovery catches it, returns 500, logged
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 In what order should you iterate the middleware slice? If you Chain(a, b, c), which runs first on each
                 request?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Iterate in reverse: <code>for i := len(mws)-1; i >= 0; i-- { handler = mws[i](handler) }</code>. This
                 makes the first middleware in the slice the outermost wrapper.

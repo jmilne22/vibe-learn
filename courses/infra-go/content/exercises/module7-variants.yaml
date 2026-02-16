@@ -168,9 +168,9 @@ variants:
             - input: validateConfigs([]string{"good.yaml", "bad.yaml", "ok.yaml"}, 2)
               output: map[good.yaml:<nil> bad.yaml:error ok.yaml:<nil>]
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: Jobs channel sends paths. Workers validate and send result structs. Main collects into a map.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Result struct: <code>{Path string; Err error}</code>. Workers range over jobs, send results. Main
                 collects len(paths) results.
@@ -236,11 +236,11 @@ variants:
             - input: fetchAll(cancelledCtx, urls, 3)
               output: (nil, context.Canceled)
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 Semaphore for bounded concurrency. Context for cancellation. First error cancels everything via a
                 derived context.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Create a derived context with <code>context.WithCancel(ctx)</code>. On first error, call cancel.
                 Semaphore: <code>make(chan struct{}, maxConcurrent)</code>.
@@ -314,11 +314,11 @@ variants:
             - input: lintPipeline(ctx, "./configs", 4)
               output: Summary{Total:10, Valid:8, Invalid:2}
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 Stage 1 walks the directory and sends paths to a channel. Stage 2 has N workers reading from that
                 channel. Stage 3 aggregates results.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Stage 1: goroutine with WalkDir, sends to paths channel, closes it. Stage 2: N workers range over paths,
                 send LintResult to results. Stage 3: range over results, count valid/invalid.
@@ -419,9 +419,9 @@ variants:
             - input: checkHealthWithTimeout(endpoints, 10*time.Millisecond) // one slow
               output: partial results
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: Create a context with timeout. Pass it to all goroutines. Collect results until timeout or all done.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Use a buffered results channel. After launching goroutines, collect with select: <code>case r :=
                 <-results</code> or <code>case <-ctx.Done()</code>.
@@ -483,9 +483,9 @@ variants:
             - input: runService(cancelledCtx, jobs)
               output: "0"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: Select between jobs and ctx.Done(). When cancelled, return immediately. Count processed jobs.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Loop with select: <code>case job, ok := <-jobs</code> (process), <code>case <-ctx.Done()</code> (return
                 count). Check <code>!ok</code> for closed channel.
@@ -532,11 +532,11 @@ variants:
             - input: handler(cancelledCtx)
               output: ("", context error)
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 Handler sets overall timeout. Service creates child context for store call. If store times out, service
                 tries fallback with remaining time.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Service: <code>storeCtx, cancel := context.WithTimeout(ctx, 2*time.Second)</code>. Try store. If
                 deadline exceeded, try fallback with the parent ctx (which still has time).

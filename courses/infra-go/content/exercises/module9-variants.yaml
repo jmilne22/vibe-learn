@@ -147,9 +147,9 @@ variants:
             - input: GET missing
               output: NOT FOUND
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: How do you parse the command and arguments from a line? How do you protect the shared map?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Split the line with strings.Fields. Lock mu for writes (SET), RLock for reads (GET). Use bufio.Scanner
                 to read lines.
@@ -210,9 +210,9 @@ variants:
             - input: client disconnects
               output: removed from broadcast list
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: How do you safely add/remove clients while broadcasting? How do you detect disconnected clients?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Keep a map[net.Conn]string (conn → name). Mutex-protect add/remove. Broadcast by iterating the map and
                 writing to each conn. If write fails, remove that client.
@@ -288,9 +288,9 @@ variants:
             - input: Close()
               output: all connections closed, Get() returns error
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: A buffered channel of size N naturally limits concurrency. How do you handle the pool being closed?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Pool struct has <code>conns chan net.Conn</code> and <code>closed bool</code>. Pre-fill with Dial. Get
                 reads from channel, Put writes back. Close drains and closes all conns.
@@ -373,9 +373,9 @@ variants:
             - input: "[3]api[5]local[0] at offset 0"
               output: ("api.local", 11)
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: Each label starts with a length byte. What terminates the domain name?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Loop: read length byte. If 0, break. Read that many bytes as a label. Advance offset. Join labels with
                 dots.
@@ -412,9 +412,9 @@ variants:
             - input: query for api.local, ip 10.0.0.2
               output: response ID matches query ID
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: How do you find where the question section ends in the query? What does a name pointer (0xC00C) do?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Question ends after the null-terminated domain name + 4 bytes (QTYPE + QCLASS). Use 0xC00C as a pointer
                 to the name at offset 12. Answer: pointer + type A (0x0001) + class IN (0x0001) + TTL (4 bytes) + length
@@ -474,11 +474,11 @@ variants:
             - input: resolve("nonexistent.invalid", "8.8.8.8:53")
               output: nil, error (NXDOMAIN)
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 How do you build a DNS query from scratch? What random data do you need? How do you parse the response
                 to find the IP?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Build header (random ID, flags 0x0100, 1 question). Encode domain name. Append QTYPE=1 (A), QCLASS=1
                 (IN). Send via UDP with 3s deadline. Parse response: skip to answer section, read the last 4 bytes as

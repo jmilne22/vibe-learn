@@ -395,15 +395,15 @@ variants:
             - input: ch1 sends 10; ch2 sends 20
               output: merged channel produces 10 and 20
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 How do you know when all input channels are done? How do you safely close the output channel exactly
                 once?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Use sync.WaitGroup: Add(1) for each input channel, Done() when a reader goroutine finishes. A separate
                 goroutine waits on wg.Wait() then closes the output.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: >-
                 <pre>1. Create output channel
 
@@ -466,13 +466,13 @@ variants:
             - input: generate(2,3) -> square -> filter(_, 5)
               output: "channel produces: 9"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: How does each stage know when to stop? What happens when you range over a closed channel?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Each stage reads from its input channel using range (which stops when the channel closes), processes the
                 value, and sends to its output channel. Close the output when the range loop ends.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. generate: send each num, close output
                 2. square: range over input, send n*n, close output
@@ -538,13 +538,13 @@ variants:
             - input: "[]int{10, 20}, 2"
               output: "[]int{20, 40} (order may vary)"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: How do multiple workers share work? Who closes the jobs channel, and who closes the results channel?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Send all jobs to a jobs channel, then close it. Workers range over the jobs channel. Use a WaitGroup to
                 know when all workers are done, then close the results channel.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Create jobs and results channels
                 2. Launch numWorkers goroutines that range over jobs
@@ -608,15 +608,15 @@ variants:
             - input: "[]string{\"a\", \"b\", \"c\"}, 2, func(s string) string { return s + \"!\" }"
               output: "[\"a!\", \"b!\", \"c!\"]"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 How do you preserve order when goroutines complete at different times? What extra information do you
                 need to send with each result?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Send indexed jobs (index + input) to workers. Workers return indexed results (index + output).
                 Pre-allocate the result slice and place each result at its original index.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Create indexed job struct {index int, value string}
                 2. Workers read jobs, apply fn, send indexed results
@@ -700,13 +700,13 @@ variants:
             - input: NewRateLimiter(10) // 10 ops/sec
               output: Wait() blocks ~100ms between calls
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: If you want N operations per second, what is the interval between each allowed operation?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Interval is time.Second / time.Duration(perSecond). Create a time.Ticker with that interval. Wait()
                 reads from ticker.C.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. RateLimiter has a *time.Ticker field
                 2. NewRateLimiter calculates interval, creates ticker
@@ -755,13 +755,13 @@ variants:
             - input: NewTokenBucket(1, 10) // 1 burst, 10/sec refill
               output: Allow() returns true, then false, then true after 100ms
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: How do you safely modify the token count from both the refill goroutine and the Allow method?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Use a mutex to protect the tokens field. A background goroutine adds tokens at the refill rate using a
                 ticker. Allow() locks, checks tokens > 0, decrements, and returns.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. TokenBucket: tokens, capacity int, mu sync.Mutex, stop chan
                 2. Background goroutine: ticker at rate, add token if below capacity
@@ -839,13 +839,13 @@ variants:
             - input: NewSlidingWindow(1, 500*time.Millisecond)
               output: Allow() true, then false, then true after 500ms
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: How do you track when each request happened? How do you efficiently remove old entries?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Store timestamps in a slice. On each Allow(), remove timestamps older than now-window. If
                 len(timestamps) < maxRequests, add now and return true.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. SlidingWindow: timestamps []time.Time, max, window, mu
                 2. Allow(): lock, evict old timestamps
@@ -915,13 +915,13 @@ variants:
             - input: limiter.Allow("user2") // different key
               output: "true"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: How do you track rate limits independently for each key? What data structure maps keys to their state?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Use a map[string]time.Time to store the last-allowed time per key. If now - lastAllowed >= interval,
                 allow and update. Use a mutex for thread safety.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. PerKeyLimiter: limits map[string]time.Time, interval, mu
                 2. interval = time.Second / maxPerSecond
@@ -993,13 +993,13 @@ variants:
             - input: Run program, press Ctrl+C immediately
               output: "'Worker stopping...', 'Done'"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: How does the main goroutine tell the worker to stop? How does it know the worker has actually finished?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Use two channels: 'stop' (main tells worker to stop) and 'done' (worker confirms it stopped). The worker
                 uses select to check for stop signals between work iterations.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Create stop and done channels
                 2. Worker: select on stop or default (do work)
@@ -1057,13 +1057,13 @@ variants:
             - input: Run program, press Ctrl+C immediately
               output: "'context canceled', 'Done'"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: How does context.WithCancel propagate cancellation? What channel does the worker monitor?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Create ctx, cancel := context.WithCancel(context.Background()). Pass ctx to the worker. Worker selects
                 on ctx.Done(). Main calls cancel() on signal.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. ctx, cancel := context.WithCancel(context.Background())
                 2. Worker: select on ctx.Done() or default
@@ -1123,13 +1123,13 @@ variants:
             - input: Workers have IDs 1, 2, 3
               output: Each worker prints 'Worker N stopping...'
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: How do you signal all workers at once? How do you wait for all of them to finish?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Close a shared 'stop' channel to broadcast to all workers. Use sync.WaitGroup with Add(3), and each
                 worker calls Done() when finished.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. stop channel, WaitGroup
                 2. Launch 3 workers: wg.Add(1) each, defer wg.Done()
@@ -1191,15 +1191,15 @@ variants:
             - input: Queue 5 jobs, Ctrl+C before any processed
               output: All 5 jobs processed, then 'Processed 5 jobs'
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 How does the worker know there are no more jobs coming? What is the difference between stopping
                 immediately and draining?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Close the jobs channel to signal no more jobs. The worker ranges over the channel and processes all
                 remaining items. This naturally drains the queue.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Buffered jobs channel, done channel
                 2. Producer goroutine sends jobs (checks for stop)

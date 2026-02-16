@@ -373,7 +373,7 @@ Practice individual concepts with quick drills, then tackle multi-step challenge
     <noscript><p class="js-required">JavaScript is required for the interactive exercises.</p></noscript>
 </div>
 
-### 💪 Challenges
+### Challenges
 
 Apply what you learned to infra-themed problems. Each challenge has multiple variants — shuffle to keep things fresh.
 

@@ -848,11 +848,11 @@ variants:
             - input: "Internal-only service, port 4000, app=auth-service"
               output: "ClusterIP Service on port 4000"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: "Which Service type is used for internal-only communication? What is the default type?"
-            - title: "💡 Hint"
+            - title: "Hint"
               content: "ClusterIP is the default Service type and is only reachable from within the cluster. Perfect for internal microservices."
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>1. Use ClusterIP (default type)
                 2. Selector matches Pod labels
@@ -881,11 +881,11 @@ variants:
             - input: "External access on minikube, port 3000, app=webapp, fixed external port"
               output: "NodePort Service on port 3000, nodePort in 30000-32767"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: "You need external access without a cloud load balancer. Which Service type exposes on every node's IP?"
-            - title: "💡 Hint"
+            - title: "Hint"
               content: "NodePort exposes the Service on a static port (30000-32767) on every node. On minikube, access via <code>$(minikube ip):nodePort</code>."
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>1. type: NodePort for external access
                 2. nodePort in 30000-32767 range
@@ -915,11 +915,11 @@ variants:
             - input: "Cloud production, external IP, port 80 -> 8080, app=api"
               output: "LoadBalancer Service mapping 80 to 8080"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: "Which Service type provisions a cloud load balancer with a real external IP?"
-            - title: "💡 Hint"
+            - title: "Hint"
               content: "LoadBalancer type requests an external load balancer from the cloud provider. On AWS, this creates an ELB/NLB. The Service gets an EXTERNAL-IP."
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>1. type: LoadBalancer for cloud external access
                 2. port: 80 (standard HTTP)
@@ -949,11 +949,11 @@ variants:
             - input: "DNS alias to db.prod.example.com, name=database"
               output: "ExternalName Service with CNAME"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: "Which Service type creates a DNS alias (CNAME) to an external hostname without any proxying?"
-            - title: "💡 Hint"
+            - title: "Hint"
               content: "ExternalName creates a CNAME DNS record. No selector, no ClusterIP — just a DNS redirect. Pods connect to <code>database.default.svc.cluster.local</code> and DNS resolves to the external hostname."
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>1. type: ExternalName
                 2. externalName: the real hostname
@@ -979,11 +979,11 @@ variants:
             - input: "Staging: local access via kind, Production: GKE external IP, port 8080, app=frontend"
               output: "NodePort for staging, LoadBalancer for production"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: "What type gives external access on a local cluster? What type gives a real external IP on a cloud provider?"
-            - title: "💡 Hint"
+            - title: "Hint"
               content: "Use NodePort for staging (local clusters like kind/minikube) and LoadBalancer for production (cloud providers). The selector and targetPort stay the same."
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>Staging:
                   type: NodePort
@@ -1030,11 +1030,11 @@ variants:
             - input: "External IP 192.168.1.50, port 3306, name=legacy-db"
               output: "Service without selector + Endpoints with manual IP"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: "How do you create a Service that points to an IP address outside the cluster? What do you use when there is no label selector?"
-            - title: "💡 Hint"
+            - title: "Hint"
               content: "Create a Service without a <code>selector</code>, then create an Endpoints resource with the same name. The Endpoints resource lists the external IP and port."
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>1. Service with no selector (just ports)
                 2. Endpoints resource with same name
@@ -1070,11 +1070,11 @@ variants:
             - input: "Cloud HTTPS, port 443 -> 8443, app=secure-api, LoadBalancer"
               output: "LoadBalancer Service mapping 443 to 8443"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: "The container does its own TLS termination on port 8443. The Service needs to expose standard HTTPS port 443."
-            - title: "💡 Hint"
+            - title: "Hint"
               content: "Use LoadBalancer type with port 443 mapping to targetPort 8443. The Service remaps the port so external clients connect on the standard HTTPS port."
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>1. type: LoadBalancer
                 2. port: 443 (standard HTTPS)
@@ -1110,11 +1110,11 @@ variants:
             - input: "3 replicas nginx:1.25, port 80, app=web"
               output: "Deployment labels match Service selector, endpoints populated"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: "Which labels must match? The Service selector must match the Pod template labels, not the Deployment labels. The Deployment selector must also match the Pod template."
-            - title: "💡 Hint"
+            - title: "Hint"
               content: "Three labels must align: the Deployment's <code>spec.selector.matchLabels</code>, the Pod template's <code>metadata.labels</code>, and the Service's <code>spec.selector</code>. All three should use the same label (e.g., <code>app: web</code>)."
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>1. Deployment:
                    spec.selector.matchLabels: {app: web}
@@ -1166,11 +1166,11 @@ variants:
             - input: "API: myapi:v2 port 3000, Redis: redis:7 port 6379"
               output: "Two Deployments + two Services, API can reach redis:6379"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: "Each Deployment needs its own labels, and each Service selector must match the right Deployment's Pod labels. The API uses the Redis Service DNS name."
-            - title: "💡 Hint"
+            - title: "Hint"
               content: "Use different label values: <code>app: api</code> for the API and <code>app: redis</code> for Redis. The API Pod can connect to <code>redis:6379</code> because Kubernetes DNS resolves the Service name."
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>1. API Deployment: app=api, image myapi:v2, containerPort 3000
                 2. API Service: selector app=api, port 3000
@@ -1252,11 +1252,11 @@ variants:
             - input: "Frontend: NodePort 30080, Backend: ClusterIP 8080"
               output: "Frontend externally accessible, backend internal only"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: "The frontend needs external access (NodePort) while the backend should be internal-only (ClusterIP). Both need Deployments with matching label selectors."
-            - title: "💡 Hint"
+            - title: "Hint"
               content: "Use <code>app: frontend</code> and <code>app: backend</code> labels. The frontend Service is NodePort with nodePort 30080. The backend Service is ClusterIP. The frontend Pods reach the backend via DNS name <code>backend</code>."
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>1. Frontend Deployment: app=frontend, port 80
                 2. Frontend Service: NodePort, nodePort 30080
@@ -1339,11 +1339,11 @@ variants:
             - input: "payment:v3 on 9090, Service port 80, labels app=payment tier=backend"
               output: "Service port 80 -> targetPort 9090, multi-label selector"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: "The Service port and targetPort differ — clients connect to port 80 but traffic forwards to port 9090. The selector uses two labels."
-            - title: "💡 Hint"
+            - title: "Hint"
               content: "Set <code>port: 80</code> and <code>targetPort: 9090</code> in the Service. Both labels (<code>app: payment</code> and <code>tier: backend</code>) must appear in the Pod template labels AND the Service selector."
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>1. Deployment Pod labels: {app: payment, tier: backend}
                 2. Service selector: {app: payment, tier: backend}
@@ -1396,11 +1396,11 @@ variants:
             - input: "3 tiers: web(NodePort), api(ClusterIP), postgres(ClusterIP)"
               output: "Three Deployment+Service pairs with correct wiring"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: "Only the frontend needs external access (NodePort). The API and database are internal (ClusterIP). Each tier has distinct labels."
-            - title: "💡 Hint"
+            - title: "Hint"
               content: "Use labels <code>app: web</code>, <code>app: api</code>, and <code>app: postgres</code>. Only the web Service is NodePort. The API uses ClusterIP on port 3000. PostgreSQL uses ClusterIP on port 5432."
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>Frontend: NodePort 30080, port 80, app=web
                 API: ClusterIP, port 3000, app=api
@@ -1514,11 +1514,11 @@ variants:
             - input: "Frontend: LoadBalancer port 80, Backend: ClusterIP echo on 5678 exposed as 80"
               output: "External LB + internal ClusterIP with port remapping"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: "The frontend needs a cloud load balancer (LoadBalancer). The backend uses port remapping: Service port 80 forwards to container port 5678."
-            - title: "💡 Hint"
+            - title: "Hint"
               content: "The echo container listens on 5678, but its Service exposes port 80. This way, the frontend just calls <code>http://echo:80</code> without knowing the internal port."
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>Frontend: LoadBalancer, port 80, app=frontend
                 Backend: ClusterIP, port 80 -> targetPort 5678, app=echo
@@ -1600,11 +1600,11 @@ variants:
             - input: "myapp:v1, HTTP 8080->80, metrics 9090->9090, named ports"
               output: "Multi-port Deployment + Service with named ports"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: "The container exposes two ports. The Service must list both with names (required when multiple ports exist)."
-            - title: "💡 Hint"
+            - title: "Hint"
               content: "List both <code>containerPort</code> entries in the Deployment and both <code>port</code>/<code>targetPort</code> entries in the Service. Give each a <code>name</code>."
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>Container ports: 8080 (http), 9090 (metrics)
                 Service ports:
@@ -1660,11 +1660,11 @@ variants:
             - input: "Named containerPort 'api-port' at 9090, Service references by name"
               output: "Service targetPort uses string 'api-port' instead of 9090"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: "Named ports decouple the Service from the container's actual port number. If the container port changes, only the Deployment needs updating."
-            - title: "💡 Hint"
+            - title: "Hint"
               content: "In the container spec, set <code>name: api-port</code> alongside <code>containerPort: 9090</code>. In the Service, use <code>targetPort: api-port</code> (a string, not a number)."
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>Deployment container:
                   ports:
@@ -1753,11 +1753,11 @@ variants:
             - input: "kubectl get endpoints api shows <none>"
               output: "Service selector app:api-server does not match Pod label app:api"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: "The Service has no endpoints. This means the selector is not matching any Pods. Compare the Service selector with the Pod template labels."
-            - title: "💡 Hint"
+            - title: "Hint"
               content: "The Service selector says <code>app: api-server</code> but the Pod labels say <code>app: api</code>. They must match exactly."
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>Debug steps:
                 1. kubectl get endpoints api → shows <none>
@@ -1817,11 +1817,11 @@ variants:
             - input: "curl http://web:80 times out, but endpoints exist"
               output: "Service targetPort 8080 does not match container port 80"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: "Endpoints exist (labels match), but connections fail. The issue is at the port level. What port is the container actually listening on?"
-            - title: "💡 Hint"
+            - title: "Hint"
               content: "The Service <code>targetPort: 8080</code> sends traffic to port 8080 on the Pod, but nginx listens on port 80 (<code>containerPort: 80</code>). The targetPort must match the container's actual listening port."
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>Debug steps:
                 1. kubectl get endpoints web → IPs exist (labels match)
@@ -1882,11 +1882,11 @@ variants:
             - input: "kubectl get endpoints backend shows <none>"
               output: "Service requires label version:v2 but Pods only have app:backend"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: "The Service selector requires ALL listed labels to match. The Pods must have every label the Service selector specifies."
-            - title: "💡 Hint"
+            - title: "Hint"
               content: "The Service selector requires <code>app: backend</code> AND <code>version: v2</code>. The Pods only have <code>app: backend</code>. Fix by either adding the label to Pods or removing it from the Service selector."
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>Debug steps:
                 1. kubectl describe svc backend → Selector: app=backend,version=v2
@@ -1940,11 +1940,11 @@ variants:
             - input: "nslookup api-service fails, nslookup api succeeds"
               output: "Service name is 'api' but code uses 'api-service'"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: "Kubernetes DNS creates records based on the Service <code>metadata.name</code>. What name did we give the Service?"
-            - title: "💡 Hint"
+            - title: "Hint"
               content: "The Service is named <code>api</code> but the frontend code tries to connect to <code>api-service</code>. Either rename the Service or update the application config to use <code>api</code>."
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>Debug steps:
                 1. kubectl exec frontend -- nslookup api-service → NXDOMAIN
@@ -1986,11 +1986,11 @@ variants:
             - input: "kubectl apply fails: 'provided port is not in the valid range'"
               output: "nodePort 8080 is outside 30000-32767 range"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: "NodePort values have a restricted range. What is the valid range for nodePort?"
-            - title: "💡 Hint"
+            - title: "Hint"
               content: "NodePorts must be in the range 30000-32767. The value 8080 is outside this range. Change it to a value like 30080."
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>Valid nodePort range: 30000-32767
                 Common mapping: 80 → 30080, 443 → 30443
@@ -2030,11 +2030,11 @@ variants:
             - input: "kubectl get endpoints payment shows <none>"
               output: "Selector 'payment-sv' is a typo for 'payment-svc'"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: "Label selectors must match exactly. Even one character difference means no match."
-            - title: "💡 Hint"
+            - title: "Hint"
               content: "The selector says <code>payment-sv</code> but Pods have <code>payment-svc</code>. A simple typo — the trailing 'c' is missing."
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>Debug steps:
                 1. kubectl get endpoints payment → <none>
@@ -2074,11 +2074,11 @@ variants:
             - input: "DNS queries to custom-dns:53 time out"
               output: "Service defaults to TCP but DNS uses UDP"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: "DNS primarily uses UDP, not TCP. What is the default protocol for a Kubernetes Service port?"
-            - title: "💡 Hint"
+            - title: "Hint"
               content: "The default protocol is TCP. DNS queries use UDP. Add <code>protocol: UDP</code> to the port entry. For full DNS support, expose both TCP and UDP on port 53."
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>Debug steps:
                 1. DNS queries time out (UDP traffic)
@@ -2115,11 +2115,11 @@ variants:
             - input: "curl http://api:80 from namespace 'frontend' fails"
               output: "Must use FQDN: http://api.backend.svc.cluster.local:80"
           hints:
-            - title: "🤔 Think about it"
+            - title: "Think about it"
               content: "Short DNS names like <code>api</code> only resolve within the same namespace. How do you reach a Service in a different namespace?"
-            - title: "💡 Hint"
+            - title: "Hint"
               content: "Use the fully-qualified DNS name: <code>api.backend.svc.cluster.local</code> or the shorter form <code>api.backend</code>. The format is <code>&lt;service&gt;.&lt;namespace&gt;.svc.cluster.local</code>."
-            - title: "🔧 Pattern"
+            - title: "Pattern"
               content: |-
                 <pre>DNS resolution:
                   Same namespace: http://api:80

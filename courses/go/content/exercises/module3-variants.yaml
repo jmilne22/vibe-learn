@@ -707,15 +707,15 @@ variants:
             - input: x, y := 0, 0; swap(&x, &y)
               output: x == 0, y == 0
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 How do you swap two values in any language? You usually need a temporary variable -- but Go has a
                 shortcut.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Go supports parallel assignment: <code>*a, *b = *b, *a</code>. Both sides are evaluated before
                 assignment.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Dereference both pointers
                 2. Assign in parallel: *a, *b = *b, *a
@@ -744,11 +744,11 @@ variants:
             - input: a, b := "", "Go"; swapStrings(&a, &b)
               output: a == "Go", b == ""
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: Swapping strings works exactly the same as swapping ints with pointers.
-            - title: 💡 Hint
+            - title: Hint
               content: "Use parallel assignment: <code>*a, *b = *b, *a</code>"
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Dereference both string pointers
                 2. Parallel assign: *a, *b = *b, *a</pre>
@@ -777,11 +777,11 @@ variants:
             - input: a, b := 4, 4; sortPair(&a, &b)
               output: a == 4, b == 4
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: When should you swap? Only when the first value is greater than the second.
-            - title: 💡 Hint
+            - title: Hint
               content: Check <code>if *a > *b</code> before swapping.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Compare *a and *b
                 2. If *a > *b, swap them
@@ -814,11 +814,11 @@ variants:
             - input: a, b, c := 10, 20, 30; rotateRight(&a, &b, &c)
               output: a == 30, b == 10, c == 20
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: A right rotation means each element takes the value of the one before it (wrapping around).
-            - title: 💡 Hint
+            - title: Hint
               content: "Use Go's parallel assignment with three variables: <code>*a, *b, *c = *c, *a, *b</code>"
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>Right rotate: each gets its left neighbor
                 *a, *b, *c = *c, *a, *b</pre>
@@ -863,11 +863,11 @@ variants:
             - input: c := Counter{}; c.Decrement()
               output: c.Value() == -1
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: Which methods need to modify the struct? Those need pointer receivers.
-            - title: 💡 Hint
+            - title: Hint
               content: Increment and Decrement need <code>*Counter</code> receivers. Value can use a value receiver.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>type Counter struct { value int }
                 func (c *Counter) Increment() { c.value++ }
@@ -916,13 +916,13 @@ variants:
             - input: s := Stack{}; val, ok := s.Pop()
               output: val == 0, ok == false
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: A stack is last-in-first-out (LIFO). Which end of a slice is cheapest to add/remove from?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Use <code>append</code> for Push. For Pop, grab the last element and reslice: <code>s.items =
                 s.items[:len(s.items)-1]</code>
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>Push: s.items = append(s.items, val)
                 Pop: get last, shrink slice
@@ -974,11 +974,11 @@ variants:
             - input: t := Toggle{}; t.Flip(); t.Flip()
               output: t.IsOn() == false
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: How do you toggle a boolean? Think about the NOT operator.
-            - title: 💡 Hint
+            - title: Hint
               content: Use <code>t.on = !t.on</code> in the Flip method with a pointer receiver.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>type Toggle struct { on bool }
                 func (t *Toggle) Flip() { t.on = !t.on }
@@ -1017,11 +1017,11 @@ variants:
             - input: a := Accumulator{}; a.Add(10); a.Reset()
               output: a.Total() == 0
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: This is like Counter but with arbitrary additions and a reset capability.
-            - title: 💡 Hint
+            - title: Hint
               content: Add increments by n, Reset sets to 0, Total returns the current sum.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>type Accumulator struct { sum int }
                 Add: a.sum += n
@@ -1079,11 +1079,11 @@ variants:
             - input: safeDeref(nil)
               output: "\"<nil>\""
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: What happens if you dereference a nil pointer? You need to guard against that.
-            - title: 💡 Hint
+            - title: Hint
               content: Check <code>p == nil</code> before dereferencing. Return the fallback string if nil.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Check if p == nil
                 2. If nil, return "<nil>"
@@ -1117,11 +1117,11 @@ variants:
             - input: a, b := 1, 2; coalesce(&a, &b)
               output: 1, true
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: You need to iterate through the pointers and find the first non-nil one.
-            - title: 💡 Hint
+            - title: Hint
               content: Use a range loop over the variadic parameter. Check each for nil.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. For each pointer in ptrs:
                    - If not nil, return *ptr, true
@@ -1159,11 +1159,11 @@ variants:
             - input: safeAdd(nil, nil)
               output: 0, error
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: You need to validate both inputs before operating on them.
-            - title: 💡 Hint
+            - title: Hint
               content: Check <code>a == nil || b == nil</code> and return an error using <code>fmt.Errorf</code>.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Check if either pointer is nil
                 2. If yes, return 0 and an error
@@ -1201,11 +1201,11 @@ variants:
             - input: safeMax(nil, nil)
               output: result == nil
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: Handle the nil cases first, then compare the dereferenced values.
-            - title: 💡 Hint
+            - title: Hint
               content: If a is nil, return b (and vice versa). If neither is nil, compare <code>*a</code> and <code>*b</code>.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. If a == nil, return b
                 2. If b == nil, return a
@@ -1267,15 +1267,15 @@ variants:
             - input: traverse(buildList([]int{42}))
               output: "[]int{42}"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 To build a list preserving order, consider building from the back. To traverse, follow Next pointers
                 until nil.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Build in reverse: start from the last element. Each new node's Next points to the previous head.
                 Traverse with <code>for node != nil</code>.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>Build:
                   var head *Node
@@ -1330,11 +1330,11 @@ variants:
             - input: listLength(buildList([]int{42}))
               output: "1"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: Walk the list, counting each node until you hit nil.
-            - title: 💡 Hint
+            - title: Hint
               content: Initialize a counter. Loop with <code>for node != nil</code>, incrementing each iteration.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>count := 0
                 for node := head; node != nil; node = node.Next {
@@ -1370,11 +1370,11 @@ variants:
             - input: contains(nil, 1)
               output: "false"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: Traverse the list, comparing each node's value to the target.
-            - title: 💡 Hint
+            - title: Hint
               content: Return true immediately when you find a match. If the loop ends, the value wasn't found.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>for node := head; node != nil; node = node.Next {
                     if node.Value == target { return true }
@@ -1413,13 +1413,13 @@ variants:
             - input: reverse(nil)
               output: nil
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: You need to reverse all the Next pointers. What pointers do you need to track to avoid losing nodes?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Use three pointers: <code>prev</code> (starts nil), <code>current</code>, and <code>next</code>. For
                 each node, save next, point current.Next to prev, advance prev and current.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>var prev *Node
                 current := head
@@ -1483,15 +1483,15 @@ variants:
             - input: "d := Dog{Animal{Name: \"Rex\"}}; d.Name"
               output: "\"Rex\""
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 Embedding lets a struct 'inherit' fields and methods. How do you override a method from the embedded
                 type?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Embed by putting <code>Animal</code> as a field without a name. Override by defining
                 <code>Speak()</code> on the embedding struct.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>type Dog struct { Animal }
                 func (d Dog) Speak() string { return "Woof!" }
@@ -1550,13 +1550,13 @@ variants:
             - input: c := Car{Vehicle{"Honda", 2024}, 2}; c.Make
               output: "\"Honda\""
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: Each embedded struct gets access to the Vehicle fields. Each type adds its own specific field.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Use <code>fmt.Sprintf</code> to format the description string using both Vehicle and type-specific
                 fields.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>type Car struct {
                     Vehicle
@@ -1618,13 +1618,13 @@ variants:
             - input: m.Name
               output: "\"Bob\""
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: "Embedding can be multi-level: Manager embeds Employee which embeds Person."
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Manager accesses <code>m.Name</code> through two levels of embedding. Its Summary should include report
                 count.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>type Manager struct {
                     Employee
@@ -1681,11 +1681,11 @@ variants:
             - input: s := AppServer{Logger{"[APP]"}, 3000}; s.Log("ready")
               output: "\"[APP] ready\""
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: Embedding Logger gives AppServer all of Logger's methods for free.
-            - title: 💡 Hint
+            - title: Hint
               content: The Log method concatenates the prefix with the message.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>type Logger struct { Prefix string }
                 func (l Logger) Log(msg string) string {
@@ -1748,11 +1748,11 @@ variants:
             - input: len(cfg.AllowedOrigins)
               output: "1"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: JSON keys often use snake_case but Go fields use PascalCase. How do you map between them?
-            - title: 💡 Hint
+            - title: Hint
               content: "Use struct tags: <code>json:\"field_name\"</code>. Nested JSON objects become nested structs."
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>type Config struct {
                     Server struct {
@@ -1801,11 +1801,11 @@ variants:
             - input: len(u.Tags)
               output: "2"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: The <code>omitempty</code> option skips a field in JSON output when it has its zero value.
-            - title: 💡 Hint
+            - title: Hint
               content: Use <code>`json:"tags,omitempty"`</code> to omit the tags array when empty.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>type UserProfile struct {
                     Username string   `json:"username"`
@@ -1850,11 +1850,11 @@ variants:
             - input: resp.Data.Items[0].Name
               output: "\"Widget\""
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: Nested JSON requires nested structs. Arrays of objects become slices of structs.
-            - title: 💡 Hint
+            - title: Hint
               content: Define an <code>Item</code> struct separately, then use <code>[]Item</code> in the data struct.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>type Item struct {
                     ID   int    `json:"id"`
@@ -1909,15 +1909,15 @@ variants:
             - input: json.Unmarshal([]byte(jsonStr), &cfg); cfg.Host
               output: "\"db.example.com\""
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 The trick is to create a default config first, then unmarshal JSON on top of it. Only provided fields
                 get overwritten.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Start with <code>cfg := DefaultDBConfig()</code>, then <code>json.Unmarshal(data, &cfg)</code>. Missing
                 JSON fields keep their defaults.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>func DefaultDBConfig() DBConfig {
                     return DBConfig{

@@ -200,7 +200,7 @@ func (m model) View() string {
 }
 ```
 
-### 🔨 Project: File Browser TUI
+### Project: File Browser TUI
 
 Put your skills to work! Build an interactive terminal file browser with Bubble Tea.
 
@@ -216,7 +216,7 @@ Practice individual concepts you just learned.
             <noscript><p class="js-required">JavaScript is required for the interactive exercises.</p></noscript>
             </div>
 
-### 💪 Challenges
+### Challenges
 
 Combine concepts and learn patterns. Each challenge has multiple variants at different difficulties.
 

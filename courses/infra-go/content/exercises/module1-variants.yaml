@@ -646,9 +646,9 @@ variants:
             - input: errorRate([]string{})
               output: "0.0"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: You need two numbers — how many errors and how many total lines. What do you do with those to get a percentage?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Extract the first word from each line to check its level. For the percentage, remember that dividing two
                 ints truncates — you need floats. Check the Numbers section in the lesson for how to round to one decimal.
@@ -684,11 +684,11 @@ variants:
             - input: logReport([]string{})
               output: "\"\""
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 You need two steps: counting and sorting. What data structure counts things? Since maps iterate
                 in random order, how do you output alphabetically?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 This follows the count → sort-keys → format pattern from the Putting It Together section. Count
                 with a map, collect keys into a slice, sort.Strings, then format each entry.
@@ -733,11 +733,11 @@ variants:
             - input: logFrequency([]string{"INFO a", "ERROR b", "ERROR c"})
               output: "\"ERROR: 2 (66.7%)\\nINFO: 1 (33.3%)\""
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 This builds on the Log Level Report — same count → sort-keys → format pattern. The extra step is
                 computing a percentage for each level. How do you format a float to one decimal place with a percent sign?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Reuse the count → sort-keys → format pattern. The percentage is each level's count divided by total lines. See the
                 Numbers section for float conversion, and the Printing section for the format verb that outputs one decimal
@@ -789,11 +789,11 @@ variants:
             - input: parseLabels("")
               output: map[]
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 Two levels of splitting: first separate the individual pairs, then separate key from value within each
                 pair. What character separates pairs? What separates key from value?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 After splitting each pair on <code>=</code>, the value still has quotes around it. You need to strip those.
                 Don't forget to handle empty input.
@@ -835,11 +835,11 @@ variants:
             - input: parseMetric("up 1")
               output: "\"up\", map[], 1.0, nil"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 There are two formats: with labels (<code>name{labels} value</code>) and without (<code>name
                 value</code>). How can you tell which format a line is? Handle them separately.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 For the labeled format, find the braces to identify three sections: the name (before <code>{</code>), the
                 labels (between the braces), and the value (after <code>}</code>). You can reuse your label parser from
@@ -902,11 +902,11 @@ variants:
             - input: aggregateMetrics([]string{"req{m=\"GET\"} 10", "req{m=\"POST\"} 5", "up 1"})
               output: map[req:15 up:1]
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 You already have a metric parser. Now you need to loop through lines, parse each one, and accumulate
                 values. What map type stores running totals by name?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Reuse your metric parser from the previous variant. Skip lines that fail to parse or that are comments.
                 The accumulation pattern is the same as counting, but with addition instead of increment.
@@ -943,9 +943,9 @@ variants:
             - input: sortPodNames([]string{"web-3", "api-1", "db-2", "web-1"})
               output: "[\"api-1\", \"db-2\", \"web-1\", \"web-3\"]"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: "Go's sort package has a convenience function specifically for string slices. Check the Sorting section of the lesson."
-            - title: 💡 Hint
+            - title: Hint
               content: "It's a one-liner. The function sorts in place, then you return the same slice."
           solution: |-
             func sortPodNames(names []string) []string {
@@ -968,10 +968,10 @@ variants:
             - input: filterSorted([]string{"a","b"}, "z")
               output: "[]"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 Two operations: filter matching names into a new slice, then sort that slice.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Use <code>strings.HasPrefix</code> to check each name. Collect matches into a result slice,
                 then <code>sort.Strings(result)</code> before returning.
@@ -1008,10 +1008,10 @@ variants:
             - input: kvReport([]string{"z=1", "a=2"})
               output: "\"  a: 2\\n  z: 1\""
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 Parse into a map (SplitN on "="), then use the sorted-keys pattern to output in order.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 This combines line parsing, map storage, sorted-keys iteration, and formatted output —
                 the full parse → store → sort → format pipeline from the Putting It Together section.
@@ -1064,11 +1064,11 @@ variants:
             - input: parseEnvFile("  HOST = localhost  ")
               output: map[HOST:localhost]
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 This follows the standard line-by-line parsing pattern: split into lines, decide what to skip, parse the
                 rest. What kinds of lines should be skipped?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 The Line-by-Line Parsing section in the lesson walks through this exact pattern with a complete example.
                 The key steps are: split lines, trim whitespace, skip empties and comments, split key from value, clean
@@ -1114,12 +1114,12 @@ variants:
             - input: parseINI("key=val\n[s]\nk=v")
               output: map[default:map[key:val] s:map[k:v]]
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 This builds on the line-by-line pattern with one extra idea: you need to track which section you're
                 currently in. When you see a section header, update the tracker. When you see a key-value pair, file it
                 under the current section.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 The return type is a nested map. Be careful — writing to an inner map that hasn't been initialized will
                 panic. Check the Nested Maps section of the lesson for how to handle this safely.
@@ -1169,11 +1169,11 @@ variants:
             - input: "parseINIExpand(\"[db]\\nhost=${DB_HOST}\\nport=5432\", map[string]string{\"DB_HOST\": \"prod-db\"})"
               output: map[db:map[host:prod-db port:5432]]
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 Build on your INI parser. After extracting each value, you need to find <code>${...}</code> patterns and
                 replace them with lookups from the env map.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Go's stdlib has a function in the <code>os</code> package that does variable expansion with a custom
                 lookup function. Check <code>go doc os.Expand</code> — it handles both <code>${VAR}</code> and

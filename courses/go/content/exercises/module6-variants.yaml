@@ -287,13 +287,13 @@ variants:
             - input: Filter([]string{"go", "rust", "zig"}, func(s string) bool { return len(s) == 2 })
               output: "[]string{\"go\"}"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: How do you build a new slice from a subset of elements? What determines which elements to keep?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Create an empty result slice. Range over items, call <code>pred(item)</code>, and append if it returns
                 true.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Create empty result slice
                 2. For each item:
@@ -332,13 +332,13 @@ variants:
             - input: Map([]string{"go", "rust"}, func(s string) int { return len(s) })
               output: "[]int{2, 4}"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: You need to transform each element from type T to type U. What does the result slice look like?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Pre-allocate <code>result := make([]U, len(items))</code> since you know the output size. Assign
                 <code>result[i] = fn(items[i])</code>.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Allocate result slice of same length
                 2. For each index and item:
@@ -376,15 +376,15 @@ variants:
             - input: Reduce([]string{"a", "b", "c"}, "", func(acc, s string) string { return acc + s })
               output: "\"abc\""
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 You need to accumulate a result by processing each element. What is the starting value and how does it
                 change with each element?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Start with <code>acc := initial</code>. For each item, update <code>acc = fn(acc, item)</code>. Return
                 acc at the end.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Set accumulator = initial value
                 2. For each item:
@@ -422,11 +422,11 @@ variants:
             - input: Contains([]int{}, 1)
               output: "false"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: Why does this function need the <code>comparable</code> constraint instead of <code>any</code>?
-            - title: 💡 Hint
+            - title: Hint
               content: Loop through items, compare each with <code>==</code>. Return true on first match, false after the loop.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. For each item:
                    - If item == target, return true
@@ -480,15 +480,15 @@ variants:
             - input: "\"\""
               output: "true"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 When you see a closing bracket, what do you need to check? What data structure helps you remember the
                 most recent unmatched opening bracket?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Use a slice as a stack. Push opening brackets, pop on closing brackets and check if they match. The
                 stack should be empty at the end.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Create bracket pairs map: closing -> opening
                 2. For each character:
@@ -539,15 +539,15 @@ variants:
             - input: "\"<p>\""
               output: "false"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 This is the bracket matching problem but with named tags. What needs to match when you encounter a
                 closing tag?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Extract tag names between < and >. Push opening tags onto a stack. When you see a closing tag (starts
                 with /), pop and check if the names match.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Parse tag names from the string
                 2. For each tag:
@@ -610,15 +610,15 @@ variants:
             - input: "[]string{\"3\", \"4\", \"*\", \"2\", \"-\"}"
               output: "10"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 In RPN, operators act on the two most recent numbers. What data structure naturally gives you access to
                 the most recent items?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Use a stack. Push numbers. When you see an operator, pop two numbers, apply the operator, push the
                 result. The final answer is the last item on the stack.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. For each token:
                    - Number? Parse and push to stack
@@ -677,15 +677,15 @@ variants:
             - input: s := NewMinStack(); s.Push(3); s.Push(1); s.Pop(); s.Min()
               output: "3"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 If you only track one minimum value, what happens when you pop that minimum? How can you remember the
                 previous minimum?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Use two stacks: one for values and one for minimums. When pushing, also push the current minimum onto
                 the min stack. When popping, pop from both.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Maintain two parallel stacks: values and mins
                 2. Push: push value; push min(value, current min) to mins

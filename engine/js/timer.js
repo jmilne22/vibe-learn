@@ -267,7 +267,7 @@
             <div class="session-controls">
                 <button class="session-control-btn" type="button" data-session-action="toggle">Pause</button>
                 <button class="session-control-btn" type="button" data-session-action="reset">Reset</button>
-                <button class="session-control-btn" type="button" data-session-action="sound">🔔 Sound</button>
+                <button class="session-control-btn" type="button" data-session-action="sound">${(window.Icons ? Icons.bell : '')} Sound</button>
                 <button class="session-control-btn danger" type="button" data-session-action="hide">Hide</button>
             </div>
             <div class="session-duration-row">
@@ -353,11 +353,11 @@
                 toggleTimerSound();
                 // Update this button's text
                 const soundEnabled = localStorage.getItem(SOUND_ENABLED_KEY) !== 'false';
-                sound.textContent = soundEnabled ? '🔔 Sound' : '🔇 Sound';
+                sound.innerHTML = (soundEnabled ? Icons.bell : Icons.bellMuted) + ' Sound';
             };
             // Set initial state
             const soundEnabled = localStorage.getItem(SOUND_ENABLED_KEY) !== 'false';
-            sound.textContent = soundEnabled ? '🔔 Sound' : '🔇 Sound';
+            sound.innerHTML = (soundEnabled ? Icons.bell : Icons.bellMuted) + ' Sound';
         }
 
         if (duration) {
@@ -709,7 +709,7 @@
         // Update button text
         const btn = document.getElementById('sound-toggle');
         if (btn) {
-            btn.textContent = newState ? '🔔 Sound' : '🔇 Sound';
+            btn.innerHTML = (newState ? Icons.bell : Icons.bellMuted) + ' Sound';
         }
     }
 
@@ -717,7 +717,7 @@
         const soundEnabled = localStorage.getItem(SOUND_ENABLED_KEY) !== 'false';
         const btn = document.getElementById('sound-toggle');
         if (btn) {
-            btn.textContent = soundEnabled ? '🔔 Sound' : '🔇 Sound';
+            btn.innerHTML = (soundEnabled ? Icons.bell : Icons.bellMuted) + ' Sound';
         }
     }
 

@@ -531,15 +531,15 @@ variants:
             - input: "-10.0, 2.0"
               output: "-5.0, nil"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 What are all the ways division can go wrong or produce surprising results? Think about zero, negatives,
                 and extreme values.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Check b == 0 first and return an error. Otherwise return a/b. Your tests should cover normal, zero
                 divisor, zero dividend, negative values, and math.MaxFloat64.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Define function with error return
                 2. Guard clause for b == 0
@@ -610,13 +610,13 @@ variants:
             - input: "\"世界\""
               output: "\"界世\""
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: Strings in Go are byte sequences. What happens if you reverse bytes of a multi-byte Unicode character?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Convert to []rune first to handle Unicode correctly. Then reverse the rune slice using a two-pointer
                 swap.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Convert string to []rune
                 2. Two-pointer swap: left=0, right=len-1
@@ -681,11 +681,11 @@ variants:
             - input: nil, "a"
               output: "false"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: What should happen with a nil slice? An empty slice? An empty needle that might be in the slice?
-            - title: 💡 Hint
+            - title: Hint
               content: A simple range loop handles nil and empty slices identically -- they both iterate zero times.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Range over haystack
                 2. If item == needle, return true
@@ -752,15 +752,15 @@ variants:
             - input: nil
               output: 0, error
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 What should you return for an empty or nil slice? What should the initial max be -- zero, or the first
                 element?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Return an error for empty/nil slices. Initialize max to nums[0], then compare each subsequent element.
                 This avoids the trap of initializing to 0 (which fails for all-negative slices).
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Check len(nums) == 0 -> return error
                 2. Set result = nums[0]
@@ -846,13 +846,13 @@ variants:
             - input: "7"
               output: "\"7\""
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: How many branches does this function have? You need at least one test per branch to get 100% coverage.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 There are 4 branches: divisible by 15, divisible by 3 (not 15), divisible by 5 (not 15), and neither.
                 One test per branch gives full coverage.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Write the function with if/else if chain
                 2. Count branches: 4
@@ -933,13 +933,13 @@ variants:
             - input: "101"
               output: "\"\", error"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: "Count the branches: invalid low, invalid high, A, B, C, D, F. That's 7 branches to cover."
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Write at least one test per branch. Use go test -coverprofile=coverage.out and go tool cover
                 -html=coverage.out to find uncovered lines.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Write function with range validation + grade logic
                 2. List all branches (7 total)
@@ -1020,15 +1020,15 @@ variants:
             - input: "\"ABCDEFGH\""
               output: "[\"must contain lowercase\", \"must contain digit\"]"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 Each validation rule is an independent branch. You need tests where each rule fails individually and in
                 combination.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Use unicode.IsUpper, unicode.IsLower, and unicode.IsDigit to check characters. Collect all errors rather
                 than returning on the first one.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Check length >= 8
                 2. Range over runes checking:
@@ -1120,15 +1120,15 @@ variants:
             - input: "4000"
               output: "\"\", error"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 Roman numerals use a greedy algorithm: subtract the largest possible value at each step. What values
                 should your lookup table contain?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Use parallel slices of values [1000, 900, 500, 400, ...] and symbols ["M", "CM", "D", "CD", ...]. Loop
                 from largest to smallest, appending symbols while the value fits.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Validate n is 1-3999
                 2. Define values and symbols arrays

@@ -691,15 +691,15 @@ variants:
             - input: "\"\""
               output: "\"\""
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 Why separate unit and integration tests? Unit tests run fast with no external dependencies. Integration
                 tests verify real I/O but are slower.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Put //go:build integration at the top of the integration test file. Unit tests run by default.
                 Integration tests only run with: go test -tags=integration
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>File: slug.go
                   func Slugify(s string) string
@@ -807,15 +807,15 @@ variants:
             - input: Set("key", "val"); Delete("key"); Get("key")
               output: "\"\", false"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 Unit tests verify Set/Get/Delete in memory. Integration tests verify that Save writes to disk and Load
                 reads it back correctly.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 The Store wraps a map[string]string. Save serializes to JSON. Load reads JSON back. Use //go:build
                 integration for the file-based tests.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>store.go:
                   type Store struct { data map[string]string }
@@ -936,15 +936,15 @@ variants:
             - input: "\"http://invalid:99999\""
               output: false, 0, error
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 Unit tests use httptest for deterministic results. Integration tests with //go:build integration hit a
                 real endpoint to verify real-world behavior.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Use time.Now() before and after the request to measure duration. Return true if status is 200, false for
                 other statuses, error for connection failures.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>pinger.go:
                   Ping returns (reachable bool, latency, error)
@@ -1044,15 +1044,15 @@ variants:
             - input: NewRateLimiter(1); Allow(); Allow()
               output: true, false
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 Unit tests can inject a fake clock to avoid sleeping. Integration tests use real time to verify actual
                 rate limiting.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Use a token bucket: track tokens and last refill time. Allow() checks/consumes a token. Inject a now()
                 function for testable time.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>ratelimiter.go:
                   Track tokens and last refill time
@@ -1190,15 +1190,15 @@ variants:
             - input: GET /count (after 3 requests)
               output: 200, {"count":3}
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 An end-to-end test starts a real server and makes real HTTP calls. How do you set up shared state like a
                 request counter?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Use httptest.NewServer with your full handler. The counter can live in a struct or closure. Make
                 sequential requests and verify each response.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Create server struct with counter
                 2. Register handlers for /health, /echo, /count
@@ -1314,15 +1314,15 @@ variants:
             - input: DELETE /todos/1; GET /todos
               output: 200; 200, []
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 This test exercises a full CRUD workflow. The order of operations matters: create first, then list to
                 verify, then delete and list again.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Store todos in a slice or map in the server struct. Use an auto-incrementing ID. Parse the ID from the
                 URL path for DELETE.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Build API with in-memory storage
                 2. POST /todos: add item, return with ID
@@ -1447,13 +1447,13 @@ variants:
             - input: DELETE /kv/name; GET /kv/name
               output: 200; 404
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: Extract the key from the URL path. Use a map for storage. Return 404 when a key doesn't exist.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Parse the key with strings.TrimPrefix(r.URL.Path, "/kv/"). Switch on r.Method for GET/PUT/DELETE. Use
                 sync.RWMutex for concurrent access.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Build KV server with map[string]string storage
                 2. PUT: read body, store value
@@ -1564,15 +1564,15 @@ variants:
             - input: GET /private (invalid token)
               output: "401"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 Middleware wraps handlers. The auth middleware checks the Authorization header before calling the next
                 handler.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Write an authMiddleware(next http.Handler, token string) http.Handler function. It checks
                 r.Header.Get("Authorization") against the expected token.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Write authMiddleware that checks Authorization header
                 2. /public: no middleware, returns "welcome"

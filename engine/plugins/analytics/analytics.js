@@ -627,7 +627,7 @@
             if (worstDecay && items.length < 3) {
                 var decayLink = worstDecay.num === 'algo' ? 'algorithms.html' : 'module' + worstDecay.num + '.html';
                 items.push({
-                    icon: '\uD83D\uDCC9',
+                    icon: (window.Icons && window.Icons.chartDown) || '\u2193',
                     text: worstDecay.name + ' is decaying \u2014 last practiced ' + worstDays + ' days ago',
                     link: decayLink,
                     linkText: 'Review module'

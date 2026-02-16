@@ -336,13 +336,13 @@ variants:
             - input: ps aux output with no high-CPU process
               output: (no output)
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: What does each column in ps aux output represent? Which column index is CPU%, PID, and command?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Fields: [0]=USER, [1]=PID, [2]=%CPU, [3]=%MEM, ... [10]=COMMAND. Skip the header line (first line).
                 Parse field[2] as float64.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. exec.Command("ps", "aux").Output()
                 2. Split by newline, skip header
@@ -396,15 +396,15 @@ variants:
             - input: Fewer than 5 processes
               output: All processes sorted by memory
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 How do you sort processes by a parsed numeric field? What data structure can hold the parsed data for
                 sorting?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Parse into a struct slice: {pid string, mem float64, cmd string}. Use sort.Slice with a custom less
                 function. Take the first 5 (or fewer).
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Parse ps aux into []ProcessInfo structs
                 2. sort.Slice by mem descending
@@ -475,13 +475,13 @@ variants:
             - input: ps output with multiple children
               output: indented tree showing parent-child relationships
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: What data structure represents a tree? How do you map parent PIDs to their children?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Use map[string][]string to map PPID to list of child PIDs. Use another map for PID to command name.
                 Recursively print from PID 1 with increasing indent.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Parse ps -eo pid,ppid,comm
                 2. Build children map: ppid -> []pid
@@ -543,13 +543,13 @@ variants:
             - input: Monitor 'nonexistent'
               output: "'Process not found' and exit"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: How do you repeatedly check for a process? How do you match the process name in ps output?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Use a for loop with time.Sleep(2 * time.Second). In each iteration, run ps aux, scan for the process
                 name in the command column. Print CPU/MEM or break if not found.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Get process name from os.Args[1]
                 2. Loop 5 times with 2s sleep
@@ -636,15 +636,15 @@ variants:
             - input: not a git repo
               output: Not a git repo
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 What does each two-character status code mean in porcelain format? How do you distinguish staged vs
                 unstaged changes?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Porcelain first two chars: 'M ' or ' M' or 'MM' = modified, 'A ' or '??' = added, 'D ' or ' D' =
                 deleted. Check with line[0:2] switch.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Run git status --porcelain
                 2. Check error (not a git repo)
@@ -700,13 +700,13 @@ variants:
             - input: On branch feature, clean
               output: "Branch: feature\\nNo changes"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: What does the -b flag add to porcelain output? What does the branch line look like?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 With -b, the first line is: ## branch...origin/branch [ahead N, behind M]. Parse this line separately.
                 Remaining lines are status lines.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Run git status --porcelain -b
                 2. First line: parse branch and ahead/behind
@@ -790,13 +790,13 @@ variants:
             - input: no changes
               output: No changes
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: What does git diff --stat output look like? Where are the numbers for insertions and deletions?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 The last line of --stat is a summary like: '3 files changed, 20 insertions(+), 5 deletions(-)'. Parse
                 this line, or parse each file line which shows ' file | N +++---'.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Run git diff --stat
                 2. Parse the summary line (last non-empty line)
@@ -856,13 +856,13 @@ variants:
             - input: empty repo
               output: No commits
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: How do you extract the first word from a commit message? What data structure groups items by a key?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Each oneline line is: 'hash message'. Split to get hash and message. Use strings.Fields(message)[0] for
                 the first word. Group with map[string][]string.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>1. Run git log --oneline -10
                 2. For each line: split into hash and message

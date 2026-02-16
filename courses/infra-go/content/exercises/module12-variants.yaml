@@ -179,9 +179,9 @@ variants:
             - input: "[]string{}"
               output: "[]string{}"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: How do you track what you've already seen while preserving order?
-            - title: 💡 Hint
+            - title: Hint
               content: Use a map[string]bool for O(1) lookups. Only append to result if !seen[alert].
           solution: |-
             func dedup(alerts []string) []string {
@@ -215,9 +215,9 @@ variants:
             - input: "pods: {a:250, b:250}, target: 500"
               output: "[[a,b]]"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: This is Two Sum but with names instead of indices. How do you avoid duplicating pairs (a,b) and (b,a)?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Build a map of memory → []podNames. For each pod, check if target-memory exists. Track used pods to
                 avoid duplicates.
@@ -266,9 +266,9 @@ variants:
             - input: mixed INFO and ERROR logs
               output: top word for each level
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: This combines parsing, grouping, and frequency counting. What data structures do you need?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Parse: SplitN(line, " ", 3) for timestamp, level, message. Group messages by level. For each group,
                 split messages into words, count frequencies (skipping stop words), find the max.
@@ -332,9 +332,9 @@ variants:
             - input: "[\"ok\",\"ok\",\"ok\"]"
               output: "3"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: When you hit an error, what happens to the window?
-            - title: 💡 Hint
+            - title: Hint
               content: Reset left pointer to right+1 on error. Track maxLen as max(maxLen, right-left+1).
           solution: |-
             func longestHealthyStreak(statuses []string) int {
@@ -370,9 +370,9 @@ variants:
             - input: "[1,1,1,1], window=1"
               output: "4"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: Since timestamps are sorted, when should you shrink the left side?
-            - title: 💡 Hint
+            - title: Hint
               content: Expand right. While timestamps[right]-timestamps[left] >= windowSec, shrink left. Track max window size.
           solution: |-
             func maxRequestsInWindow(timestamps []int, windowSec int) int {
@@ -409,9 +409,9 @@ variants:
             - input: logs=[a,b,c], required=[d]
               output: (-1,-1) — not found
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: This is the minimum window substring problem. What do you need to track?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Track counts of required services in the current window with a map. When all required are present, try
                 to shrink from left. Track the minimum window size.

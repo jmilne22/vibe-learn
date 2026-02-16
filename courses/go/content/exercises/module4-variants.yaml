@@ -313,13 +313,13 @@ variants:
             - input: var buf bytes.Buffer; uw := &UpperWriter{&buf}; fmt.Fprintln(uw, "go is fun")
               output: buf.String() == "GO IS FUN\n"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 The <code>io.Writer</code> interface has one method: <code>Write(p []byte) (n int, err error)</code>.
                 You need to transform the bytes before passing them along.
-            - title: 💡 Hint
+            - title: Hint
               content: Use <code>bytes.ToUpper(p)</code> to convert the byte slice, then write the result to the inner writer.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>type UpperWriter struct { w io.Writer }
                 func (u *UpperWriter) Write(p []byte) (int, error) {
@@ -357,11 +357,11 @@ variants:
             - input: var buf bytes.Buffer; pw := &PrefixWriter{">> ", &buf}; pw.Write([]byte("test"))
               output: buf.String() == ">> test"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: You need to write the prefix bytes first, then the original data.
-            - title: 💡 Hint
+            - title: Hint
               content: Concatenate prefix + data into a single byte slice, or write the prefix first then the data.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>type PrefixWriter struct {
                     Prefix string
@@ -407,11 +407,11 @@ variants:
             - input: cw.Write([]byte(" world")); cw.BytesWritten()
               output: "11"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: You need to track cumulative bytes. Where does the actual byte count come from?
-            - title: 💡 Hint
+            - title: Hint
               content: The inner writer's Write returns the number of bytes written. Add that to your running total.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>type CountWriter struct {
                     w     io.Writer
@@ -459,13 +459,13 @@ variants:
             - input: n, err from above
               output: n == 5, err == nil
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: You need to write to both writers. What if the first succeeds but the second fails?
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Write to the first writer, check for errors. Then write to the second. Return the first error
                 encountered.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>type TeeWriter struct { w1, w2 io.Writer }
                 func (tw *TeeWriter) Write(p []byte) (int, error) {
@@ -532,13 +532,13 @@ variants:
             - input: describe([]int{1})
               output: "\"unknown\""
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: Go's type switch lets you branch based on the dynamic type of an interface value.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Use <code>switch v := i.(type)</code>. The variable <code>v</code> has the concrete type in each case
                 branch.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>switch v := i.(type) {
                 case int:
@@ -593,13 +593,13 @@ variants:
             - input: stringify("hi")
               output: "\"hi\""
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: Order matters in a type switch. Check concrete types before interfaces.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Check <code>string</code> before <code>fmt.Stringer</code>, since strings also satisfy Stringer. Use
                 <code>strconv.Itoa</code> for int-to-string.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>switch v := i.(type) {
                 case string:
@@ -659,13 +659,13 @@ variants:
             - input: sumAny([]any{})
               output: "0.0"
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: Loop through items, type-switch each one, and add numeric values to a running sum.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 For <code>int</code>, convert to <code>float64</code>. For <code>string</code>, try
                 <code>strconv.ParseFloat(v, 64)</code> and skip on error.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>var sum float64
                 for _, item := range items {
@@ -725,15 +725,15 @@ variants:
             - input: formatLog("DEBUG", 42)
               output: "\"[DEBUG] 42\""
           hints:
-            - title: 🤔 Think about it
+            - title: Think about it
               content: >-
                 The <code>error</code> interface has an <code>Error() string</code> method. Check for <code>error</code>
                 before <code>fmt.Stringer</code> since errors also satisfy Stringer.
-            - title: 💡 Hint
+            - title: Hint
               content: >-
                 Use <code>case error</code> to match error types. Then <code>case fmt.Stringer</code> for other Stringer
                 types. Default uses <code>%v</code>.
-            - title: 🔧 Pattern
+            - title: Pattern
               content: |-
                 <pre>func formatLog(level string, value any) string {
                     prefix := fmt.Sprintf("[%s]", level)
