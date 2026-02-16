@@ -150,7 +150,13 @@ function resumeLastModule(e) {
     e.preventDefault();
     const lastModule = localStorage.getItem(LAST_MODULE_KEY);
     if (lastModule) {
-        window.location.href = 'module' + lastModule + '.html';
+        // Find the correct page for this module (handles split modules)
+        var pages = (window.CourseConfig && window.CourseConfig.sidebarPages) || [];
+        var page = pages.find(function(p) {
+            return (p.type === 'module' && String(p.id) === String(lastModule)) ||
+                   (p.type === 'section' && String(p.moduleId) === String(lastModule) && p.sectionIndex === 0);
+        });
+        window.location.href = page ? page.file : ('module' + lastModule + '.html');
     } else {
         window.location.href = 'module0.html';
     }

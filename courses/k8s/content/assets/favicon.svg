@@ -1,5 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect width="32" height="32" rx="6" fill="#0a0a0f"/>
-  <rect x="1" y="1" width="30" height="30" rx="5" fill="none" stroke="#2a2a3a" stroke-width="1"/>
-  <text x="16" y="22" font-family="monospace" font-weight="700" font-size="14" fill="#00ff9d" text-anchor="middle">K8s</text>
+  <rect width="32" height="32" rx="8" fill="#1a1a2e"/>
+  <polygon points="16,5 26,11 26,21 16,27 6,21 6,11" fill="none" stroke="#326ce5" stroke-width="2"/>
+  <polygon points="16,10 21,13 21,18 16,21 11,18 11,13" fill="#326ce5" opacity="0.4"/>
+  <circle cx="16" cy="16" r="2.5" fill="#fff"/>
 </svg>

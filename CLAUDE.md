@@ -23,8 +23,30 @@ the prompt's instructions.
 - Course manifests: `course.yaml` (not JSON)
 - Module IDs: array index by default, only `title` required
 - Exercise files: `content/exercises/module{id}-variants.yaml`
-- Lesson files: `content/lessons/module{id}.md`
+- Lesson files: `content/lessons/module{id}.md` (single page) or `content/lessons/module{id}/` (split into sections)
 - Flashcards: `content/flashcards/flashcards.yaml` (keys are module IDs as strings)
+
+## Section Splitting
+A module's content can be a single `.md` file or a directory of numbered `.md` files.
+The filesystem is the structure — no config flag needed.
+
+- **Single file** (`module{id}.md`) → one HTML page (unchanged behavior)
+- **Directory** (`module{id}/`) → one HTML page per section file, plus auto-generated exercises page
+
+### Directory convention
+```
+content/lessons/module1/
+  01-your-first-go-program.md    → module1-1.html  (Section 1.1)
+  02-variables-and-types.md      → module1-2.html  (Section 1.2)
+  03-type-conversion.md          → module1-3.html  (Section 1.3)
+```
+
+- Files sorted by name (numeric prefix controls order)
+- Each `.md` file starts with an H2 heading (used as page title, stripped from body)
+- Inline exercise divs go at the bottom of each section file
+- Exercises page (`module{id}-exercises.html`) is auto-generated for modules with `hasExercises: true`
+- Summary content goes at the end of the last section file
+- Splitting helper: `node split-modules.js <slug>` auto-splits all modules (except module 0)
 
 ## Inline Exercises
 Lesson authors can interleave practice after each concept section:

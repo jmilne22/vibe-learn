@@ -34,8 +34,13 @@ courses/<slug>/
 ├── course.yaml                                    # Course metadata
 ├── content/
 │   ├── lessons/
-│   │   ├── module0.md                             # One markdown file per module
-│   │   ├── module1.md
+│   │   ├── module0.md                             # Single-file module (one page)
+│   │   ├── module1/                               # Directory module (split into sections)
+│   │   │   ├── 01-first-section.md                #   → module1-1.html
+│   │   │   ├── 02-second-section.md               #   → module1-2.html
+│   │   │   └── ...                                #   exercises page auto-generated
+│   │   ├── module2/
+│   │   │   └── ...
 │   │   └── ...
 │   ├── exercises/
 │   │   ├── module1-variants.yaml                  # Exercise file per module
@@ -147,9 +152,31 @@ annotationTypes:
 
 ## Step 2: Generate lesson markdown files
 
-Each module gets one file: `content/lessons/module{id}.md`
+Each module's content lives under `content/lessons/`. You can use either format:
 
-For example, module 0 → `content/lessons/module0.md`, module 1 → `content/lessons/module1.md`.
+- **Single file:** `module{id}.md` → one long HTML page (good for short/reference modules)
+- **Directory:** `module{id}/` with numbered `.md` files → one HTML page per section (recommended for content modules)
+
+### Directory format (recommended)
+
+Create a directory `module{id}/` with numbered section files:
+
+```
+content/lessons/module1/
+  01-first-topic.md
+  02-second-topic.md
+  03-third-topic.md
+```
+
+Each section file starts with an `## H2` heading (used as the page title). The build system generates `module1-1.html`, `module1-2.html`, etc. An exercises page (`module1-exercises.html`) is auto-generated for modules with exercises.
+
+Add inline exercise divs at the bottom of each section file to pull in matching warmups. The bottom exercise containers (`warmups-container`, `challenges-container`) are NOT needed in section files — the exercises page handles those.
+
+**Tip:** Write single-file modules first, then run `node split-modules.js <slug>` to auto-split them by H2 headings.
+
+### Single file format
+
+`content/lessons/module{id}.md` — same as the directory format but all sections in one file.
 
 ### Supported markdown features
 
@@ -205,9 +232,11 @@ Use this when a comparison language was specified — show concepts in both lang
 > **Note:** Additional context here.
 ```
 
-### Exercise section (CRITICAL)
+### Exercise section (CRITICAL — single-file modules only)
 
-For every module that has exercises (`hasExercises: true` or omitted), the markdown file **MUST** end with this exact structure:
+**Note:** If using the directory format (split sections), skip this entirely — the exercises page is auto-generated.
+
+For every **single-file** module that has exercises (`hasExercises: true` or omitted), the markdown file **MUST** end with this exact structure:
 
 ```markdown
 ## Exercises

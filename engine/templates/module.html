@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Module {{MODULE_NUM}}: {{TITLE}} | {{COURSE_NAME}}</title>
+    <title>{{PAGE_TITLE}} | {{COURSE_NAME}}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
@@ -19,13 +19,11 @@
         </nav>
 
         <div class="breadcrumb">
-            <a href="index.html">{{COURSE_NAME_SHORT}}</a>
-            <span class="breadcrumb-sep">/</span>
-            <span>Module {{MODULE_NUM}}</span>
+            {{BREADCRUMB}}
         </div>
 
         <div class="module-header">
-            <div class="module-tag">// MODULE {{MODULE_NUM}}</div>
+            <div class="module-tag">{{SECTION_TAG}}</div>
             <h1>{{TITLE}}</h1>
             <p class="module-desc">{{MODULE_DESC}}</p>
         </div>
@@ -46,6 +44,7 @@
     <script src="sidebar.js"></script>
     <script src="copy-code.js"></script>
     <script src="srs.js"></script>
+    <script src="streaks.js"></script>
     <script src="progress.js"></script>
 </body>
 </html>

@@ -47,7 +47,7 @@
     --accent: var(--amethyst);
     --accent-hover: #6650B0;
     --text: var(--text-primary);
-    --shadow-accent: 0 0 16px rgba(122, 98, 200, 0.12);
+    --shadow-accent: 0 0 10px rgba(122, 98, 200, 0.06);
 
     /* Old name aliases for JS/template compatibility */
     --forest:       var(--amethyst);
@@ -86,9 +86,9 @@
     --shadow-md: 0 4px 12px rgba(30, 24, 48, 0.08), 0 2px 4px rgba(30, 24, 48, 0.04);
     --shadow-lg: 0 8px 24px rgba(30, 24, 48, 0.1), 0 4px 8px rgba(30, 24, 48, 0.04);
     --shadow-xl: 0 16px 48px rgba(30, 24, 48, 0.12), 0 8px 16px rgba(30, 24, 48, 0.06);
-    --shadow-glow-green: 0 0 16px rgba(122, 98, 200, 0.12);
-    --shadow-glow-orange: 0 0 16px rgba(200, 126, 82, 0.12);
-    --shadow-glow-purple: 0 0 16px rgba(139, 112, 184, 0.12);
+    --shadow-glow-green: 0 0 8px rgba(122, 98, 200, 0.06);
+    --shadow-glow-orange: 0 0 8px rgba(200, 126, 82, 0.06);
+    --shadow-glow-purple: 0 0 8px rgba(139, 112, 184, 0.06);
 }
 
 /* Light theme scoped overrides for tinted backgrounds */
@@ -167,6 +167,41 @@
     background: rgba(74, 144, 192, 0.10);
 }
 
+/* Callout cards — light theme */
+[data-theme="light"] .callout {
+    border-color: var(--border-default);
+}
+[data-theme="light"] .callout-header {
+    border-bottom-color: var(--border-subtle);
+}
+[data-theme="light"] .callout.tip .callout-header {
+    background: rgba(90, 143, 90, 0.12);
+    color: var(--sage);
+}
+[data-theme="light"] .callout.warning .callout-header {
+    background: rgba(192, 72, 80, 0.12);
+    color: var(--coral);
+}
+[data-theme="light"] .callout.info .callout-header {
+    background: rgba(74, 144, 192, 0.12);
+    color: var(--slate);
+}
+[data-theme="light"] .callout.definition .callout-header {
+    background: rgba(122, 98, 200, 0.12);
+    color: var(--amethyst);
+}
+[data-theme="light"] .callout.example .callout-header {
+    background: rgba(200, 126, 82, 0.12);
+    color: var(--amber);
+}
+
+/* Exercise type tag — light theme */
+[data-theme="light"] .exercise-type-tag {
+    background: rgba(200, 126, 82, 0.08);
+    border-color: rgba(200, 126, 82, 0.18);
+    color: var(--amber);
+}
+
 [data-theme="light"] .visual-box {
     background: rgba(74, 144, 192, 0.05);
     border-color: rgba(74, 144, 192, 0.15);
@@ -183,16 +218,6 @@
 
 [data-theme="light"] .sidebar-link.active {
     background: rgba(122, 98, 200, 0.08);
-}
-
-[data-theme="light"] .today-focus {
-    background: rgba(200, 126, 82, 0.04);
-    border-color: rgba(200, 126, 82, 0.15);
-}
-
-[data-theme="light"] .dashboard-panel {
-    background: rgba(122, 98, 200, 0.03);
-    border-color: rgba(122, 98, 200, 0.12);
 }
 
 [data-theme="light"] .stat-chip {
@@ -283,7 +308,7 @@
 
 /* Scroll progress glow */
 [data-theme="light"] .scroll-progress {
-    box-shadow: 0 0 6px rgba(122, 98, 200, 0.3);
+    box-shadow: none;
 }
 
 /* Scaffold drill */

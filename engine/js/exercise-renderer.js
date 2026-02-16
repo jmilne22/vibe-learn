@@ -178,7 +178,8 @@
             moduleLabel,    // e.g., "M2" (daily practice badge)
             conceptHtml,    // e.g., "(loops ↗)" link (module pages)
             difficultyNav,  // e.g., easier/harder buttons HTML (module pages)
-            drill           // truthy for scaffold drill cards (compact header, no notes)
+            drill,          // truthy for scaffold drill cards (compact header, no notes)
+            expanded        // truthy to render accordion pre-opened (daily practice, algorithms)
         } = opts;
 
         const progress = window.ExerciseProgress?.get(exerciseKey);
@@ -202,32 +203,39 @@
             ? `Step ${num} \u00b7 ${escapeHtml(variant.title)}`
             : `${typeLabel} ${num}: ${escapeHtml(variant.title)}${difficultyHtml}${conceptSuffix}${moduleBadge}`;
 
-        let html = `<div class="exercise${completedClass}"${drill ? '' : ` data-exercise-key="${exerciseKey}"`}${challengeAttr}>
-            <h4>${headerText}</h4>`;
+        const chevronSvg = '<svg class="accordion-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4l4 4-4 4"/></svg>';
 
-        if (difficultyNav) html += difficultyNav;
+        let html = `<div class="exercise${completedClass}"${drill ? '' : ` data-exercise-key="${exerciseKey}"`}${challengeAttr}>`;
 
-        html += `<p>${variant.description}</p>`;
+        if (drill) {
+            // Drill cards: flat layout, no accordion
+            html += `<h4>${headerText}</h4>`;
 
-        // Hints
-        html += renderHints(variant.hints);
+            if (difficultyNav) html += difficultyNav;
+            html += `<p>${variant.description}</p>`;
+            html += renderHints(variant.hints);
+            if (challenge && challenge.docLinks) html += renderDocLinks(challenge.docLinks);
+            html += renderSolution(variant.solution, variant.annotations);
+            html += renderExpected(variant);
+        } else {
+            // Accordion wrapper for non-drill exercise cards
+            const typePill = `<span class="exercise-type-tag">${typeLabel}</span>`;
+            html += `<details class="exercise-accordion"${expanded ? ' open' : ''}>`;
 
-        // Documentation links (challenge-level, not on warmups)
-        if (challenge && challenge.docLinks) {
-            html += renderDocLinks(challenge.docLinks);
-        }
+            html += `<summary><h4>${headerText}</h4>${typePill}${chevronSvg}</summary>`;
+            html += `<div class="exercise-body">`;
 
-        // Solution with annotations
-        html += renderSolution(variant.solution, variant.annotations);
-
-        // Personal notes (skip for drill cards)
-        if (!drill) {
+            if (difficultyNav) html += difficultyNav;
+            html += `<p>${variant.description}</p>`;
+            html += renderHints(variant.hints);
+            if (challenge && challenge.docLinks) html += renderDocLinks(challenge.docLinks);
+            html += renderSolution(variant.solution, variant.annotations);
             const exId = challenge ? challenge.id : (variant.warmupId || `ex${num}`);
             html += renderPersonalNotes(exId, variant.id);
-        }
+            html += renderExpected(variant);
 
-        // Expected output
-        html += renderExpected(variant);
+            html += `</div></details>`;
+        }
 
         html += '</div>';
         return html;
