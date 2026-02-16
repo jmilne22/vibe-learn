@@ -23,9 +23,20 @@
             <p class="module-desc">Track your progress through {{MODULE_COUNT}} modules</p>
         </div>
 
+        <div class="today-focus" id="today-focus">
+            <div class="today-focus-inner">
+                <div class="today-due" id="today-due">
+                    <span class="today-due-count" id="today-due-count">0</span>
+                    <span class="today-due-label">reviews due</span>
+                </div>
+                <a href="#" id="resume-btn" class="resume-btn">Continue learning &rarr;</a>
+            </div>
+        </div>
+
+        <div class="progress-segments" id="progress-segments"></div>
+
         <div class="dashboard-panel">
             <div class="panel-actions">
-                <a href="#" id="resume-btn" class="resume-btn">▶ Resume last module</a>
                 <div class="session-controls">
                     <select id="session-duration" class="session-duration">
                         <option value="25-5-15">25/5/15</option>
