@@ -6,62 +6,86 @@
    1. CSS Variables — Design Token Foundation
    ============================================ */
 :root {
-    /* Surface layers — warm-tinted, not pure gray */
-    --bg-base:       #141210;
-    --bg-surface:    #1C1A16;
-    --bg-elevated:   #24221C;
-    --bg-overlay:    #2E2B24;
-    --bg-muted:      #38342C;
+    /* Surface layers — cool violet-black */
+    --bg-base:       #13111B;
+    --bg-surface:    #1B1926;
+    --bg-elevated:   #232030;
+    --bg-overlay:    #2C2840;
+    --bg-muted:      #38344E;
 
-    /* Borders — warm */
-    --border-subtle:  #2E2B24;
-    --border-default: #3E3A30;
-    --border-strong:  #504B40;
+    /* Borders — cool */
+    --border-subtle:  #2C2840;
+    --border-default: #3C3858;
+    --border-strong:  #504B68;
 
-    /* Text — cream, not cold white */
-    --text-primary:   #E8E4DC;
-    --text-secondary: #A09888;
-    --text-tertiary:  #706858;
-    --text-ghost:     #504838;
+    /* Text — lavender-tinted cream */
+    --text-primary:   #E2DEF0;
+    --text-secondary: #9890AC;
+    --text-tertiary:  #6B6380;
+    --text-ghost:     #4A4260;
 
-    /* Accent palette — earth tones */
-    --forest:       #4A9B6F;
-    --forest-dim:   #3A7A58;
-    --forest-glow:  rgba(74, 155, 111, 0.12);
-    --forest-subtle: rgba(74, 155, 111, 0.06);
-    --clay:         #C67B5C;
-    --clay-dim:     #A8654A;
-    --clay-glow:    rgba(198, 123, 92, 0.12);
-    --sand:         #D4B896;
-    --moss:         #8AA878;
-    --river:        #6B9DAE;
-    --river-glow:   rgba(107, 157, 174, 0.12);
-    --ember:        #D4605A;
-    --ember-glow:   rgba(212, 96, 90, 0.12);
-    --lichen:       #9B8EC4;
-    --lichen-glow:  rgba(155, 142, 196, 0.12);
+    /* Accent palette — purple-centric */
+    --amethyst:       #A78BFA;
+    --amethyst-dim:   #8B73DE;
+    --amethyst-glow:  rgba(167, 139, 250, 0.12);
+    --amethyst-subtle: rgba(167, 139, 250, 0.06);
+    --amber:          #E0976A;
+    --amber-dim:      #C87E52;
+    --amber-glow:     rgba(224, 151, 106, 0.12);
+    --slate:          #7CB4E0;
+    --slate-glow:     rgba(124, 180, 224, 0.12);
+    --sage:           #8CC68C;
+    --sage-glow:      rgba(140, 198, 140, 0.12);
+    --gold:           #D4B87A;
+    --coral:          #E06070;
+    --coral-glow:     rgba(224, 96, 112, 0.12);
+    --lavender:       #C4A8E8;
+    --lavender-glow:  rgba(196, 168, 232, 0.12);
+
+    /* Syntax highlighting */
+    --syntax-keyword:  #C4A8E8;
+    --syntax-string:   #A6D4A6;
+    --syntax-function: #8CC4E8;
+    --syntax-type:     #E0C8A0;
+    --syntax-number:   #E0976A;
+    --syntax-comment:  #5C5678;
 
     /* Semantic shortcuts */
-    --accent: var(--forest);
-    --accent-hover: #5BB380;
+    --accent: var(--amethyst);
+    --accent-hover: #B99CFE;
     --text: var(--text-primary);
-    --shadow-accent: 0 0 20px rgba(74, 155, 111, 0.15);
+    --shadow-accent: 0 0 20px rgba(167, 139, 250, 0.15);
 
-    /* Map old names to new for compatibility */
-    --green-bright: var(--forest);
-    --green-dim:    var(--forest-dim);
-    --green-glow:   var(--forest-glow);
-    --green-subtle: var(--forest-subtle);
-    --orange:       var(--clay);
-    --orange-glow:  var(--clay-glow);
-    --purple:       var(--lichen);
-    --purple-glow:  var(--lichen-glow);
-    --blue:         var(--river);
-    --blue-glow:    var(--river-glow);
-    --cyan:         var(--river);
-    --cyan-glow:    var(--river-glow);
-    --red:          var(--ember);
-    --red-glow:     var(--ember-glow);
+    /* Old name aliases for JS/template compatibility */
+    --forest:       var(--amethyst);
+    --forest-dim:   var(--amethyst-dim);
+    --forest-glow:  var(--amethyst-glow);
+    --forest-subtle: var(--amethyst-subtle);
+    --clay:         var(--amber);
+    --clay-dim:     var(--amber-dim);
+    --clay-glow:    var(--amber-glow);
+    --sand:         var(--gold);
+    --moss:         var(--sage);
+    --river:        var(--slate);
+    --river-glow:   var(--slate-glow);
+    --ember:        var(--coral);
+    --ember-glow:   var(--coral-glow);
+    --lichen:       var(--lavender);
+    --lichen-glow:  var(--lavender-glow);
+    --green-bright: var(--amethyst);
+    --green-dim:    var(--amethyst-dim);
+    --green-glow:   var(--amethyst-glow);
+    --green-subtle: var(--amethyst-subtle);
+    --orange:       var(--amber);
+    --orange-glow:  var(--amber-glow);
+    --purple:       var(--lavender);
+    --purple-glow:  var(--lavender-glow);
+    --blue:         var(--slate);
+    --blue-glow:    var(--slate-glow);
+    --cyan:         var(--slate);
+    --cyan-glow:    var(--slate-glow);
+    --red:          var(--coral);
+    --red-glow:     var(--coral-glow);
 
     /* Spacing scale (4px base) */
     --space-1: 0.25rem;
@@ -90,9 +114,9 @@
     --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.35), 0 8px 16px rgba(0, 0, 0, 0.2);
 
     /* Colored glow shadows */
-    --shadow-glow-green: 0 0 20px rgba(74, 155, 111, 0.15), 0 0 4px rgba(74, 155, 111, 0.1);
-    --shadow-glow-orange: 0 0 20px rgba(198, 123, 92, 0.15), 0 0 4px rgba(198, 123, 92, 0.1);
-    --shadow-glow-purple: 0 0 20px rgba(155, 142, 196, 0.15), 0 0 4px rgba(155, 142, 196, 0.1);
+    --shadow-glow-green: 0 0 20px rgba(167, 139, 250, 0.15), 0 0 4px rgba(167, 139, 250, 0.1);
+    --shadow-glow-orange: 0 0 20px rgba(224, 151, 106, 0.15), 0 0 4px rgba(224, 151, 106, 0.1);
+    --shadow-glow-purple: 0 0 20px rgba(196, 168, 232, 0.15), 0 0 4px rgba(196, 168, 232, 0.1);
 
     /* Transition presets */
     --transition-fast: 0.15s ease;
@@ -111,7 +135,7 @@
     left: 0;
     width: 0%;
     height: 3px;
-    background: linear-gradient(90deg, var(--green-dim), var(--green-bright));
+    background: linear-gradient(90deg, var(--amethyst-dim), var(--amethyst));
     z-index: 9999;
     pointer-events: none;
     transition: width 0.1s linear;
@@ -132,6 +156,9 @@ body {
     color: var(--text-primary);
     line-height: 1.7;
     min-height: 100vh;
+    background-image: radial-gradient(circle at 20% 50%, rgba(167, 139, 250, 0.03) 0%, transparent 50%),
+                      radial-gradient(circle at 80% 20%, rgba(196, 168, 232, 0.02) 0%, transparent 50%);
+    background-attachment: fixed;
 }
 
 /* ============================================
@@ -215,7 +242,7 @@ nav.top-nav a:hover {
     font-size: 2.5rem;
     font-weight: 700;
     margin-bottom: var(--space-4);
-    background: linear-gradient(135deg, var(--text-primary) 0%, var(--sand) 100%);
+    background: linear-gradient(135deg, var(--text-primary) 0%, var(--lavender) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -237,8 +264,8 @@ nav.top-nav a:hover {
    8. Code Blocks with Syntax Highlighting
    ============================================ */
 .code-block {
-    background: var(--bg-elevated);
-    border: 1px solid var(--border-subtle);
+    background: #1E1B2E;
+    border: 1px solid rgba(167, 139, 250, 0.15);
     border-radius: var(--radius-md);
     padding: var(--space-6);
     margin: var(--space-6) 0;
@@ -288,9 +315,9 @@ pre {
 /* Markdown-generated code blocks (pre > code) */
 .lesson pre {
     position: relative;
-    background: var(--bg-elevated);
-    border: 1px solid var(--border-subtle);
-    border-left: 3px solid var(--accent);
+    background: #1E1B2E;
+    border: 1px solid rgba(167, 139, 250, 0.15);
+    border-left: 3px solid var(--amethyst);
     border-radius: var(--radius-md);
     padding: var(--space-6);
     margin: var(--space-6) 0;
@@ -298,7 +325,12 @@ pre {
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.9rem;
     line-height: 1.6;
-    box-shadow: var(--shadow-xs);
+    box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.03);
+    transition: box-shadow var(--transition-normal);
+}
+
+.lesson pre:hover {
+    box-shadow: var(--shadow-sm), 0 0 20px rgba(167, 139, 250, 0.06);
 }
 
 .code-copy-btn {
@@ -345,7 +377,7 @@ pre {
     display: grid;
     grid-template-columns: 1fr 1fr;
     margin: var(--space-6) 0;
-    border: 1px solid var(--border-default);
+    border: 1px solid rgba(167, 139, 250, 0.15);
     border-radius: var(--radius-lg);
     overflow: hidden;
 }
@@ -375,7 +407,7 @@ pre {
 
 /* Standalone labeled code block (single, not in compare) */
 .code-labeled {
-    border: 1px solid var(--border-default);
+    border: 1px solid rgba(167, 139, 250, 0.15);
     border-radius: var(--radius-md);
     overflow: hidden;
     margin: var(--space-6) 0;
@@ -389,15 +421,15 @@ pre {
 
 /* Language label header */
 .code-header {
-    background: var(--bg-overlay);
+    background: #242038;
     padding: 0.4rem var(--space-4);
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.7rem;
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--accent);
-    border-bottom: 1px solid var(--border-subtle);
+    color: var(--amethyst);
+    border-bottom: 1px solid rgba(167, 139, 250, 0.2);
 }
 
 /* Syntax highlighting (highlight.js classes using theme variables) */
@@ -405,26 +437,26 @@ pre {
 .hljs-keyword,
 .hljs-selector-tag,
 .hljs-built_in,
-.hljs-name { color: var(--lichen); }
+.hljs-name { color: var(--syntax-keyword); }
 .hljs-string,
 .hljs-attr,
 .hljs-symbol,
 .hljs-bullet,
-.hljs-addition { color: var(--moss); }
+.hljs-addition { color: var(--syntax-string); }
 .hljs-title,
 .hljs-title.function_,
-.hljs-section { color: var(--river); }
+.hljs-section { color: var(--syntax-function); }
 .hljs-comment,
 .hljs-quote,
-.hljs-deletion { color: var(--text-tertiary); font-style: italic; }
+.hljs-deletion { color: var(--syntax-comment); font-style: italic; }
 .hljs-type,
 .hljs-template-tag,
-.hljs-class .hljs-title { color: var(--sand); }
+.hljs-class .hljs-title { color: var(--syntax-type); }
 .hljs-number,
 .hljs-literal,
 .hljs-variable,
 .hljs-template-variable,
-.hljs-tag .hljs-attr { color: var(--clay); }
+.hljs-tag .hljs-attr { color: var(--syntax-number); }
 .hljs-meta,
 .hljs-doctag { color: var(--text-secondary); }
 .hljs-params { color: var(--text-primary); }
@@ -491,41 +523,41 @@ pre {
 }
 
 .tip {
-    background: rgba(74, 155, 111, 0.04);
-    border-left-color: var(--green-bright);
+    background: rgba(140, 198, 140, 0.07);
+    border-left-color: var(--sage);
 }
 
 .tip::before {
     content: 'Tip';
     display: block;
     font-weight: 600;
-    color: var(--green-bright);
+    color: var(--sage);
     margin-bottom: var(--space-2);
 }
 
 .warning {
-    background: rgba(212, 96, 90, 0.04);
-    border-left-color: var(--red);
+    background: rgba(224, 96, 112, 0.07);
+    border-left-color: var(--coral);
 }
 
 .warning::before {
     content: 'Warning';
     display: block;
     font-weight: 600;
-    color: var(--red);
+    color: var(--coral);
     margin-bottom: var(--space-2);
 }
 
 .info {
-    background: rgba(107, 157, 174, 0.04);
-    border-left-color: var(--blue);
+    background: rgba(124, 180, 224, 0.07);
+    border-left-color: var(--slate);
 }
 
 .info::before {
     content: 'Note';
     display: block;
     font-weight: 600;
-    color: var(--blue);
+    color: var(--slate);
     margin-bottom: var(--space-2);
 }
 
@@ -540,9 +572,9 @@ pre {
 }
 
 .exercise {
-    background: rgba(198, 123, 92, 0.03);
-    border: 1px solid var(--border-default);
-    border-left: 4px solid var(--clay);
+    background: rgba(224, 151, 106, 0.05);
+    border: 1px solid rgba(224, 151, 106, 0.15);
+    border-left: 4px solid var(--amber);
     border-radius: var(--radius-lg);
     padding: var(--space-6);
     margin: var(--space-8) 0;
@@ -753,13 +785,13 @@ li {
 }
 
 code:not(.code-block code):not(pre code) {
-    background: var(--bg-elevated);
+    background: rgba(167, 139, 250, 0.08);
     padding: 0.2rem 0.5rem;
     border-radius: var(--radius-sm);
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.85em;
-    color: var(--green-bright);
-    border: 1px solid var(--border-default);
+    color: var(--amethyst);
+    border: 1px solid rgba(167, 139, 250, 0.18);
 }
 
 .lesson {
@@ -810,15 +842,15 @@ h2 {
     display: inline-block;
     width: 4px;
     height: 1.2em;
-    background: var(--green-dim);
+    background: var(--amethyst-dim);
     border-radius: 2px;
     margin-right: 0.6rem;
     vertical-align: text-bottom;
 }
 
 .lesson blockquote {
-    background: var(--bg-surface);
-    border-left: 3px solid var(--purple);
+    background: rgba(224, 151, 106, 0.06);
+    border-left: 3px solid var(--amber);
     border-radius: 0 var(--radius-md) var(--radius-md) 0;
     padding: var(--space-4) var(--space-5);
     margin: var(--space-6) 0;
@@ -844,16 +876,16 @@ h2 {
     border-spacing: 0;
     margin: var(--space-6) 0;
     font-size: 0.9rem;
-    border: 1px solid var(--border-subtle);
+    border: 1px solid rgba(167, 139, 250, 0.15);
     border-radius: var(--radius-md);
     overflow: hidden;
 }
 
 .lesson table th {
-    background: var(--bg-surface);
+    background: rgba(167, 139, 250, 0.08);
     font-weight: 600;
     font-size: 0.8rem;
-    color: var(--text-secondary);
+    color: var(--amethyst);
     text-transform: uppercase;
     letter-spacing: 0.05em;
     text-align: left;
@@ -1102,7 +1134,7 @@ body.focus-mode .code-compare {
 .session-progress-bar {
     height: 100%;
     width: 0%;
-    background: linear-gradient(90deg, var(--green-bright), var(--green-dim));
+    background: linear-gradient(90deg, var(--amethyst), var(--amethyst-dim));
     transition: width var(--transition-slow);
 }
 
@@ -1183,16 +1215,16 @@ body.focus-mode .code-compare {
 /* Timer visual enhancements */
 @keyframes timer-complete-flash {
     0% {
-        box-shadow: 0 0 0 0 var(--green-bright);
-        border-color: var(--green-bright);
+        box-shadow: 0 0 0 0 var(--amethyst);
+        border-color: var(--amethyst);
     }
     50% {
-        box-shadow: 0 0 30px 10px var(--green-glow);
-        border-color: var(--green-bright);
+        box-shadow: 0 0 30px 10px rgba(167, 139, 250, 0.2);
+        border-color: var(--amethyst);
         transform: scale(1.02);
     }
     100% {
-        box-shadow: 0 0 0 0 var(--green-glow);
+        box-shadow: 0 0 0 0 rgba(167, 139, 250, 0.1);
         border-color: var(--border-default);
         transform: scale(1);
     }
@@ -1200,10 +1232,10 @@ body.focus-mode .code-compare {
 
 @keyframes timer-pulse {
     0%, 100% {
-        box-shadow: 0 0 0 rgba(212, 96, 90, 0.3);
+        box-shadow: 0 0 0 rgba(224, 96, 112, 0.3);
     }
     50% {
-        box-shadow: 0 0 20px rgba(212, 96, 90, 0.5);
+        box-shadow: 0 0 20px rgba(224, 96, 112, 0.5);
     }
 }
 
@@ -1225,8 +1257,8 @@ body.focus-mode .code-compare {
     top: 0;
     width: 280px;
     height: 100vh;
-    background: var(--bg-surface);
-    border-right: 1px solid var(--border-subtle);
+    background: linear-gradient(180deg, var(--bg-surface) 0%, #141220 100%);
+    border-right: 1px solid rgba(167, 139, 250, 0.12);
     overflow-y: auto;
     padding: 0 0 var(--space-4);
     z-index: 100;
@@ -1282,7 +1314,7 @@ body.sidebar-open .sidebar-toggle:hover {
     padding: 0 var(--space-4) 0 3.5rem;
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.85rem;
-    border-bottom: 1px solid var(--border-subtle);
+    border-bottom: 1px solid rgba(167, 139, 250, 0.15);
     margin-bottom: var(--space-2);
     min-height: 48px;
     display: flex;
@@ -1361,7 +1393,7 @@ body.sidebar-open .sidebar-toggle:hover {
 
 .sidebar-link.active {
     color: var(--green-bright);
-    background: var(--bg-elevated);
+    background: rgba(167, 139, 250, 0.08);
     border-left-color: var(--accent);
 }
 
@@ -1488,8 +1520,8 @@ footer {
    18. Visual Box, Quote Box, Concept Links
    ============================================ */
 .visual-box {
-    background: var(--bg-elevated);
-    border: 1px solid var(--border-subtle);
+    background: rgba(124, 180, 224, 0.05);
+    border: 1px solid rgba(124, 180, 224, 0.15);
     border-radius: var(--radius-md);
     padding: var(--space-8);
     margin: var(--space-6) 0;
@@ -1515,8 +1547,8 @@ footer {
    Exercise Progress Tracking
    ============================================ */
 .exercise-completed {
-    border-left: 4px solid var(--forest);
-    background: rgba(74, 155, 111, 0.03);
+    border-left: 4px solid var(--sage);
+    background: rgba(140, 198, 140, 0.03);
     position: relative;
     box-shadow: var(--shadow-glow-green);
 }
@@ -2162,8 +2194,8 @@ footer {
 
 /* Today's Focus */
 .today-focus {
-    background: var(--bg-surface);
-    border: 1px solid var(--border-default);
+    background: rgba(224, 151, 106, 0.04);
+    border: 1px solid rgba(224, 151, 106, 0.15);
     border-radius: var(--radius-lg);
     padding: var(--space-5) var(--space-6);
     margin-bottom: var(--space-6);
@@ -2217,8 +2249,8 @@ footer {
 
 /* Dashboard Panel */
 .dashboard-panel {
-    background: var(--bg-surface);
-    border: 1px solid var(--border-default);
+    background: rgba(167, 139, 250, 0.03);
+    border: 1px solid rgba(167, 139, 250, 0.12);
     border-radius: var(--radius-lg);
     padding: var(--space-4) var(--space-5);
     margin-bottom: var(--space-4);
@@ -2302,8 +2334,8 @@ footer {
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
-    background: var(--bg-surface);
-    border: 1px solid var(--border-default);
+    background: rgba(124, 180, 224, 0.06);
+    border: 1px solid rgba(124, 180, 224, 0.15);
     border-radius: var(--radius-full);
     padding: 0.35rem 0.85rem;
     font-family: 'JetBrains Mono', monospace;
@@ -2328,8 +2360,8 @@ footer {
     padding: 0.35rem 0;
 }
 .stats-detail-content {
-    background: var(--bg-surface);
-    border: 1px solid var(--border-default);
+    background: rgba(196, 168, 232, 0.03);
+    border: 1px solid rgba(196, 168, 232, 0.12);
     border-radius: 10px;
     padding: var(--space-4) var(--space-5);
     margin-top: var(--space-2);
@@ -2503,15 +2535,16 @@ footer {
     align-items: center;
     gap: var(--space-4);
     padding: var(--space-4);
-    background: var(--bg-surface);
-    border: 1px solid var(--border-default);
+    background: rgba(212, 184, 122, 0.03);
+    border: 1px solid rgba(212, 184, 122, 0.12);
     border-radius: 6px;
     margin-bottom: var(--space-2);
     transition: all var(--transition-normal);
     box-shadow: var(--shadow-xs);
 }
 .module-item:hover {
-    border-color: var(--orange);
+    border-color: var(--amber);
+    background: rgba(224, 151, 106, 0.05);
     box-shadow: var(--shadow-sm);
     transform: translateY(-3px) rotate(-0.3deg);
 }
@@ -2851,11 +2884,11 @@ footer {
 }
 .algo-pattern-primer {
     border: 1px solid var(--border-default);
-    border-left: 3px solid var(--purple);
+    border-left: 3px solid var(--lavender);
     border-radius: var(--radius-md);
     padding: var(--space-4);
     margin-bottom: var(--space-4);
-    background: rgba(155, 142, 196, 0.04);
+    background: rgba(196, 168, 232, 0.04);
 }
 .algo-pattern-primer summary {
     color: var(--purple);
@@ -3096,13 +3129,13 @@ footer {
 }
 .pattern-choice.correct {
     border-color: var(--green-bright);
-    background: rgba(74, 155, 111, 0.1);
+    background: rgba(167, 139, 250, 0.1);
     color: var(--green-bright);
     box-shadow: var(--shadow-glow-green);
 }
 .pattern-choice.incorrect {
     border-color: var(--red);
-    background: rgba(212, 96, 90, 0.06);
+    background: rgba(224, 96, 112, 0.06);
     color: var(--red);
 }
 .pattern-drill-result {
@@ -3171,10 +3204,10 @@ footer {
 .inline-exercises {
     border: 1px solid var(--accent);
     border-radius: 10px;
-    background: rgba(74, 155, 111, 0.04);
+    background: rgba(167, 139, 250, 0.04);
     padding: var(--space-6);
     margin: var(--space-8) 0;
-    box-shadow: 0 0 24px rgba(74, 155, 111, 0.04);
+    box-shadow: 0 0 24px rgba(167, 139, 250, 0.04);
 }
 
 .inline-exercises-header {
@@ -3411,11 +3444,11 @@ footer {
     color: var(--text-secondary);
 }
 .rwc-status-badge.in-progress {
-    background: rgba(198, 123, 92, 0.12);
+    background: rgba(224, 151, 106, 0.12);
     color: var(--orange);
 }
 .rwc-status-badge.completed {
-    background: rgba(74, 155, 111, 0.12);
+    background: rgba(167, 139, 250, 0.12);
     color: var(--green-bright);
 }
 .rwc-tags {
@@ -3430,18 +3463,18 @@ footer {
     font-size: 0.7rem;
     font-weight: 600;
     font-family: 'JetBrains Mono', monospace;
-    background: rgba(212, 96, 90, 0.06);
+    background: rgba(224, 96, 112, 0.06);
     color: var(--red);
-    border: 1px solid rgba(212, 96, 90, 0.15);
+    border: 1px solid rgba(224, 96, 112, 0.15);
 }
 .rwc-concept-tag {
     padding: 0.15rem 0.5rem;
     border-radius: var(--radius-sm);
     font-size: 0.7rem;
     font-family: 'JetBrains Mono', monospace;
-    background: rgba(107, 157, 174, 0.06);
+    background: rgba(124, 180, 224, 0.06);
     color: var(--cyan);
-    border: 1px solid rgba(107, 157, 174, 0.15);
+    border: 1px solid rgba(124, 180, 224, 0.15);
 }
 .rwc-source {
     font-size: 0.75rem;
@@ -3770,9 +3803,9 @@ footer {
    Completion Celebration
    ============================================================ */
 @keyframes celebrate {
-    0% { box-shadow: 0 0 0 0 rgba(74, 155, 111, 0.4); }
-    50% { box-shadow: 0 0 0 12px rgba(74, 155, 111, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(74, 155, 111, 0); }
+    0% { box-shadow: 0 0 0 0 rgba(167, 139, 250, 0.4); }
+    50% { box-shadow: 0 0 0 12px rgba(167, 139, 250, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(167, 139, 250, 0); }
 }
 .exercise.just-completed {
     animation: celebrate 0.6s ease;
