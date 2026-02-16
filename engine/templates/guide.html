@@ -48,7 +48,7 @@
         }
         .hero h1 .accent { color: var(--green-bright); }
         .hero-sub {
-            color: var(--text-dim);
+            color: var(--text-secondary);
             font-size: 1.05rem;
             line-height: 1.6;
             max-width: 560px;
@@ -68,11 +68,12 @@
 
         /* --- Table of contents --- */
         .toc {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
+            background: var(--bg-surface);
+            border: 1px solid var(--border-default);
             border-radius: 10px;
             padding: 1.25rem 1.75rem;
             margin: 2rem 0 3rem;
+            box-shadow: var(--shadow-sm);
         }
         .toc-label {
             font-family: 'JetBrains Mono', monospace;
@@ -91,13 +92,14 @@
             gap: 0 2rem;
         }
         .toc-list a {
-            color: var(--text-dim);
+            color: var(--text-secondary);
             text-decoration: none;
             font-size: 0.85rem;
             line-height: 2;
             display: flex;
             gap: 0.5rem;
             align-items: baseline;
+            transition: color var(--transition-normal);
         }
         .toc-list a:hover { color: var(--green-bright); }
         .toc-num {
@@ -112,7 +114,7 @@
         /* --- Guide sections --- */
         .guide-section {
             margin: 3.5rem 0;
-            scroll-margin-top: 1rem;
+            scroll-margin-top: var(--space-4, 1rem);
         }
         .guide-section h3 {
             font-size: 1.05rem;
@@ -121,7 +123,7 @@
             scroll-margin-top: 1rem;
         }
         .guide-section p, .guide-section > li {
-            color: var(--text-dim);
+            color: var(--text-secondary);
             font-size: 0.9rem;
             line-height: 1.7;
         }
@@ -130,19 +132,19 @@
             margin: 0.5rem 0;
         }
         .guide-section li {
-            color: var(--text-dim);
+            color: var(--text-secondary);
             font-size: 0.9rem;
             line-height: 1.7;
             margin-bottom: 0.2rem;
         }
         .guide-section strong {
-            color: var(--text-main, #e0e0e0);
+            color: var(--text-primary);
         }
 
         /* --- Intro lead paragraph --- */
         .section-lead {
             font-size: 0.92rem;
-            color: var(--text-dim);
+            color: var(--text-secondary);
             line-height: 1.7;
             margin-bottom: 1rem;
             max-width: 640px;
@@ -152,7 +154,7 @@
         .yaml-example {
             font-family: 'JetBrains Mono', monospace;
             font-size: 0.78rem;
-            background: var(--bg-code);
+            background: var(--bg-elevated);
             color: var(--green-dim);
             padding: 0.75rem 1rem;
             border-radius: 6px;
@@ -166,7 +168,7 @@
         .fp {
             font-family: 'JetBrains Mono', monospace;
             font-size: 0.82em;
-            background: var(--bg-code);
+            background: var(--bg-elevated);
             color: var(--green-dim);
             padding: 0.1rem 0.35rem;
             border-radius: 3px;
@@ -174,14 +176,14 @@
 
         /* --- Callout boxes --- */
         .callout {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
+            background: var(--bg-surface);
+            border: 1px solid var(--border-default);
             border-left: 3px solid var(--orange);
             border-radius: 6px;
             padding: 0.75rem 1rem;
             margin: 1rem 0;
             font-size: 0.85rem;
-            color: var(--text-dim);
+            color: var(--text-secondary);
             line-height: 1.6;
         }
         .callout-label {
@@ -195,13 +197,19 @@
 
         /* --- Plugin cards --- */
         .plugin-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
+            background: var(--bg-surface);
+            border: 1px solid var(--border-default);
             border-left: 3px solid var(--green-bright);
             border-radius: 8px;
             padding: 1.5rem;
             margin: 1.25rem 0;
             scroll-margin-top: 1rem;
+            box-shadow: var(--shadow-xs);
+            transition: box-shadow var(--transition-normal), transform var(--transition-normal);
+        }
+        .plugin-card:hover {
+            box-shadow: var(--shadow-sm);
+            transform: translateY(-1px);
         }
         .plugin-card-header {
             display: flex;
@@ -217,7 +225,7 @@
         .plugin-card-tag {
             font-family: 'JetBrains Mono', monospace;
             font-size: 0.65rem;
-            color: var(--bg-dark);
+            color: var(--bg-base);
             background: var(--green-bright);
             padding: 0.1rem 0.4rem;
             border-radius: 3px;
@@ -225,9 +233,9 @@
             letter-spacing: 0.05em;
             font-weight: 600;
         }
-        .plugin-card-tag.tag-plugin { background: var(--text-dim); }
+        .plugin-card-tag.tag-plugin { background: var(--text-secondary); }
         .plugin-card p, .plugin-card li {
-            color: var(--text-dim);
+            color: var(--text-secondary);
             font-size: 0.85rem;
             line-height: 1.6;
         }
@@ -244,12 +252,12 @@
         .plugin-features {
             margin-top: 0.5rem;
             padding-top: 0.5rem;
-            border-top: 1px solid var(--border);
+            border-top: 1px solid var(--border-subtle);
         }
         .plugin-features-label {
             font-family: 'JetBrains Mono', monospace;
             font-size: 0.7rem;
-            color: var(--text-dim);
+            color: var(--text-secondary);
             text-transform: uppercase;
             letter-spacing: 0.05em;
             margin-bottom: 0.25rem;
@@ -261,8 +269,8 @@
 
         /* --- Tool cards --- */
         .tool-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
+            background: var(--bg-surface);
+            border: 1px solid var(--border-default);
             border-radius: 8px;
             padding: 1.25rem 1.5rem;
             margin: 1rem 0;
@@ -273,7 +281,7 @@
             margin: 0 0 0.5rem;
         }
         .tool-card p, .tool-card li {
-            color: var(--text-dim);
+            color: var(--text-secondary);
             font-size: 0.85rem;
             line-height: 1.6;
         }
@@ -291,30 +299,35 @@
         /* --- Tables --- */
         .guide-table {
             width: 100%;
-            border-collapse: collapse;
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md, 8px);
+            overflow: hidden;
+            border-collapse: separate;
+            border-spacing: 0;
             margin: 0.75rem 0;
             font-size: 0.85rem;
         }
         .guide-table th, .guide-table td {
             text-align: left;
             padding: 0.5rem 0.75rem;
-            border-bottom: 1px solid var(--border);
+            border-bottom: 1px solid var(--border-subtle);
         }
         .guide-table th {
             font-weight: 600;
             font-size: 0.75rem;
-            color: var(--text-dim);
+            color: var(--text-secondary);
             text-transform: uppercase;
             letter-spacing: 0.05em;
+            background: var(--bg-elevated);
         }
         .guide-table td {
-            color: var(--text-dim);
+            color: var(--text-secondary);
             line-height: 1.5;
         }
         .guide-table code {
             font-family: 'JetBrains Mono', monospace;
             font-size: 0.78rem;
-            background: var(--bg-code);
+            background: var(--bg-elevated);
             padding: 0.1rem 0.35rem;
             border-radius: 3px;
             color: var(--green-dim);
@@ -323,7 +336,7 @@
         /* --- Horizontal rule between major parts --- */
         .section-divider {
             border: none;
-            border-top: 1px solid var(--border);
+            border-top: 1px solid var(--border-subtle);
             margin: 3.5rem 0;
         }
 
@@ -331,9 +344,9 @@
         .landing-footer {
             margin-top: 4rem;
             padding: 2rem 0;
-            border-top: 1px solid var(--border);
+            border-top: 1px solid var(--border-subtle);
             text-align: center;
-            color: var(--text-dim);
+            color: var(--text-tertiary, var(--text-secondary));
             font-size: 0.82rem;
             line-height: 1.8;
         }

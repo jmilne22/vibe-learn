@@ -272,7 +272,7 @@
                 '<div class="session-stat-label">Completed</div>' +
             '</div>' +
             '<div class="session-stat">' +
-                '<div class="session-stat-value" style="color: var(--text-dim);">' + session.results.skipped + '</div>' +
+                '<div class="session-stat-value" style="color: var(--text-secondary);">' + session.results.skipped + '</div>' +
                 '<div class="session-stat-label">Skipped</div>' +
             '</div>' +
             '<div class="session-stat">' +

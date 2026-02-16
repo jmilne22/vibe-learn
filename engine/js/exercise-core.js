@@ -92,13 +92,13 @@
             .concept-filter {
                 margin-bottom: 1rem;
                 padding: 1rem;
-                background: var(--bg-card);
+                background: var(--bg-surface);
                 border-radius: 8px;
-                border: 1px solid var(--bg-lighter);
+                border: 1px solid var(--border-default);
             }
             .concept-filter-label {
                 font-size: 0.85rem;
-                color: var(--text-dim);
+                color: var(--text-secondary);
                 margin-bottom: 0.5rem;
                 display: block;
             }
@@ -109,7 +109,7 @@
             }
             .concept-btn {
                 background: transparent;
-                border: 1px solid var(--bg-lighter);
+                border: 1px solid var(--border-default);
                 color: var(--text);
                 padding: 0.35rem 0.75rem;
                 border-radius: 20px;
@@ -129,13 +129,13 @@
             .difficulty-mode-selector {
                 margin-bottom: 1rem;
                 padding: 1rem;
-                background: var(--bg-card);
+                background: var(--bg-surface);
                 border-radius: 8px;
-                border: 1px solid var(--bg-lighter);
+                border: 1px solid var(--border-default);
             }
             .difficulty-mode-label {
                 font-size: 0.85rem;
-                color: var(--text-dim);
+                color: var(--text-secondary);
                 margin-bottom: 0.5rem;
                 display: block;
             }
@@ -146,7 +146,7 @@
             }
             .difficulty-mode-btn {
                 background: transparent;
-                border: 2px solid var(--bg-lighter);
+                border: 1px solid var(--border-default);
                 color: var(--text);
                 padding: 0.5rem 1rem;
                 border-radius: 8px;
@@ -169,7 +169,7 @@
             .difficulty-mode-btn.easy.active {
                 background: var(--green-bright);
                 border-color: var(--green-bright);
-                color: var(--bg-dark);
+                color: var(--bg-base);
             }
             .difficulty-mode-btn.hard.active {
                 background: var(--purple);
@@ -195,7 +195,7 @@
                 flex-wrap: wrap;
             }
             .easier-variant-btn, .harder-variant-btn {
-                background: var(--bg-card);
+                background: var(--bg-surface);
                 border: 2px solid var(--green-bright);
                 color: var(--green-bright);
                 padding: 0.4rem 0.8rem;
@@ -212,7 +212,7 @@
             }
             .easier-variant-btn:hover {
                 background: var(--green-bright);
-                color: var(--bg-dark);
+                color: var(--bg-base);
                 transform: translateY(-1px);
             }
             .harder-variant-btn:hover {
@@ -223,20 +223,20 @@
             .easier-variant-btn:disabled, .harder-variant-btn:disabled {
                 opacity: 0.4;
                 cursor: not-allowed;
-                border-color: var(--text-dim);
-                color: var(--text-dim);
+                border-color: var(--text-secondary);
+                color: var(--text-secondary);
             }
             .easier-variant-btn:disabled:hover, .harder-variant-btn:disabled:hover {
-                background: var(--bg-card);
-                color: var(--text-dim);
+                background: var(--bg-surface);
+                color: var(--text-secondary);
                 transform: none;
             }
             .shuffle-info {
-                background: var(--bg-lighter);
+                background: var(--bg-muted);
                 padding: 0.5rem 0.75rem;
                 border-radius: 6px;
                 font-size: 0.8rem;
-                color: var(--text-dim);
+                color: var(--text-secondary);
                 margin-top: 0.5rem;
             }
             .personal-notes {
@@ -253,8 +253,8 @@
                 min-height: 100px;
                 margin-top: 0.5rem;
                 padding: 0.75rem;
-                background: var(--bg-lighter);
-                border: 1px solid var(--bg-lighter);
+                background: var(--bg-elevated);
+                border: 1px solid var(--border-default);
                 border-radius: 4px;
                 color: var(--text);
                 font-family: 'JetBrains Mono', monospace;
@@ -264,11 +264,11 @@
             .personal-notes-textarea:focus {
                 outline: none;
                 border-color: var(--purple);
-                background: var(--bg-card);
+                background: var(--bg-surface);
             }
             .personal-notes-hint {
                 font-size: 0.75rem;
-                color: var(--text-dim);
+                color: var(--text-secondary);
                 margin-top: 0.25rem;
             }
         `;
@@ -400,13 +400,13 @@
         var btn = document.createElement('button');
         if (id) btn.id = id;
         btn.textContent = '\uD83C\uDFB2 Shuffle';
-        btn.style.cssText = 'background:var(--bg-card);color:var(--' + color + ');border:1px solid var(--' + color + ');padding:0.2rem 0.7rem;border-radius:4px;font-size:0.75rem;font-family:"JetBrains Mono",monospace;cursor:pointer;transition:all 0.2s;font-weight:400;';
+        btn.style.cssText = 'background:var(--bg-surface);color:var(--' + color + ');border:1px solid var(--' + color + ');padding:0.2rem 0.7rem;border-radius:4px;font-size:0.75rem;font-family:"JetBrains Mono",monospace;cursor:pointer;transition:all 0.2s;font-weight:400;';
         btn.addEventListener('mouseenter', function() {
             btn.style.background = 'var(--' + color + ')';
-            btn.style.color = color === 'green-bright' ? 'var(--bg-dark)' : 'white';
+            btn.style.color = color === 'green-bright' ? 'var(--bg-base)' : 'white';
         });
         btn.addEventListener('mouseleave', function() {
-            btn.style.background = 'var(--bg-card)';
+            btn.style.background = 'var(--bg-surface)';
             btn.style.color = 'var(--' + color + ')';
         });
         if (onClick) btn.addEventListener('click', onClick);
@@ -699,11 +699,11 @@
         if (!btn) return;
         btn.textContent = '\u2713 Shuffled!';
         btn.style.background = 'var(--green-bright)';
-        btn.style.color = 'var(--bg-dark)';
+        btn.style.color = 'var(--bg-base)';
         if (color !== 'green-bright') btn.style.borderColor = 'var(--green-bright)';
         setTimeout(function() {
             btn.textContent = '\uD83C\uDFB2 Shuffle';
-            btn.style.background = 'var(--bg-card)';
+            btn.style.background = 'var(--bg-surface)';
             btn.style.color = 'var(--' + color + ')';
             btn.style.borderColor = 'var(--' + color + ')';
         }, 800);

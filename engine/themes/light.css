@@ -1,18 +1,53 @@
 [data-theme="light"] {
-    --bg-dark: #fafafa;
-    --bg-card: #ffffff;
-    --bg-code: #f4f4f5;
-    --bg-lighter: #e4e4e7;
+    /* Surface layers */
+    --bg-base: #f8f8fa;
+    --bg-surface: #ffffff;
+    --bg-elevated: #f0f0f3;
+    --bg-overlay: #e8e8ec;
+    --bg-muted: #e0e0e5;
+
+    /* Border hierarchy */
+    --border-subtle: #e2e2e8;
+    --border-default: #d0d0d8;
+    --border-strong: #b0b0bc;
+
+    /* Text hierarchy */
+    --text-primary: #1a1a2e;
+    --text-secondary: #5a5a72;
+    --text-tertiary: #8a8a9e;
+    --text-ghost: #b0b0c0;
+
+    /* Accent palette (darker for readability on white) */
     --green-bright: #059669;
     --green-dim: #047857;
     --green-glow: rgba(5, 150, 105, 0.12);
+    --green-subtle: rgba(5, 150, 105, 0.06);
     --orange: #d97706;
+    --orange-glow: rgba(217, 119, 6, 0.12);
     --purple: #7c3aed;
+    --purple-glow: rgba(124, 58, 237, 0.12);
     --blue: #2563eb;
+    --blue-glow: rgba(37, 99, 235, 0.12);
     --cyan: #0891b2;
+    --cyan-glow: rgba(8, 145, 178, 0.12);
     --red: #dc2626;
-    --text-main: #18181b;
-    --text: var(--text-main);
-    --text-dim: #71717a;
-    --border: #d4d4d8;
+    --red-glow: rgba(220, 38, 38, 0.12);
+
+    /* Semantic shortcuts */
+    --accent: #059669;
+    --accent-hover: #047857;
+    --text: var(--text-primary);
+    --shadow-accent: 0 0 16px rgba(5, 150, 105, 0.12);
+
+    /* Shadow scale (lighter for light mode) */
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.1), 0 4px 8px rgba(0, 0, 0, 0.04);
+    --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.12), 0 8px 16px rgba(0, 0, 0, 0.06);
+
+    /* Colored glow shadows */
+    --shadow-glow-green: 0 0 16px rgba(5, 150, 105, 0.12), 0 0 4px rgba(5, 150, 105, 0.08);
+    --shadow-glow-orange: 0 0 16px rgba(217, 119, 6, 0.12), 0 0 4px rgba(217, 119, 6, 0.08);
+    --shadow-glow-purple: 0 0 16px rgba(124, 58, 237, 0.12), 0 0 4px rgba(124, 58, 237, 0.08);
 }

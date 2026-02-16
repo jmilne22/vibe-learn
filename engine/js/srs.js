@@ -231,8 +231,8 @@
             case 'Good':      return 'var(--cyan)';
             case 'Moderate':  return 'var(--orange)';
             case 'Weak':      return 'var(--red)';
-            case 'Too early': return 'var(--text-dim)';
-            default:          return 'var(--text-dim)';
+            case 'Too early': return 'var(--text-secondary)';
+            default:          return 'var(--text-secondary)';
         }
     }
 

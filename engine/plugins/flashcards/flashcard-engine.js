@@ -306,19 +306,19 @@
             statsEl.innerHTML =
                 '<div style="text-align: center; padding: 1rem;">' +
                     '<div style="font-size: 2rem; font-weight: 700; font-family: JetBrains Mono, monospace; color: var(--cyan);">' + total + '</div>' +
-                    '<div style="color: var(--text-dim); font-size: 0.85rem; margin-top: 0.25rem;">Total Cards</div>' +
+                    '<div style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.25rem;">Total Cards</div>' +
                 '</div>' +
                 '<div style="text-align: center; padding: 1rem;">' +
                     '<div style="font-size: 2rem; font-weight: 700; font-family: JetBrains Mono, monospace; color: var(--green-bright);">' + results.knew + '</div>' +
-                    '<div style="color: var(--text-dim); font-size: 0.85rem; margin-top: 0.25rem;">Knew It (' + pctKnew + '%)</div>' +
+                    '<div style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.25rem;">Knew It (' + pctKnew + '%)</div>' +
                 '</div>' +
                 '<div style="text-align: center; padding: 1rem;">' +
                     '<div style="font-size: 2rem; font-weight: 700; font-family: JetBrains Mono, monospace; color: var(--orange);">' + results.partial + '</div>' +
-                    '<div style="color: var(--text-dim); font-size: 0.85rem; margin-top: 0.25rem;">Partially (' + pctPartial + '%)</div>' +
+                    '<div style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.25rem;">Partially (' + pctPartial + '%)</div>' +
                 '</div>' +
                 '<div style="text-align: center; padding: 1rem;">' +
                     '<div style="font-size: 2rem; font-weight: 700; font-family: JetBrains Mono, monospace; color: var(--red);">' + results.didnt + '</div>' +
-                    '<div style="color: var(--text-dim); font-size: 0.85rem; margin-top: 0.25rem;">Didn\'t Know (' + pctDidnt + '%)</div>' +
+                    '<div style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.25rem;">Didn\'t Know (' + pctDidnt + '%)</div>' +
                 '</div>';
         }
     }

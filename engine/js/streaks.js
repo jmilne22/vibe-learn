@@ -150,7 +150,7 @@ function renderHeatmap(container) {
             text.setAttribute('x', dayLabelWidth + week * step);
             text.setAttribute('y', 11);
             text.setAttribute('font-size', '10');
-            text.setAttribute('fill', 'var(--text-dim)');
+            text.setAttribute('fill', 'var(--text-secondary)');
             text.setAttribute('font-family', 'inherit');
             text.textContent = months[month];
             svg.appendChild(text);
@@ -163,7 +163,7 @@ function renderHeatmap(container) {
         text.setAttribute('x', 0);
         text.setAttribute('y', headerHeight + row * step + cellSize - 2);
         text.setAttribute('font-size', '10');
-        text.setAttribute('fill', 'var(--text-dim)');
+        text.setAttribute('fill', 'var(--text-secondary)');
         text.setAttribute('font-family', 'inherit');
         text.textContent = label;
         svg.appendChild(text);
@@ -190,7 +190,7 @@ function renderHeatmap(container) {
             rect.setAttribute('rx', 2);
 
             let fill;
-            if (level === 0) fill = 'var(--bg-lighter)';
+            if (level === 0) fill = 'var(--bg-muted)';
             else if (level === 1) fill = 'var(--green-dim)';
             else if (level === 2) fill = 'var(--green-bright)';
             else fill = 'var(--green-bright)';
