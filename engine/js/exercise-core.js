@@ -36,8 +36,8 @@
         style.textContent = `
             .thinking-timer-btn {
                 background: transparent;
-                border: 2px solid #8b5cf6;
-                color: #8b5cf6;
+                border: 2px solid var(--purple, #a78bfa);
+                color: var(--purple, #a78bfa);
                 padding: 0.5rem 1rem;
                 border-radius: 8px;
                 font-weight: 600;
@@ -46,11 +46,11 @@
                 transition: all 0.2s;
             }
             .thinking-timer-btn:hover {
-                background: #8b5cf6;
+                background: var(--purple, #a78bfa);
                 color: white;
             }
             .thinking-timer {
-                background: linear-gradient(135deg, #8b5cf6, #3b82f6);
+                background: linear-gradient(135deg, var(--purple, #a78bfa), var(--blue, #60a5fa));
                 color: white;
                 padding: 0.75rem 1rem;
                 border-radius: 8px;
@@ -72,7 +72,7 @@
                 border-radius: 4px;
             }
             .thinking-timer.timer-done {
-                background: #22c55e;
+                background: var(--green-bright, #34d399);
                 animation: none;
             }
             @keyframes pulse {

@@ -6,26 +6,41 @@
    1. CSS Variables
    ============================================ */
 :root {
-    /* Dark mode (default) */
-    --bg-dark: #0a0a0f;
-    --bg-card: #12121a;
-    --bg-code: #1a1a24;
-    --bg-lighter: #1f1f2a;
-    --green-bright: #00ff9d;
-    --green-dim: #00cc7d;
-    --green-glow: rgba(0, 255, 157, 0.15);
-    --orange: #ff9d00;
-    --purple: #9d00ff;
-    --blue: #00b4ff;
-    --cyan: #00d4ff;
-    --red: #ff4757;
-    --text-main: #e0e0e0;
+    /* Dark mode (default) — zinc + emerald */
+    --bg-dark: #18181b;
+    --bg-card: #1f1f23;
+    --bg-code: #27272a;
+    --bg-lighter: #3f3f46;
+    --green-bright: #34d399;
+    --green-dim: #059669;
+    --green-glow: rgba(52, 211, 153, 0.12);
+    --orange: #f59e0b;
+    --purple: #a78bfa;
+    --blue: #60a5fa;
+    --cyan: #67e8f9;
+    --red: #f87171;
+    --text-main: #e4e4e7;
     --text: var(--text-main);
-    --text-dim: #888;
-    --border: #2a2a3a;
+    --text-dim: #a1a1aa;
+    --border: #3f3f46;
 }
 
 /* Theme CSS files are loaded from themes/ directory */
+
+/* ============================================
+   Scroll Progress Bar
+   ============================================ */
+.scroll-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 0%;
+    height: 3px;
+    background: linear-gradient(90deg, var(--green-dim), var(--green-bright));
+    z-index: 9999;
+    pointer-events: none;
+    transition: width 0.1s linear;
+}
 
 /* ============================================
    2. Reset and Base Styles
@@ -172,8 +187,10 @@ pre {
 
 /* Markdown-generated code blocks (pre > code) */
 .lesson pre {
+    position: relative;
     background: var(--bg-code);
     border: 1px solid var(--border);
+    border-left: 3px solid var(--green-dim);
     border-radius: 8px;
     padding: 1.5rem;
     margin: 1.5rem 0;
@@ -181,6 +198,36 @@ pre {
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.9rem;
     line-height: 1.6;
+}
+
+.code-copy-btn {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: var(--bg-lighter);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.lesson pre:hover .code-copy-btn {
+    opacity: 1;
+}
+
+.code-copy-btn:hover {
+    border-color: var(--green-bright);
+    color: var(--green-bright);
+}
+
+.code-copy-btn.copied {
+    color: var(--green-bright);
+    border-color: var(--green-bright);
 }
 
 .lesson pre code {
@@ -248,7 +295,7 @@ pre {
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--text-dim);
+    color: var(--green-dim);
     border-bottom: 1px solid var(--border);
 }
 
@@ -341,7 +388,7 @@ pre {
 }
 
 .tip {
-    background: rgba(0, 255, 157, 0.1);
+    background: rgba(52, 211, 153, 0.08);
     border-left-color: var(--green-bright);
 }
 
@@ -354,7 +401,7 @@ pre {
 }
 
 .warning {
-    background: rgba(255, 71, 87, 0.1);
+    background: rgba(248, 113, 113, 0.08);
     border-left-color: var(--red);
 }
 
@@ -367,7 +414,7 @@ pre {
 }
 
 .info {
-    background: rgba(0, 180, 255, 0.1);
+    background: rgba(96, 165, 250, 0.08);
     border-left-color: var(--blue);
 }
 
@@ -562,7 +609,7 @@ details .hint-content pre {
 
 .nav-btn:hover {
     border-color: var(--green-bright);
-    box-shadow: 0 4px 20px var(--green-glow);
+    box-shadow: 0 2px 8px var(--green-glow);
 }
 
 .nav-btn.primary {
@@ -572,7 +619,7 @@ details .hint-content pre {
 }
 
 .nav-btn.primary:hover {
-    background: #fff;
+    background: var(--text-main);
 }
 
 /* ============================================
@@ -586,6 +633,10 @@ li {
     margin-bottom: 0.5rem;
 }
 
+.lesson li > strong:first-child {
+    color: var(--cyan);
+}
+
 code:not(.code-block code):not(pre code) {
     background: var(--bg-code);
     padding: 0.2rem 0.5rem;
@@ -593,6 +644,11 @@ code:not(.code-block code):not(pre code) {
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.85em;
     color: var(--green-bright);
+    border: 1px solid var(--border);
+}
+
+.lesson {
+    font-size: 1.05rem;
 }
 
 h2, h3, h4 {
@@ -603,6 +659,50 @@ h2, h3, h4 {
 h2 {
     font-size: 1.5rem;
     color: var(--text-main);
+}
+
+.lesson h2 {
+    margin-top: 2.75rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+}
+
+.lesson h2:first-child {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+}
+
+.lesson h2::before {
+    content: '';
+    display: inline-block;
+    width: 4px;
+    height: 1.2em;
+    background: var(--green-dim);
+    border-radius: 2px;
+    margin-right: 0.6rem;
+    vertical-align: text-bottom;
+}
+
+.lesson blockquote {
+    background: var(--bg-card);
+    border-left: 3px solid var(--purple);
+    border-radius: 0 8px 8px 0;
+    padding: 1rem 1.25rem;
+    margin: 1.5rem 0;
+    color: var(--text-dim);
+}
+
+.lesson blockquote p:last-child {
+    margin-bottom: 0;
+}
+
+.lesson blockquote strong {
+    color: var(--text-main);
+}
+
+.lesson blockquote code {
+    color: var(--purple);
 }
 
 h3 {
@@ -627,16 +727,12 @@ a:hover {
    14. Theme Toggle Button
    ============================================ */
 .theme-toggle {
-    position: fixed;
-    top: 1rem;
-    right: 1rem;
     width: 44px;
     height: 44px;
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: 8px;
     cursor: pointer;
-    z-index: 101;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -652,35 +748,10 @@ a:hover {
     z-index: 101;
     display: flex;
     flex-direction: column;
-    align-items: stretch;
+    align-items: center;
     gap: 0.35rem;
 }
 
-.theme-picker-label {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.7rem;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-}
-
-.theme-select {
-    background: var(--bg-card);
-    color: var(--text-main);
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    padding: 0.5rem 1rem;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.8rem;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
-    cursor: pointer;
-    min-width: 180px;
-}
-
-.theme-select:focus {
-    outline: 2px solid var(--green-bright);
-    outline-offset: 2px;
-}
 
 .theme-actions {
     display: flex;
@@ -777,9 +848,8 @@ body.focus-mode .focus-toggle {
     opacity: 1;
 }
 
-body.focus-mode .theme-picker-label,
-body.focus-mode .theme-select {
-    display: none !important;
+body.focus-mode .theme-toggle {
+    opacity: 0.3;
 }
 
 body.focus-mode .code-compare {
@@ -823,7 +893,7 @@ body.focus-mode .code-compare {
     bottom: 1rem;
     width: min(320px, calc(100% - 2rem));
     z-index: 102;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
 .session-timer-header {
@@ -955,10 +1025,10 @@ body.focus-mode .code-compare {
 
 @keyframes timer-pulse {
     0%, 100% {
-        box-shadow: 0 0 0 rgba(230, 0, 18, 0.3);
+        box-shadow: 0 0 0 rgba(248, 113, 113, 0.3);
     }
     50% {
-        box-shadow: 0 0 20px rgba(230, 0, 18, 0.5);
+        box-shadow: 0 0 20px rgba(248, 113, 113, 0.5);
     }
 }
 
@@ -1076,6 +1146,8 @@ body.sidebar-open .sidebar-toggle:hover {
 
 .sidebar-section-link:hover {
     color: var(--cyan);
+    background: var(--bg-code);
+    border-radius: 4px;
 }
 
 .sidebar-section-link.active {
@@ -1083,7 +1155,15 @@ body.sidebar-open .sidebar-toggle:hover {
     font-weight: 500;
 }
 
-
+.sidebar::after {
+    content: '';
+    position: sticky;
+    bottom: 0;
+    display: block;
+    height: 2rem;
+    background: linear-gradient(transparent, var(--bg-card));
+    pointer-events: none;
+}
 
 .sidebar-link {
     display: flex;
@@ -1127,6 +1207,16 @@ body.sidebar-open .sidebar-toggle:hover {
     border-left-color: var(--orange);
 }
 
+.sidebar-link.completed::after {
+    content: '';
+    width: 8px;
+    height: 8px;
+    background: var(--green-bright);
+    border-radius: 50%;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
 /* Add top padding when sidebar toggle is present */
 .has-sidebar .container {
     padding-top: 4rem;
@@ -1137,17 +1227,30 @@ body.sidebar-open .sidebar-toggle:hover {
     display: none;
 }
 
-/* When sidebar is open on medium screens, shift content right */
-@media (min-width: 901px) and (max-width: 1400px) {
-    body.sidebar-open .container {
+/* Desktop: sidebar always visible */
+@media (min-width: 901px) {
+    .sidebar {
+        transform: translateX(0);
+    }
+
+    .sidebar-toggle {
+        display: none;
+    }
+
+    .has-sidebar .container {
         margin-left: 300px;
-        margin-right: 20px;
+        padding-top: 2rem;
     }
 }
 
-/* On ultrawide screens, content stays centered - sidebar floats over empty space */
+/* Ultrawide: center content in the space right of sidebar */
+@media (min-width: 1500px) {
+    .has-sidebar .container {
+        margin-left: calc(50vw - 310px);
+    }
+}
 
-/* Mobile: full overlay */
+/* Mobile: collapsible overlay */
 @media (max-width: 900px) {
     .sidebar {
         width: 100%;
@@ -1430,19 +1533,19 @@ footer {
     .theme-picker {
         top: 0.5rem;
         right: 0.5rem;
-        min-width: 0;
     }
 
-    .theme-select,
+    .theme-toggle {
+        width: 36px;
+        height: 36px;
+        font-size: 1.1rem;
+    }
+
     .focus-toggle,
     .show-timer-toggle {
         min-width: 140px;
         font-size: 0.7rem;
         padding: 0.3rem 0.7rem;
-    }
-
-    .theme-picker-label {
-        font-size: 0.65rem;
     }
 
     /* Exercise cards */
@@ -1600,7 +1703,16 @@ footer {
         margin: 1rem 0 1.5rem;
     }
 
-    .stats-panel .stat-value {
+    .stats-strip {
+        gap: 0.35rem;
+    }
+
+    .stat-chip {
+        font-size: 0.7rem;
+        padding: 0.25rem 0.65rem;
+    }
+
+    .stats-detail-content .stat-value {
         font-size: 1.2rem;
     }
 
@@ -1645,6 +1757,7 @@ footer {
     perspective: 1000px;
     cursor: pointer;
     min-height: 250px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
 }
 
 .flashcard-inner {
@@ -1784,7 +1897,7 @@ footer {
 }
 
 .quick-btn.primary:hover {
-    background: #fff;
+    background: var(--text-main);
 }
 
 
@@ -1859,7 +1972,7 @@ footer {
     white-space: nowrap;
 }
 .resume-btn:hover {
-    background: #fff;
+    background: var(--text-main);
     opacity: 1;
 }
 .panel-actions .session-controls {
@@ -1903,13 +2016,48 @@ footer {
     opacity: 1;
 }
 
-/* Stats Panel */
-.stats-panel {
+/* Stats Strip (compact pill badges) */
+.stats-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+.stat-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 0.35rem 0.85rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+}
+.stat-chip-value {
+    color: var(--text-main);
+    font-weight: 600;
+}
+
+/* Stats Detail (collapsible detailed stats) */
+.stats-detail {
+    margin-bottom: 1.5rem;
+}
+.stats-detail summary {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    cursor: pointer;
+    padding: 0.35rem 0;
+}
+.stats-detail-content {
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: 10px;
     padding: 1rem 1.25rem;
-    margin-bottom: 2rem;
+    margin-top: 0.5rem;
 }
 .stats-row {
     display: flex;
@@ -1927,13 +2075,13 @@ footer {
     text-align: center;
     gap: 0.15rem;
 }
-.stats-panel .stat-value {
+.stats-detail-content .stat-value {
     font-size: 1.5rem;
 }
-.stats-panel .stat-label {
+.stats-detail-content .stat-label {
     margin-top: 0.25rem;
 }
-.stats-panel #activity-heatmap {
+.stats-detail-content #activity-heatmap {
     padding-top: 0.75rem;
     border-top: 1px solid var(--border);
     margin-top: 0.25rem;
@@ -2030,7 +2178,7 @@ footer {
     white-space: nowrap;
 }
 .session-start-btn:hover {
-    background: #fff;
+    background: var(--text-main);
 }
 .session-duration {
     width: 100%;
@@ -2081,6 +2229,7 @@ footer {
     border-radius: 6px;
     margin-bottom: 0.5rem;
     transition: all 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
 }
 .module-item:hover {
     border-color: var(--orange);
@@ -2660,12 +2809,12 @@ footer {
 }
 .pattern-choice.correct {
     border-color: var(--green-bright);
-    background: rgba(0, 255, 100, 0.1);
+    background: rgba(52, 211, 153, 0.1);
     color: var(--green-bright);
 }
 .pattern-choice.incorrect {
     border-color: var(--red);
-    background: rgba(255, 50, 50, 0.1);
+    background: rgba(248, 113, 113, 0.1);
     color: var(--red);
 }
 .pattern-drill-result {
@@ -2734,7 +2883,7 @@ footer {
 .inline-exercises {
     border: 1px solid var(--green-dim);
     border-radius: 10px;
-    background: rgba(0, 255, 157, 0.03);
+    background: rgba(52, 211, 153, 0.04);
     padding: 1.5rem;
     margin: 2rem 0;
 }
@@ -2969,11 +3118,11 @@ footer {
     color: var(--text-dim);
 }
 .rwc-status-badge.in-progress {
-    background: rgba(255, 165, 0, 0.15);
+    background: rgba(245, 158, 11, 0.12);
     color: var(--orange);
 }
 .rwc-status-badge.completed {
-    background: rgba(0, 255, 127, 0.15);
+    background: rgba(52, 211, 153, 0.12);
     color: var(--green-bright);
 }
 .rwc-tags {
@@ -2988,18 +3137,18 @@ footer {
     font-size: 0.7rem;
     font-weight: 600;
     font-family: 'JetBrains Mono', monospace;
-    background: rgba(255, 0, 0, 0.1);
+    background: rgba(248, 113, 113, 0.1);
     color: var(--red);
-    border: 1px solid rgba(255, 0, 0, 0.2);
+    border: 1px solid rgba(248, 113, 113, 0.15);
 }
 .rwc-concept-tag {
     padding: 0.15rem 0.5rem;
     border-radius: 4px;
     font-size: 0.7rem;
     font-family: 'JetBrains Mono', monospace;
-    background: rgba(0, 200, 255, 0.1);
+    background: rgba(96, 165, 250, 0.1);
     color: var(--cyan);
-    border: 1px solid rgba(0, 200, 255, 0.2);
+    border: 1px solid rgba(96, 165, 250, 0.15);
 }
 .rwc-source {
     font-size: 0.75rem;
@@ -3220,5 +3369,23 @@ footer {
     .rwc-card-header {
         flex-direction: column;
         align-items: flex-start;
+    }
+}
+
+/* ============================================
+   Reduced Motion
+   ============================================ */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+    .scroll-progress {
+        transition: none;
+    }
+    .quick-btn:hover,
+    .course-card:hover {
+        transform: none;
     }
 }
