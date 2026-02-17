@@ -634,8 +634,7 @@ variants:
           description: >-
             Write <code>func errorRate(lines []string) float64</code> that takes log lines in the format <code>"LEVEL
             message"</code> and returns the percentage of lines that are ERROR level (0.0 to 100.0, rounded to one
-            decimal). Return 0.0 for empty input.<br><br>Example: <code>["INFO ok", "ERROR bad", "INFO ok2", "ERROR
-            oom", "WARN slow"]</code> → <code>40.0</code>
+            decimal). Return 0.0 for empty input.
           functionSignature: func errorRate(lines []string) float64
           difficulty: 1
           testCases:
@@ -672,8 +671,7 @@ variants:
           description: >-
             Write <code>func logReport(lines []string) string</code> that takes log lines in the format <code>"LEVEL
             message text"</code> and returns a report string with each level and its count, sorted alphabetically
-            by level name.<br><br>Example input: <code>["INFO request started", "ERROR timeout", "INFO request done", "WARN
-            slow query", "ERROR OOM"]</code><br>Example output: <code>"ERROR: 2\nINFO: 2\nWARN: 1"</code>
+            by level name.
           functionSignature: func logReport(lines []string) string
           difficulty: 2
           testCases:
@@ -777,8 +775,7 @@ variants:
           description: >-
             Write <code>func parseLabels(s string) map[string]string</code> that takes a Prometheus-style label string
             like <code>method="GET",status="200"</code> and returns a map of label keys to values (without
-            quotes).<br><br>Example: <code>"method=\"GET\",status=\"200\""</code> → <code>map[method:GET
-            status:200]</code>
+            quotes).
           functionSignature: func parseLabels(s string) map[string]string
           difficulty: 1
           testCases:
@@ -893,9 +890,7 @@ variants:
           title: Aggregate Metrics by Name
           description: >-
             Write <code>func aggregateMetrics(lines []string) map[string]float64</code> that parses multiple Prometheus
-            metric lines and sums values by metric name (ignoring labels).<br><br>Example: given
-            <code>http_req{method="GET"} 10</code> and <code>http_req{method="POST"} 5</code>, return
-            <code>map[http_req:15]</code>.
+            metric lines and sums values by metric name (ignoring labels).
           functionSignature: func aggregateMetrics(lines []string) map[string]float64
           difficulty: 3
           testCases:
@@ -935,8 +930,7 @@ variants:
           title: Sort Pods by Name
           description: >-
             Write <code>func sortPodNames(names []string) []string</code> that returns the input slice sorted
-            alphabetically. Sort in place and return the same slice.<br><br>Example: <code>["web-3", "api-1", "db-2",
-            "web-1"]</code> → <code>["api-1", "db-2", "web-1", "web-3"]</code>
+            alphabetically. Sort in place and return the same slice.
           functionSignature: func sortPodNames(names []string) []string
           difficulty: 1
           testCases:
@@ -956,8 +950,7 @@ variants:
           title: Filter and Sort Pods
           description: >-
             Write <code>func filterSorted(names []string, prefix string) []string</code> that returns all names
-            starting with <code>prefix</code>, sorted alphabetically.<br><br>Example: <code>["web-3", "api-1", "db-2",
-            "web-1", "api-2"]</code> with prefix <code>"web"</code> → <code>["web-1", "web-3"]</code>
+            starting with <code>prefix</code>, sorted alphabetically.
           functionSignature: func filterSorted(names []string, prefix string) []string
           difficulty: 2
           testCases:
@@ -996,10 +989,8 @@ variants:
           title: Sorted Key-Value Report
           description: >-
             Write <code>func kvReport(lines []string) string</code> that takes lines in <code>"key=value"</code>
-            format, parses them, and returns a formatted report sorted by key. Skip malformed lines (no <code>=</code>).<br><br>
-            Format each line as <code>"  key: value"</code> (two-space indent).<br>
-            Example: <code>["port=8080", "host=localhost", "bad line", "db=myapp"]</code>
-            → <code>"  db: myapp\n  host: localhost\n  port: 8080"</code>
+            format, parses them, and returns a formatted report sorted by key. Skip malformed lines (no <code>=</code>).
+            Format each line as <code>"  key: value"</code> (two-space indent).
           functionSignature: func kvReport(lines []string) string
           difficulty: 3
           testCases:
