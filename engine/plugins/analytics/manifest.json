@@ -9,6 +9,6 @@
   "dataFile": null,
   "dataGlobal": null,
   "contentPattern": "exercises/",
-  "backupKey": null,
+  "backupKey": "analytics-snapshots",
   "dashboardScripts": []
 }
