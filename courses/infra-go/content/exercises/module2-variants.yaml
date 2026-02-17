@@ -1513,8 +1513,7 @@ variants:
           description: >-
             Write <code>func logReportByCount(lines []string) string</code> that takes log lines in the format <code>"LEVEL
             message text"</code> and returns a report string with each level and its count, sorted by count
-            descending. Ties are broken alphabetically.<br><br>Example input: <code>["INFO ok", "ERROR bad", "INFO ok2", "WARN
-            slow", "ERROR oom"]</code><br>Example output: <code>"ERROR: 2\nINFO: 2\nWARN: 1"</code>
+            descending. Ties are broken alphabetically.
           functionSignature: func logReportByCount(lines []string) string
           difficulty: 2
           testCases:
