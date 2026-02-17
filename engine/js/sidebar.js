@@ -141,11 +141,10 @@
                 var isChapterComplete = isModuleComplete(chapterModuleId);
                 var chapterStarted = isModuleStarted(chapterModuleId);
 
-                // Chapter heading — links to first section
-                var firstSection = chapterSections[0];
                 let chDotClass = 'sidebar-dot';
                 if (isChapterComplete) chDotClass += ' complete';
                 else if (chapterStarted) chDotClass += ' started';
+                var firstSection = chapterSections[0];
                 html += `
                 <div class="sidebar-chapter${isChapterActive ? ' active' : ''}">
                     <a href="${firstSection.file}" class="sidebar-chapter-title${isChapterActive ? ' active' : ''}${isChapterComplete ? ' completed' : ''}">
@@ -154,10 +153,10 @@
                         <span class="${chDotClass}"></span>
                     </a>`;
 
-                // Show sections if chapter is active
+                // Show sections if chapter is active (skip first — chapter heading links there)
                 if (isChapterActive) {
                     html += `<div class="sidebar-chapter-sections">`;
-                    chapterSections.forEach(sec => {
+                    chapterSections.slice(1).forEach(sec => {
                         var isSecActive = currentPage === sec.file;
                         var secLabel = sec.type === 'exercises' ? (Icons.star + ' Exercises') : sec.title;
                         var secNum = sec.type === 'exercises' ? '' : ('<span class="sidebar-section-num">' + sec.num + '</span>');
@@ -248,18 +247,23 @@
 
     // Track scroll position to highlight current section
     function setupScrollTracking() {
-        const sectionLinks = document.querySelectorAll('.sidebar-section-link');
-        if (sectionLinks.length === 0) return;
+        const allLinks = document.querySelectorAll('.sidebar-section-link, .sidebar-h2-link');
+        // Only track anchor links (not page navigation links)
+        const anchorLinks = [];
+        allLinks.forEach(function(link) {
+            if (link.getAttribute('href').charAt(0) === '#') anchorLinks.push(link);
+        });
+        if (anchorLinks.length === 0) return;
 
         const headings = [];
-        sectionLinks.forEach(link => {
+        anchorLinks.forEach(link => {
             const id = link.getAttribute('href').slice(1);
             const el = document.getElementById(id);
             if (el) headings.push({ id, el, link });
         });
 
         function updateActiveSection() {
-            const scrollPos = window.scrollY + 100; // offset for header
+            const scrollPos = window.scrollY + 100;
             let current = null;
 
             for (const h of headings) {
@@ -268,14 +272,14 @@
                 }
             }
 
-            sectionLinks.forEach(link => link.classList.remove('active'));
+            anchorLinks.forEach(link => link.classList.remove('active'));
             if (current) {
                 current.link.classList.add('active');
             }
         }
 
         window.addEventListener('scroll', updateActiveSection, { passive: true });
-        updateActiveSection(); // Initial call
+        updateActiveSection();
     }
 
     // Initialize
