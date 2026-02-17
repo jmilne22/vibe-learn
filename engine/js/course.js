@@ -181,6 +181,8 @@
         setTimeout(function() {
             var exerciseDiv = document.querySelector('.exercise[data-challenge-id="' + challengeId + '"]');
             if (exerciseDiv) {
+                var details = exerciseDiv.querySelector('details.exercise-accordion');
+                if (details) details.open = true;
                 exerciseDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 exerciseDiv.style.transition = 'background 0.5s';
                 exerciseDiv.style.background = 'var(--green-bright-dim, rgba(34, 197, 94, 0.1))';
@@ -204,6 +206,8 @@
         setTimeout(function() {
             var exerciseDiv = document.querySelector('.exercise[data-challenge-id="' + challengeId + '"]');
             if (exerciseDiv) {
+                var details = exerciseDiv.querySelector('details.exercise-accordion');
+                if (details) details.open = true;
                 exerciseDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 exerciseDiv.style.transition = 'background 0.5s';
                 exerciseDiv.style.background = 'var(--purple-dim, rgba(139, 92, 246, 0.15))';
