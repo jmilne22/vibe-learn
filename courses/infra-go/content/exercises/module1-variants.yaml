@@ -1205,6 +1205,149 @@ variants:
               text: >-
                 Go's <code>os.Expand</code> handles <code>${VAR}</code> and <code>$VAR</code> expansion with a custom
                 mapping function. Much cleaner than regex. Used internally by Docker and other tools.
+    - id: challenge_5
+      block: 5
+      difficulty: 2
+      concept: In-Place Manipulation
+      variants:
+        - id: v1
+          title: Filter Healthy Pods
+          description: >-
+            Write <code>func filterHealthy(pods []string, statuses []string) []string</code> that takes two
+            equal-length slices — pod names and their statuses — and returns only the pod names whose status is
+            <code>"Running"</code>. Modify <code>pods</code> in place using the write-index pattern (no new slice
+            allocation) and return the shortened slice.
+          functionSignature: func filterHealthy(pods []string, statuses []string) []string
+          difficulty: 1
+          testCases:
+            - input: filterHealthy([]string{"web-1", "api-1", "db-1", "web-2"}, []string{"Running", "Failed", "Running", "Pending"})
+              output: "[\"web-1\", \"db-1\"]"
+            - input: filterHealthy([]string{"web-1"}, []string{"Running"})
+              output: "[\"web-1\"]"
+            - input: filterHealthy([]string{"web-1", "api-1"}, []string{"Failed", "Pending"})
+              output: "[]"
+          hints:
+            - title: Think about it
+              content: >-
+                You need a write pointer that only advances when you find a Running pod. After the loop,
+                how do you trim the slice to the number of items you kept?
+            - title: Hint
+              content: >-
+                Use the write-index pattern: <code>n := 0</code>, loop through indices, copy matching pod names
+                to <code>pods[n]</code>, increment <code>n</code>. Return <code>pods[:n]</code>.
+          solution: |-
+            func filterHealthy(pods []string, statuses []string) []string {
+                n := 0
+                for i, status := range statuses {
+                    if status == "Running" {
+                        pods[n] = pods[i]
+                        n++
+                    }
+                }
+                return pods[:n]
+            }
+          annotations:
+            - type: pattern
+              label: Write-Index Filter
+              text: >-
+                The write-index pattern avoids allocating a new slice. It overwrites the input from the front,
+                then truncates. This is how <code>slices.DeleteFunc</code> works internally.
+        - id: v2
+          title: Deduplicate Servers
+          description: >-
+            Write <code>func dedup(servers []string) []string</code> that removes duplicate server names
+            <strong>in place</strong>, preserving the first occurrence of each name. Return the shortened slice.
+            Do not allocate a new result slice — reuse the input.
+          functionSignature: func dedup(servers []string) []string
+          difficulty: 2
+          testCases:
+            - input: dedup([]string{"web-1", "api-1", "web-1", "db-1", "api-1"})
+              output: "[\"web-1\", \"api-1\", \"db-1\"]"
+            - input: dedup([]string{"a", "b", "c"})
+              output: "[\"a\", \"b\", \"c\"]"
+            - input: dedup([]string{"x", "x", "x"})
+              output: "[\"x\"]"
+            - input: dedup([]string{})
+              output: "[]"
+          hints:
+            - title: Think about it
+              content: >-
+                You need two things: a way to track which names you've already seen, and the write-index
+                pattern to compact the slice. What data structure gives O(1) lookups for "have I seen this"?
+            - title: Hint
+              content: >-
+                Combine a <code>map[string]bool</code> (to track seen names) with the write-index pattern.
+                For each server, check the map — if unseen, write it to <code>servers[n]</code>, mark it seen,
+                and increment <code>n</code>.
+          solution: |-
+            func dedup(servers []string) []string {
+                seen := make(map[string]bool)
+                n := 0
+                for _, s := range servers {
+                    if !seen[s] {
+                        seen[s] = true
+                        servers[n] = s
+                        n++
+                    }
+                }
+                return servers[:n]
+            }
+          annotations:
+            - type: pattern
+              label: Map + Write-Index
+              text: >-
+                Combining a map for lookups with the write-index pattern for compaction is a common
+                idiom. The map adds O(n) memory but keeps the algorithm O(n) overall.
+        - id: v3
+          title: Compact and Normalize Logs
+          description: >-
+            Write <code>func compactLogs(lines []string) []string</code> that processes log lines
+            <strong>in place</strong>: trim leading/trailing whitespace from each line, drop empty lines
+            (including lines that become empty after trimming), and deduplicate consecutive identical lines.
+            Return the shortened slice.
+          functionSignature: func compactLogs(lines []string) []string
+          difficulty: 3
+          testCases:
+            - input: compactLogs([]string{"  INFO startup  ", "", "INFO startup", "ERROR oom", "ERROR oom", "  ", "WARN slow"})
+              output: "[\"INFO startup\", \"ERROR oom\", \"WARN slow\"]"
+            - input: compactLogs([]string{"a", "  a  ", "b", "b", "b", "a"})
+              output: "[\"a\", \"b\", \"a\"]"
+            - input: compactLogs([]string{"", "  ", ""})
+              output: "[]"
+          hints:
+            - title: Think about it
+              content: >-
+                Three operations in one pass: trim, skip blanks, skip consecutive duplicates. You need the write-index
+                pattern plus a variable tracking the previous kept line. What order should you apply the operations?
+            - title: Hint
+              content: >-
+                Trim first with <code>strings.TrimSpace</code>, then check if empty, then compare to the last written
+                line. Use a <code>prev</code> variable (not the original slice) to track what you last kept. Write to
+                <code>lines[n]</code> and update <code>prev</code> only when keeping a line.
+          solution: |-
+            func compactLogs(lines []string) []string {
+                n := 0
+                prev := ""
+                for _, line := range lines {
+                    line = strings.TrimSpace(line)
+                    if line == "" {
+                        continue
+                    }
+                    if line == prev {
+                        continue
+                    }
+                    lines[n] = line
+                    prev = line
+                    n++
+                }
+                return lines[:n]
+            }
+          annotations:
+            - type: pattern
+              label: Multi-Step Compact
+              text: >-
+                Chaining transform → filter → dedup in a single write-index pass is efficient and avoids
+                intermediate allocations. This pattern appears in log processing pipelines and stream compaction.
   scaffolds:
     - id: scaffold_swap
       concept: "In-Place Manipulation"
