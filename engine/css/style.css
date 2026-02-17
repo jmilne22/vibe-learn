@@ -1731,11 +1731,9 @@ body.sidebar-open .sidebar-toggle:hover {
     display: flex;
     align-items: center;
     padding: var(--space-2) var(--space-4);
-    font-weight: 600;
-    font-size: 0.82rem;
+    font-size: 0.85rem;
     color: var(--text-secondary);
     text-decoration: none;
-    cursor: pointer;
     border-left: 3px solid transparent;
     border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
     transition: all var(--transition-normal);
@@ -1753,31 +1751,10 @@ body.sidebar-open .sidebar-toggle:hover {
 }
 
 .sidebar-chapter-sections {
-    padding-left: 0.5rem;
+    margin-left: var(--space-6);
+    padding-left: var(--space-3);
+    border-left: 1px solid var(--border-subtle);
     margin-bottom: var(--space-2);
-}
-
-.sidebar-chapter-sections .sidebar-section-link {
-    display: flex;
-    align-items: center;
-    padding: 0.3rem var(--space-3) 0.3rem 1.25rem;
-    color: var(--text-secondary);
-    text-decoration: none;
-    font-size: 0.78rem;
-    border-radius: var(--radius-sm);
-    transition: all var(--transition-normal);
-}
-
-.sidebar-chapter-sections .sidebar-section-link:hover {
-    color: var(--cyan);
-    background: var(--bg-elevated);
-}
-
-.sidebar-chapter-sections .sidebar-section-link.active {
-    color: var(--cyan);
-    font-weight: 500;
-    border-left: none;
-    background: rgba(96, 180, 220, 0.08);
 }
 
 .sidebar-section-num {
