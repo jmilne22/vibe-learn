@@ -1,8 +1,8 @@
 conceptLinks:
-  Goroutines: "#goroutines-lightweight-threads"
-  Channels: "#channels-communication"
-  WaitGroups: "#waitgroups-knowing-when-its-done"
-  Concurrent Patterns: "#your-first-concurrent-pattern"
+  Goroutines: goroutines-lightweight-threads
+  Channels: channels-communication
+  WaitGroups: waitgroups-knowing-when-its-done
+  Concurrent Patterns: your-first-concurrent-pattern
 sharedContent: {}
 variants:
   warmups:

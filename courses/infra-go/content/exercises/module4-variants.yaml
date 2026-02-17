@@ -1,8 +1,8 @@
 conceptLinks:
-  Flag Package: "#os-args--the-flag-package"
-  JSON Parsing: "#parsing-yaml--json"
-  File I/O: "#file-io-patterns"
-  Validation: "#validation--reporting"
+  Flag Package: os-args-and-the-flag-package
+  JSON Parsing: parsing-yaml-and-json
+  File I/O: file-i-o-patterns
+  Validation: validation-and-reporting
 sharedContent: {}
 variants:
   warmups:

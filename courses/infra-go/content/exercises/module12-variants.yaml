@@ -1,9 +1,9 @@
 conceptLinks:
-  Hash Maps: "#hash-maps-the-universal-solver"
-  Two Pointers: "#two-pointers"
-  Sliding Window: "#sliding-window"
-  Binary Search: "#binary-search"
-  Stacks: "#stack-patterns"
+  Hash Maps: hash-maps-the-universal-solver
+  Two Pointers: two-pointers
+  Sliding Window: sliding-window
+  Binary Search: binary-search
+  Stacks: stack-patterns
 sharedContent: {}
 variants:
   warmups:

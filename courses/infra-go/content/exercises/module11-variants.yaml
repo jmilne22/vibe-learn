@@ -1,9 +1,9 @@
 conceptLinks:
-  client-go: "#client-go-basics"
-  Informers: "#informers-cached-watches"
-  CRDs: "#custom-resource-definitions"
-  Reconciliation: "#the-reconciliation-loop"
-  Operators: "#building-an-operator"
+  client-go: client-go-basics
+  Informers: watching-resources
+  CRDs: custom-resource-definitions
+  Reconciliation: the-reconciliation-loop
+  Operators: building-an-operator
 sharedContent: {}
 variants:
   warmups:

@@ -499,7 +499,8 @@ function buildCourse(slug) {
                 const htmlContent = processCallouts(processCodeBlocks(marked.parse(mdContent)));
                 const extracted = extractSectionTitle(htmlContent);
                 const outFile = `module${mod.id}-${sectionNum}.html`;
-                sections.push({ file: outFile, title: extracted.title, html: extracted.html, sectionNum, sectionLabel });
+                const slug = file.replace(/^\d+-/, '').replace(/\.md$/, '');
+                sections.push({ file: outFile, slug, title: extracted.title, html: extracted.html, sectionNum, sectionLabel });
                 sidebarPages.push({
                     file: outFile,
                     label: `${sectionLabel} ${extracted.title}`,
@@ -976,8 +977,30 @@ function buildCourse(slug) {
         }
 
         // Accumulate concept links per module
+        // For split modules, values are filename slugs (e.g. "slice-operations-under-pressure")
+        // resolved to page URLs by matching against section source filenames.
         if (parsed.conceptLinks) {
-            conceptLinks[moduleNum] = parsed.conceptLinks;
+            const modId = parseInt(moduleNum, 10);
+            const sections = splitModuleSections[modId];
+            if (sections) {
+                const resolved = {};
+                for (const [concept, ref] of Object.entries(parsed.conceptLinks)) {
+                    if (typeof ref === 'string' && ref.charAt(0) !== '#') {
+                        const section = sections.find(s => s.slug === ref);
+                        if (section) {
+                            resolved[concept] = section.file;
+                        } else {
+                            console.warn(`    WARN: conceptLink "${concept}" slug "${ref}" not found in module${moduleNum} sections`);
+                            resolved[concept] = ref;
+                        }
+                    } else {
+                        resolved[concept] = ref;
+                    }
+                }
+                conceptLinks[moduleNum] = resolved;
+            } else {
+                conceptLinks[moduleNum] = parsed.conceptLinks;
+            }
         }
 
         // Expand scaffold templates before serialization

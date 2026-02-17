@@ -1,8 +1,8 @@
 conceptLinks:
-  Handler Basics: "#the-handler-interface"
-  JSON Responses: "#writing-json-responses"
-  Middleware: "#middleware-pattern"
-  Health Endpoints: "#health--readiness-endpoints"
+  Handler Basics: net-http-server-basics
+  JSON Responses: request-handling
+  Middleware: middleware-pattern
+  Health Endpoints: health-and-readiness-endpoints
 sharedContent: {}
 variants:
   warmups:
