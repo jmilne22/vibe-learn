@@ -812,6 +812,22 @@ pre::-webkit-scrollbar-thumb:hover {
     margin-bottom: var(--space-4);
 }
 
+.exercise-description {
+    margin-bottom: var(--space-4);
+    line-height: 1.65;
+    color: var(--text-primary);
+}
+
+.exercise-description code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.88em;
+    background: var(--bg-elevated);
+    padding: 0.15em 0.4em;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-subtle);
+    color: var(--amber);
+}
+
 .exercise pre {
     white-space: pre;
     overflow-x: auto;
@@ -821,15 +837,49 @@ pre::-webkit-scrollbar-thumb:hover {
     margin: var(--space-2) 0;
 }
 
+/* Function signature block */
+.function-signature {
+    margin: var(--space-4) 0;
+    border: 1px solid rgba(224, 151, 106, 0.25);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.function-signature-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--amber);
+    background: rgba(224, 151, 106, 0.08);
+    padding: var(--space-2) var(--space-4);
+    border-bottom: 1px solid rgba(224, 151, 106, 0.15);
+}
+
+.function-signature pre {
+    margin: 0;
+    padding: var(--space-3) var(--space-4);
+    background: var(--bg-elevated);
+    font-size: 0.92rem;
+    line-height: 1.5;
+    color: var(--text-primary);
+    border-radius: 0;
+}
+
+/* Test cases */
 .expected {
-    margin-top: var(--space-6);
+    margin-top: var(--space-5);
 }
 
 .expected-title {
-    font-size: 1rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
     font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: var(--space-2);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-secondary);
+    margin-bottom: var(--space-3);
 }
 
 .expected pre {
@@ -837,9 +887,50 @@ pre::-webkit-scrollbar-thumb:hover {
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-md);
     padding: var(--space-4) var(--space-5);
-    font-size: 0.95rem;
+    font-size: 0.92rem;
     line-height: 1.6;
     color: var(--text-primary);
+}
+
+.test-case-row {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    margin-bottom: var(--space-3);
+}
+
+.test-case-row:last-child {
+    margin-bottom: 0;
+}
+
+.test-case-section {
+    padding: var(--space-3) var(--space-4);
+}
+
+.test-case-section + .test-case-section {
+    border-top: 1px dashed var(--border-subtle);
+}
+
+.test-case-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-secondary);
+    display: block;
+    margin-bottom: var(--space-1);
+}
+
+.test-case-section pre {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    border: none;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    border-radius: 0;
 }
 
 .hint, .solution {

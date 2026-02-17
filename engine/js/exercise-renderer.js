@@ -117,16 +117,35 @@
         });
     }
 
+    // Render function signature block
+    function renderFunctionSignature(variant) {
+        var sig = variant.functionSignature;
+        if (!sig) return '';
+        return `<div class="function-signature">
+            <div class="function-signature-label">Function Signature</div>
+            <pre>${escapeHtml(sig)}</pre>
+        </div>`;
+    }
+
     // Render expected output / test cases
     function renderExpected(variant) {
         if (variant.testCases) {
             if (Array.isArray(variant.testCases) && variant.testCases.length > 0) {
-                var blocks = variant.testCases.map(function(tc) {
-                    return formatTestInput(tc.input) + '\n\u2192 ' + tc.output;
+                var rows = variant.testCases.map(function(tc) {
+                    return `<div class="test-case-row">
+                        <div class="test-case-section">
+                            <span class="test-case-label">Input</span>
+                            <pre>${formatTestInput(escapeHtml(tc.input))}</pre>
+                        </div>
+                        <div class="test-case-section">
+                            <span class="test-case-label">Expected</span>
+                            <pre>${escapeHtml(tc.output)}</pre>
+                        </div>
+                    </div>`;
                 });
                 return `<div class="expected">
-                    <div class="expected-title">Expected Output</div>
-                    <pre>${blocks.join('\n\n')}</pre>
+                    <div class="expected-title">Test Cases</div>
+                    ${rows.join('')}
                 </div>`;
             }
             if (typeof variant.testCases === 'string' && variant.testCases.trim()) {
@@ -212,11 +231,12 @@
             html += `<h4>${headerText}</h4>`;
 
             if (difficultyNav) html += difficultyNav;
-            html += `<p>${variant.description}</p>`;
+            html += `<div class="exercise-description">${variant.description}</div>`;
+            html += renderFunctionSignature(variant);
+            html += renderExpected(variant);
             html += renderHints(variant.hints);
             if (challenge && challenge.docLinks) html += renderDocLinks(challenge.docLinks);
             html += renderSolution(variant.solution, variant.annotations);
-            html += renderExpected(variant);
         } else {
             // Accordion wrapper for non-drill exercise cards
             const typePill = `<span class="exercise-type-tag">${typeLabel}</span>`;
@@ -226,13 +246,14 @@
             html += `<div class="exercise-body">`;
 
             if (difficultyNav) html += difficultyNav;
-            html += `<p>${variant.description}</p>`;
+            html += `<div class="exercise-description">${variant.description}</div>`;
+            html += renderFunctionSignature(variant);
+            html += renderExpected(variant);
             html += renderHints(variant.hints);
             if (challenge && challenge.docLinks) html += renderDocLinks(challenge.docLinks);
             html += renderSolution(variant.solution, variant.annotations);
             const exId = challenge ? challenge.id : (variant.warmupId || `ex${num}`);
             html += renderPersonalNotes(exId, variant.id);
-            html += renderExpected(variant);
 
             html += `</div></details>`;
         }
@@ -280,6 +301,7 @@
         renderDocLinks,
         renderHints,
         renderSolution,
+        renderFunctionSignature,
         renderExpected,
         renderPersonalNotes,
         renderExerciseCard,
