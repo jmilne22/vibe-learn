@@ -1,9 +1,9 @@
 conceptLinks:
-  TCP: "#tcp-from-scratch"
-  UDP: "#udp-basics"
-  DNS Wire Format: "#the-dns-wire-format"
-  DNS Server: "#building-a-dns-server"
-  gRPC: "#grpc--protocol-buffers"
+  TCP: tcp-from-scratch
+  UDP: udp-basics
+  DNS Wire Format: the-dns-wire-format
+  DNS Server: building-a-dns-server
+  gRPC: grpc-and-protocol-buffers
 sharedContent: {}
 variants:
   warmups:

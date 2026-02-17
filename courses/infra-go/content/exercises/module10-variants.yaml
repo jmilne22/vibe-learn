@@ -1,8 +1,8 @@
 conceptLinks:
-  Namespaces: "#linux-namespaces-from-go"
-  Process Isolation: "#process-isolation"
-  Filesystem Isolation: "#filesystem-isolation"
-  Cgroups: "#cgroups-resource-limits"
+  Namespaces: linux-namespaces-from-go
+  Process Isolation: process-isolation
+  Filesystem Isolation: filesystem-isolation
+  Cgroups: cgroups-resource-limits
 sharedContent: {}
 variants:
   warmups:

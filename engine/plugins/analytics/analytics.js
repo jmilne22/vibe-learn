@@ -37,6 +37,18 @@
 
     var MODULE_NAMES = (window.CourseConfigHelper && window.CourseConfigHelper.moduleNames) || {};
 
+    /** Return the correct page URL for a module, accounting for split modules */
+    function modulePageUrl(modId) {
+        if (modId === 'algo') return 'algorithms.html';
+        var modules = (window.CourseConfigHelper && window.CourseConfigHelper.modules) || [];
+        var mod = null;
+        for (var i = 0; i < modules.length; i++) {
+            if (modules[i].id === modId) { mod = modules[i]; break; }
+        }
+        if (mod && mod.isSplit) return mod.file + '-1.html';
+        return 'module' + modId + '.html';
+    }
+
     // ---------------------------------------------------------------------------
     // Helpers
     // ---------------------------------------------------------------------------
@@ -516,7 +528,7 @@
         for (var m = 0; m < allModules.length; m++) {
             var modId = allModules[m];
             var mod = modLookup[modId];
-            var link = modId === 'algo' ? 'algorithms.html' : 'module' + modId + '.html';
+            var link = modulePageUrl(modId);
             var cellLabel = modId === 'algo' ? 'AL' : 'M' + modId;
 
             if (mod) {
@@ -581,8 +593,8 @@
             var wc = ratedConcepts[0];
             var conceptLinksMap = window.ConceptLinks || {};
             var modLinks = conceptLinksMap[wc.moduleNum] || {};
-            var anchor = modLinks[wc.concept] || '';
-            var wcLink = (wc.moduleNum === 'algo' ? 'algorithms.html' : 'module' + wc.moduleNum + '.html') + anchor;
+            var conceptRef = modLinks[wc.concept] || '';
+            var wcLink = conceptRef && conceptRef.charAt(0) !== '#' ? conceptRef : modulePageUrl(wc.moduleNum) + conceptRef;
             var wcModName = wc.moduleNum === 'algo' ? 'Algorithms' : 'Module ' + wc.moduleNum;
             items.push({
                 icon: '\u26A0',
@@ -625,7 +637,7 @@
             }
 
             if (worstDecay && items.length < 3) {
-                var decayLink = worstDecay.num === 'algo' ? 'algorithms.html' : 'module' + worstDecay.num + '.html';
+                var decayLink = modulePageUrl(worstDecay.num);
                 items.push({
                     icon: (window.Icons && window.Icons.chartDown) || '\u2193',
                     text: worstDecay.name + ' is decaying \u2014 last practiced ' + worstDays + ' days ago',
@@ -662,7 +674,7 @@
     function exercisePracticeLink(key) {
         var modNum = extractModuleNum(key);
         if (modNum === null) return '';
-        var page = modNum === 'algo' ? 'algorithms.html' : 'module' + modNum + '.html';
+        var page = modulePageUrl(modNum);
         return '<a href="' + page + '" class="practice-link">Practice \u2192</a>';
     }
 
@@ -694,7 +706,7 @@
             var pct = isTooEarly ? 0 : Math.min(100, Math.round((mod.avgEase / 3.0) * 100));
             var easeDisplay = isTooEarly ? '' : '<span style="color: var(--text-secondary); font-size: 0.85rem; min-width: 4rem;">' + mod.avgEase + '</span>';
             var modLabel = mod.num === 'algo' ? 'AL' : 'M' + mod.num;
-            var moduleLink = mod.num === 'algo' ? 'algorithms.html' : 'module' + mod.num + '.html';
+            var moduleLink = modulePageUrl(mod.num);
             html +=
                 '<div class="' + rowClass + '" style="display: flex; align-items: center; gap: 1rem; padding: 0.75rem; border-radius: 6px; margin-bottom: 0.5rem; border-left: 3px solid ' + mod.color + ';">' +
                     '<a href="' + moduleLink + '" style="color: var(--text-secondary); min-width: 2rem; text-decoration: none;">' + modLabel + '</a>' +
@@ -739,8 +751,8 @@
                 var cBarOpacity = cIsTooEarly ? 'opacity: 0.35;' : '';
                 var cEaseDisplay = '<span style="color: var(--text-secondary); font-size: 0.8rem; min-width: 3.5rem;' + (cIsTooEarly ? ' opacity: 0.5;' : '') + '">' + con.avgEase + '</span>';
                 var cModLinks = conceptLinksMap[con.moduleNum] || {};
-                var anchor = cModLinks[con.concept] || '';
-                var conLink = (con.moduleNum === 'algo' ? 'algorithms.html' : 'module' + con.moduleNum + '.html') + anchor;
+                var cRef = cModLinks[con.concept] || '';
+                var conLink = cRef && cRef.charAt(0) !== '#' ? cRef : modulePageUrl(con.moduleNum) + cRef;
                 var conLabel = con.moduleNum === 'algo' ? 'AL' : 'M' + con.moduleNum;
                 var reviewWord = con.count === 1 ? ' review' : ' reviews';
                 html +=
@@ -872,6 +884,18 @@
     // ---------------------------------------------------------------------------
 
     document.addEventListener('DOMContentLoaded', function() {
+        // Fix empty-state start link for split modules
+        var startLink = document.getElementById('analytics-start-link');
+        if (startLink) {
+            var modules = (window.CourseConfigHelper && window.CourseConfigHelper.modules) || [];
+            var first = null;
+            for (var i = 0; i < modules.length; i++) {
+                if (modules[i].hasExercises) { first = modules[i]; break; }
+            }
+            if (first) {
+                startLink.href = first.isSplit ? first.file + '-1.html' : first.file + '.html';
+            }
+        }
         renderReport();
     });
 })();

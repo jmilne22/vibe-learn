@@ -1,9 +1,9 @@
 conceptLinks:
-  Fan-Out Fan-In: "#fan-out--fan-in"
-  Worker Pools: "#worker-pools"
-  Select: "#select--multiplexing"
-  Context: "#context-cancellation--timeouts"
-  Rate Limiting: "#rate-limiting"
+  Fan-Out Fan-In: fan-out-fan-in
+  Worker Pools: worker-pools
+  Select: select-and-multiplexing
+  Context: context-cancellation-and-timeouts
+  Rate Limiting: rate-limiting
 sharedContent: {}
 variants:
   warmups:

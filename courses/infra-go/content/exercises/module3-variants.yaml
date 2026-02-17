@@ -1,10 +1,10 @@
 conceptLinks:
-  Errors as Values: "#errors-as-values"
-  Wrapping: "#wrapping--unwrapping"
-  Sentinel Errors: "#sentinel--custom-errors"
-  Writing Tests: "#writing-your-first-tests"
-  Table-Driven Tests: "#table-driven-tests"
-  Testing Infra Code: "#testing-infra-code"
+  Errors as Values: errors-as-values
+  Wrapping: wrapping-and-unwrapping
+  Sentinel Errors: sentinel-and-custom-errors
+  Writing Tests: writing-your-first-tests
+  Table-Driven Tests: table-driven-tests
+  Testing Infra Code: testing-infra-code
 sharedContent: {}
 variants:
   warmups:

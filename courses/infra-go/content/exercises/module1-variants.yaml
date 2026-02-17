@@ -1,12 +1,12 @@
 conceptLinks:
-  Slice Operations: "#slice-operations-under-pressure"
-  In-Place Manipulation: "#in-place-manipulation"
-  Map Patterns: "#map-patterns"
-  String Parsing: "#string-parsing--building"
-  Numbers & Percentages: "#numbers-floats--percentages"
-  Sorting & Filtering: "#sorting--filtering"
-  Line Parsing: "#line-by-line-parsing"
-  Combining Patterns: "#putting-it-together"
+  Slice Operations: slice-operations-under-pressure
+  In-Place Manipulation: in-place-manipulation
+  Map Patterns: map-patterns
+  String Parsing: string-parsing-and-building
+  Numbers & Percentages: numbers-floats-and-percentages
+  Sorting & Filtering: sorting-and-filtering
+  Line Parsing: line-by-line-parsing
+  Combining Patterns: putting-it-together
 sharedContent: {}
 variants:
   warmups:

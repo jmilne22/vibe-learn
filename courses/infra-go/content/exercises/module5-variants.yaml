@@ -1,8 +1,8 @@
 conceptLinks:
-  HTTP Requests: "#making-http-requests"
-  JSON Round-Tripping: "#json-round-tripping"
-  API Client: "#building-an-api-client"
-  HTTP Errors: "#error-handling-for-http"
+  HTTP Requests: making-http-requests
+  JSON Round-Tripping: json-round-tripping
+  API Client: building-an-api-client
+  HTTP Errors: error-handling-for-http
 sharedContent: {}
 variants:
   warmups:

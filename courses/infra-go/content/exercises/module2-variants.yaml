@@ -1,11 +1,11 @@
 conceptLinks:
-  Structs: "#structs-as-infrastructure-models"
-  Pointers: "#pointers"
-  Constructors: "#constructors--validation"
-  Methods: "#methods--receivers"
-  Composition: "#composition-over-inheritance"
-  Interfaces: "#interfaces-the-go-way"
-  Type Assertions: "#type-assertions--switches"
+  Structs: structs-as-infrastructure-models
+  Pointers: pointers
+  Constructors: constructors-and-validation
+  Methods: methods-and-receivers
+  Composition: composition-over-inheritance
+  Interfaces: interfaces-the-go-way
+  Type Assertions: type-assertions-and-switches
 sharedContent: {}
 variants:
   warmups:
