@@ -7,271 +7,488 @@
     <title>vibe-learn</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="style.css">
 {{THEME_LINKS}}
     <style>
-        /* --- Landing layout --- */
-        .landing { max-width: 860px; margin: 0 auto; padding: 2rem; }
+        /* =========================================
+           Landing Page — "Scholarly Terminal"
+           Blends editorial serif elegance with
+           terminal precision. Unexpected for a
+           dev tool. Memorable.
+           ========================================= */
 
-        /* --- Hero --- */
-        .hero {
-            text-align: center;
-            padding: 4rem 0 1rem;
-            position: relative;
+        :root {
+            --land-bg: #08070D;
+            --land-surface: #0F0E16;
+            --land-surface-2: #15141E;
+            --land-border: rgba(200, 185, 255, 0.08);
+            --land-border-hover: rgba(200, 185, 255, 0.18);
+            --land-text: #E2DEF0;
+            --land-text-dim: #8E87A3;
+            --land-text-ghost: #5A5470;
+            --land-accent: #C4B5FF;
+            --land-accent-bright: #DDD4FF;
+            --land-warm: #FFD1A3;
+            --land-warm-dim: #C89B6A;
         }
-        .hero::before {
+
+        [data-theme="light"] {
+            --land-bg: #F6F4FA;
+            --land-surface: #FFFFFF;
+            --land-surface-2: #EDEAF5;
+            --land-border: rgba(100, 80, 170, 0.10);
+            --land-border-hover: rgba(100, 80, 170, 0.22);
+            --land-text: #1A1528;
+            --land-text-dim: #6E6488;
+            --land-text-ghost: #A099B5;
+            --land-accent: #6B52C0;
+            --land-accent-bright: #5240A0;
+            --land-warm: #C07830;
+            --land-warm-dim: #A06020;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--land-bg);
+            color: var(--land-text);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        /* --- Noise texture overlay --- */
+        body::before {
             content: '';
-            position: absolute;
-            top: 50%;
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+            background-repeat: repeat;
+            background-size: 256px 256px;
+            pointer-events: none;
+            z-index: 9998;
+            opacity: 0.5;
+        }
+
+        /* --- Ambient glow --- */
+        body::after {
+            content: '';
+            position: fixed;
+            top: -20%;
             left: 50%;
-            width: 500px;
-            height: 500px;
-            transform: translate(-50%, -50%);
-            background: radial-gradient(ellipse at center, var(--green-subtle, rgba(52,211,153,0.06)) 0%, transparent 70%);
+            width: 120vw;
+            height: 60vh;
+            transform: translateX(-50%);
+            background: radial-gradient(ellipse at center, rgba(196, 181, 255, 0.06) 0%, transparent 65%);
             pointer-events: none;
             z-index: 0;
         }
-        .hero-brand {
+
+        [data-theme="light"] body::before { opacity: 0.15; }
+        [data-theme="light"] body::after {
+            background: radial-gradient(ellipse at center, rgba(107, 82, 192, 0.05) 0%, transparent 65%);
+        }
+
+        .landing {
+            position: relative;
+            z-index: 1;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 2.5rem;
+        }
+
+        /* =========================================
+           Animations
+           ========================================= */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(24px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideInLeft {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes terminalBlink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: opacity 0.7s cubic-bezier(0.23, 1, 0.32, 1),
+                        transform 0.7s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* =========================================
+           Top Bar
+           ========================================= */
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 0;
+            animation: fadeIn 0.8s ease both;
+        }
+        .topbar-brand {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.8rem;
-            letter-spacing: 0.15em;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            color: var(--land-accent);
+        }
+        .topbar-links {
+            display: flex;
+            gap: 1.75rem;
+            align-items: center;
+        }
+        .topbar-links a {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            color: var(--land-text-dim);
+            text-decoration: none;
+            letter-spacing: 0.03em;
+            transition: color 0.2s;
+        }
+        .topbar-links a:hover { color: var(--land-accent); }
+
+        /* =========================================
+           Hero
+           ========================================= */
+        .hero {
+            padding: 6rem 0 4rem;
+            max-width: 820px;
+        }
+        .hero-eyebrow {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            letter-spacing: 0.18em;
             text-transform: uppercase;
-            color: var(--green-bright);
-            margin-bottom: 1rem;
+            color: var(--land-warm);
+            margin-bottom: 1.5rem;
+            animation: fadeUp 0.6s ease both;
+            animation-delay: 0.1s;
         }
         .hero h1 {
-            font-size: 3rem;
-            font-weight: 700;
+            font-family: 'Instrument Serif', serif;
+            font-size: clamp(3rem, 7vw, 5rem);
+            font-weight: 400;
+            line-height: 1.08;
             letter-spacing: -0.03em;
-            line-height: 1.15;
-            margin-bottom: 1rem;
-            position: relative;
-            z-index: 1;
-            color: var(--text-primary);
+            color: var(--land-text);
+            margin-bottom: 1.75rem;
+            animation: fadeUp 0.7s ease both;
+            animation-delay: 0.2s;
         }
-        .hero h1 .accent {
-            color: var(--accent);
+        .hero h1 em {
+            font-style: italic;
+            color: var(--land-accent);
         }
         .hero-sub {
-            color: var(--text-secondary);
-            font-size: 1.05rem;
-            line-height: 1.7;
-            max-width: 580px;
-            margin: 0 auto;
-            position: relative;
-            z-index: 1;
+            font-size: 1.12rem;
+            line-height: 1.75;
+            color: var(--land-text-dim);
+            max-width: 560px;
+            animation: fadeUp 0.7s ease both;
+            animation-delay: 0.35s;
         }
-        .hero-sub-tools {
-            color: var(--text-secondary);
-            font-size: 1.05rem;
-            line-height: 1.7;
-            max-width: 580px;
-            margin: 0.75rem auto 0;
-            position: relative;
-            z-index: 1;
+        .hero-sub strong {
+            color: var(--land-text);
+            font-weight: 600;
         }
-        .hero-ctas {
+        .hero-actions {
             display: flex;
-            gap: 1.25rem;
-            justify-content: center;
+            gap: 1rem;
+            margin-top: 2.25rem;
             align-items: center;
-            margin-top: 1.5rem;
             flex-wrap: wrap;
-            position: relative;
-            z-index: 1;
+            animation: fadeUp 0.7s ease both;
+            animation-delay: 0.5s;
         }
-        a.hero-cta-primary {
-            display: inline-block;
-            padding: 0.7rem 1.75rem;
-            background: var(--green-bright);
-            color: var(--text-primary);
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.75rem;
+            background: var(--land-accent);
+            color: var(--land-bg);
             font-weight: 700;
-            font-size: 0.9rem;
+            font-size: 0.88rem;
             border-radius: 8px;
             text-decoration: none;
-            transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+            transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
         }
-        a.hero-cta-primary:hover {
-            background: var(--accent-hover);
-            transform: translateY(-1px);
-            box-shadow: var(--shadow-accent);
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(196, 181, 255, 0.2);
         }
-        a.hero-cta-secondary {
-            display: inline-block;
-            padding: 0.7rem 1.75rem;
+        [data-theme="light"] .btn-primary:hover {
+            box-shadow: 0 8px 24px rgba(107, 82, 192, 0.2);
+        }
+        .btn-ghost {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.75rem 1.5rem;
+            color: var(--land-text-dim);
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.85rem;
-            color: var(--green-bright);
+            font-size: 0.8rem;
             text-decoration: none;
-            letter-spacing: 0.02em;
-            border: 1px solid var(--green-bright);
+            border: 1px solid var(--land-border);
             border-radius: 8px;
-            transition: background 0.2s, transform 0.15s;
+            transition: color 0.2s, border-color 0.2s, background 0.2s;
         }
-        a.hero-cta-secondary:hover {
-            background: var(--bg-surface);
-            transform: translateY(-1px);
+        .btn-ghost:hover {
+            color: var(--land-accent);
+            border-color: var(--land-border-hover);
+            background: rgba(196, 181, 255, 0.04);
         }
-        .belt-items { display: none; }
+        [data-theme="light"] .btn-ghost:hover {
+            background: rgba(107, 82, 192, 0.04);
+        }
 
-        /* --- Command preview (inside hero) --- */
-        .command-preview {
-            max-width: 520px;
-            margin: 2.5rem auto 0;
-            background: var(--bg-elevated);
-            border: 1px solid var(--border-subtle);
-            border-radius: 10px;
+        /* =========================================
+           Terminal Preview
+           ========================================= */
+        .terminal {
+            max-width: 620px;
+            margin: 3.5rem 0 0;
+            background: var(--land-surface);
+            border: 1px solid var(--land-border);
+            border-radius: 12px;
             overflow: hidden;
-            text-align: left;
+            animation: fadeUp 0.7s ease both;
+            animation-delay: 0.65s;
+            box-shadow: 0 4px 32px rgba(0, 0, 0, 0.25),
+                        0 0 0 1px rgba(200, 185, 255, 0.04);
         }
-        .command-preview-bar {
+        [data-theme="light"] .terminal {
+            box-shadow: 0 4px 24px rgba(30, 20, 60, 0.08),
+                        0 0 0 1px rgba(107, 82, 192, 0.06);
+        }
+        .terminal-bar {
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            padding: 0.5rem 1rem;
-            border-bottom: 1px solid var(--border-subtle);
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--land-border);
         }
-        .command-preview-bar::before {
-            content: '>';
+        .terminal-dots {
+            display: flex;
+            gap: 6px;
+        }
+        .terminal-dots span {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--land-text-ghost);
+            opacity: 0.4;
+        }
+        .terminal-dots span:first-child { background: #E06070; opacity: 0.7; }
+        .terminal-dots span:nth-child(2) { background: #D4B87A; opacity: 0.7; }
+        .terminal-dots span:nth-child(3) { background: #8CC68C; opacity: 0.7; }
+        .terminal-title {
+            flex: 1;
+            text-align: center;
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: var(--amethyst);
+            font-size: 0.68rem;
+            color: var(--land-text-ghost);
+            letter-spacing: 0.04em;
         }
-        .command-preview-title {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.7rem;
-            color: var(--text-tertiary);
-            letter-spacing: 0.05em;
-        }
-        .command-preview pre {
+        .terminal pre {
             margin: 0;
             padding: 1.25rem 1.5rem;
             font-family: 'JetBrains Mono', monospace;
             font-size: 0.82rem;
-            line-height: 1.8;
+            line-height: 1.9;
             overflow-x: auto;
+            background: transparent;
+            border: none;
         }
-        .command-preview .cmd-prompt { color: var(--green-bright); }
-        .command-preview .cmd-text { color: var(--text); }
-        .command-preview .cmd-comment { color: var(--text-secondary); }
+        .terminal .prompt { color: var(--land-accent); }
+        .terminal .cmd { color: var(--land-text); }
+        .terminal .comment { color: var(--land-text-ghost); }
+        .terminal .cursor {
+            display: inline-block;
+            width: 8px;
+            height: 1.1em;
+            background: var(--land-accent);
+            vertical-align: text-bottom;
+            margin-left: 2px;
+            animation: terminalBlink 1.2s step-end infinite;
+        }
 
-        /* --- Section spacing --- */
+        /* =========================================
+           Section Labels
+           ========================================= */
         .section-label {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.8rem;
-            color: var(--green-bright);
-            letter-spacing: 0.1em;
+            font-size: 0.68rem;
+            letter-spacing: 0.2em;
             text-transform: uppercase;
-            margin: 3rem 0 1rem;
+            color: var(--land-text-ghost);
+            margin: 5rem 0 2.5rem;
+        }
+        .section-label::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--land-border);
         }
 
-        /* --- How it works --- */
-        .how-it-works {
+        /* =========================================
+           How It Works — Timeline Steps
+           ========================================= */
+        .steps {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 1.5rem;
+            gap: 2rem;
         }
         .step {
-            text-align: center;
-            display: flex;
-            flex-direction: column;
+            position: relative;
+            padding: 1.75rem;
+            background: var(--land-surface);
+            border: 1px solid var(--land-border);
+            border-radius: 12px;
+            transition: border-color 0.25s, box-shadow 0.25s;
         }
-        .step-num {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.7rem;
-            color: var(--green-bright);
-            letter-spacing: 0.1em;
-            margin-bottom: 0.5rem;
+        .step:hover {
+            border-color: var(--land-border-hover);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+        .step-number {
+            font-family: 'Instrument Serif', serif;
+            font-size: 2.2rem;
+            color: var(--land-accent);
+            opacity: 0.25;
+            line-height: 1;
+            margin-bottom: 0.75rem;
         }
         .step-title {
-            font-weight: 600;
+            font-weight: 700;
             font-size: 1rem;
-            margin-bottom: 0.35rem;
+            margin-bottom: 0.4rem;
         }
         .step-desc {
-            color: var(--text-secondary);
-            font-size: 0.85rem;
-            line-height: 1.5;
-            margin-bottom: 0.6rem;
-        }
-        .step-code {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.78rem;
-            background: var(--bg-elevated);
-            color: var(--green-dim);
-            padding: 0.75rem 1rem;
-            border-radius: 6px;
-            margin-top: auto;
-            padding-top: 0.75rem;
-            text-align: left;
-            white-space: pre;
+            color: var(--land-text-dim);
+            font-size: 0.88rem;
             line-height: 1.6;
-            overflow-x: auto;
+            margin-bottom: 1rem;
+        }
+        .step-cmd {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.76rem;
+            color: var(--land-accent);
+            background: rgba(196, 181, 255, 0.06);
+            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
+            border: 1px solid rgba(196, 181, 255, 0.08);
+        }
+        [data-theme="light"] .step-cmd {
+            background: rgba(107, 82, 192, 0.06);
+            border-color: rgba(107, 82, 192, 0.10);
         }
 
-        /* --- Course grid --- */
+        /* =========================================
+           Course Grid
+           ========================================= */
         .course-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 1rem;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.25rem;
         }
         .course-card {
-            background: var(--bg-surface);
-            border: 1px solid var(--border-default);
-            border-radius: 10px;
+            position: relative;
+            background: var(--land-surface);
+            border: 1px solid var(--land-border);
+            border-top: none;
+            border-radius: 12px;
             padding: 1.75rem;
             text-decoration: none;
             color: inherit;
-            transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
             display: flex;
             flex-direction: column;
-            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+            transition: transform 0.25s cubic-bezier(0.23, 1, 0.32, 1),
+                        box-shadow 0.25s ease,
+                        border-color 0.25s ease;
+        }
+        .course-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            border-radius: 12px 12px 0 0;
+            background: inherit;
         }
         .course-card:hover {
-            border-color: var(--amethyst);
-            transform: translateY(-1px);
-            box-shadow: var(--shadow-md);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.2);
+            border-color: var(--land-border-hover);
+        }
+        [data-theme="light"] .course-card:hover {
+            box-shadow: 0 12px 36px rgba(30, 20, 60, 0.08);
         }
         .course-card .course-name {
-            font-size: 1.3rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
+            font-family: 'Instrument Serif', serif;
+            font-size: 1.45rem;
+            font-weight: 400;
+            margin-bottom: 0.6rem;
+            letter-spacing: -0.01em;
         }
         .course-card .course-desc {
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-            line-height: 1.6;
+            color: var(--land-text-dim);
+            font-size: 0.88rem;
+            line-height: 1.65;
             flex: 1;
         }
         .course-card .course-status {
             margin-top: 0.75rem;
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.75rem;
-            color: var(--amethyst);
+            font-size: 0.72rem;
+            color: var(--land-accent);
         }
         .course-card .course-meta {
             margin-top: 0.75rem;
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.75rem;
-            color: var(--text-tertiary);
+            font-size: 0.72rem;
+            color: var(--land-text-ghost);
+            letter-spacing: 0.02em;
         }
         .course-progress-indicator {
             display: none;
             align-items: center;
             gap: 0.4rem;
-            margin-top: 0.5rem;
+            margin-top: 0.6rem;
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.72rem;
-            color: var(--green-bright);
+            font-size: 0.7rem;
+            color: var(--land-accent);
         }
         .course-progress-indicator::before {
             content: '';
-            width: 8px;
-            height: 8px;
-            background: var(--green-bright);
+            width: 7px;
+            height: 7px;
+            background: var(--land-accent);
             border-radius: 50%;
             flex-shrink: 0;
         }
@@ -279,323 +496,389 @@
             display: inline-flex;
         }
 
-        /* --- Feature grid --- */
-        .features {
+        /* =========================================
+           Features — Bento Grid
+           ========================================= */
+        .feature-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 1px;
-            background: var(--border-subtle);
-            border: 1px solid var(--border-subtle);
-            border-radius: 10px;
-            overflow: hidden;
+            gap: 1.25rem;
         }
-        .feature {
-            background: var(--bg-surface);
-            padding: 1.25rem 1.5rem;
-            transition: background var(--transition-normal);
+        .feature-card {
+            padding: 1.75rem;
+            background: var(--land-surface);
+            border: 1px solid var(--land-border);
+            border-radius: 12px;
+            transition: border-color 0.25s, background 0.25s;
         }
-        .feature:hover {
-            background: var(--bg-elevated);
+        .feature-card:hover {
+            border-color: var(--land-border-hover);
+            background: var(--land-surface-2);
         }
         .feature-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.75rem;
-            color: var(--amethyst);
-            letter-spacing: 0.05em;
-            margin-bottom: 0.4rem;
+            font-size: 0.72rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--land-accent);
+            background: rgba(196, 181, 255, 0.08);
+            border: 1px solid rgba(196, 181, 255, 0.10);
+        }
+        [data-theme="light"] .feature-icon {
+            background: rgba(107, 82, 192, 0.08);
+            border-color: rgba(107, 82, 192, 0.12);
+        }
+        .feature-icon.warm {
+            color: var(--land-warm);
+            background: rgba(255, 209, 163, 0.08);
+            border-color: rgba(255, 209, 163, 0.10);
+        }
+        [data-theme="light"] .feature-icon.warm {
+            background: rgba(192, 120, 48, 0.08);
+            border-color: rgba(192, 120, 48, 0.12);
         }
         .feature-title {
-            font-weight: 600;
+            font-weight: 700;
             font-size: 0.95rem;
-            margin-bottom: 0.25rem;
+            margin-bottom: 0.35rem;
         }
         .feature-desc {
-            color: var(--text-secondary);
-            font-size: 0.82rem;
-            line-height: 1.5;
+            color: var(--land-text-dim);
+            font-size: 0.85rem;
+            line-height: 1.65;
         }
 
-        /* --- Discovery section --- */
+        /* =========================================
+           Zero Config — Discovery
+           ========================================= */
         .discovery {
             margin-top: 3rem;
         }
-        .discovery .section-label {
-            margin-top: 0;
-        }
         .discovery-intro {
-            color: var(--text-secondary);
-            font-size: 0.95rem;
-            line-height: 1.6;
-            margin-bottom: 1.5rem;
-            max-width: 600px;
+            color: var(--land-text-dim);
+            font-size: 1rem;
+            line-height: 1.7;
+            margin-bottom: 2rem;
+            max-width: 520px;
         }
         .discovery-items {
-            display: grid;
-            grid-template-columns: 1fr;
+            display: flex;
+            flex-direction: column;
             gap: 1px;
-            background: var(--border-subtle);
-            border: 1px solid var(--border-subtle);
-            border-radius: 10px;
+            background: var(--land-border);
+            border-radius: 12px;
             overflow: hidden;
+            border: 1px solid var(--land-border);
         }
         .discovery-item {
-            background: var(--bg-surface);
             display: grid;
-            grid-template-columns: auto 1fr;
-            gap: 1.25rem;
-            padding: 1.25rem 1.5rem;
-            align-items: start;
-            transition: background var(--transition-normal);
+            grid-template-columns: 40px 1fr;
+            gap: 1rem;
+            padding: 1.5rem;
+            background: var(--land-surface);
+            transition: background 0.2s;
         }
         .discovery-item:hover {
-            background: var(--bg-elevated);
+            background: var(--land-surface-2);
         }
-        .discovery-item .di-arrow {
+        .di-arrow {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.8rem;
-            color: var(--accent);
-            padding-top: 0.15rem;
-        }
-        .discovery-item .di-title {
-            font-weight: 600;
-            font-size: 0.95rem;
-            margin-bottom: 0.2rem;
-        }
-        .discovery-item .di-desc {
-            color: var(--text-secondary);
-            font-size: 0.82rem;
-            line-height: 1.5;
-        }
-        .discovery-item .di-code {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.75rem;
-            color: var(--green-dim);
-            margin-top: 0.4rem;
-        }
-
-        /* --- CTA --- */
-        .cta {
+            font-size: 0.9rem;
+            color: var(--land-accent);
+            padding-top: 0.1rem;
             text-align: center;
-            margin: 3rem 0;
         }
-        a.cta-btn {
-            display: inline-block;
-            padding: 0.75rem 2rem;
-            background: var(--green-bright);
-            color: var(--text-primary);
+        .di-title {
             font-weight: 700;
-            font-size: 0.95rem;
-            border-radius: 8px;
-            text-decoration: none;
-            transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+            font-size: 0.92rem;
+            margin-bottom: 0.25rem;
         }
-        a.cta-btn:hover {
-            background: var(--accent-hover);
-            transform: translateY(-1px);
-            box-shadow: var(--shadow-accent);
+        .di-desc {
+            color: var(--land-text-dim);
+            font-size: 0.85rem;
+            line-height: 1.6;
         }
-        .cta-sub {
-            color: var(--text-secondary);
-            font-size: 0.82rem;
-            margin-top: 0.6rem;
+        .di-desc code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82em;
+            background: rgba(196, 181, 255, 0.08);
+            padding: 0.1em 0.35em;
+            border-radius: 4px;
+            color: var(--land-accent);
         }
-
-        /* --- Footer --- */
-        .landing-footer {
-            margin-top: 4rem;
-            padding: 2rem 0;
-            border-top: 1px solid var(--border-subtle);
-            text-align: center;
-            color: var(--text-tertiary);
-            font-size: 0.8rem;
-            line-height: 1.8;
+        [data-theme="light"] .di-desc code {
+            background: rgba(107, 82, 192, 0.08);
         }
-        .landing-footer a {
-            color: var(--green-dim);
-            text-decoration: none;
-        }
-        .landing-footer a:hover { color: var(--green-bright); }
-        .landing-footer .vibe-tag {
+        .di-code {
             font-family: 'JetBrains Mono', monospace;
             font-size: 0.72rem;
-            color: var(--text-tertiary);
-            opacity: 0.6;
+            color: var(--land-text-ghost);
             margin-top: 0.5rem;
         }
 
-        /* --- Responsive --- */
-        @media (max-width: 680px) {
-            .landing { padding: 1rem; }
-            .hero { padding: 2.5rem 0 0.5rem; }
-            .hero h1 { font-size: 1.8rem; }
-            .hero-sub { font-size: 0.95rem; }
-            .features { grid-template-columns: 1fr; }
-            .feature { padding: 1rem 1.15rem; }
-            .feature-desc { font-size: 0.8rem; }
-            .discovery { margin-top: 2rem; }
-            .discovery-item { padding: 1rem 1.15rem; gap: 0.75rem; }
-            .discovery-item .di-title { font-size: 0.88rem; }
-            .discovery-item .di-code { font-size: 0.68rem; overflow-x: auto; }
-            .how-it-works { grid-template-columns: 1fr; gap: 1rem; }
-            .step-code { font-size: 0.72rem; overflow-x: auto; }
-            .section-label { margin-top: 2rem; }
+        /* =========================================
+           CTA
+           ========================================= */
+        .cta-section {
+            text-align: center;
+            padding: 4rem 0 2rem;
+        }
+        .cta-heading {
+            font-family: 'Instrument Serif', serif;
+            font-size: 2.2rem;
+            font-weight: 400;
+            margin-bottom: 0.75rem;
+            letter-spacing: -0.02em;
+        }
+        .cta-heading em {
+            font-style: italic;
+            color: var(--land-accent);
+        }
+        .cta-sub {
+            color: var(--land-text-dim);
+            font-size: 0.9rem;
+            margin-bottom: 2rem;
+        }
+        .cta-sub a {
+            color: var(--land-accent);
+            text-decoration: none;
+        }
+        .cta-sub a:hover { text-decoration: underline; }
+
+        /* =========================================
+           Footer
+           ========================================= */
+        .landing-footer {
+            padding: 3rem 0;
+            border-top: 1px solid var(--land-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .footer-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+        .footer-links a {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            color: var(--land-text-ghost);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .footer-links a:hover { color: var(--land-accent); }
+        .footer-tag {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.68rem;
+            color: var(--land-text-ghost);
+            opacity: 0.6;
+        }
+
+        /* =========================================
+           Responsive
+           ========================================= */
+        @media (max-width: 768px) {
+            .landing { padding: 0 1.25rem; }
+            .hero { padding: 3.5rem 0 2.5rem; }
+            .hero h1 { font-size: clamp(2.2rem, 8vw, 3.2rem); }
+            .hero-sub { font-size: 1rem; }
+            .steps { grid-template-columns: 1fr; gap: 1rem; }
+            .feature-grid { grid-template-columns: 1fr; }
             .course-grid { grid-template-columns: 1fr; }
-            .course-card { padding: 1.25rem; }
-            .course-card .course-name { font-size: 1.1rem; }
-            .course-card .course-desc { font-size: 0.85rem; }
-            .cta { margin: 2rem 0; }
-            .landing-footer { margin-top: 2.5rem; }
-            .command-preview { margin-top: 1.5rem; }
-            .command-preview pre { font-size: 0.72rem; padding: 1rem; }
+            .topbar-links { gap: 1rem; }
+            .terminal pre { font-size: 0.72rem; padding: 1rem; }
+            .landing-footer { flex-direction: column; gap: 1rem; text-align: center; }
+            .section-label { margin: 3.5rem 0 1.75rem; }
+            .cta-heading { font-size: 1.6rem; }
         }
-        @media (max-width: 400px) {
-            .hero h1 { font-size: 1.5rem; }
-            .hero-sub { font-size: 0.88rem; }
-            .discovery-item .di-code { display: none; }
-            .step-code { font-size: 0.65rem; padding: 0.6rem 0.75rem; }
-            .command-preview pre { font-size: 0.65rem; padding: 0.75rem; }
+
+        @media (max-width: 480px) {
+            .landing { padding: 0 1rem; }
+            .hero { padding: 2.5rem 0 2rem; }
+            .hero-actions { flex-direction: column; align-items: flex-start; }
+            .topbar-links a:not(:last-child) { display: none; }
+            .terminal pre { font-size: 0.65rem; padding: 0.75rem; }
+            .di-code { display: none; }
+            .step { padding: 1.25rem; }
         }
-        @media (min-width: 681px) and (max-width: 860px) {
-            .features { grid-template-columns: repeat(2, 1fr); }
+
+        @media (min-width: 769px) {
+            .feature-grid .feature-card:nth-child(odd) {
+                transform: translateY(8px);
+            }
         }
     </style>
 </head>
 <body>
     <div class="landing">
+        <!-- Top Bar -->
+        <nav class="topbar">
+            <div class="topbar-brand">vibe-learn</div>
+            <div class="topbar-links">
+                <a href="guide.html">Guide</a>
+                <a href="https://github.com/jmilne22/vibe-learn">GitHub</a>
+            </div>
+        </nav>
+
         <!-- Hero -->
-        <div class="hero">
-            <div class="hero-brand">vibe-learn</div>
-            <h1>Build an interactive course<br><span class="accent">on anything</span></h1>
+        <header class="hero">
+            <div class="hero-eyebrow">Open-source course engine</div>
+            <h1>Build an interactive<br>course <em>on anything</em></h1>
             <p class="hero-sub">
-                Most courses teach a language in the abstract &mdash; syntax, toy exercises, nothing real.
-                Create a course built around <em>your</em> goal: Go for CLI tools, Rust for a game engine,
-                Python for your data pipeline.
+                Most courses teach in the abstract. Create one built around <strong>your goal</strong> &mdash;
+                Go for CLI tools, Rust for a game engine, Python for your data pipeline.
+                Tell your AI coding tool what to teach. One build command does the rest.
             </p>
-            <p class="hero-sub-tools">
-                Tell Claude Code, Cursor, Copilot, or Augment what to teach. One build command gives you exercises, spaced repetition, flashcards, and analytics.
-            </p>
-            <div class="hero-ctas">
-                <a href="https://github.com/jmilne22/vibe-learn" class="hero-cta-primary">Get Started on GitHub</a>
-                <a href="guide.html" class="hero-cta-secondary">Platform Guide</a>
-                <a href="infra-go/index.html" class="hero-cta-secondary">See a live course &rarr;</a>
+            <div class="hero-actions">
+                <a href="https://github.com/jmilne22/vibe-learn" class="btn-primary">
+                    Get Started
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+                </a>
+                <a href="guide.html" class="btn-ghost">Platform Guide</a>
+                <a href="infra-go/index.html" class="btn-ghost">Live Course &rarr;</a>
             </div>
 
-            <!-- Command preview -->
-            <div class="command-preview">
-                <div class="command-preview-bar">
-                    <span class="command-preview-title">terminal</span>
+            <!-- Terminal -->
+            <div class="terminal">
+                <div class="terminal-bar">
+                    <div class="terminal-dots"><span></span><span></span><span></span></div>
+                    <div class="terminal-title">terminal</div>
+                    <div style="width: 36px;"></div>
                 </div>
-                <pre><span class="cmd-prompt">$</span> <span class="cmd-text">git clone https://github.com/jmilne22/vibe-learn && cd vibe-learn</span>
-<span class="cmd-prompt">$</span> <span class="cmd-text">npm run new-course -- python</span>
-<span class="cmd-prompt">$</span> <span class="cmd-text">claude "Create a Python course for JS developers"</span>
-<span class="cmd-prompt">$</span> <span class="cmd-text">npm run build</span>
-<span class="cmd-comment"># Course ready at dist/python/</span></pre>
+                <pre><span class="prompt">$</span> <span class="cmd">git clone https://github.com/jmilne22/vibe-learn</span>
+<span class="prompt">$</span> <span class="cmd">npm run new-course -- python</span>
+<span class="prompt">$</span> <span class="cmd">claude "Create a Python course for JS developers"</span>
+<span class="prompt">$</span> <span class="cmd">npm run build</span>
+<span class="comment"># Course ready at dist/python/</span><span class="cursor"></span></pre>
             </div>
+        </header>
 
-            <div class="belt-items" aria-hidden="true">
-                <div class="belt-items-scroll">
-                    <span>C</span><span>Go</span><span>Rs</span><span>K8s</span><span>Py</span><span>JS</span><span>TS</span><span>SQL</span>
-                    <span>C</span><span>Go</span><span>Rs</span><span>K8s</span><span>Py</span><span>JS</span><span>TS</span><span>SQL</span>
-                    <span>C</span><span>Go</span><span>Rs</span><span>K8s</span><span>Py</span><span>JS</span><span>TS</span><span>SQL</span>
-                    <span>C</span><span>Go</span><span>Rs</span><span>K8s</span><span>Py</span><span>JS</span><span>TS</span><span>SQL</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- How it works -->
-        <div class="section-label">how it works</div>
-        <div class="how-it-works">
+        <!-- How It Works -->
+        <div class="section-label reveal">How it works</div>
+        <div class="steps reveal">
             <div class="step">
-                <div class="step-num">01</div>
+                <div class="step-number">1</div>
                 <div class="step-title">Scaffold</div>
                 <div class="step-desc">One command creates the course directory with the right structure.</div>
-                <div class="step-code">npm run new-course -- python</div>
+                <div class="step-cmd">npm run new-course -- python</div>
             </div>
             <div class="step">
-                <div class="step-num">02</div>
-                <div class="step-title">Generate content</div>
-                <div class="step-desc">Use an AI tool with the starter prompt. It handles lessons, exercises, flashcards, and scaffolds.</div>
-                <div class="step-code">claude "Create a Python course"</div>
+                <div class="step-number">2</div>
+                <div class="step-title">Generate</div>
+                <div class="step-desc">Point your AI tool at the starter prompt. It writes lessons, exercises, flashcards.</div>
+                <div class="step-cmd">claude "Create a Python course"</div>
             </div>
             <div class="step">
-                <div class="step-num">03</div>
-                <div class="step-title">Build &amp; deploy</div>
+                <div class="step-number">3</div>
+                <div class="step-title">Build &amp; Ship</div>
                 <div class="step-desc">One command compiles everything into a static site. Deploy anywhere.</div>
-                <div class="step-code">npm run build</div>
+                <div class="step-cmd">npm run build</div>
             </div>
         </div>
 
         <!-- Courses -->
-        <div class="section-label">built with vibe-learn</div>
-        <div class="course-grid">
+        <div class="section-label reveal">Built with vibe-learn</div>
+        <div class="course-grid reveal">
 {{COURSE_CARDS}}
         </div>
 
         <!-- Features -->
-        <div class="section-label">what you get</div>
-        <div class="features">
-            <div class="feature">
+        <div class="section-label reveal">What you get</div>
+        <div class="feature-grid reveal">
+            <div class="feature-card">
                 <div class="feature-icon">&gt;_</div>
                 <div class="feature-title">Lessons &amp; code comparisons</div>
-                <div class="feature-desc">Markdown with syntax highlighting and automatic side-by-side code comparisons. Show the same concept in two languages.</div>
+                <div class="feature-desc">Markdown with syntax highlighting and side-by-side code comparisons. Show the same concept in two languages.</div>
             </div>
-            <div class="feature">
-                <div class="feature-icon">[&thinsp;]</div>
+            <div class="feature-card">
+                <div class="feature-icon warm">[ ]</div>
                 <div class="feature-title">Exercises &amp; challenges</div>
                 <div class="feature-desc">Warmups, challenges, multiple variants, difficulty modes, progressive hints, and annotated solutions.</div>
             </div>
-            <div class="feature">
+            <div class="feature-card">
                 <div class="feature-icon">SRS</div>
                 <div class="feature-title">Spaced repetition &amp; flashcards</div>
-                <div class="feature-desc">SM-2 scheduling surfaces exercises and flashcards when you're about to forget. Daily practice with review, discover, and weak-spot modes.</div>
+                <div class="feature-desc">SM-2 scheduling surfaces exercises and flashcards when you're about to forget. Review, discover, and weak-spot modes.</div>
             </div>
-            <div class="feature">
-                <div class="feature-icon">|||</div>
+            <div class="feature-card">
+                <div class="feature-icon warm">|||</div>
                 <div class="feature-title">Analytics &amp; progress</div>
-                <div class="feature-desc">Mastery dashboard with health cards, module grid, action items, streak tracking, activity heatmaps, and full data export. All local, no accounts.</div>
+                <div class="feature-desc">Mastery dashboard with health cards, heatmaps, streaks, action items, and full data export. All local, no accounts.</div>
             </div>
         </div>
 
-        <!-- Zero config -->
-        <div class="discovery">
-            <div class="section-label">zero config</div>
+        <!-- Zero Config -->
+        <div class="discovery reveal">
+            <div class="section-label" style="margin-top: 0;">Zero config</div>
             <p class="discovery-intro">
                 Content files drive features &mdash; no registries, no config files, no wiring.
                 Drop files in the right place and the build figures out the rest.
             </p>
             <div class="discovery-items">
                 <div class="discovery-item">
-                    <div class="di-arrow">&gt;</div>
+                    <div class="di-arrow">&rarr;</div>
                     <div>
-                        <div class="di-title">Drop a course folder &rarr; it appears on the site</div>
+                        <div class="di-title">Drop a course folder &mdash; it appears on the site</div>
                         <div class="di-desc">The build scans <code>courses/</code> for any directory with a <code>course.yaml</code>. Add a folder, rebuild, done.</div>
                         <div class="di-code">courses/python/ + course.yaml &rarr; auto-discovered</div>
                     </div>
                 </div>
                 <div class="discovery-item">
-                    <div class="di-arrow">&gt;</div>
+                    <div class="di-arrow">&rarr;</div>
                     <div>
-                        <div class="di-title">Add a content file &rarr; the feature activates</div>
-                        <div class="di-desc">Each plugin declares a content pattern. If a course has matching files, it gets the feature. No files? The page doesn't exist &mdash; no dead links.</div>
-                        <div class="di-code">content/flashcards/flashcards.yaml exists &rarr; flashcards page active</div>
+                        <div class="di-title">Add a content file &mdash; the feature activates</div>
+                        <div class="di-desc">Each plugin declares a content pattern. If a course has matching files, it gets the feature. No files? No dead links.</div>
+                        <div class="di-code">content/flashcards/flashcards.yaml &rarr; flashcards page active</div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="cta">
-            <a href="https://github.com/jmilne22/vibe-learn" class="cta-btn">Fork on GitHub</a>
-            <div class="cta-sub">Works with Claude Code, Cursor, Copilot, Augment, or any AI coding tool. See <a href="https://github.com/jmilne22/vibe-learn/blob/main/STARTER_PROMPT.md" style="color: var(--green-dim);">STARTER_PROMPT.md</a> to get started.</div>
+        <!-- CTA -->
+        <div class="cta-section reveal">
+            <div class="cta-heading">Start building <em>your</em> course</div>
+            <p class="cta-sub">Works with Claude Code, Cursor, Copilot, Augment, or any AI coding tool.<br>See <a href="https://github.com/jmilne22/vibe-learn/blob/main/STARTER_PROMPT.md">STARTER_PROMPT.md</a> to get started.</p>
+            <a href="https://github.com/jmilne22/vibe-learn" class="btn-primary">
+                Fork on GitHub
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+            </a>
         </div>
 
         <!-- Footer -->
-        <div class="landing-footer">
-            <a href="https://github.com/jmilne22/vibe-learn">GitHub</a> &middot; <a href="https://github.com/jmilne22/vibe-learn/blob/main/STARTER_PROMPT.md">Starter Prompt</a> &middot; <a href="guide.html">Platform Guide</a> &middot; <a href="go/index.html">Go Course</a>
-            <div class="vibe-tag">Built with Claude</div>
-        </div>
+        <footer class="landing-footer">
+            <div class="footer-links">
+                <a href="https://github.com/jmilne22/vibe-learn">GitHub</a>
+                <a href="https://github.com/jmilne22/vibe-learn/blob/main/STARTER_PROMPT.md">Starter Prompt</a>
+                <a href="guide.html">Platform Guide</a>
+            </div>
+            <div class="footer-tag">Built with Claude</div>
+        </footer>
     </div>
+
     <script src="theme.js"></script>
     <script>
+    // Scroll reveal animation
+    (function() {
+        var reveals = document.querySelectorAll('.reveal');
+        if (!reveals.length) return;
+        var observer = new IntersectionObserver(function(entries) {
+            entries.forEach(function(entry) {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+        reveals.forEach(function(el) { observer.observe(el); });
+    })();
+
+    // Course progress (from localStorage)
     (function() {
         var cards = document.querySelectorAll('.course-card[data-slug]');
         cards.forEach(function(card) {
