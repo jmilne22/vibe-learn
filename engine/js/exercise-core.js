@@ -118,12 +118,12 @@
                 transition: all 0.2s;
             }
             .concept-btn:hover {
-                border-color: var(--orange);
-                color: var(--orange);
+                border-color: var(--accent);
+                color: var(--accent);
             }
             .concept-btn.active {
-                background: var(--orange);
-                border-color: var(--orange);
+                background: var(--accent);
+                border-color: var(--accent);
                 color: white;
             }
             .difficulty-mode-selector {
