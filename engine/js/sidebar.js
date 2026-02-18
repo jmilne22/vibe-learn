@@ -217,6 +217,15 @@
         sidebar.innerHTML = html;
         document.body.appendChild(sidebar);
 
+        // Scroll sidebar so the active item is visible
+        var activeEl = sidebar.querySelector('.sidebar-link.active, .sidebar-chapter-title.active, .sidebar-section-link.active');
+        if (activeEl) {
+            // Use requestAnimationFrame to ensure layout is computed
+            requestAnimationFrame(function() {
+                activeEl.scrollIntoView({ block: 'center' });
+            });
+        }
+
         // Create toggle button (inside sidebar when open)
         const toggle = document.createElement('button');
         toggle.className = 'sidebar-toggle';
