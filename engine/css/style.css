@@ -4904,6 +4904,14 @@ footer {
     padding: 0;
     margin: 0;
     background: transparent;
+    box-shadow: none;
+}
+.drill-step-content .exercise::before {
+    display: none;
+}
+.drill-step-content .exercise:hover {
+    box-shadow: none;
+    transform: none;
 }
 .drill-step-content .exercise h4 {
     font-size: 0.9rem;
