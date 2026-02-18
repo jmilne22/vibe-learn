@@ -388,9 +388,9 @@
 
         if (item.problem.patternPrimer) {
             var pp = item.problem.patternPrimer;
-            html += '<details class="algo-pattern-primer">' +
+            html += '<details class="pattern-primer">' +
                 '<summary>Pattern Primer: ' + item.problem.concept + '</summary>' +
-                '<div class="hint-content" style="margin-top: 0.75rem;">' +
+                '<div class="hint-content">' +
                     '<div style="margin-bottom: 0.5rem;"><strong>Brute force:</strong> ' + pp.bruteForce + '</div>' +
                     '<div style="margin-bottom: 0.5rem;"><strong>Best approach:</strong> ' + pp.bestApproach + '</div>' +
                     '<div><strong>Typical:</strong> ' + pp.typical + '</div>' +
@@ -515,7 +515,7 @@
 
         if (item.problem.patternPrimer) {
             var pp = item.problem.patternPrimer;
-            solutionHtml += '<div class="algo-pattern-primer" style="margin-top: 1rem;">' +
+            solutionHtml += '<div class="pattern-primer" style="margin-top: 1rem;">' +
                 '<div style="color: var(--purple); font-weight: 600; margin-bottom: 0.5rem;">Pattern Primer: ' + item.problem.concept + '</div>' +
                 '<div class="hint-content">' +
                     '<div style="margin-bottom: 0.5rem;"><strong>Brute force:</strong> ' + pp.bruteForce + '</div>' +
@@ -790,13 +790,13 @@
         // Overall lifetime stats
         if (patternDrillStats && patternDrillStats.total > 0) {
             var lifetimePct = Math.round((patternDrillStats.correct / patternDrillStats.total) * 100);
-            html += '<div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-default);">' +
-                '<div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.5rem;">Lifetime: ' +
+            html += '<div class="drill-lifetime-section">' +
+                '<div class="drill-lifetime-summary">Lifetime: ' +
                 patternDrillStats.correct + '/' + patternDrillStats.total + ' (' + lifetimePct + '%)</div>';
 
             var catIds = Object.keys(patternDrillStats.byCategory);
             if (catIds.length > 0) {
-                html += '<div style="font-size: 0.8rem; color: var(--text-secondary);">';
+                html += '<div class="drill-lifetime-breakdown">';
                 catIds.forEach(function(catId) {
                     var cs = patternDrillStats.byCategory[catId];
                     var cPct = cs.total > 0 ? Math.round((cs.correct / cs.total) * 100) : 0;

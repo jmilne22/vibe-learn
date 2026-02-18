@@ -26,256 +26,6 @@
     'use strict';
 
     // -----------------------------------------------------------------------
-    // CSS Injection (one-time via sentinel)
-    // -----------------------------------------------------------------------
-    function injectStyles() {
-        if (document.getElementById('exercise-core-styles')) return;
-
-        const style = document.createElement('style');
-        style.id = 'exercise-core-styles';
-        style.textContent = `
-            .thinking-timer-btn {
-                background: transparent;
-                border: 2px solid var(--purple, #a78bfa);
-                color: var(--purple, #a78bfa);
-                padding: 0.5rem 1rem;
-                border-radius: 8px;
-                font-weight: 600;
-                cursor: pointer;
-                margin-bottom: 1rem;
-                transition: all 0.2s;
-            }
-            .thinking-timer-btn:hover {
-                background: var(--purple, #a78bfa);
-                color: white;
-            }
-            .thinking-timer {
-                background: linear-gradient(135deg, var(--purple, #a78bfa), var(--blue, #60a5fa));
-                color: white;
-                padding: 0.75rem 1rem;
-                border-radius: 8px;
-                margin-bottom: 1rem;
-                font-weight: 600;
-                display: flex;
-                align-items: center;
-                gap: 0.5rem;
-                animation: pulse 2s ease-in-out infinite;
-            }
-            .thinking-timer .timer-icon {
-                font-size: 1.2em;
-            }
-            .thinking-timer .timer-countdown {
-                font-family: monospace;
-                font-size: 1.1em;
-                background: rgba(255,255,255,0.2);
-                padding: 0.1rem 0.4rem;
-                border-radius: 4px;
-            }
-            .thinking-timer.timer-done {
-                background: var(--green-bright, #34d399);
-                animation: none;
-            }
-            @keyframes pulse {
-                0%, 100% { opacity: 1; }
-                50% { opacity: 0.85; }
-            }
-            details.thinking-locked {
-                opacity: 0.5;
-                pointer-events: none;
-            }
-            details.thinking-locked summary {
-                cursor: not-allowed;
-            }
-            details.thinking-locked summary::after {
-                content: none;
-            }
-            .concept-filter {
-                margin-bottom: 1rem;
-                padding: 1rem;
-                background: var(--bg-surface);
-                border-radius: 8px;
-                border: 1px solid var(--border-default);
-            }
-            .concept-filter-label {
-                font-size: 0.85rem;
-                color: var(--text-secondary);
-                margin-bottom: 0.5rem;
-                display: block;
-            }
-            .concept-filter-buttons {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 0.5rem;
-            }
-            .concept-btn {
-                background: transparent;
-                border: 1px solid var(--border-default);
-                color: var(--text);
-                padding: 0.35rem 0.75rem;
-                border-radius: 20px;
-                font-size: 0.85rem;
-                cursor: pointer;
-                transition: all 0.2s;
-            }
-            .concept-btn:hover {
-                border-color: var(--orange);
-                color: var(--orange);
-            }
-            .concept-btn.active {
-                background: var(--orange);
-                border-color: var(--orange);
-                color: white;
-            }
-            .difficulty-mode-selector {
-                margin-bottom: 1rem;
-                padding: 1rem;
-                background: var(--bg-surface);
-                border-radius: 8px;
-                border: 1px solid var(--border-default);
-            }
-            .difficulty-mode-label {
-                font-size: 0.85rem;
-                color: var(--text-secondary);
-                margin-bottom: 0.5rem;
-                display: block;
-            }
-            .difficulty-mode-buttons {
-                display: flex;
-                gap: 0.5rem;
-                flex-wrap: wrap;
-            }
-            .difficulty-mode-btn {
-                background: transparent;
-                border: 1px solid var(--border-default);
-                color: var(--text);
-                padding: 0.5rem 1rem;
-                border-radius: 8px;
-                font-size: 0.85rem;
-                cursor: pointer;
-                transition: all 0.2s;
-                flex: 1;
-                min-width: 120px;
-            }
-            .difficulty-mode-btn:hover {
-                border-color: var(--orange);
-                transform: translateY(-2px);
-            }
-            .difficulty-mode-btn.active {
-                background: var(--orange);
-                border-color: var(--orange);
-                color: white;
-                font-weight: 600;
-            }
-            .difficulty-mode-btn.easy.active {
-                background: var(--green-bright);
-                border-color: var(--green-bright);
-                color: var(--bg-base);
-            }
-            .difficulty-mode-btn.hard.active {
-                background: var(--purple);
-                border-color: var(--purple);
-                color: white;
-            }
-            .difficulty-mode-btn .mode-desc {
-                display: block;
-                font-size: 0.7rem;
-                opacity: 0.8;
-                margin-top: 0.2rem;
-            }
-            .variant-difficulty {
-                display: inline-block;
-                font-size: 0.9rem;
-                opacity: 0.8;
-                margin-left: 0.5rem;
-            }
-            .variant-btn-container {
-                display: flex;
-                gap: 0.5rem;
-                margin-bottom: 0.75rem;
-                flex-wrap: wrap;
-            }
-            .easier-variant-btn, .harder-variant-btn {
-                background: var(--bg-surface);
-                border: 2px solid var(--green-bright);
-                color: var(--green-bright);
-                padding: 0.4rem 0.8rem;
-                border-radius: 6px;
-                font-size: 0.8rem;
-                cursor: pointer;
-                transition: all 0.2s;
-                font-weight: 500;
-                display: inline-block;
-            }
-            .harder-variant-btn {
-                border-color: var(--purple);
-                color: var(--purple);
-            }
-            .easier-variant-btn:hover {
-                background: var(--green-bright);
-                color: var(--bg-base);
-                transform: translateY(-1px);
-            }
-            .harder-variant-btn:hover {
-                background: var(--purple);
-                color: white;
-                transform: translateY(-1px);
-            }
-            .easier-variant-btn:disabled, .harder-variant-btn:disabled {
-                opacity: 0.4;
-                cursor: not-allowed;
-                border-color: var(--text-secondary);
-                color: var(--text-secondary);
-            }
-            .easier-variant-btn:disabled:hover, .harder-variant-btn:disabled:hover {
-                background: var(--bg-surface);
-                color: var(--text-secondary);
-                transform: none;
-            }
-            .shuffle-info {
-                background: var(--bg-muted);
-                padding: 0.5rem 0.75rem;
-                border-radius: 6px;
-                font-size: 0.8rem;
-                color: var(--text-secondary);
-                margin-top: 0.5rem;
-            }
-            .personal-notes {
-                margin-top: 0.5rem;
-            }
-            .personal-notes summary {
-                cursor: pointer;
-                color: var(--purple);
-                font-weight: 600;
-                padding: 0.5rem 0;
-            }
-            .personal-notes-textarea {
-                width: 100%;
-                min-height: 100px;
-                margin-top: 0.5rem;
-                padding: 0.75rem;
-                background: var(--bg-elevated);
-                border: 1px solid var(--border-default);
-                border-radius: 4px;
-                color: var(--text);
-                font-family: 'JetBrains Mono', monospace;
-                font-size: 0.85rem;
-                resize: vertical;
-            }
-            .personal-notes-textarea:focus {
-                outline: none;
-                border-color: var(--purple);
-                background: var(--bg-surface);
-            }
-            .personal-notes-hint {
-                font-size: 0.75rem;
-                color: var(--text-secondary);
-                margin-top: 0.25rem;
-            }
-        `;
-        document.head.appendChild(style);
-    }
-
-    // -----------------------------------------------------------------------
     // Constants
     // -----------------------------------------------------------------------
     var DIFFICULTY_TARGETS = {
@@ -409,18 +159,14 @@
         var color = (opts && opts.color) || 'orange';
         var onClick = opts && opts.onClick;
 
+        // Map legacy color names to CSS class variants
+        var colorMap = { 'orange': 'amber', 'green-bright': 'amethyst' };
+        var mappedColor = colorMap[color] || color;
+
         var btn = document.createElement('button');
         if (id) btn.id = id;
         btn.innerHTML = Icons.dice + ' Shuffle';
-        btn.style.cssText = 'background:var(--bg-surface);color:var(--' + color + ');border:1px solid var(--' + color + ');padding:0.2rem 0.7rem;border-radius:4px;font-size:0.75rem;font-family:"JetBrains Mono",monospace;cursor:pointer;transition:all 0.2s;font-weight:400;';
-        btn.addEventListener('mouseenter', function() {
-            btn.style.background = 'var(--' + color + ')';
-            btn.style.color = color === 'green-bright' ? 'var(--bg-base)' : 'white';
-        });
-        btn.addEventListener('mouseleave', function() {
-            btn.style.background = 'var(--bg-surface)';
-            btn.style.color = 'var(--' + color + ')';
-        });
+        btn.className = 'shuffle-btn shuffle-btn--' + mappedColor;
         if (onClick) btn.addEventListener('click', onClick);
         return btn;
     }
@@ -706,18 +452,14 @@
     // -----------------------------------------------------------------------
     // Shuffle Button Visual Feedback
     // -----------------------------------------------------------------------
-    function flashShuffleBtn(btnId, color) {
+    function flashShuffleBtn(btnId) {
         var btn = document.getElementById(btnId);
         if (!btn) return;
         btn.innerHTML = Icons.check + ' Shuffled!';
-        btn.style.background = 'var(--green-bright)';
-        btn.style.color = 'var(--bg-base)';
-        if (color !== 'green-bright') btn.style.borderColor = 'var(--green-bright)';
+        btn.classList.add('shuffle-btn--flash');
         setTimeout(function() {
             btn.innerHTML = Icons.dice + ' Shuffle';
-            btn.style.background = 'var(--bg-surface)';
-            btn.style.color = 'var(--' + color + ')';
-            btn.style.borderColor = 'var(--' + color + ')';
+            btn.classList.remove('shuffle-btn--flash');
         }, 800);
     }
 
@@ -725,8 +467,6 @@
     // Public API
     // -----------------------------------------------------------------------
     window.ExerciseCore = {
-        // CSS
-        injectStyles: injectStyles,
         // Constants
         DIFFICULTY_TARGETS: DIFFICULTY_TARGETS,
         MODES: MODES,
@@ -755,6 +495,4 @@
         flashShuffleBtn: flashShuffleBtn
     };
 
-    // Inject styles on load
-    injectStyles();
 })();

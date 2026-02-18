@@ -101,13 +101,13 @@
             var pluginFile = plugin.file || (plugin.name + '.html');
             var isActive = currentPage === pluginFile;
             var color = plugin.sidebarColor || 'var(--text-secondary)';
-            html += '\n            <a href="' + pluginFile + '" class="sidebar-link' + (isActive ? ' active' : '') + '" style="border-left-color: ' + (isActive ? color : 'transparent') + '; color: ' + (isActive ? color : 'var(--text-secondary)') + ';">' +
-                '<span class="sidebar-module-num" style="color: ' + color + ';">' + plugin.shortLabel + '</span>' +
+            html += '\n            <a href="' + pluginFile + '" class="sidebar-link' + (isActive ? ' active' : '') + '" style="--plugin-color: ' + color + '; border-left-color: ' + (isActive ? 'var(--plugin-color)' : 'transparent') + '; color: ' + (isActive ? 'var(--plugin-color)' : 'var(--text-secondary)') + ';">' +
+                '<span class="sidebar-module-num" style="color: var(--plugin-color);">' + plugin.shortLabel + '</span>' +
                 plugin.label +
             '</a>';
         });
         if (plugins.length > 0) {
-            html += '\n            <hr style="border: none; border-top: 1px solid var(--border); margin: 0.5rem 0;">';
+            html += '\n            <hr class="sidebar-separator">';
         }
 
         // All pages - group split modules into chapters, keep single modules flat

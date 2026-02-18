@@ -594,7 +594,7 @@
         else if (days < 365) msg = 'Next review in ' + Math.round(days / 30) + ' month' + (Math.round(days / 30) === 1 ? '' : 's');
         else msg = 'Mastered — next review in ' + Math.round(days / 365) + '+ year' + (Math.round(days / 365) === 1 ? '' : 's');
         fb.textContent = msg;
-        fb.style.cssText = 'font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.4rem;';
+        fb.className = 'srs-feedback-message';
         ratingEl.insertAdjacentElement('afterend', fb);
     });
 

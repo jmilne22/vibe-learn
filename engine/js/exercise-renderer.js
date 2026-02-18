@@ -74,10 +74,10 @@
         return `<details>
                 <summary>${Icons.books} Documentation</summary>
                 <div class="hint-content">
-                    <p style="margin-bottom: 0.5rem; color: var(--text-secondary);">Relevant Go docs:</p>
+                    <p class="exercise-doc-note">Relevant Go docs:</p>
                     <ul style="margin: 0; padding-left: 1.5rem;">
                         ${docLinks.map(link =>
-                            `<li><a href="${link.url}" target="_blank" rel="noopener" style="color: var(--cyan);">${link.title}</a>${link.note ? ` <span style="color: var(--text-secondary);">\u2014 ${link.note}</span>` : ''}</li>`
+                            `<li><a href="${link.url}" target="_blank" rel="noopener" class="exercise-doc-link">${link.title}</a>${link.note ? ` <span class="exercise-doc-note">\u2014 ${link.note}</span>` : ''}</li>`
                         ).join('\n                        ')}
                     </ul>
                 </div>
@@ -209,7 +209,7 @@
             : '';
 
         const moduleBadge = moduleLabel
-            ? `<span style="font-size: 0.7rem; color: var(--text-secondary); font-family: 'JetBrains Mono', monospace; margin-left: 0.5rem;">[${moduleLabel}]</span>`
+            ? `<span class="exercise-module-badge">[${moduleLabel}]</span>`
             : '';
 
         const conceptSuffix = conceptHtml ? ' ' + conceptHtml : '';

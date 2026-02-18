@@ -208,12 +208,12 @@
     function trendArrow(current, previous, higherIsBetter) {
         if (previous === null || previous === undefined) return '';
         var diff = current - previous;
-        if (diff === 0) return ' <span title="No change from last week" style="font-size: 0.7rem; color: var(--text-secondary);">\u2192</span>';
+        if (diff === 0) return ' <span class="trend-arrow" title="No change from last week">\u2192</span>';
         var good = higherIsBetter ? diff > 0 : diff < 0;
         var arrow = diff > 0 ? '\u2191' : '\u2193';
         var color = good ? 'var(--green-bright)' : 'var(--red)';
         var label = (diff > 0 ? '+' : '') + diff + ' from last week';
-        return ' <span title="' + label + '" style="font-size: 0.7rem; color: ' + color + ';">' + arrow + '</span>';
+        return ' <span class="trend-arrow" title="' + label + '" style="--stat-color: ' + color + ';">' + arrow + '</span>';
     }
 
     // ---------------------------------------------------------------------------
@@ -478,20 +478,20 @@
         el.innerHTML =
             // Card 1: Overall Mastery
             '<div class="stat-card" title="Mastered items as % of all reviewed">' +
-                '<div class="stat-value" style="color: ' + masteryColor + ';">' + masteryPct + '%</div>' +
+                '<div class="stat-value" style="--stat-color: ' + masteryColor + ';">' + masteryPct + '%</div>' +
                 '<div class="stat-sub">' + report.masteredCount + '/' + reviewed + ' reviewed</div>' +
                 '<div class="stat-label">Overall Mastery</div>' +
             '</div>' +
             // Card 2: Due for Review
             '<div class="stat-card">' +
                 '<a href="daily-practice.html?mode=review&autostart" style="text-decoration: none; color: inherit;">' +
-                    '<div class="stat-value" style="color: ' + dueColor + ';">' + dueCount + '</div>' +
+                    '<div class="stat-value" style="--stat-color: ' + dueColor + ';">' + dueCount + '</div>' +
                     '<div class="stat-label">Due for Review</div>' +
                 '</a>' +
             '</div>' +
             // Card 3: Day Streak
             '<div class="stat-card">' +
-                '<div class="stat-value" style="color: var(--orange);">' + currentStreak + '</div>' +
+                '<div class="stat-value" style="--stat-color: var(--orange);">' + currentStreak + '</div>' +
                 '<div class="stat-sub">Longest: ' + longestStreak + '</div>' +
                 '<div class="stat-label">Day Streak</div>' +
             '</div>' +
@@ -536,7 +536,7 @@
                 var tooltipText = mod.name + ' \u2014 ' + mod.label +
                     '<br>Ease: ' + mod.avgEase + ' \u00B7 ' + mod.mastered + '/' + mod.count + ' mastered';
                 gridHTML +=
-                    '<a href="' + link + '" class="mgrid-cell" style="background: ' + bgColor + ';">' +
+                    '<a href="' + link + '" class="mgrid-cell" style="--cell-bg: ' + bgColor + ';">' +
                         '<span class="mgrid-label">' + cellLabel + '</span>' +
                         '<span class="mgrid-tooltip">' + tooltipText + '</span>' +
                     '</a>';
@@ -544,7 +544,7 @@
                 // Not started
                 var modName = (window.CourseConfigHelper && window.CourseConfigHelper.moduleNames && window.CourseConfigHelper.moduleNames[modId]) || ('Module ' + modId);
                 gridHTML +=
-                    '<a href="' + link + '" class="mgrid-cell" style="background: var(--bg-muted); color: var(--text-secondary);">' +
+                    '<a href="' + link + '" class="mgrid-cell" style="--cell-bg: var(--bg-muted); --cell-color: var(--text-secondary);">' +
                         '<span class="mgrid-label" style="background: none; color: inherit;">' + cellLabel + '</span>' +
                         '<span class="mgrid-tooltip">' + modName + ' \u2014 Not started</span>' +
                     '</a>';
@@ -704,17 +704,15 @@
             var isTooEarly = mod.label === 'Too early';
             var rowClass = isTooEarly ? 'too-early-item' : '';
             var pct = isTooEarly ? 0 : Math.min(100, Math.round((mod.avgEase / 3.0) * 100));
-            var easeDisplay = isTooEarly ? '' : '<span style="color: var(--text-secondary); font-size: 0.85rem; min-width: 4rem;">' + mod.avgEase + '</span>';
+            var easeDisplay = isTooEarly ? '' : '<span class="an-module-ease">' + mod.avgEase + '</span>';
             var modLabel = mod.num === 'algo' ? 'AL' : 'M' + mod.num;
             var moduleLink = modulePageUrl(mod.num);
             html +=
-                '<div class="' + rowClass + '" style="display: flex; align-items: center; gap: 1rem; padding: 0.75rem; border-radius: 6px; margin-bottom: 0.5rem; border-left: 3px solid ' + mod.color + ';">' +
-                    '<a href="' + moduleLink + '" style="color: var(--text-secondary); min-width: 2rem; text-decoration: none;">' + modLabel + '</a>' +
-                    '<span style="flex: 1;">' + mod.name + '</span>' +
-                    '<span style="color: var(--text-secondary); font-size: 0.8rem;">' + mod.count + ' reviewed</span>' +
-                    '<div style="width: 120px; height: 8px; background: var(--bg-muted); border-radius: 4px; overflow: hidden;">' +
-                        '<div style="width: ' + pct + '%; height: 100%; background: ' + mod.color + '; border-radius: 4px;"></div>' +
-                    '</div>' +
+                '<div class="an-module-row ' + rowClass + '" style="--row-color: ' + mod.color + ';">' +
+                    '<a href="' + moduleLink + '">' + modLabel + '</a>' +
+                    '<span class="an-module-name">' + mod.name + '</span>' +
+                    '<span class="an-module-count">' + mod.count + ' reviewed</span>' +
+                    '<div class="an-progress-track"><div class="an-progress-fill" style="width: ' + pct + '%; --fill-color: ' + mod.color + ';"></div></div>' +
                     easeDisplay +
                     '<span class="strength-badge" style="background: ' + mod.color + '; color: ' + badgeTextColor(mod.label) + ';">' + mod.label + '</span>' +
                 '</div>';
@@ -728,7 +726,7 @@
             '<p class="detail-desc">Per-concept breakdown. Needs 3+ review sessions to rate. Weakest first.</p>';
 
         if (report.concepts.length === 0) {
-            html += '<div style="padding: 1rem; text-align: center; color: var(--text-secondary);">No concept data yet.</div>';
+            html += '<div class="empty-panel-msg">No concept data yet.</div>';
         } else {
             var hasTooEarlyConcepts = false;
             for (var ic = 0; ic < report.concepts.length; ic++) {
@@ -749,20 +747,18 @@
                 var cPct = Math.min(100, Math.round((con.avgEase / 3.0) * 100));
                 var cBarColor = cIsTooEarly ? 'var(--text-secondary)' : con.color;
                 var cBarOpacity = cIsTooEarly ? 'opacity: 0.35;' : '';
-                var cEaseDisplay = '<span style="color: var(--text-secondary); font-size: 0.8rem; min-width: 3.5rem;' + (cIsTooEarly ? ' opacity: 0.5;' : '') + '">' + con.avgEase + '</span>';
+                var cEaseDisplay = '<span class="an-concept-ease"' + (cIsTooEarly ? ' style="opacity: 0.5;"' : '') + '>' + con.avgEase + '</span>';
                 var cModLinks = conceptLinksMap[con.moduleNum] || {};
                 var cRef = cModLinks[con.concept] || '';
                 var conLink = cRef && cRef.charAt(0) !== '#' ? cRef : modulePageUrl(con.moduleNum) + cRef;
                 var conLabel = con.moduleNum === 'algo' ? 'AL' : 'M' + con.moduleNum;
                 var reviewWord = con.count === 1 ? ' review' : ' reviews';
                 html +=
-                    '<div class="' + cRowClass + '" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.75rem; border-radius: 5px; margin-bottom: 0.4rem; border-left: 3px solid ' + con.color + '; font-size: 0.9rem;">' +
-                        '<a href="' + conLink + '" style="color: var(--text-secondary); min-width: 2rem; text-decoration: none;">' + conLabel + '</a>' +
-                        '<a href="' + conLink + '" style="flex: 1; color: inherit; text-decoration: none;">' + con.concept + '</a>' +
-                        '<span style="color: var(--text-secondary); font-size: 0.75rem;">' + con.count + reviewWord + '</span>' +
-                        '<div style="width: 100px; height: 6px; background: var(--bg-muted); border-radius: 3px; overflow: hidden;">' +
-                            '<div style="width: ' + cPct + '%; height: 100%; background: ' + cBarColor + '; border-radius: 3px;' + cBarOpacity + '"></div>' +
-                        '</div>' +
+                    '<div class="an-concept-row ' + cRowClass + '" style="--row-color: ' + con.color + ';">' +
+                        '<a href="' + conLink + '" class="an-concept-link">' + conLabel + '</a>' +
+                        '<a href="' + conLink + '" class="an-concept-name">' + con.concept + '</a>' +
+                        '<span class="an-concept-count">' + con.count + reviewWord + '</span>' +
+                        '<div class="an-progress-track an-progress-track--sm"><div class="an-progress-fill" style="width: ' + cPct + '%; --fill-color: ' + cBarColor + ';' + cBarOpacity + '"></div></div>' +
                         cEaseDisplay +
                         '<span class="strength-badge" style="background: ' + con.color + '; color: ' + badgeTextColor(con.label) + ';">' + con.label + '</span>' +
                     '</div>';
@@ -778,18 +774,18 @@
             '<p class="detail-desc">Top 10 exercises with the lowest ease factors.</p>';
 
         if (report.weakest.length === 0) {
-            html += '<div style="padding: 1rem; text-align: center; color: var(--text-secondary);">No weak exercises yet. Keep practising and struggling exercises will surface.</div>';
+            html += '<div class="empty-panel-msg">No weak exercises yet. Keep practising and struggling exercises will surface.</div>';
         } else {
             for (var w = 0; w < report.weakest.length; w++) {
                 var ex = report.weakest[w];
                 var rank = w + 1;
                 var status = dueStatus(ex.nextReview);
                 html +=
-                    '<div style="display: flex; align-items: center; gap: 1rem; padding: 0.75rem; border-radius: 6px; margin-bottom: 0.5rem;">' +
-                        '<span style="color: var(--red); font-weight: 700; min-width: 2rem;">#' + rank + '</span>' +
-                        '<span style="flex: 1;">' + prettifyKey(ex.key, ex) + '</span>' +
-                        '<span style="color: var(--text-secondary); font-size: 0.85rem;">Ease: ' + ex.easeFactor + '</span>' +
-                        '<span style="color: var(--orange); font-size: 0.85rem;">' + status + '</span>' +
+                    '<div class="an-weakest-row">' +
+                        '<span class="an-rank">#' + rank + '</span>' +
+                        '<span class="an-name">' + prettifyKey(ex.key, ex) + '</span>' +
+                        '<span class="an-ease">Ease: ' + ex.easeFactor + '</span>' +
+                        '<span class="an-status">' + status + '</span>' +
                         exercisePracticeLink(ex.key) +
                     '</div>';
             }
@@ -808,22 +804,22 @@
         var pctPeek = totalRatings > 0 ? Math.round((report.ratings.peeked / totalRatings) * 100) : 0;
 
         html +=
-            '<div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem;">' +
-                '<span style="min-width: 6rem; color: var(--green-bright);">Got it</span>' +
-                '<div style="flex: 1; height: 24px; background: var(--bg-muted); border-radius: 4px; overflow: hidden;">' +
-                    '<div style="width: ' + pctGot + '%; height: 100%; background: var(--green-bright); border-radius: 4px; display: flex; align-items: center; padding-left: 8px; color: var(--bg-base); font-weight: 700; font-size: 0.8rem;">' + report.ratings.gotIt + '</div>' +
+            '<div class="an-rating-bar-row">' +
+                '<span class="an-rating-bar-label rating-guide-got-it">Got it</span>' +
+                '<div class="an-rating-bar-track">' +
+                    '<div class="an-rating-bar-fill" style="width: ' + pctGot + '%; background: var(--green-bright);">' + report.ratings.gotIt + '</div>' +
                 '</div>' +
             '</div>' +
-            '<div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem;">' +
-                '<span style="min-width: 6rem; color: var(--orange);">Struggled</span>' +
-                '<div style="flex: 1; height: 24px; background: var(--bg-muted); border-radius: 4px; overflow: hidden;">' +
-                    '<div style="width: ' + pctStr + '%; height: 100%; background: var(--orange); border-radius: 4px; display: flex; align-items: center; padding-left: 8px; color: var(--bg-base); font-weight: 700; font-size: 0.8rem;">' + report.ratings.struggled + '</div>' +
+            '<div class="an-rating-bar-row">' +
+                '<span class="an-rating-bar-label rating-guide-struggled">Struggled</span>' +
+                '<div class="an-rating-bar-track">' +
+                    '<div class="an-rating-bar-fill" style="width: ' + pctStr + '%; background: var(--orange);">' + report.ratings.struggled + '</div>' +
                 '</div>' +
             '</div>' +
-            '<div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem;">' +
-                '<span style="min-width: 6rem; color: var(--red);">Needed solution</span>' +
-                '<div style="flex: 1; height: 24px; background: var(--bg-muted); border-radius: 4px; overflow: hidden;">' +
-                    '<div style="width: ' + pctPeek + '%; height: 100%; background: var(--red); border-radius: 4px; display: flex; align-items: center; padding-left: 8px; color: var(--bg-base); font-weight: 700; font-size: 0.8rem;">' + report.ratings.peeked + '</div>' +
+            '<div class="an-rating-bar-row">' +
+                '<span class="an-rating-bar-label" style="color: var(--red);">Needed solution</span>' +
+                '<div class="an-rating-bar-track">' +
+                    '<div class="an-rating-bar-fill" style="width: ' + pctPeek + '%; background: var(--red);">' + report.ratings.peeked + '</div>' +
                 '</div>' +
             '</div>';
 

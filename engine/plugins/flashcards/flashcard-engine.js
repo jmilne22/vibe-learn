@@ -78,7 +78,7 @@
         if (!el) {
             el = document.createElement('p');
             el.id = 'fc-start-hint';
-            el.style.cssText = 'color: var(--accent); font-size: 0.85rem; margin-top: 0.5rem;';
+            el.className = 'fc-start-hint';
             var configEl = document.getElementById('fc-config');
             if (configEl) configEl.appendChild(el);
         }
@@ -304,21 +304,23 @@
             var pctDidnt = total > 0 ? Math.round((results.didnt / total) * 100) : 0;
 
             statsEl.innerHTML =
-                '<div style="text-align: center; padding: 1rem;">' +
-                    '<div style="font-size: 2rem; font-weight: 700; font-family: JetBrains Mono, monospace; color: var(--cyan);">' + total + '</div>' +
-                    '<div style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.25rem;">Total Cards</div>' +
-                '</div>' +
-                '<div style="text-align: center; padding: 1rem;">' +
-                    '<div style="font-size: 2rem; font-weight: 700; font-family: JetBrains Mono, monospace; color: var(--green-bright);">' + results.knew + '</div>' +
-                    '<div style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.25rem;">Knew It (' + pctKnew + '%)</div>' +
-                '</div>' +
-                '<div style="text-align: center; padding: 1rem;">' +
-                    '<div style="font-size: 2rem; font-weight: 700; font-family: JetBrains Mono, monospace; color: var(--orange);">' + results.partial + '</div>' +
-                    '<div style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.25rem;">Partially (' + pctPartial + '%)</div>' +
-                '</div>' +
-                '<div style="text-align: center; padding: 1rem;">' +
-                    '<div style="font-size: 2rem; font-weight: 700; font-family: JetBrains Mono, monospace; color: var(--red);">' + results.didnt + '</div>' +
-                    '<div style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.25rem;">Didn\'t Know (' + pctDidnt + '%)</div>' +
+                '<div class="fc-results-grid">' +
+                    '<div class="fc-result-stat">' +
+                        '<div class="fc-result-value fc-result-value--total">' + total + '</div>' +
+                        '<div class="fc-result-label">Total Cards</div>' +
+                    '</div>' +
+                    '<div class="fc-result-stat">' +
+                        '<div class="fc-result-value fc-result-value--knew">' + results.knew + '</div>' +
+                        '<div class="fc-result-label">Knew It (' + pctKnew + '%)</div>' +
+                    '</div>' +
+                    '<div class="fc-result-stat">' +
+                        '<div class="fc-result-value fc-result-value--partial">' + results.partial + '</div>' +
+                        '<div class="fc-result-label">Partially (' + pctPartial + '%)</div>' +
+                    '</div>' +
+                    '<div class="fc-result-stat">' +
+                        '<div class="fc-result-value fc-result-value--missed">' + results.didnt + '</div>' +
+                        '<div class="fc-result-label">Didn\'t Know (' + pctDidnt + '%)</div>' +
+                    '</div>' +
                 '</div>';
         }
     }

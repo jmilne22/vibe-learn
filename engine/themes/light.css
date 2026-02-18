@@ -89,19 +89,43 @@
     --shadow-glow-green: 0 0 8px rgba(122, 98, 200, 0.06);
     --shadow-glow-orange: 0 0 8px rgba(200, 126, 82, 0.06);
     --shadow-glow-purple: 0 0 8px rgba(139, 112, 184, 0.06);
+
+    /* Color-tinted shadows — softer for light bg */
+    --shadow-amethyst-sm: 0 2px 8px rgba(122, 98, 200, 0.08), 0 1px 3px rgba(30, 24, 48, 0.06);
+    --shadow-amethyst-md: 0 4px 20px rgba(122, 98, 200, 0.10), 0 2px 6px rgba(30, 24, 48, 0.06);
+    --shadow-amethyst-lg: 0 8px 40px rgba(122, 98, 200, 0.12), 0 4px 12px rgba(30, 24, 48, 0.08);
+    --shadow-amber-sm: 0 2px 8px rgba(200, 126, 82, 0.08), 0 1px 3px rgba(30, 24, 48, 0.06);
+
+    /* Gradient tokens — adapted for light surfaces */
+    --gradient-amethyst: linear-gradient(135deg, var(--amethyst-dim), var(--amethyst));
+    --gradient-surface: linear-gradient(180deg, rgba(255,255,255,0.8) 0%, rgba(240,236,248,0.4) 100%);
+    --gradient-border-amethyst: linear-gradient(135deg, rgba(122, 98, 200, 0.35), rgba(122, 98, 200, 0.08));
+    --gradient-border-amber: linear-gradient(135deg, rgba(200, 126, 82, 0.35), rgba(200, 126, 82, 0.08));
 }
 
-/* Light theme scoped overrides for tinted backgrounds */
+/* ============================================
+   Light theme — Atmosphere & Body
+   ============================================ */
 [data-theme="light"] body {
-    background-image: radial-gradient(circle at 20% 50%, rgba(122, 98, 200, 0.04) 0%, transparent 50%),
-                      radial-gradient(circle at 80% 20%, rgba(139, 112, 184, 0.03) 0%, transparent 50%);
+    background-image: radial-gradient(ellipse 80% 60% at 20% 50%, rgba(122, 98, 200, 0.05) 0%, transparent 70%),
+                      radial-gradient(ellipse 60% 80% at 85% 15%, rgba(139, 112, 184, 0.04) 0%, transparent 60%),
+                      radial-gradient(ellipse 50% 40% at 60% 85%, rgba(200, 126, 82, 0.03) 0%, transparent 60%);
 }
 
+/* Noise texture — subtler on light backgrounds */
+[data-theme="light"] body::before {
+    opacity: 0.18;
+    mix-blend-mode: multiply;
+}
+
+/* ============================================
+   Light theme — Code blocks
+   ============================================ */
 [data-theme="light"] .code-block,
 [data-theme="light"] .lesson pre {
     background: #EDEAF6;
     border-color: rgba(122, 98, 200, 0.20);
-    box-shadow: 0 2px 8px rgba(30, 24, 48, 0.08), inset 0 1px 0 rgba(122, 98, 200, 0.04);
+    box-shadow: 0 2px 12px rgba(30, 24, 48, 0.06), inset 0 1px 0 rgba(122, 98, 200, 0.06);
 }
 
 [data-theme="light"] .lesson pre {
@@ -109,7 +133,7 @@
 }
 
 [data-theme="light"] .lesson pre:hover {
-    box-shadow: 0 4px 16px rgba(30, 24, 48, 0.10), 0 0 16px rgba(122, 98, 200, 0.06);
+    box-shadow: 0 6px 24px rgba(30, 24, 48, 0.08), 0 0 20px rgba(122, 98, 200, 0.06), inset 0 1px 0 rgba(122, 98, 200, 0.08);
 }
 
 [data-theme="light"] .code-header {
@@ -124,6 +148,9 @@
     border-color: rgba(122, 98, 200, 0.18);
 }
 
+/* ============================================
+   Light theme — Content elements
+   ============================================ */
 [data-theme="light"] .lesson blockquote {
     background: rgba(200, 126, 82, 0.08);
     border-left-color: var(--amber);
@@ -138,11 +165,21 @@
     color: var(--amethyst);
 }
 
+/* Exercise cards */
 [data-theme="light"] .exercise {
-    background: rgba(200, 126, 82, 0.05);
-    border-color: rgba(200, 126, 82, 0.15);
+    background: rgba(200, 126, 82, 0.08);
+    border-color: rgba(200, 126, 82, 0.20);
 }
 
+[data-theme="light"] .exercise::after {
+    background: linear-gradient(90deg, rgba(200, 126, 82, 0.06), transparent);
+}
+
+[data-theme="light"] .exercise:hover {
+    box-shadow: 0 2px 12px rgba(200, 126, 82, 0.10), 0 1px 4px rgba(30, 24, 48, 0.04);
+}
+
+/* Callout boxes */
 [data-theme="light"] .tip {
     background: rgba(90, 143, 90, 0.10);
 }
@@ -167,7 +204,7 @@
     background: rgba(74, 144, 192, 0.10);
 }
 
-/* Callout cards — light theme */
+/* Callout cards */
 [data-theme="light"] .callout {
     border-color: var(--border-default);
 }
@@ -195,7 +232,7 @@
     color: var(--amber);
 }
 
-/* Exercise type tag — light theme */
+/* Exercise type tag */
 [data-theme="light"] .exercise-type-tag {
     background: rgba(200, 126, 82, 0.08);
     border-color: rgba(200, 126, 82, 0.18);
@@ -207,22 +244,33 @@
     border-color: rgba(74, 144, 192, 0.15);
 }
 
-[data-theme="light"] .sidebar {
-    background: linear-gradient(180deg, var(--bg-surface) 0%, #F0ECF8 100%);
-    border-right-color: rgba(122, 98, 200, 0.12);
+/* ============================================
+   Light theme — Dashboard & Module cards
+   ============================================ */
+[data-theme="light"] .module-item {
+    background: var(--bg-surface);
+    border-color: var(--border-subtle);
 }
 
-[data-theme="light"] .sidebar-header {
-    border-bottom-color: rgba(122, 98, 200, 0.15);
+[data-theme="light"] .module-item::before {
+    background: var(--gradient-border-amethyst);
 }
 
-[data-theme="light"] .sidebar-link.active {
-    background: rgba(122, 98, 200, 0.08);
+[data-theme="light"] .module-item:hover {
+    background: rgba(122, 98, 200, 0.03);
+    border-color: transparent;
+    box-shadow: var(--shadow-amethyst-sm);
 }
 
 [data-theme="light"] .stat-chip {
-    background: rgba(74, 144, 192, 0.06);
-    border-color: rgba(74, 144, 192, 0.15);
+    background: rgba(122, 98, 200, 0.05);
+    border-color: rgba(122, 98, 200, 0.10);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+[data-theme="light"] .stat-chip:hover {
+    box-shadow: 0 2px 8px rgba(30, 24, 48, 0.06);
 }
 
 [data-theme="light"] .stats-detail-content {
@@ -230,42 +278,161 @@
     border-color: rgba(139, 112, 184, 0.12);
 }
 
-[data-theme="light"] .module-item {
-    background: rgba(168, 144, 88, 0.03);
-    border-color: rgba(168, 144, 88, 0.12);
+/* Resume button */
+[data-theme="light"] .resume-btn {
+    box-shadow: 0 2px 8px rgba(122, 98, 200, 0.15);
 }
 
-[data-theme="light"] .module-item:hover {
-    background: rgba(200, 126, 82, 0.05);
-    border-color: var(--amber);
+[data-theme="light"] .resume-btn:hover {
+    box-shadow: 0 4px 16px rgba(122, 98, 200, 0.2);
 }
 
+/* Quick buttons gradient border */
+[data-theme="light"] .quick-btn::before {
+    background: var(--gradient-border-amethyst);
+}
+
+/* ============================================
+   Light theme — Sidebar
+   ============================================ */
+[data-theme="light"] .sidebar {
+    background: linear-gradient(180deg, var(--bg-surface) 0%, #F0ECF8 100%);
+    border-right-color: rgba(122, 98, 200, 0.12);
+    box-shadow: 2px 0 12px rgba(30, 24, 48, 0.04);
+    scrollbar-color: rgba(122, 98, 200, 0.12) transparent;
+}
+
+[data-theme="light"] .sidebar-header {
+    border-bottom-color: rgba(122, 98, 200, 0.15);
+    background: rgba(122, 98, 200, 0.02);
+}
+
+[data-theme="light"] .sidebar-link.active {
+    background: rgba(122, 98, 200, 0.08);
+    box-shadow: inset 3px 0 0 var(--amethyst);
+}
+
+[data-theme="light"] .sidebar-chapter-title.active {
+    box-shadow: inset 3px 0 0 var(--amethyst);
+}
+
+[data-theme="light"] .sidebar-section-link.active,
+[data-theme="light"] .sidebar-h2-link.active {
+    color: var(--amethyst);
+}
+
+/* ============================================
+   Light theme — Session & Plugin UI
+   ============================================ */
+
+/* Session config */
+[data-theme="light"] .session-config {
+    background: var(--bg-surface);
+    box-shadow: var(--shadow-sm);
+}
+
+[data-theme="light"] .session-config::before {
+    background: linear-gradient(90deg, transparent, rgba(122, 98, 200, 0.15), transparent);
+}
+
+/* Session options */
+[data-theme="light"] .session-option {
+    background: var(--bg-elevated);
+}
+
+[data-theme="light"] .session-option:hover {
+    box-shadow: 0 2px 8px rgba(30, 24, 48, 0.06);
+}
+
+[data-theme="light"] .session-option.active {
+    box-shadow: 0 0 0 1px var(--amethyst), 0 2px 8px rgba(122, 98, 200, 0.08);
+}
+
+/* Session start button */
+[data-theme="light"] .session-start-btn {
+    box-shadow: 0 2px 8px rgba(122, 98, 200, 0.15);
+}
+
+[data-theme="light"] .session-start-btn:hover {
+    box-shadow: 0 4px 16px rgba(122, 98, 200, 0.2);
+}
+
+/* Session complete */
+[data-theme="light"] .session-complete {
+    background: var(--bg-surface);
+    box-shadow: var(--shadow-md);
+}
+
+[data-theme="light"] .session-complete::before {
+    background: linear-gradient(90deg, transparent, var(--session-accent, var(--amethyst)), transparent);
+    opacity: 0.6;
+}
+
+/* Flashcard faces */
+[data-theme="light"] .fc-card-face {
+    background: var(--bg-surface);
+    box-shadow: var(--shadow-sm);
+}
+
+/* Stat cards — analytics */
+[data-theme="light"] .stat-card {
+    background: var(--bg-surface);
+    box-shadow: var(--shadow-xs);
+}
+
+[data-theme="light"] .stat-card::before {
+    background: var(--gradient-border-amethyst);
+}
+
+[data-theme="light"] .stat-card:hover {
+    box-shadow: var(--shadow-sm);
+}
+
+/* ============================================
+   Light theme — Inline exercises
+   ============================================ */
 [data-theme="light"] .inline-exercises {
     background: rgba(122, 98, 200, 0.04);
     box-shadow: 0 0 24px rgba(122, 98, 200, 0.04);
+}
+
+[data-theme="light"] .inline-exercises::before {
+    background: linear-gradient(90deg, transparent, var(--amethyst), transparent);
+    opacity: 0.3;
 }
 
 [data-theme="light"] .exercise-completed {
     background: rgba(90, 143, 90, 0.03);
 }
 
-[data-theme="light"] .code-compare,
-[data-theme="light"] .code-labeled {
-    border-color: rgba(122, 98, 200, 0.15);
+/* ============================================
+   Light theme — Navigation
+   ============================================ */
+[data-theme="light"] .nav-btn {
+    background: var(--bg-surface);
+    box-shadow: var(--shadow-xs);
 }
 
-/* Selection color */
+[data-theme="light"] .nav-btn:hover {
+    box-shadow: var(--shadow-sm);
+}
+
+[data-theme="light"] .nav-btn.next-btn:hover {
+    box-shadow: var(--shadow-amethyst-sm);
+}
+
+/* ============================================
+   Light theme — Typography & Selection
+   ============================================ */
 [data-theme="light"] ::selection {
     background: rgba(122, 98, 200, 0.25);
     color: #1E1830;
 }
 
-/* Table row hover */
 [data-theme="light"] .lesson table tr:hover td {
     background: rgba(122, 98, 200, 0.05);
 }
 
-/* Lesson link underlines */
 [data-theme="light"] .lesson a {
     text-decoration-color: rgba(122, 98, 200, 0.3);
 }
@@ -284,18 +451,20 @@
     background: linear-gradient(180deg, var(--amber), var(--gold));
 }
 
-/* Code scrollbars */
+[data-theme="light"] .code-compare,
+[data-theme="light"] .code-labeled {
+    border-color: rgba(122, 98, 200, 0.15);
+}
+
+/* ============================================
+   Light theme — Scrollbars
+   ============================================ */
 [data-theme="light"] pre::-webkit-scrollbar-thumb {
     background: rgba(122, 98, 200, 0.15);
 }
 
 [data-theme="light"] pre::-webkit-scrollbar-thumb:hover {
     background: rgba(122, 98, 200, 0.3);
-}
-
-/* Sidebar scrollbars */
-[data-theme="light"] .sidebar {
-    scrollbar-color: rgba(122, 98, 200, 0.12) transparent;
 }
 
 [data-theme="light"] .sidebar::-webkit-scrollbar-thumb {
@@ -306,12 +475,16 @@
     background: rgba(122, 98, 200, 0.25);
 }
 
-/* Scroll progress glow */
+/* ============================================
+   Light theme — Scroll progress
+   ============================================ */
 [data-theme="light"] .scroll-progress {
     box-shadow: none;
 }
 
-/* Scaffold drill */
+/* ============================================
+   Light theme — Algorithm & Drill UI
+   ============================================ */
 [data-theme="light"] .drill-container {
     background: rgba(122, 98, 200, 0.04);
     border-color: rgba(122, 98, 200, 0.20);
@@ -323,4 +496,26 @@
 [data-theme="light"] .concept-mastery-panel {
     background: rgba(122, 98, 200, 0.03);
     border-color: rgba(122, 98, 200, 0.12);
+}
+
+/* Algorithm category cards */
+[data-theme="light"] .algo-category-card {
+    background: var(--bg-surface);
+    box-shadow: var(--shadow-xs);
+}
+
+[data-theme="light"] .algo-category-card:hover {
+    box-shadow: var(--shadow-sm);
+}
+
+/* Detail panels */
+[data-theme="light"] .detail-panel[open] {
+    box-shadow: var(--shadow-sm);
+}
+
+/* ============================================
+   Light theme — Focus states
+   ============================================ */
+[data-theme="light"] :focus-visible {
+    outline-color: var(--amethyst);
 }
