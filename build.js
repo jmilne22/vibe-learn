@@ -1019,6 +1019,11 @@ function buildCourse(slug) {
             });
         });
 
+        // Update parsed conceptLinks with resolved URLs so per-module JS has correct links
+        if (conceptLinks[moduleNum]) {
+            parsed.conceptLinks = conceptLinks[moduleNum];
+        }
+
         // Add blank lines between logical blocks in solutions for readability
         addSolutionSpacing(parsed);
 
