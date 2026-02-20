@@ -33,6 +33,12 @@ variants:
           description: >-
             Launch 3 goroutines that each sleep for a different duration (100ms, 200ms, 300ms) then print their
             duration. All should run concurrently — total time should be ~300ms, not 600ms. Use WaitGroup.
+          expected: |-
+            100ms done
+            200ms done
+            300ms done
+            total: ~300ms
+            (line order may vary; exact total varies)
           hints:
             - Use <code>time.Sleep(time.Duration(ms) * time.Millisecond)</code>
             - If total time is ~300ms, they ran concurrently. If ~600ms, they ran sequentially.

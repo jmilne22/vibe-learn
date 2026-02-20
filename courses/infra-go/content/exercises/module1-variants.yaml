@@ -54,6 +54,7 @@ variants:
           description: >-
             Start with an empty slice. Append the strings <code>"node-1"</code> through <code>"node-5"</code> using a
             loop. Then print the length, capacity, and contents.
+          expected: "len=5 cap=8 [node-1 node-2 node-3 node-4 node-5]"
           hints:
             - Start with a nil slice and grow it inside a counting loop. You need to build each name dynamically from the loop index.
             - "Check the lesson's Building Strings section for how to combine a string with a number. Use <code>len</code> and <code>cap</code> to inspect the slice afterwards."
@@ -183,6 +184,9 @@ variants:
             Given <code>config := map[string]string{"host": "localhost", "port": "5432", "db": "myapp"}</code>,
             look up the key <code>"port"</code> and print its value. Then check if the key <code>"timeout"</code>
             exists using the comma-ok pattern, and print whether it was found.
+          expected: |-
+            5432
+            timeout="" found=false
           hints:
             - "Access a map value with <code>config[\"port\"]</code>."
             - "Comma-ok pattern: <code>val, ok := config[\"timeout\"]</code>. <code>ok</code> is <code>true</code> if the key exists."
@@ -197,6 +201,12 @@ variants:
             Given this slice of log levels:
             <pre>levels := []string{"INFO", "ERROR", "INFO", "WARN", "ERROR", "INFO", "DEBUG", "ERROR"}</pre>
             Count occurrences of each level using a map. Print each level and its count.
+          expected: |-
+            DEBUG: 1
+            ERROR: 3
+            INFO: 3
+            WARN: 1
+            (order may vary)
           hints:
             - What data structure maps a string key to an integer count?
             - "The zero value of int is 0. So incrementing a key that doesn't exist yet just works — no need to check first."
@@ -216,6 +226,11 @@ variants:
             <pre>errors := []string{"timeout", "connection refused", "timeout",
                 "DNS lookup failed", "timeout", "connection refused"}</pre>
             Use a map-as-set to find unique error messages. Print them in any order.
+          expected: |-
+            timeout
+            connection refused
+            DNS lookup failed
+            (order may vary)
           hints:
             - "A map's keys are always unique. How can you exploit that to deduplicate a list?"
             - "After recording each string as a map key, the map's keys ARE your unique set. Iterate the keys to print them."
@@ -234,6 +249,7 @@ variants:
           description: >-
             Given <code>config := map[string]string{"host": "localhost", "port": "5432", "debug": "true"}</code>, delete
             the <code>"debug"</code> key from the map. Print the map.
+          expected: "map[host:localhost port:5432]"
           hints:
             - "Go has a built-in function specifically for removing map keys."
             - "The function is called <code>delete</code>. It takes two arguments: the map and the key to remove."
@@ -246,6 +262,9 @@ variants:
           description: >-
             Given <code>ports := map[string]int{"http": 80, "https": 443, "ssh": 22}</code>, collect all the keys into a
             string slice. Print the slice.
+          expected: |-
+            [http https ssh]
+            (order may vary)
           hints:
             - "Use <code>range</code> over the map to get each key."
             - "Append each key to a slice: <code>keys = append(keys, k)</code>."
@@ -261,6 +280,7 @@ variants:
           description: >-
             Given <code>counts := map[string]int{"errors": 5, "warnings": 12}</code>, increment <code>"errors"</code> by
             1 and set <code>"warnings"</code> to 0. Print the map.
+          expected: "map[errors:6 warnings:0]"
           hints:
             - "Map values can be updated by assigning to the key: <code>counts[\"key\"] = newValue</code>."
             - "You can use <code>++</code> directly on a map value to increment it, and assign to a key to overwrite."
@@ -378,6 +398,7 @@ variants:
           description: >-
             Given <code>rate := 33.33333</code>, round it to one decimal place and print the result.
             Expected output: <code>33.3</code>
+          expected: "33.3"
           hints:
             - "Go has no <code>math.Round(x, places)</code>. You need to shift the decimal point, round, then shift back."
             - "Multiply by 10, round with <code>math.Round</code>, divide by 10."
@@ -528,6 +549,10 @@ variants:
             Given <code>statuses := []string{"Running", "Failed", "Running", "Pending", "Running", "Failed"}</code>,
             count each status with a map and print the results sorted alphabetically by status name.
             Format each line as <code>"status: count"</code>.
+          expected: |-
+            Failed: 2
+            Pending: 1
+            Running: 3
           hints:
             - "Two patterns back to back: counting with a map, then sorted-keys iteration."
             - "After counting, collect keys into a slice, <code>sort.Strings</code>, then loop the sorted keys to print."
@@ -551,6 +576,9 @@ variants:
             Given log lines <code>["INFO request started", "ERROR timeout", "INFO done", "ERROR OOM", "WARN
             slow"]</code>, parse the first word of each line as the level, count occurrences, and print the most
             common level and its count. Format: <code>"INFO: 2"</code>.
+          expected: |-
+            INFO: 2
+            (INFO and ERROR are tied — either may appear)
           hints:
             - "Parse each line with <code>strings.Fields</code> to get the first word. Count with a map."
             - "After counting, loop the map to find the key with the highest value — track both the max count and its key."
@@ -578,6 +606,9 @@ variants:
             Given config lines <code>["host=web-1", "env=prod", "host=web-2", "env=staging", "host=db-1",
             "env=prod"]</code>, parse each key=value pair and group the values by key. Print each key and its
             values, sorted alphabetically by key.
+          expected: |-
+            env: [prod staging prod]
+            host: [web-1 web-2 db-1]
           hints:
             - "Combine <code>SplitN</code> parsing with map grouping: <code>map[string][]string</code>."
             - "After grouping, use the sorted-keys pattern to print in deterministic order."
@@ -605,6 +636,7 @@ variants:
             lines, then print the error percentage with one decimal place.
             Input: <code>["INFO ok", "ERROR bad", "INFO fine", "ERROR oom", "WARN slow"]</code>.
             Expected: <code>"Error rate: 40.0%"</code>.
+          expected: "Error rate: 40.0%"
           hints:
             - "This combines parsing (<code>strings.Fields</code>), counting, and percentage calculation."
             - "Count errors in the loop, then compute <code>float64(errors) / float64(total) * 100</code> and format with <code>%.1f%%</code>."
