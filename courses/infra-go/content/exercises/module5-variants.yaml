@@ -15,6 +15,7 @@ variants:
             Create an <code>http.Client</code> with a 10-second timeout. Build a GET request to
             <code>https://api.example.com/v1/nodes</code> with an Accept: application/json header. Execute it and check
             for errors.
+          expected: "Status: 200"
           hints:
             - "Use <code>&http.Client{Timeout: 10 * time.Second}</code>"
             - Use <code>http.NewRequest("GET", url, nil)</code> then <code>req.Header.Set(...)
