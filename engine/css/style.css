@@ -5017,3 +5017,59 @@ footer {
     background: var(--accent);
     color: var(--bg-base);
 }
+
+/* ── Sync UI ─────────────────────────────────── */
+.sync-status {
+    width: 100%;
+    margin-bottom: var(--space-3);
+}
+.sync-login-btn {
+    background: transparent;
+    border: 1px solid var(--border-default);
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+.sync-login-btn:hover {
+    border-color: var(--green-bright);
+    color: var(--green-bright);
+}
+.sync-logged-in {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    flex-wrap: wrap;
+}
+.sync-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+}
+.sync-dot--synced { background: var(--green-bright); }
+.sync-dot--syncing { background: var(--orange); animation: sync-pulse 1s infinite; }
+.sync-dot--offline { background: var(--text-secondary); }
+@keyframes sync-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+.sync-user { color: var(--text-primary); }
+.sync-last { color: var(--text-secondary); font-size: 0.75rem; }
+.sync-logout {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    text-decoration: none;
+}
+.sync-logout:hover { color: var(--red); }
+.sync-retry {
+    background: transparent;
+    border: 1px solid var(--red);
+    color: var(--red);
+    padding: 0.15rem 0.5rem;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 0.7rem;
+    font-family: inherit;
+}
