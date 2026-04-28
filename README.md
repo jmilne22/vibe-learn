@@ -84,7 +84,6 @@ Build a single course:
 
 ```bash
 npm run build:go     # builds only the Go course into dist/go/
-npm run build:rust   # builds only the Rust course into dist/rust/
 ```
 
 Serve locally:
