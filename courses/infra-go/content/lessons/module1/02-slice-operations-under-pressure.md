@@ -1,5 +1,7 @@
 ## Slice Operations Under Pressure
 
+<p class="scene"><span class="timestamp">SHIFT 1 · 02:47 UTC</span> — Welcome to Hailwave. Small infra team, three services on fire most weeks: <code>checkout-api</code>, <code>ledger-worker</code>, <code>edge-proxy</code>. The pager just went off and the only tools you have are the standard library and a terminal. Tonight you're going to live in slices: a parser is dropping log lines, and the runbook says the fix starts with <code>s[start:end]</code>.</p>
+
 > *"Make the zero value useful."* — Go Proverb
 
 A slice is a view over an array: pointer, length, capacity. Think of it like a window over a bookshelf — the pointer says which shelf, the length says how many books are visible through the window, and the capacity says how many the shelf can hold before you need a bigger one. What you need to drill is *using* slices without thinking.

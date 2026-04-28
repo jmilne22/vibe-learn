@@ -1,5 +1,7 @@
 ## Line-by-Line Parsing
 
+<p class="scene"><span class="timestamp">04:08 UTC</span> — Postmortem writeup needs a clean view of <code>journalctl -u checkout-api</code> output. Blank lines, comments, half-quoted values, the works. Same shape as every config file you'll ever parse.</p>
+
 Imagine someone hands you a `.env` file and says "load this into a map." The file has blank lines, comments starting with `#`, and key-value pairs like `DB_HOST=localhost`. Some values are quoted, some aren't. How do you handle all of that?
 
 The answer is a pattern you'll use over and over — for `.env` files, INI configs, CSVs, and any line-oriented format:

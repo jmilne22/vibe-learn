@@ -1,5 +1,7 @@
 ## Map Patterns
 
+<p class="scene"><span class="timestamp">03:14 UTC</span> — The dashboard shows a status-code histogram you need to rebuild from raw access logs. Counting <code>200</code> vs <code>404</code> vs <code>503</code> across 50k lines means one thing: a <code>map[int]int</code>.</p>
+
 > *"Clear is better than clever."* — Go Proverb
 
 A map is a lookup table — think of it like a dictionary. You look up a word (the key) and get back a definition (the value). If the word isn't in the dictionary, you get back a zero value, not an error. That's why you'll need the comma-ok pattern below: to tell "this key maps to zero" apart from "this key doesn't exist."

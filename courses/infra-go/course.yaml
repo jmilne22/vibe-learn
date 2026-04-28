@@ -22,7 +22,7 @@ modules:
     hasExercises: false
 
   - title: Data Manipulation Bootcamp
-    description: "Slice indexing, in-place operations, map patterns, string parsing. Every exercise uses infra data: log lines, metric labels, config entries."
+    description: "Shift 1 at Hailwave. Slice the access logs, parse the metric labels, count the 5xx, and dedup the offending IPs — the bread-and-butter loops every on-call shift comes back to."
 
   - title: Pointers, Structs & Interfaces
     description: "Pointers and nil, model real infrastructure with structs, compose with embedding, and design small interfaces the Go way."
