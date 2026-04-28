@@ -14,7 +14,6 @@
  * Usage:
  *   node build.js          # Build all courses + landing page
  *   node build.js go       # Build just the Go course
- *   node build.js rust     # Build just the Rust course
  */
 
 const fs = require('fs');
