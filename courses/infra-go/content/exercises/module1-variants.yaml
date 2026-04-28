@@ -667,8 +667,6 @@ variants:
         - id: v1
           title: Error Rate Calculator
           description: >-
-            <p class="scene"><span class="timestamp">TICKET HW-2814 · 02:47 UTC</span> — checkout-api log parser
-            must report error rate to the SLO dashboard before next scrape.</p>
             Write <code>func errorRate(lines []string) float64</code> that takes log lines in the format <code>"LEVEL
             service message"</code> and returns the percentage of lines that are ERROR level (0.0 to 100.0, rounded
             to one decimal). Return 0.0 for empty input.
@@ -706,8 +704,6 @@ variants:
         - id: v2
           title: Log Level Report
           description: >-
-            <p class="scene"><span class="timestamp">TICKET HW-2814 · 02:53 UTC</span> — checkout-api now needs the
-            full breakdown by level, not just the error rate.</p>
             Write <code>func logReport(lines []string) string</code> that takes log lines in the format <code>"LEVEL
             service message"</code> and returns a report string with each level and its count, sorted alphabetically
             by level name.
@@ -761,8 +757,6 @@ variants:
         - id: v3
           title: Level Frequency with Percentages
           description: >-
-            <p class="scene"><span class="timestamp">TICKET HW-2814 · 03:01 UTC</span> — postmortem template wants
-            level counts AND share of total. Same parser, one extra column.</p>
             Write <code>func logFrequency(lines []string) string</code> that takes log lines and returns a report with
             each level, its count, AND its percentage of total, sorted alphabetically by level name.<br><br>Format: <code>"ERROR:
             2 (66.7%)\nINFO: 1 (33.3%)"</code>
@@ -814,8 +808,6 @@ variants:
         - id: v1
           title: Parse Metric Labels
           description: >-
-            <p class="scene"><span class="timestamp">TICKET HW-2820 · 03:42 UTC</span> — prometheus relay choking on
-            label strings; alerting half-broken until the parser ships.</p>
             Write <code>func parseLabels(s string) map[string]string</code> that takes a Prometheus-style label string
             like <code>method="GET",status="200"</code> and returns a map of label keys to values (without
             quotes).
@@ -863,8 +855,6 @@ variants:
         - id: v2
           title: Parse Full Metric Line
           description: >-
-            <p class="scene"><span class="timestamp">TICKET HW-2820 · 03:51 UTC</span> — same incident, escalated.
-            Need full metric lines parsed, not just the labels.</p>
             Write <code>func parseMetric(line string) (string, map[string]string, float64, error)</code> that parses a
             full Prometheus metric line like <code>http_requests_total{method="GET",status="200"} 1027</code> and
             returns the metric name, labels map, value, and any error.<br><br>Handle metrics with no labels too:
@@ -934,8 +924,6 @@ variants:
         - id: v3
           title: Aggregate Metrics by Name
           description: >-
-            <p class="scene"><span class="timestamp">TICKET HW-2820 · 04:02 UTC</span> — rollup job needs sums per
-            metric name across all label permutations.</p>
             Write <code>func aggregateMetrics(lines []string) map[string]float64</code> that parses multiple Prometheus
             metric lines and sums values by metric name (ignoring labels).
           functionSignature: func aggregateMetrics(lines []string) map[string]float64
@@ -976,8 +964,6 @@ variants:
         - id: v1
           title: Sort Pods by Name
           description: >-
-            <p class="scene"><span class="timestamp">TICKET HW-2831 · 03:58 UTC</span> — runbook step 4: list affected
-            pods alphabetically before paging the service owner.</p>
             Write <code>func sortPodNames(names []string) []string</code> that returns the input slice sorted
             alphabetically. Sort in place and return the same slice.
           functionSignature: func sortPodNames(names []string) []string
@@ -998,8 +984,6 @@ variants:
         - id: v2
           title: Filter and Sort Pods
           description: >-
-            <p class="scene"><span class="timestamp">TICKET HW-2831 · 04:05 UTC</span> — narrow the list to just the
-            edge-proxy pods, sorted, before bouncing them.</p>
             Write <code>func filterSorted(names []string, prefix string) []string</code> that returns all names
             starting with <code>prefix</code>, sorted alphabetically.
           functionSignature: func filterSorted(names []string, prefix string) []string
@@ -1039,8 +1023,6 @@ variants:
         - id: v3
           title: Sorted Key-Value Report
           description: >-
-            <p class="scene"><span class="timestamp">TICKET HW-2831 · 04:14 UTC</span> — postmortem needs the
-            offending pod's env block dumped clean, sorted by key.</p>
             Write <code>func kvReport(lines []string) string</code> that takes lines in <code>"key=value"</code>
             format, parses them, and returns a formatted report sorted by key. Skip malformed lines (no <code>=</code>).
             Format each line as <code>"  key: value"</code> (two-space indent).
@@ -1094,8 +1076,6 @@ variants:
         - id: v1
           title: Parse Env File
           description: >-
-            <p class="scene"><span class="timestamp">TICKET HW-2845 · 04:12 UTC</span> — checkout-api config audit;
-            need the prod .env parsed before cross-checking against the secrets manager.</p>
             Write <code>func parseEnvFile(content string) map[string]string</code> that parses a <code>.env</code> file.
             Rules:<br>• Each line is <code>KEY=VALUE</code><br>• Lines starting with <code>#</code> are comments
             (skip)<br>• Empty lines are skipped<br>• Trim whitespace on keys and values<br>• Strip optional surrounding
@@ -1148,8 +1128,6 @@ variants:
         - id: v2
           title: Parse INI Sections
           description: >-
-            <p class="scene"><span class="timestamp">TICKET HW-2845 · 04:21 UTC</span> — pgbouncer config drifted; the
-            sectioned INI needs to be loaded as <code>section → key → value</code> for diff.</p>
             Write <code>func parseINI(content string) map[string]map[string]string</code> that parses a simple INI file.
             Rules:<br>• Section headers: <code>[section_name]</code><br>• Key-value pairs: <code>key = value</code>
             under the current section<br>• Lines before any section go under <code>"default"</code><br>• Comments
@@ -1208,8 +1186,6 @@ variants:
         - id: v3
           title: INI with Environment Variable Expansion
           description: >-
-            <p class="scene"><span class="timestamp">TICKET HW-2845 · 04:33 UTC</span> — the staging INI references
-            env vars that only resolve at boot. Need a parser that expands them inline.</p>
             Write <code>func parseINIExpand(content string, env map[string]string) map[string]map[string]string</code>
             that parses an INI file like above, but also expands <code>${VAR}</code> references in values using the
             provided env map. Unknown variables become empty strings.
@@ -1272,8 +1248,6 @@ variants:
         - id: v1
           title: Filter Healthy Pods
           description: >-
-            <p class="scene"><span class="timestamp">TICKET HW-2858 · 04:31 UTC</span> — runbook step 7: keep only
-            the Running pods, drop the rest in place. Allocator is tight, can't grow a new slice.</p>
             Write <code>func filterHealthy(pods []string, statuses []string) []string</code> that takes two
             equal-length slices — pod names and their statuses — and returns only the pod names whose status is
             <code>"Running"</code>. Modify <code>pods</code> in place using the write-index pattern (no new slice
@@ -1316,8 +1290,6 @@ variants:
         - id: v2
           title: Deduplicate Source IPs
           description: >-
-            <p class="scene"><span class="timestamp">TICKET HW-2858 · 04:42 UTC</span> — journalctl rate-limit
-            view needs a unique-IPs list that preserves first-seen order, in place.</p>
             Write <code>func dedup(ips []string) []string</code> that removes duplicate strings <strong>in
             place</strong>, preserving the first occurrence of each. Return the shortened slice. Do not allocate a
             new result slice — reuse the input.
@@ -1364,8 +1336,6 @@ variants:
         - id: v3
           title: Compact and Normalize Logs
           description: >-
-            <p class="scene"><span class="timestamp">TICKET HW-2858 · 04:55 UTC</span> — postmortem ingest pipeline
-            doubles up on retries; trim, drop blanks, collapse consecutive duplicates.</p>
             Write <code>func compactLogs(lines []string) []string</code> that processes log lines
             <strong>in place</strong>: trim leading/trailing whitespace from each line, drop empty lines
             (including lines that become empty after trimming), and deduplicate consecutive identical lines.
