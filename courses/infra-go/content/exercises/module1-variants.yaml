@@ -14,81 +14,83 @@ variants:
       concept: Slice Operations
       variants:
         - id: v0a
-          title: First Two Servers
+          title: First Two Pods
           description: >-
-            Given <code>servers := []string{"web-1", "web-2", "api-1", "api-2", "db-1"}</code>, create a new slice
-            containing only the first 2 elements. Print the result.
+            Given <code>pods := []string{"checkout-api-xq2bn", "ledger-worker-h2k9p", "edge-proxy-rm3qw",
+            "auth-svc-bk7vd", "metrics-relay-jp4tx"}</code>, create a new slice containing only the first 2 elements.
+            Print the result.
           hints:
             - "A slice expression <code>s[start:end]</code> gives you elements from start up to (not including) end."
             - "When the start index is 0, you can omit it from the slice expression."
           solution: |-
-            servers := []string{"web-1", "web-2", "api-1", "api-2", "db-1"}
-            first2 := servers[:2]
-            fmt.Println(first2) // [web-1 web-2]
+            pods := []string{"checkout-api-xq2bn", "ledger-worker-h2k9p", "edge-proxy-rm3qw", "auth-svc-bk7vd", "metrics-relay-jp4tx"}
+            first2 := pods[:2]
+            fmt.Println(first2) // [checkout-api-xq2bn ledger-worker-h2k9p]
         - id: v0b
-          title: Middle Element
+          title: Middle Node Pool
           description: >-
-            Given <code>nodes := []string{"node-1", "node-2", "node-3", "node-4", "node-5"}</code>, print the middle
-            element. Use <code>len()</code> to find it.
+            Given <code>nodePools := []string{"pool-prod-001", "pool-prod-002", "pool-prod-003", "pool-spot-014",
+            "pool-gpu-007"}</code>, print the middle element. Use <code>len()</code> to find it.
           hints:
             - "The middle index of a slice with 5 elements is 2 (indices go 0,1,2,3,4)."
-            - "Use <code>len(nodes)/2</code> to compute the middle index."
+            - "Use <code>len(nodePools)/2</code> to compute the middle index."
           solution: |-
-            nodes := []string{"node-1", "node-2", "node-3", "node-4", "node-5"}
-            mid := nodes[len(nodes)/2]
-            fmt.Println(mid) // node-3
+            nodePools := []string{"pool-prod-001", "pool-prod-002", "pool-prod-003", "pool-spot-014", "pool-gpu-007"}
+            mid := nodePools[len(nodePools)/2]
+            fmt.Println(mid) // pool-prod-003
         - id: v1
-          title: Last N Servers
+          title: Last N Pods
           description: >-
-            Given <code>servers := []string{"web-1", "web-2", "api-1", "api-2", "db-1"}</code>, return a new slice
-            containing the last 3 elements.
+            Given <code>pods := []string{"checkout-api-xq2bn", "ledger-worker-h2k9p", "edge-proxy-rm3qw",
+            "auth-svc-bk7vd", "metrics-relay-jp4tx"}</code>, return a new slice containing the last 3 elements.
           hints:
             - How do you get elements from the end of a slice when Go doesn't support negative indexing?
             - "Think about using <code>len(s)</code> to calculate the starting position of your slice expression."
           solution: |-
-            servers := []string{"web-1", "web-2", "api-1", "api-2", "db-1"}
-            last3 := servers[len(servers)-3:]
-            fmt.Println(last3) // [api-1 api-2 db-1]
+            pods := []string{"checkout-api-xq2bn", "ledger-worker-h2k9p", "edge-proxy-rm3qw", "auth-svc-bk7vd", "metrics-relay-jp4tx"}
+            last3 := pods[len(pods)-3:]
+            fmt.Println(last3) // [edge-proxy-rm3qw auth-svc-bk7vd metrics-relay-jp4tx]
         - id: v4
-          title: Build a Slice from Scratch
+          title: Build a Pool List from Scratch
           description: >-
-            Start with an empty slice. Append the strings <code>"node-1"</code> through <code>"node-5"</code> using a
-            loop. Then print the length, capacity, and contents.
-          expected: "len=5 cap=8 [node-1 node-2 node-3 node-4 node-5]"
+            Start with an empty slice. Append the strings <code>"pool-prod-001"</code> through
+            <code>"pool-prod-005"</code> using a loop. Then print the length, capacity, and contents.
+          expected: "len=5 cap=8 [pool-prod-001 pool-prod-002 pool-prod-003 pool-prod-004 pool-prod-005]"
           hints:
             - Start with a nil slice and grow it inside a counting loop. You need to build each name dynamically from the loop index.
-            - "Check the lesson's Building Strings section for how to combine a string with a number. Use <code>len</code> and <code>cap</code> to inspect the slice afterwards."
+            - "Check the lesson's Building Strings section for how to combine a string with a number. Use <code>len</code> and <code>cap</code> to inspect the slice afterwards. The <code>%03d</code> verb zero-pads to 3 digits."
           solution: |-
-            var nodes []string
+            var pools []string
             for i := 1; i <= 5; i++ {
-                nodes = append(nodes, fmt.Sprintf("node-%d", i))
+                pools = append(pools, fmt.Sprintf("pool-prod-%03d", i))
             }
-            fmt.Printf("len=%d cap=%d %v\n", len(nodes), cap(nodes), nodes)
+            fmt.Printf("len=%d cap=%d %v\n", len(pools), cap(pools), pools)
         - id: v5
-          title: Append to a Slice
+          title: Append a Severity
           description: >-
-            Given <code>colors := []string{"red", "green"}</code>, append <code>"blue"</code> to the slice. Print the
-            result.
+            Given <code>severities := []string{"info", "warn"}</code>, append <code>"error"</code> to the slice. Print
+            the result.
           hints:
             - "<code>append</code> returns a new slice — you must assign it back to the variable."
             - "The syntax is <code>append(slice, element)</code> — remember to assign the result back."
           solution: |-
-            colors := []string{"red", "green"}
-            colors = append(colors, "blue")
-            fmt.Println(colors) // [red green blue]
+            severities := []string{"info", "warn"}
+            severities = append(severities, "error")
+            fmt.Println(severities) // [info warn error]
         - id: v6
-          title: Combine Two Slices
+          title: Combine Primary and Canary
           description: >-
-            Given <code>front := []string{"a", "b"}</code> and <code>back := []string{"c", "d"}</code>, combine them into
-            a single slice using <code>append</code>. Print the result.
+            Given <code>primary := []string{"checkout-api", "ledger-worker"}</code> and
+            <code>canary := []string{"edge-proxy", "auth-svc"}</code>, combine them into a single slice using
+            <code>append</code>. Print the result.
           hints:
             - "To append all elements of one slice to another, use the spread operator: <code>...</code>"
             - "The <code>...</code> goes after the second slice in the <code>append</code> call."
           solution: |-
-            front := []string{"a", "b"}
-            back := []string{"c", "d"}
-            all := append(front, back...)
-            fmt.Println(all) // [a b c d]
+            primary := []string{"checkout-api", "ledger-worker"}
+            canary := []string{"edge-proxy", "auth-svc"}
+            all := append(primary, canary...)
+            fmt.Println(all) // [checkout-api ledger-worker edge-proxy auth-svc]
     - id: warmup_2
       concept: In-Place Manipulation
       variants:
@@ -196,28 +198,28 @@ variants:
             val, ok := config["timeout"]
             fmt.Printf("timeout=%q found=%t\n", val, ok) // timeout="" found=false
         - id: v1
-          title: Count Log Levels
+          title: Count Status Codes
           description: |-
-            Given this slice of log levels:
-            <pre>levels := []string{"INFO", "ERROR", "INFO", "WARN", "ERROR", "INFO", "DEBUG", "ERROR"}</pre>
-            Count occurrences of each level using a map. Print each level and its count.
+            Grafana wants a histogram of HTTP status codes from the last batch of access logs. Given:
+            <pre>codes := []int{200, 200, 404, 500, 200, 503, 200, 404}</pre>
+            Count occurrences of each code using a map. Print each code and its count.
           expected: |-
-            DEBUG: 1
-            ERROR: 3
-            INFO: 3
-            WARN: 1
+            200: 4
+            404: 2
+            500: 1
+            503: 1
             (order may vary)
           hints:
-            - What data structure maps a string key to an integer count?
+            - What data structure maps an int key to an int count?
             - "The zero value of int is 0. So incrementing a key that doesn't exist yet just works — no need to check first."
           solution: |-
-            levels := []string{"INFO", "ERROR", "INFO", "WARN", "ERROR", "INFO", "DEBUG", "ERROR"}
-            counts := make(map[string]int)
-            for _, level := range levels {
-                counts[level]++
+            codes := []int{200, 200, 404, 500, 200, 503, 200, 404}
+            counts := make(map[int]int)
+            for _, code := range codes {
+                counts[code]++
             }
-            for level, count := range counts {
-                fmt.Printf("%s: %d\n", level, count)
+            for code, count := range counts {
+                fmt.Printf("%d: %d\n", code, count)
             }
         - id: v4
           title: Unique Error Messages
@@ -320,14 +322,15 @@ variants:
                 fmt.Println(nameTag) // nginx:1.25
             }
         - id: v1
-          title: Parse Label Pair
+          title: Parse Prometheus Label
           description: >-
-            Write a function <code>func parseLabel(s string) (string, string)</code> that takes a string like
-            <code>"app=nginx"</code> and returns the key and value. Split on the first <code>=</code> only (values might
-            contain <code>=</code>).
+            Write a function <code>func parseLabel(s string) (string, string)</code> that takes a Prometheus-style label
+            like <code>method="GET"</code> and returns the key and the quoted value. Split on the first <code>=</code>
+            only (values can themselves contain <code>=</code>). Don't strip the quotes — that's the next exercise's
+            problem.
           hints:
             - "You need to find the position of the first <code>=</code>, not split on all of them. Which <code>strings</code> function finds the index of a substring?"
-            - "Once you have the position, use slice expressions to grab everything before it (the key) and everything after it (the value)."
+            - "Once you have the position, use slice expressions to grab everything before it (the key) and everything after it (the value, quotes included)."
           solution: |-
             func parseLabel(s string) (string, string) {
                 idx := strings.Index(s, "=")
@@ -665,14 +668,14 @@ variants:
           title: Error Rate Calculator
           description: >-
             Write <code>func errorRate(lines []string) float64</code> that takes log lines in the format <code>"LEVEL
-            message"</code> and returns the percentage of lines that are ERROR level (0.0 to 100.0, rounded to one
-            decimal). Return 0.0 for empty input.
+            service message"</code> and returns the percentage of lines that are ERROR level (0.0 to 100.0, rounded
+            to one decimal). Return 0.0 for empty input.
           functionSignature: func errorRate(lines []string) float64
           difficulty: 1
           testCases:
-            - input: errorRate([]string{"INFO ok", "ERROR bad", "INFO ok2", "ERROR oom", "WARN slow"})
+            - input: 'errorRate([]string{"INFO checkout-api request handled in 142ms", "ERROR ledger-worker connection refused: ledger-postgres:5432", "INFO metrics-relay scrape complete", "ERROR auth-svc token validation failed: expired", "WARN edge-proxy upstream timeout for /api/v1/order"})'
               output: "40.0"
-            - input: errorRate([]string{"ERROR a", "ERROR b"})
+            - input: 'errorRate([]string{"ERROR checkout-api panic: nil pointer", "ERROR ledger-worker tx aborted"})'
               output: "100.0"
             - input: errorRate([]string{})
               output: "0.0"
@@ -702,14 +705,14 @@ variants:
           title: Log Level Report
           description: >-
             Write <code>func logReport(lines []string) string</code> that takes log lines in the format <code>"LEVEL
-            message text"</code> and returns a report string with each level and its count, sorted alphabetically
+            service message"</code> and returns a report string with each level and its count, sorted alphabetically
             by level name.
           functionSignature: func logReport(lines []string) string
           difficulty: 2
           testCases:
-            - input: logReport([]string{"INFO ok", "ERROR bad", "INFO ok2", "WARN slow", "ERROR oom"})
+            - input: logReport([]string{"INFO checkout-api ok", "ERROR ledger-worker bad", "INFO metrics-relay ok2", "WARN edge-proxy slow", "ERROR auth-svc oom"})
               output: "\"ERROR: 2\\nINFO: 2\\nWARN: 1\""
-            - input: logReport([]string{"DEBUG x", "DEBUG y", "DEBUG z"})
+            - input: logReport([]string{"DEBUG checkout-api x", "DEBUG checkout-api y", "DEBUG checkout-api z"})
               output: "\"DEBUG: 3\""
             - input: logReport([]string{})
               output: "\"\""
@@ -760,7 +763,7 @@ variants:
           functionSignature: func logFrequency(lines []string) string
           difficulty: 3
           testCases:
-            - input: logFrequency([]string{"INFO a", "ERROR b", "ERROR c"})
+            - input: logFrequency([]string{"INFO checkout-api ok", "ERROR ledger-worker bad", "ERROR auth-svc bad"})
               output: "\"ERROR: 2 (66.7%)\\nINFO: 1 (33.3%)\""
           hints:
             - title: Think about it
@@ -966,8 +969,8 @@ variants:
           functionSignature: func sortPodNames(names []string) []string
           difficulty: 1
           testCases:
-            - input: sortPodNames([]string{"web-3", "api-1", "db-2", "web-1"})
-              output: "[\"api-1\", \"db-2\", \"web-1\", \"web-3\"]"
+            - input: sortPodNames([]string{"edge-proxy-rm3qw", "checkout-api-xq2bn", "ledger-worker-h2k9p", "auth-svc-bk7vd"})
+              output: "[\"auth-svc-bk7vd\", \"checkout-api-xq2bn\", \"edge-proxy-rm3qw\", \"ledger-worker-h2k9p\"]"
           hints:
             - title: Think about it
               content: "Go's sort package has a convenience function specifically for string slices. Check the Sorting section of the lesson."
@@ -986,11 +989,11 @@ variants:
           functionSignature: func filterSorted(names []string, prefix string) []string
           difficulty: 2
           testCases:
-            - input: filterSorted([]string{"web-3","api-1","db-2","web-1","api-2"}, "web")
-              output: "[\"web-1\", \"web-3\"]"
-            - input: filterSorted([]string{"web-3","api-1","db-2","web-1","api-2"}, "db")
-              output: "[\"db-2\"]"
-            - input: filterSorted([]string{"a","b"}, "z")
+            - input: filterSorted([]string{"edge-proxy-rm3qw","checkout-api-xq2bn","ledger-worker-h2k9p","edge-proxy-9ab2c","checkout-api-7d4f9"}, "edge-proxy")
+              output: "[\"edge-proxy-9ab2c\", \"edge-proxy-rm3qw\"]"
+            - input: filterSorted([]string{"edge-proxy-rm3qw","checkout-api-xq2bn","ledger-worker-h2k9p","edge-proxy-9ab2c","checkout-api-7d4f9"}, "ledger")
+              output: "[\"ledger-worker-h2k9p\"]"
+            - input: filterSorted([]string{"checkout-api-xq2bn","ledger-worker-h2k9p"}, "edge-proxy")
               output: "[]"
           hints:
             - title: Think about it
@@ -1026,8 +1029,8 @@ variants:
           functionSignature: func kvReport(lines []string) string
           difficulty: 3
           testCases:
-            - input: kvReport([]string{"port=8080", "host=localhost", "db=myapp"})
-              output: "\"  db: myapp\\n  host: localhost\\n  port: 8080\""
+            - input: kvReport([]string{"PORT=5432", "HOST=ledger-postgres", "DB=ledger"})
+              output: "\"  DB: ledger\\n  HOST: ledger-postgres\\n  PORT: 5432\""
             - input: kvReport([]string{"z=1", "a=2"})
               output: "\"  a: 2\\n  z: 1\""
           hints:
@@ -1080,12 +1083,12 @@ variants:
           functionSignature: func parseEnvFile(content string) map[string]string
           difficulty: 1
           testCases:
-            - input: parseEnvFile("A=1\nB=2")
-              output: map[A:1 B:2]
-            - input: parseEnvFile("# comment\nKEY=\"value\"")
-              output: map[KEY:value]
-            - input: parseEnvFile("  HOST = localhost  ")
-              output: map[HOST:localhost]
+            - input: parseEnvFile("DB_HOST=ledger-postgres\nDB_PORT=5432")
+              output: map[DB_HOST:ledger-postgres DB_PORT:5432]
+            - input: parseEnvFile("# managed by ansible\nLOG_LEVEL=\"info\"")
+              output: map[LOG_LEVEL:info]
+            - input: parseEnvFile("  HOST = ledger-postgres  ")
+              output: map[HOST:ledger-postgres]
           hints:
             - title: Think about it
               content: >-
@@ -1132,8 +1135,8 @@ variants:
           functionSignature: func parseINI(content string) map[string]map[string]string
           difficulty: 2
           testCases:
-            - input: parseINI("[db]\nhost=localhost")
-              output: map[db:map[host:localhost]]
+            - input: parseINI("[db]\nhost=ledger-postgres")
+              output: map[db:map[host:ledger-postgres]]
             - input: parseINI("key=val\n[s]\nk=v")
               output: map[default:map[key:val] s:map[k:v]]
           hints:
@@ -1252,11 +1255,11 @@ variants:
           functionSignature: func filterHealthy(pods []string, statuses []string) []string
           difficulty: 1
           testCases:
-            - input: filterHealthy([]string{"web-1", "api-1", "db-1", "web-2"}, []string{"Running", "Failed", "Running", "Pending"})
-              output: "[\"web-1\", \"db-1\"]"
-            - input: filterHealthy([]string{"web-1"}, []string{"Running"})
-              output: "[\"web-1\"]"
-            - input: filterHealthy([]string{"web-1", "api-1"}, []string{"Failed", "Pending"})
+            - input: filterHealthy([]string{"checkout-api-xq2bn", "ledger-worker-h2k9p", "edge-proxy-rm3qw", "auth-svc-bk7vd"}, []string{"Running", "Failed", "Running", "Pending"})
+              output: "[\"checkout-api-xq2bn\", \"edge-proxy-rm3qw\"]"
+            - input: filterHealthy([]string{"checkout-api-xq2bn"}, []string{"Running"})
+              output: "[\"checkout-api-xq2bn\"]"
+            - input: filterHealthy([]string{"checkout-api-xq2bn", "ledger-worker-h2k9p"}, []string{"Failed", "Pending"})
               output: "[]"
           hints:
             - title: Think about it
@@ -1285,16 +1288,16 @@ variants:
                 The write-index pattern avoids allocating a new slice. It overwrites the input from the front,
                 then truncates. This is how <code>slices.DeleteFunc</code> works internally.
         - id: v2
-          title: Deduplicate Servers
+          title: Deduplicate Source IPs
           description: >-
-            Write <code>func dedup(servers []string) []string</code> that removes duplicate server names
-            <strong>in place</strong>, preserving the first occurrence of each name. Return the shortened slice.
-            Do not allocate a new result slice — reuse the input.
-          functionSignature: func dedup(servers []string) []string
+            Write <code>func dedup(ips []string) []string</code> that removes duplicate strings <strong>in
+            place</strong>, preserving the first occurrence of each. Return the shortened slice. Do not allocate a
+            new result slice — reuse the input.
+          functionSignature: func dedup(ips []string) []string
           difficulty: 2
           testCases:
-            - input: dedup([]string{"web-1", "api-1", "web-1", "db-1", "api-1"})
-              output: "[\"web-1\", \"api-1\", \"db-1\"]"
+            - input: dedup([]string{"192.168.1.42", "10.0.0.5", "192.168.1.42", "10.0.0.7", "10.0.0.5"})
+              output: "[\"192.168.1.42\", \"10.0.0.5\", \"10.0.0.7\"]"
             - input: dedup([]string{"a", "b", "c"})
               output: "[\"a\", \"b\", \"c\"]"
             - input: dedup([]string{"x", "x", "x"})
@@ -1304,25 +1307,25 @@ variants:
           hints:
             - title: Think about it
               content: >-
-                You need two things: a way to track which names you've already seen, and the write-index
+                You need two things: a way to track which IPs you've already seen, and the write-index
                 pattern to compact the slice. What data structure gives O(1) lookups for "have I seen this"?
             - title: Hint
               content: >-
-                Combine a <code>map[string]bool</code> (to track seen names) with the write-index pattern.
-                For each server, check the map — if unseen, write it to <code>servers[n]</code>, mark it seen,
+                Combine a <code>map[string]bool</code> (to track seen IPs) with the write-index pattern.
+                For each entry, check the map — if unseen, write it to <code>ips[n]</code>, mark it seen,
                 and increment <code>n</code>.
           solution: |-
-            func dedup(servers []string) []string {
+            func dedup(ips []string) []string {
                 seen := make(map[string]bool)
                 n := 0
-                for _, s := range servers {
+                for _, s := range ips {
                     if !seen[s] {
                         seen[s] = true
-                        servers[n] = s
+                        ips[n] = s
                         n++
                     }
                 }
-                return servers[:n]
+                return ips[:n]
             }
           annotations:
             - type: pattern
@@ -1340,8 +1343,8 @@ variants:
           functionSignature: func compactLogs(lines []string) []string
           difficulty: 3
           testCases:
-            - input: compactLogs([]string{"  INFO startup  ", "", "INFO startup", "ERROR oom", "ERROR oom", "  ", "WARN slow"})
-              output: "[\"INFO startup\", \"ERROR oom\", \"WARN slow\"]"
+            - input: compactLogs([]string{"  INFO checkout-api startup  ", "", "INFO checkout-api startup", "ERROR ledger-worker oom", "ERROR ledger-worker oom", "  ", "WARN edge-proxy slow"})
+              output: "[\"INFO checkout-api startup\", \"ERROR ledger-worker oom\", \"WARN edge-proxy slow\"]"
             - input: compactLogs([]string{"a", "  a  ", "b", "b", "b", "a"})
               output: "[\"a\", \"b\", \"a\"]"
             - input: compactLogs([]string{"", "  ", ""})

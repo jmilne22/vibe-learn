@@ -766,6 +766,23 @@ pre::-webkit-scrollbar-thumb:hover {
 }
 
 /* ============================================
+   10c. Scene — narrative framing for incidents
+   ============================================ */
+.scene {
+    font-style: italic;
+    color: var(--text-secondary);
+    margin: 0 0 var(--space-4);
+    padding: var(--space-2) 0 var(--space-2) var(--space-3);
+    border-left: 2px solid var(--border-subtle);
+}
+
+.scene .timestamp {
+    font-family: 'JetBrains Mono', monospace;
+    font-style: normal;
+    opacity: 0.75;
+}
+
+/* ============================================
    11. Exercises and Hints/Solutions
    ============================================ */
 .js-required {
