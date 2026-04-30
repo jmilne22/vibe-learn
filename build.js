@@ -411,6 +411,28 @@ function buildCourse(slug) {
         file: p.name + '.html'
     }));
 
+    // Count unique exercises per module (for the dashboard readiness signal).
+    // Variants are intentionally NOT counted — "did the slice exercise" should be
+    // true if any variant is completed.
+    const moduleExerciseCounts = {};
+    if (fs.existsSync(EXERCISES_DIR)) {
+        fs.readdirSync(EXERCISES_DIR)
+            .filter(f => f.match(/^module\d+-variants\.yaml$/))
+            .forEach(f => {
+                const moduleNum = parseInt(f.match(/module(\d+)/)[1], 10);
+                try {
+                    const parsed = yaml.load(fs.readFileSync(path.join(EXERCISES_DIR, f), 'utf8')) || {};
+                    const v = (parsed.variants) || {};
+                    moduleExerciseCounts[moduleNum] = {
+                        warmups: Array.isArray(v.warmups) ? v.warmups.length : 0,
+                        challenges: Array.isArray(v.challenges) ? v.challenges.length : 0
+                    };
+                } catch (e) {
+                    moduleExerciseCounts[moduleNum] = { warmups: 0, challenges: 0 };
+                }
+            });
+    }
+
     // 5. course-data.js is generated after module pages (step 7) since
     // sidebarPages is populated dynamically during module generation.
 
@@ -674,6 +696,18 @@ function buildCourse(slug) {
 
     // 5b. Generate course-data.js (deferred to after module loop so sidebarPages is complete)
     console.log('Generating course-data.js...');
+
+    // Map each numeric module to its successor's first-page URL (used by the
+    // dashboard "Next: Module N+1 →" CTA when readiness flips to ready).
+    // Must run after the module loop because mod.isSplit is set there.
+    const numericModules = modules.filter(m => /^\d+$/.test(String(m.id))).sort((a, b) => a.id - b.id);
+    const nextModuleHrefs = {};
+    numericModules.forEach((mod, i) => {
+        const next = numericModules[i + 1];
+        if (!next) return;
+        nextModuleHrefs[mod.id] = next.isSplit ? `module${next.id}-1.html` : `${next.file}.html`;
+    });
+
     const courseConfigData = {
         course: course,
         tracks: tracks,
@@ -684,7 +718,9 @@ function buildCourse(slug) {
         modulesWithExercises: modulesWithExercises,
         modulesWithoutExercises: modulesWithoutExercises,
         sidebarPages: sidebarPages,
-        plugins: pluginsConfig
+        plugins: pluginsConfig,
+        moduleExerciseCounts: moduleExerciseCounts,
+        nextModuleHrefs: nextModuleHrefs
     };
 
     fs.writeFileSync(
@@ -732,13 +768,16 @@ function buildCourse(slug) {
             track.modules.forEach(modId => {
                 const mod = modules.find(m => m.id === modId);
                 if (!mod) return;
-                html += `                <div class="module-item" data-module="${mod.id}">\n`;
+                const counts = moduleExerciseCounts[mod.id] || { warmups: 0, challenges: 0 };
+                html += `                <div class="module-item" data-module="${mod.id}" data-warmups="${counts.warmups}" data-challenges="${counts.challenges}">\n`;
                 html += `                    <input type="checkbox" class="module-checkbox" id="m${mod.id}">\n`;
                 const modHref = mod.isSplit ? `module${mod.id}-1.html` : `${mod.file}.html`;
                 html += `                    <a href="${modHref}" class="module-link">\n`;
                 html += `                        <span class="module-num">MODULE ${mod.num}</span>\n`;
                 html += `                        <span class="module-name">${mod.title}</span>\n`;
                 html += `                    </a>\n`;
+                html += `                    <span class="readiness-badge" id="readiness-${mod.id}"></span>\n`;
+                html += `                    <a class="next-cta hidden" id="next-cta-${mod.id}"></a>\n`;
                 html += `                    <span class="exercise-progress-inline" id="ex-progress-${mod.id}"></span>\n`;
                 html += `                    <span class="last-studied" id="last-${mod.id}"></span>\n`;
                 html += `                </div>\n`;

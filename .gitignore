@@ -1,5 +1,6 @@
 dist/
 node_modules/
+*-backup-*.json
 architecture-course-plan.md
 k8s-course-plan.md
 TODO.md
