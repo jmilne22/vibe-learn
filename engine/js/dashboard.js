@@ -10,9 +10,217 @@
 var STORAGE_KEY = window.CourseConfigHelper ? window.CourseConfigHelper.storageKey('progress') : 'go-course-progress';
 var LAST_MODULE_KEY = window.CourseConfigHelper ? window.CourseConfigHelper.storageKey('last-module') : 'go-course-last-module';
 
+// Readiness signal tunables — surface "when can I move on?" on each module card
+var READINESS_CHALLENGE_TARGET = 1.0; // fraction of unique challenges with rating ≤ 2
+var READINESS_WARMUP_TARGET = 0.7;    // fraction of unique warmups completed
+var BOREDOM_VISIT_WINDOW_DAYS = 7;    // module must have been visited within this window
+var BOREDOM_STALL_DAYS = 5;           // ...with no new completions for this many days
+var STALE_RETURN_DAYS = 14;           // gap that triggers the "pick up at next module?" banner
+var DAY_MS = 24 * 60 * 60 * 1000;
+var NUDGE_DISMISS_KEY_PREFIX = window.CourseConfigHelper
+    ? window.CourseConfigHelper.storageKey('nudge-dismissed-m')
+    : 'go-course-nudge-dismissed-m';
+
 function loadProgress() {
     const saved = localStorage.getItem(STORAGE_KEY);
     return saved ? JSON.parse(saved) : {};
+}
+
+// Group all variants of one exercise. Keys look like "m1_warmup_3_v0a"; the
+// exercise id we care about is "m1_warmup_3" — variants of the same exercise
+// should count once, not three times.
+function exerciseIdFromKey(key) {
+    const m = key.match(/^(m\d+_(?:warmup|challenge|advanced)_\d+)/);
+    return m ? m[1] : null;
+}
+
+function computeReadiness(moduleId, warmupTotal, challengeTotal, exerciseProgress) {
+    const prefix = 'm' + moduleId + '_';
+    // Per unique exercise: best (lowest) selfRating across variants, latest lastAttempted
+    const exercises = {}; // exerciseId -> { type, completed, bestRating, lastAttempted }
+    Object.keys(exerciseProgress || {}).forEach(function (key) {
+        if (key.indexOf(prefix) !== 0) return;
+        const exId = exerciseIdFromKey(key);
+        if (!exId) return;
+        const data = exerciseProgress[key] || {};
+        const type = exId.indexOf('_warmup_') > -1 ? 'warmup'
+            : exId.indexOf('_challenge_') > -1 ? 'challenge'
+            : 'advanced';
+        const entry = exercises[exId] || { type: type, completed: false, bestRating: 999, lastAttempted: 0 };
+        if (data.status === 'completed') {
+            entry.completed = true;
+            const rating = typeof data.selfRating === 'number' && data.selfRating > 0 ? data.selfRating : 999;
+            if (rating < entry.bestRating) entry.bestRating = rating;
+        }
+        const t = data.lastAttempted ? Date.parse(data.lastAttempted) : 0;
+        if (t && t > entry.lastAttempted) entry.lastAttempted = t;
+        exercises[exId] = entry;
+    });
+
+    let warmupsCompleted = 0;
+    let challengesGood = 0;
+    let challengesCompleted = 0;
+    let lastCompletionTimestamp = 0;
+    Object.values(exercises).forEach(function (e) {
+        if (e.lastAttempted > lastCompletionTimestamp) lastCompletionTimestamp = e.lastAttempted;
+        if (!e.completed) return;
+        if (e.type === 'warmup') warmupsCompleted++;
+        if (e.type === 'challenge') {
+            challengesCompleted++;
+            if (e.bestRating <= 2) challengesGood++;
+        }
+    });
+
+    const warmupsRatio = warmupTotal > 0 ? warmupsCompleted / warmupTotal : 1;
+    const challengesGoodRatio = challengeTotal > 0 ? challengesGood / challengeTotal : 1;
+    const anyTouched = warmupsCompleted > 0 || challengesCompleted > 0;
+
+    let state;
+    if (challengeTotal === 0 && warmupTotal === 0) {
+        state = 'none'; // skip badge entirely; defer to manual checkbox
+    } else if (challengesGoodRatio >= READINESS_CHALLENGE_TARGET && warmupsRatio >= READINESS_WARMUP_TARGET) {
+        state = 'ready';
+    } else if (anyTouched) {
+        state = 'in-progress';
+    } else {
+        state = 'fresh';
+    }
+
+    return {
+        state: state,
+        warmupsCompleted: warmupsCompleted,
+        warmupTotal: warmupTotal,
+        challengesGood: challengesGood,
+        challengesCompleted: challengesCompleted,
+        challengeTotal: challengeTotal,
+        warmupsRatio: warmupsRatio,
+        challengesGoodRatio: challengesGoodRatio,
+        lastCompletionTimestamp: lastCompletionTimestamp
+    };
+}
+
+function renderReadinessBadges(progress, exerciseProgress) {
+    const nextHrefs = (window.CourseConfig && window.CourseConfig.nextModuleHrefs) || {};
+    document.querySelectorAll('.module-item[data-module]').forEach(function (item) {
+        const id = item.dataset.module;
+        if (!/^\d+$/.test(id)) return; // skip projects
+
+        const warmupTotal = parseInt(item.dataset.warmups || '0', 10);
+        const challengeTotal = parseInt(item.dataset.challenges || '0', 10);
+        const badge = item.querySelector('.readiness-badge');
+        const cta = item.querySelector('.next-cta');
+        if (!badge) return;
+
+        const manuallyCompleted = !!(progress[id] && progress[id].completed);
+        const r = computeReadiness(id, warmupTotal, challengeTotal, exerciseProgress);
+        const effectiveState = manuallyCompleted ? 'ready' : r.state;
+
+        badge.classList.remove('ready', 'in-progress', 'fresh');
+        if (effectiveState === 'ready') {
+            badge.classList.add('ready');
+            badge.textContent = 'Ready to move on';
+        } else if (effectiveState === 'in-progress') {
+            badge.classList.add('in-progress');
+            badge.textContent = 'Keep going';
+        } else if (effectiveState === 'fresh') {
+            badge.classList.add('fresh');
+            badge.textContent = 'Just getting started';
+        } else {
+            badge.textContent = '';
+        }
+
+        if (cta) {
+            const nextHref = nextHrefs[id];
+            if (effectiveState === 'ready' && nextHref) {
+                cta.href = nextHref;
+                cta.textContent = 'Next: Module ' + (parseInt(id, 10) + 1) + ' →';
+                cta.classList.remove('hidden');
+            } else {
+                cta.classList.add('hidden');
+            }
+        }
+
+        // Boredom hint — only on 'in-progress' state, and only with real data
+        const existingHint = item.querySelector('.boredom-hint');
+        if (existingHint) existingHint.remove();
+        if (effectiveState === 'in-progress' && r.lastCompletionTimestamp) {
+            const lastStudied = progress[id] && progress[id].lastStudied
+                ? Date.parse(progress[id].lastStudied) : 0;
+            const now = Date.now();
+            const visitedRecently = lastStudied && (now - lastStudied) <= BOREDOM_VISIT_WINDOW_DAYS * DAY_MS;
+            const stalled = (now - r.lastCompletionTimestamp) > BOREDOM_STALL_DAYS * DAY_MS;
+            if (visitedRecently && stalled) {
+                const hint = document.createElement('span');
+                hint.className = 'boredom-hint';
+                hint.textContent = 'No new progress in ' + BOREDOM_STALL_DAYS + ' days — try the next module?';
+                item.appendChild(hint);
+            }
+        }
+    });
+}
+
+function renderStaleReturnBanner(progress, exerciseProgress) {
+    const banner = document.getElementById('stale-return-banner');
+    if (!banner) return;
+    const lastModuleId = localStorage.getItem(LAST_MODULE_KEY);
+    if (!lastModuleId || !/^\d+$/.test(lastModuleId)) {
+        banner.classList.add('hidden');
+        return;
+    }
+    if (localStorage.getItem(NUDGE_DISMISS_KEY_PREFIX + lastModuleId) === 'true') {
+        banner.classList.add('hidden');
+        return;
+    }
+    const lastStudied = progress[lastModuleId] && progress[lastModuleId].lastStudied
+        ? Date.parse(progress[lastModuleId].lastStudied) : 0;
+    if (!lastStudied) {
+        banner.classList.add('hidden');
+        return;
+    }
+    const gap = Date.now() - lastStudied;
+    if (gap < STALE_RETURN_DAYS * DAY_MS) {
+        banner.classList.add('hidden');
+        return;
+    }
+
+    const item = document.querySelector('.module-item[data-module="' + lastModuleId + '"]');
+    if (!item) {
+        banner.classList.add('hidden');
+        return;
+    }
+    const warmupTotal = parseInt(item.dataset.warmups || '0', 10);
+    const challengeTotal = parseInt(item.dataset.challenges || '0', 10);
+    const r = computeReadiness(lastModuleId, warmupTotal, challengeTotal, exerciseProgress);
+    const manuallyCompleted = !!(progress[lastModuleId] && progress[lastModuleId].completed);
+    if (r.state !== 'ready' && !manuallyCompleted) {
+        banner.classList.add('hidden');
+        return;
+    }
+
+    const nextHrefs = (window.CourseConfig && window.CourseConfig.nextModuleHrefs) || {};
+    const nextHref = nextHrefs[lastModuleId];
+    if (!nextHref) {
+        banner.classList.add('hidden');
+        return;
+    }
+
+    const nextNum = parseInt(lastModuleId, 10) + 1;
+    banner.innerHTML =
+        '<span class="banner-text">' +
+            '<strong>Welcome back.</strong> You cleared most of Module ' + lastModuleId +
+            ' — pick up at Module ' + nextNum + '?' +
+        '</span>' +
+        '<a class="banner-action" href="' + nextHref + '">Take me there</a>' +
+        '<button class="banner-dismiss" type="button">Dismiss</button>';
+    banner.classList.remove('hidden');
+
+    const dismissBtn = banner.querySelector('.banner-dismiss');
+    if (dismissBtn) {
+        dismissBtn.addEventListener('click', function () {
+            localStorage.setItem(NUDGE_DISMISS_KEY_PREFIX + lastModuleId, 'true');
+            banner.classList.add('hidden');
+        });
+    }
 }
 
 function saveProgress(moduleId, completed) {
@@ -134,6 +342,9 @@ function updateStats() {
             exProgress.innerHTML = '<span class="exercise-progress-bar"><span class="exercise-progress-fill" style="width: 100%"></span></span> ' + count + ' done';
         }
     });
+
+    renderReadinessBadges(progress, exerciseProgress);
+    renderStaleReturnBanner(progress, exerciseProgress);
 }
 
 function recordModuleVisit(moduleId) {
