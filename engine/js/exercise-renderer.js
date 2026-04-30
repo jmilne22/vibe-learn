@@ -60,7 +60,7 @@
             const rawTitle = typeof hint === 'object' ? hint.title : 'Hint';
             const title = Icons.lightbulb + ' ' + rawTitle;
             const content = typeof hint === 'object' ? hint.content : hint;
-            html += `<details>
+            html += `<details class="exercise-support-detail hint-detail">
                 <summary>${title}</summary>
                 <div class="hint-content">${content}</div>
             </details>`;
@@ -71,13 +71,13 @@
     // Render documentation links (collapsible details block)
     function renderDocLinks(docLinks) {
         if (!docLinks || docLinks.length === 0) return '';
-        return `<details>
+        return `<details class="exercise-support-detail docs-detail">
                 <summary>${Icons.books} Documentation</summary>
                 <div class="hint-content">
-                    <p style="margin-bottom: 0.5rem; color: var(--text-secondary);">Relevant Go docs:</p>
-                    <ul style="margin: 0; padding-left: 1.5rem;">
+                    <p class="docs-detail-intro">Relevant Go docs:</p>
+                    <ul class="docs-detail-list">
                         ${docLinks.map(link =>
-                            `<li><a href="${link.url}" target="_blank" rel="noopener" style="color: var(--cyan);">${link.title}</a>${link.note ? ` <span style="color: var(--text-secondary);">\u2014 ${link.note}</span>` : ''}</li>`
+                            `<li><a href="${link.url}" target="_blank" rel="noopener">${link.title}</a>${link.note ? ` <span>\u2014 ${link.note}</span>` : ''}</li>`
                         ).join('\n                        ')}
                     </ul>
                 </div>
@@ -86,7 +86,7 @@
 
     // Render solution details block with optional annotations
     function renderSolution(solution, annotations) {
-        let html = `<details>
+        let html = `<details class="exercise-support-detail solution-detail">
             <summary>${Icons.checkCircle} Solution</summary>
             <div class="hint-content">
                 <pre>${escapeHtml(solution)}</pre>
@@ -204,31 +204,39 @@
         const progress = window.ExerciseProgress?.get(exerciseKey);
         const completedClass = progress?.status === 'completed' ? ' exercise-completed' : '';
 
+        const variantDifficulty = getVariantDifficulty(variant, challenge);
         const difficultyHtml = type === 'challenge' && variant.difficulty
-            ? ` <span class="variant-difficulty">${getDifficultyStars(getVariantDifficulty(variant, challenge))}</span>`
+            ? `<span class="variant-difficulty" aria-label="Difficulty ${variantDifficulty}">${getDifficultyStars(variantDifficulty)}</span>`
             : '';
 
         const moduleBadge = moduleLabel
-            ? `<span style="font-size: 0.7rem; color: var(--text-secondary); font-family: 'JetBrains Mono', monospace; margin-left: 0.5rem;">[${moduleLabel}]</span>`
+            ? `<span class="exercise-module-badge">${escapeHtml(moduleLabel)}</span>`
             : '';
 
-        const conceptSuffix = conceptHtml ? ' ' + conceptHtml : '';
+        const conceptSuffix = conceptHtml ? `<span class="exercise-concept">${conceptHtml}</span>` : '';
 
         const typeLabel = type === 'warmup' ? 'Warmup' : 'Challenge';
 
         const challengeAttr = challenge ? ` data-challenge-id="${challenge.id}"` : '';
 
-        const headerText = drill
+        const headingText = drill
             ? `Step ${num} \u00b7 ${escapeHtml(variant.title)}`
-            : `${typeLabel} ${num}: ${escapeHtml(variant.title)}${difficultyHtml}${conceptSuffix}${moduleBadge}`;
+            : escapeHtml(variant.title);
 
         const chevronSvg = '<svg class="accordion-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4l4 4-4 4"/></svg>';
+        const statusLabel = progress?.status === 'completed' ? 'Rated' : 'Not rated';
+        const metaHtml = drill ? '' : `<div class="exercise-meta-line">
+            <span>${typeLabel} ${num}</span>
+            ${difficultyHtml}
+            ${conceptSuffix}
+            ${moduleBadge}
+        </div>`;
 
-        let html = `<div class="exercise${completedClass}"${drill ? '' : ` data-exercise-key="${exerciseKey}"`}${challengeAttr}>`;
+        let html = `<div class="exercise exercise-work-item${completedClass}"${drill ? '' : ` data-exercise-key="${exerciseKey}"`}${challengeAttr}>`;
 
         if (drill) {
             // Drill cards: flat layout, no accordion
-            html += `<h4>${headerText}</h4>`;
+            html += `<h4>${headingText}</h4>`;
 
             if (difficultyNav) html += difficultyNav;
             html += `<div class="exercise-description">${variant.description}</div>`;
@@ -242,11 +250,18 @@
             const typePill = `<span class="exercise-type-tag">${typeLabel}</span>`;
             html += `<details class="exercise-accordion"${expanded ? ' open' : ''}>`;
 
-            html += `<summary><h4>${headerText}</h4>${typePill}${chevronSvg}</summary>`;
+            html += `<summary class="exercise-summary">
+                <div class="exercise-summary-main">
+                    <div class="exercise-summary-top">${typePill}<span class="exercise-status">${statusLabel}</span></div>
+                    <h4>${headingText}</h4>
+                    ${metaHtml}
+                </div>
+                ${chevronSvg}
+            </summary>`;
             html += `<div class="exercise-body">`;
 
             if (difficultyNav) html += difficultyNav;
-            html += `<div class="exercise-description">${variant.description}</div>`;
+            html += `<div class="exercise-description exercise-prompt">${variant.description}</div>`;
             html += renderFunctionSignature(variant);
             html += renderExpected(variant);
             html += renderHints(variant.hints);

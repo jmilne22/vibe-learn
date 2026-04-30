@@ -411,16 +411,9 @@
 
         var btn = document.createElement('button');
         if (id) btn.id = id;
+        btn.type = 'button';
+        btn.className = 'shuffle-btn shuffle-btn--' + color.replace(/[^a-zA-Z0-9-]/g, '-');
         btn.innerHTML = Icons.dice + ' Shuffle';
-        btn.style.cssText = 'background:var(--bg-surface);color:var(--' + color + ');border:1px solid var(--' + color + ');padding:0.2rem 0.7rem;border-radius:4px;font-size:0.75rem;font-family:"JetBrains Mono",monospace;cursor:pointer;transition:all 0.2s;font-weight:400;';
-        btn.addEventListener('mouseenter', function() {
-            btn.style.background = 'var(--' + color + ')';
-            btn.style.color = color === 'green-bright' ? 'var(--bg-base)' : 'white';
-        });
-        btn.addEventListener('mouseleave', function() {
-            btn.style.background = 'var(--bg-surface)';
-            btn.style.color = 'var(--' + color + ')';
-        });
         if (onClick) btn.addEventListener('click', onClick);
         return btn;
     }
@@ -710,14 +703,10 @@
         var btn = document.getElementById(btnId);
         if (!btn) return;
         btn.innerHTML = Icons.check + ' Shuffled!';
-        btn.style.background = 'var(--green-bright)';
-        btn.style.color = 'var(--bg-base)';
-        if (color !== 'green-bright') btn.style.borderColor = 'var(--green-bright)';
+        btn.classList.add('is-shuffled');
         setTimeout(function() {
             btn.innerHTML = Icons.dice + ' Shuffle';
-            btn.style.background = 'var(--bg-surface)';
-            btn.style.color = 'var(--' + color + ')';
-            btn.style.borderColor = 'var(--' + color + ')';
+            btn.classList.remove('is-shuffled');
         }, 800);
     }
 

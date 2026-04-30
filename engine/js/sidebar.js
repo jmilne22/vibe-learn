@@ -45,6 +45,12 @@
         return page;
     }
 
+    function escapeHtml(value) {
+        var div = document.createElement('div');
+        div.textContent = value == null ? '' : String(value);
+        return div.innerHTML;
+    }
+
 
     // Desktop: always open. Mobile: always closed.
     function shouldBeOpen() {
@@ -68,10 +74,25 @@
         return sections;
     }
 
+    function renderPageSections(sections, linkClass) {
+        if (!sections.length) return '';
+        var html = '<div class="sidebar-sections" aria-label="Page sections">';
+        sections.forEach(function(section) {
+            html += '<a href="#' + escapeHtml(section.id) + '" class="' + linkClass + '">' +
+                '<span>' + escapeHtml(section.title) + '</span>' +
+            '</a>';
+        });
+        html += '</div>';
+        return html;
+    }
+
     // Create sidebar HTML
     function createSidebar() {
         const currentPage = getCurrentPage();
         const sections = getPageSections();
+        const courseName = window.CourseConfig && window.CourseConfig.course
+            ? window.CourseConfig.course.name
+            : 'Course home';
 
         // Create backdrop for mobile
         const backdrop = document.createElement('div');
@@ -82,6 +103,8 @@
         // Create sidebar
         const sidebar = document.createElement('aside');
         sidebar.className = 'sidebar';
+        sidebar.id = 'course-sidebar';
+        sidebar.setAttribute('aria-label', 'Course navigation');
         if (shouldBeOpen()) {
             sidebar.classList.add('open');
             document.body.classList.add('sidebar-open');
@@ -90,29 +113,38 @@
         // Header with home link (padded to avoid toggle overlap)
         let html = `
             <div class="sidebar-header">
-                <a href="index.html">← Course Home</a>
+                <a href="index.html" class="sidebar-home">
+                    <span class="sidebar-home-kicker">Course</span>
+                    <strong>${escapeHtml(courseName)}</strong>
+                </a>
             </div>
             <div class="sidebar-content">
         `;
 
         // Plugin feature links (read from CourseConfig.plugins)
         var plugins = (window.CourseConfig && window.CourseConfig.plugins) || [];
-        plugins.forEach(function(plugin) {
-            var pluginFile = plugin.file || (plugin.name + '.html');
-            var isActive = currentPage === pluginFile;
-            var color = plugin.sidebarColor || 'var(--text-secondary)';
-            html += '\n            <a href="' + pluginFile + '" class="sidebar-link' + (isActive ? ' active' : '') + '" style="border-left-color: ' + (isActive ? color : 'transparent') + '; color: ' + (isActive ? color : 'var(--text-secondary)') + ';">' +
-                '<span class="sidebar-module-num" style="color: ' + color + ';">' + plugin.shortLabel + '</span>' +
-                plugin.label +
-            '</a>';
-        });
         if (plugins.length > 0) {
-            html += '\n            <hr style="border: none; border-top: 1px solid var(--border); margin: 0.5rem 0;">';
+            html += '<div class="sidebar-group sidebar-practice-group">' +
+                '<div class="sidebar-group-label">Practice</div>';
+            plugins.forEach(function(plugin) {
+                var pluginFile = plugin.file || (plugin.name + '.html');
+                var isActive = currentPage === pluginFile;
+                html += '<a href="' + escapeHtml(pluginFile) + '" class="sidebar-link sidebar-tool-link' + (isActive ? ' active' : '') + '"' + (isActive ? ' aria-current="page"' : '') + '>' +
+                    '<span class="sidebar-module-num">' + escapeHtml(plugin.shortLabel || '') + '</span>' +
+                    '<span class="sidebar-link-text"><span class="sidebar-link-title">' + escapeHtml(plugin.label || plugin.name) + '</span></span>' +
+                '</a>';
+            });
+            html += '</div>';
         }
 
         // All pages - group split modules into chapters, keep single modules flat
         // Skip feature items (DP, FC, WC) — already rendered above
         var contentPages = pages.filter(page => page.type !== 'feature');
+        html += '<div class="sidebar-group sidebar-curriculum-group">' +
+            '<div class="sidebar-group-label">Curriculum</div>';
+        if (contentPages.length === 0) {
+            html += '<div class="sidebar-empty">No lessons generated yet.</div>';
+        }
 
         // Determine which moduleId the current page belongs to
         var currentModuleId = null;
@@ -145,11 +177,15 @@
                 if (isChapterComplete) chDotClass += ' complete';
                 else if (chapterStarted) chDotClass += ' started';
                 var firstSection = chapterSections[0];
+                var chapterMeta = chapterSections.length + ' part' + (chapterSections.length === 1 ? '' : 's');
                 html += `
                 <div class="sidebar-chapter${isChapterActive ? ' active' : ''}">
-                    <a href="${firstSection.file}" class="sidebar-chapter-title${isChapterActive ? ' active' : ''}${isChapterComplete ? ' completed' : ''}">
+                    <a href="${escapeHtml(firstSection.file)}" class="sidebar-chapter-title${isChapterActive ? ' active' : ''}${isChapterComplete ? ' completed' : ''}" aria-expanded="${isChapterActive ? 'true' : 'false'}"${currentPage === firstSection.file ? ' aria-current="page"' : ''}>
                         <span class="sidebar-module-num">${String(chapterModuleId).padStart(2, '0')}</span>
-                        ${chapterTitle}
+                        <span class="sidebar-link-text">
+                            <span class="sidebar-link-title">${escapeHtml(chapterTitle)}</span>
+                            <span class="sidebar-link-meta">${escapeHtml(chapterMeta)}</span>
+                        </span>
                         <span class="${chDotClass}"></span>
                     </a>`;
 
@@ -158,20 +194,16 @@
                     html += `<div class="sidebar-chapter-sections">`;
                     chapterSections.slice(1).forEach(sec => {
                         var isSecActive = currentPage === sec.file;
-                        var secLabel = sec.type === 'exercises' ? (Icons.star + ' Exercises') : sec.title;
+                        var secLabel = sec.type === 'exercises' ? 'Exercises' : sec.title;
                         var secNum = sec.type === 'exercises' ? '' : ('<span class="sidebar-section-num">' + sec.num + '</span>');
                         html += `
-                            <a href="${sec.file}" class="sidebar-section-link${isSecActive ? ' active' : ''}">
-                                ${secNum}${secLabel}
+                            <a href="${escapeHtml(sec.file)}" class="sidebar-section-link${isSecActive ? ' active' : ''}"${isSecActive ? ' aria-current="page"' : ''}>
+                                ${secNum}<span>${escapeHtml(secLabel)}</span>
                             </a>`;
 
                         // If this section page is active, show H2 headings from page content
                         if (isSecActive && sections.length > 0) {
-                            html += `<div class="sidebar-sections">`;
-                            sections.forEach(section => {
-                                html += `<a href="#${section.id}" class="sidebar-h2-link">${section.title}</a>`;
-                            });
-                            html += `</div>`;
+                            html += renderPageSections(sections, 'sidebar-h2-link');
                         }
                     });
                     html += `</div>`;
@@ -183,34 +215,30 @@
                 var isComplete = !page.isProject && page.id !== undefined && isModuleComplete(page.id);
                 var linkClass = page.isProject ? 'sidebar-link sidebar-project-link' : 'sidebar-link';
 
-                var displayTitle = page.isProject ? (Icons.hammer + ' ' + page.title) : page.title;
+                var displayTitle = page.title;
                 var hasStarted = !page.isProject && page.id !== undefined && isModuleStarted(page.id);
                 let dotClass = 'sidebar-dot';
                 if (isComplete) dotClass += ' complete';
                 else if (hasStarted) dotClass += ' started';
                 html += `
-                <a href="${page.file}" class="${linkClass}${isActive ? ' active' : ''}${isComplete ? ' completed' : ''}">
-                    <span class="sidebar-module-num">${page.num}</span>
-                    ${displayTitle}
+                <a href="${escapeHtml(page.file)}" class="${linkClass}${isActive ? ' active' : ''}${isComplete ? ' completed' : ''}"${isActive ? ' aria-current="page"' : ''}>
+                    <span class="sidebar-module-num">${escapeHtml(page.num)}</span>
+                    <span class="sidebar-link-text">
+                        <span class="sidebar-link-title">${escapeHtml(displayTitle)}</span>
+                        <span class="sidebar-link-meta">${page.isProject ? 'Project milestone' : 'Lesson'}</span>
+                    </span>
                     <span class="${dotClass}"></span>
                 </a>
                 `;
 
                 // If this page is active, show its h2 sections
                 if (isActive && sections.length > 0) {
-                    html += `<div class="sidebar-sections">`;
-                    sections.forEach(section => {
-                        html += `
-                            <a href="#${section.id}" class="sidebar-section-link">
-                                ${section.title}
-                            </a>
-                        `;
-                    });
-                    html += `</div>`;
+                    html += renderPageSections(sections, 'sidebar-h2-link');
                 }
                 i++;
             }
         }
+        html += '</div>';
 
         html += `</div>`; // close sidebar-content
 
@@ -229,6 +257,8 @@
         // Create toggle button (inside sidebar when open)
         const toggle = document.createElement('button');
         toggle.className = 'sidebar-toggle';
+        toggle.setAttribute('aria-controls', 'course-sidebar');
+        toggle.setAttribute('aria-expanded', sidebar.classList.contains('open') ? 'true' : 'false');
         toggle.setAttribute('aria-label', 'Toggle navigation');
         toggle.innerHTML = Icons.menu;
         toggle.addEventListener('click', toggleSidebar);
@@ -240,6 +270,8 @@
         const sidebar = document.querySelector('.sidebar');
         const isOpen = sidebar.classList.toggle('open');
         document.body.classList.toggle('sidebar-open', isOpen);
+        const toggle = document.querySelector('.sidebar-toggle');
+        if (toggle) toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
     }
 
     // Scroll progress bar

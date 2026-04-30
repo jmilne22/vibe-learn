@@ -13,23 +13,25 @@
 </head>
 <body>
     <div class="scroll-progress" aria-hidden="true"></div>
-    <div class="container">
-        <nav>
+    <main class="workbook-shell">
+    <div class="container workbook-container">
+        <nav class="workbook-top-nav" aria-label="Page navigation">
 {{NAV_LINKS}}
         </nav>
 
-        <div class="module-header">
+        <header class="module-header lesson-header">
             <div class="module-tag">Project milestone</div>
             <h1>{{TITLE}}</h1>
             <p class="module-desc">{{MODULE_DESC}}</p>
-        </div>
+        </header>
 
-        <div class="lesson">
+        <article class="lesson workbook-content">
 {{LESSON_CONTENT}}
-        </div>
+        </article>
 
 {{NAV_BUTTONS}}
     </div>
+    </main>
 
     <script src="course-data.js"></script>
     <script src="course-config.js"></script>
