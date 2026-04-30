@@ -6,7 +6,7 @@
     <title>Analytics — {{COURSE_NAME}}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="style.css">
 {{THEME_LINKS}}
@@ -18,30 +18,30 @@
         </nav>
 
         <div class="module-header">
-            <div class="module-tag">// ANALYTICS</div>
-            <h1>Analytics</h1>
-            <p class="module-desc">Your learning dashboard — progress, patterns, and what needs attention.</p>
+            <div class="module-tag">Analytics</div>
+            <h1>Learning health</h1>
+            <p class="module-desc">Progress, review pressure, and the areas that need attention next.</p>
         </div>
 
         <!-- Empty state -->
         <div id="analytics-empty" class="detail-panel" style="text-align: center; padding: 3rem;">
-            <h2 style="margin-top: 0;">No Data Yet</h2>
+            <h2 style="margin-top: 0;">No data yet</h2>
             <p>Complete some exercises and rate yourself to see analytics here.</p>
-            <a id="analytics-start-link" href="module1.html" class="quick-btn primary" style="display: inline-block; margin-top: 1rem;">Start with Module 1</a>
+            <a id="analytics-start-link" href="module1.html" class="quick-btn primary" style="display: inline-flex; margin-top: 1rem;">Start with Module 1</a>
         </div>
 
         <!-- Dashboard (hidden until data exists) -->
         <div id="analytics-report" style="display: none;">
 
             <!-- Row 1: Health at a Glance -->
-            <div class="section-heading">Health at a Glance</div>
+            <div class="section-heading">Health at a glance</div>
             <div class="health-row" id="health-row"></div>
 
             <!-- Row 2: Module Health Grid -->
-            <div class="section-heading">Module Health</div>
+            <div class="section-heading">Module health</div>
             <div class="module-grid" id="module-grid"></div>
 
-            <!-- Row 3: Action Items -->
+            <!-- Row 3: Action items -->
             <div class="action-row" id="action-row"></div>
 
             <!-- Row 4: Detail Panels -->

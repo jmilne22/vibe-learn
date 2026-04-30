@@ -65,7 +65,7 @@
     // Apply theme to document
     function setTheme(theme) {
         if (theme === 'dark') {
-            document.documentElement.removeAttribute('data-theme');
+            document.documentElement.setAttribute('data-theme', 'dark');
             var removeLink = document.getElementById('theme-css');
             if (removeLink) removeLink.remove();
         } else {

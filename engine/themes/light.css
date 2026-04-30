@@ -475,3 +475,115 @@
     background: #FFFFFF;
     border-color: rgba(122, 98, 200, 0.12);
 }
+
+/* Product redesign light mode: keep light theme aligned with the new neutral system. */
+[data-theme="light"] {
+    --bg-base: #f6f7f6;
+    --bg-surface: #ffffff;
+    --bg-elevated: #eef2ef;
+    --bg-overlay: #e5ebe7;
+    --bg-muted: #dbe3de;
+    --bg-raised: #f9faf9;
+
+    --border-subtle: #e1e7e3;
+    --border-default: #cdd8d2;
+    --border-strong: #9dafad;
+
+    --text-primary: #17211f;
+    --text-secondary: #5d6b67;
+    --text-tertiary: #87938f;
+    --text-ghost: #b5c0bc;
+
+    --amethyst: #0f766e;
+    --amethyst-dim: #115e59;
+    --amethyst-glow: rgba(15, 118, 110, 0.12);
+    --amethyst-subtle: rgba(15, 118, 110, 0.07);
+    --amber: #b7791f;
+    --amber-dim: #8a5b12;
+    --amber-glow: rgba(183, 121, 31, 0.12);
+    --slate: #2563eb;
+    --slate-glow: rgba(37, 99, 235, 0.12);
+    --sage: #15803d;
+    --sage-glow: rgba(21, 128, 61, 0.12);
+    --gold: #947214;
+    --coral: #b42318;
+    --coral-glow: rgba(180, 35, 24, 0.12);
+    --lavender: #4f46e5;
+    --lavender-glow: rgba(79, 70, 229, 0.12);
+
+    --accent: var(--amethyst);
+    --accent-hover: #0b5f59;
+    --text: var(--text-primary);
+    --forest: var(--sage);
+    --forest-dim: #166534;
+    --forest-glow: var(--sage-glow);
+    --forest-subtle: rgba(21, 128, 61, 0.08);
+    --clay: var(--amber);
+    --clay-dim: var(--amber-dim);
+    --clay-glow: var(--amber-glow);
+    --sand: var(--gold);
+    --moss: var(--sage);
+    --river: var(--slate);
+    --river-glow: var(--slate-glow);
+    --ember: var(--coral);
+    --ember-glow: var(--coral-glow);
+    --lichen: var(--lavender);
+    --lichen-glow: var(--lavender-glow);
+    --green-bright: var(--sage);
+    --green-dim: #166534;
+    --green-glow: var(--sage-glow);
+    --green-subtle: var(--forest-subtle);
+    --orange: var(--amber);
+    --orange-glow: var(--amber-glow);
+    --purple: var(--lavender);
+    --purple-glow: var(--lavender-glow);
+    --blue: var(--slate);
+    --blue-glow: var(--slate-glow);
+    --cyan: var(--amethyst);
+    --cyan-glow: var(--amethyst-glow);
+    --red: var(--coral);
+    --red-glow: var(--coral-glow);
+
+    --shadow-xs: 0 1px 1px rgba(23, 33, 31, 0.04);
+    --shadow-sm: 0 1px 2px rgba(23, 33, 31, 0.06);
+    --shadow-md: 0 8px 20px rgba(23, 33, 31, 0.08);
+    --shadow-lg: 0 16px 40px rgba(23, 33, 31, 0.12);
+    --shadow-xl: 0 24px 60px rgba(23, 33, 31, 0.14);
+    --shadow-card: none;
+    --shadow-card-hover: none;
+    --shadow-accent: none;
+    --shadow-glow-green: none;
+    --shadow-glow-orange: none;
+    --shadow-glow-purple: none;
+}
+
+[data-theme="light"] body {
+    background: var(--bg-base);
+    background-image: none;
+}
+
+[data-theme="light"] .lesson pre,
+[data-theme="light"] .code-block,
+[data-theme="light"] .exercise pre,
+[data-theme="light"] .expected pre,
+[data-theme="light"] .function-signature pre {
+    background: #101817;
+    border-color: #263331;
+    color: #ecf4f1;
+    box-shadow: none;
+}
+
+[data-theme="light"] .exercise,
+[data-theme="light"] .inline-exercises,
+[data-theme="light"] .session-config,
+[data-theme="light"] .session-complete,
+[data-theme="light"] .flashcard-front,
+[data-theme="light"] .flashcard-back,
+[data-theme="light"] .stat-card,
+[data-theme="light"] .detail-panel,
+[data-theme="light"] .rwc-card,
+[data-theme="light"] .action-item {
+    background: var(--bg-surface);
+    border-color: var(--border-subtle);
+    box-shadow: none;
+}
