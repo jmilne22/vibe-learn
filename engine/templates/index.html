@@ -7,99 +7,156 @@
     <title>{{COURSE_NAME}} - Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="style.css">
 {{THEME_LINKS}}
 </head>
 <body>
-    <div class="container">
-        <div style="margin-bottom: 1rem;">
-            <a href="../index.html" class="dashboard-back-link">&larr; All Courses</a>
-        </div>
-        <div class="module-header dashboard-header">
-            <div class="module-tag">DASHBOARD</div>
-            <h1>{{COURSE_NAME}}</h1>
+    <main class="dashboard-shell">
+        <div class="dashboard-topbar">
+            <a href="../index.html" class="dashboard-back-link">&larr; All courses</a>
+            <nav class="dashboard-nav" aria-label="Practice tools">
+                <a href="module0.html" class="nav-pill">Quick reference</a>
+{{PLUGIN_NAV_PILLS}}
+            </nav>
         </div>
 
-        <!-- Hidden container for JS that writes today-due-count -->
-        <span id="today-due-count" hidden>0</span>
+        <header class="dashboard-hero">
+            <div>
+                <div class="module-tag">Course home</div>
+                <h1>{{COURSE_NAME}}</h1>
+                <p>{{COURSE_DESCRIPTION}}</p>
+            </div>
+            <div class="dashboard-hero-status" aria-label="Course progress">
+                <span><strong id="progress-percent">0%</strong> complete</span>
+                <span><strong id="streak-current">0</strong> day streak</span>
+            </div>
+        </header>
 
-        <div class="progress-segments" id="progress-segments"></div>
+        <section class="today-grid" aria-label="Today">
+            <article class="today-panel">
+                <div class="section-kicker">Today</div>
+                <h2 id="today-primary-title">Start where the course begins</h2>
+                <p id="today-primary-meta">Build momentum with the first lesson, then let reviews guide the day.</p>
+                <a href="#" id="resume-btn" class="resume-btn">Continue learning</a>
+            </article>
 
-        <div class="stats-strip">
-            <span class="stat-chip"><span class="stat-chip-value" id="streak-current">0</span> day streak</span>
-            <span class="stat-chip"><span class="stat-chip-value" id="progress-percent">0%</span> complete</span>
-            <span class="stat-chip"><span class="stat-chip-value" id="exercises-count">0</span> exercises</span>
-            <span class="stat-chip"><span class="stat-chip-value" id="due-count">0</span> due</span>
-        </div>
+            <div class="today-metrics">
+                <div class="metric-tile">
+                    <span class="metric-label">Due review</span>
+                    <strong id="due-count">0</strong>
+                    <span id="today-due-label">Nothing due</span>
+                </div>
+                <div class="metric-tile">
+                    <span class="metric-label">Exercises done</span>
+                    <strong id="exercises-count">0</strong>
+                    <span id="today-exercise-label">No reps yet</span>
+                </div>
+                <div class="metric-tile">
+                    <span class="metric-label">Modules</span>
+                    <strong><span id="completed-count">0</span>/<span id="total-modules-count">{{MODULE_COUNT}}</span></strong>
+                    <span id="module-progress-label">Not started</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="progress-overview" aria-label="Progress overview">
+            <div class="overview-main">
+                <div class="section-kicker">Path progress</div>
+                <h2 id="course-progress-heading">Your course spine is ready.</h2>
+                <p id="course-progress-copy">Complete modules, rate practice honestly, and the path will surface what to review next.</p>
+            </div>
+            <div class="overall-progress">
+                <div class="overall-progress-label">
+                    <span>Overall completion</span>
+                    <strong id="overall-progress-value">0%</strong>
+                </div>
+                <div class="overall-progress-track" aria-hidden="true">
+                    <span id="overall-progress-fill"></span>
+                </div>
+                <div class="progress-segments" id="progress-segments" aria-hidden="true"></div>
+            </div>
+        </section>
+
+        <div id="stale-return-banner" class="stale-return-banner hidden"></div>
+
+        <section class="learning-path" aria-labelledby="learning-path-title">
+            <div class="path-header">
+                <div>
+                    <div class="section-kicker">Learning path</div>
+                    <h2 id="learning-path-title">Modules and milestones</h2>
+                </div>
+                <p>Follow the path in order, then use practice tools when review comes due.</p>
+            </div>
+            <div class="module-list">
+{{MODULE_LIST}}
+            </div>
+        </section>
+
+        <section class="study-tools" aria-labelledby="study-tools-title">
+            <div class="path-header">
+                <div>
+                    <div class="section-kicker">Focus timer</div>
+                    <h2 id="study-tools-title">Study session</h2>
+                </div>
+                <p>Use this when you want a bounded block without leaving the dashboard.</p>
+            </div>
+            <div class="dashboard-action-bar">
+                <div class="session-controls-row">
+                    <label class="session-duration-label" for="session-duration">Duration</label>
+                    <select id="session-duration" class="session-duration">
+                        <option value="25-5-15">25/5/15</option>
+                        <option value="50-10-15">50/10/15</option>
+                        <option value="90-20-30">90/20/30</option>
+                    </select>
+                    <button class="session-start-btn" type="button" id="start-session-btn">Start focus block</button>
+                    <div id="focus-toggle-slot" class="focus-toggle-slot"></div>
+                </div>
+            </div>
+
+            <div class="session-timer" id="session-timer" hidden>
+                <div class="session-timer-header">
+                    <span class="session-title">Session in progress</span>
+                    <span class="session-countdown" id="session-countdown">25:00</span>
+                </div>
+                <div class="session-progress">
+                    <div class="session-progress-bar" id="session-progress"></div>
+                </div>
+                <div class="session-meta" id="session-label">Focus block - 25 min</div>
+                <div class="session-message" id="session-message"></div>
+                <div class="session-controls">
+                    <button class="session-control-btn" type="button" data-session-action="toggle">Pause</button>
+                    <button class="session-control-btn" type="button" data-session-action="reset">Reset timer</button>
+                    <button class="session-control-btn" type="button" id="sound-toggle">Sound</button>
+                </div>
+            </div>
+        </section>
 
         <details class="stats-detail">
-            <summary>Detailed Stats</summary>
+            <summary>Detailed activity</summary>
             <div class="stats-detail-content">
                 <div class="stats-row">
-                    <div class="stat-item"><span class="stat-value" id="completed-count">0</span><span class="stat-label">Modules</span></div>
-                    <div class="stat-item"><span class="stat-value" id="streak-longest">0</span><span class="stat-label">Best Streak</span></div>
+                    <div class="stat-item"><span class="stat-value" id="streak-longest">0</span><span class="stat-label">Best streak</span></div>
                     <div class="stat-item"><span class="stat-value" id="streak-today">0</span><span class="stat-label">Today</span></div>
                 </div>
                 <div id="activity-heatmap"></div>
             </div>
         </details>
 
-        <div class="dashboard-action-bar">
-            <a href="#" id="resume-btn" class="resume-btn">Continue learning &rarr;</a>
-            <div class="session-controls-row">
-                <select id="session-duration" class="session-duration">
-                    <option value="25-5-15">25/5/15</option>
-                    <option value="50-10-15">50/10/15</option>
-                    <option value="90-20-30">90/20/30</option>
-                </select>
-                <button class="session-start-btn" type="button" id="start-session-btn">Start</button>
-                <div id="focus-toggle-slot" class="focus-toggle-slot"></div>
-            </div>
-        </div>
-
-        <div class="session-timer" id="session-timer" hidden>
-            <div class="session-timer-header">
-                <span class="session-title">Session in progress</span>
-                <span class="session-countdown" id="session-countdown">25:00</span>
-            </div>
-            <div class="session-progress">
-                <div class="session-progress-bar" id="session-progress"></div>
-            </div>
-            <div class="session-meta" id="session-label">Focus block • 25 min</div>
-            <div class="session-message" id="session-message"></div>
-            <div class="session-controls">
-                <button class="session-control-btn" type="button" data-session-action="toggle">Pause</button>
-                <button class="session-control-btn" type="button" data-session-action="reset">Reset timer</button>
-                <button class="session-control-btn" type="button" id="sound-toggle"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;"><path d="M6 13a2 2 0 004 0"/><path d="M4 7a4 4 0 018 0c0 2 1 3.5 2 4.5H2c1-1 2-2.5 2-4.5z"/></svg> Sound</button>
-            </div>
-        </div>
-
-        <nav class="dashboard-nav">
-            <a href="module0.html" class="nav-pill">Quick Ref</a>
-{{PLUGIN_NAV_PILLS}}
-        </nav>
-
-        <div id="stale-return-banner" class="stale-return-banner hidden"></div>
-
-        <div class="module-list">
-{{MODULE_LIST}}
-        </div>
-
         <details class="data-management">
-            <summary>Data Management</summary>
+            <summary>Data management</summary>
             <div class="data-actions">
-                <button class="export-notes" id="export-notes-btn">Export Notes</button>
-                <button class="data-btn" id="export-all-btn">Export All Data</button>
+                <button class="export-notes" id="export-notes-btn">Export notes</button>
+                <button class="data-btn" id="export-all-btn">Export all data</button>
                 <label class="data-btn">
-                    Import Data <input type="file" accept=".json" hidden id="import-data-input">
+                    Import data <input type="file" accept=".json" hidden id="import-data-input">
                 </label>
-                <button class="clear-progress" id="clear-progress-btn">Clear All Progress</button>
-                <button class="clear-progress clear-progress--danger" id="nuke-btn">Nuke Everything</button>
+                <button class="clear-progress" id="clear-progress-btn">Clear progress</button>
+                <button class="clear-progress clear-progress--danger" id="nuke-btn">Nuke everything</button>
             </div>
         </details>
-    </div>
+    </main>
 
     <script src="course-data.js"></script>
     <script src="course-config.js"></script>

@@ -187,7 +187,7 @@ const themeFiles = fs.readdirSync(
 
 // Inline script checks localStorage for theme, honors prefers-color-scheme,
 // and dynamically loads themes/light.css only when needed. No render-blocking link.
-const themeInitScript = `    <script>(function(){var d=document.documentElement;var lights={'light':1,'gruvbox-light':1,'solarized-light':1,'everforest-light':1,'terminal-light':1};try{var t=localStorage.getItem('vibe-learn-theme');if(t&&t!=='dark'&&t!=='light'){t=lights[t]?'light':'dark';localStorage.setItem('vibe-learn-theme',t)}if(!t){t=window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'}if(t==='light'){d.setAttribute('data-theme','light');var l=document.createElement('link');l.rel='stylesheet';l.id='theme-css';l.href='themes/light.css';document.head.appendChild(l)}}catch(e){}var p=location.pathname.split('/').pop()||'index.html';if(p!=='index.html')d.classList.add('has-sidebar')})()</script>`;
+const themeInitScript = `    <script>(function(){var d=document.documentElement;var lights={'light':1,'gruvbox-light':1,'solarized-light':1,'everforest-light':1,'terminal-light':1};try{var t=localStorage.getItem('vibe-learn-theme');if(t&&t!=='dark'&&t!=='light'){t=lights[t]?'light':'dark';localStorage.setItem('vibe-learn-theme',t)}if(!t){t=window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'}d.setAttribute('data-theme',t);if(t==='light'){var l=document.createElement('link');l.rel='stylesheet';l.id='theme-css';l.href='themes/light.css';document.head.appendChild(l)}}catch(e){}var p=location.pathname.split('/').pop()||'index.html';if(p!=='index.html')d.classList.add('has-sidebar')})()</script>`;
 
 const themeLinksHtml = themeInitScript;
 
@@ -763,42 +763,60 @@ function buildCourse(slug) {
         tracks.forEach(track => {
             html += `            <!-- Track ${track.id} -->\n`;
             html += `            <div class="track-section">\n`;
-            html += `                <div class="track-title">Track ${track.id} • ${track.title}</div>\n`;
+            html += `                <div class="track-heading">\n`;
+            html += `                    <span class="track-kicker">Track ${track.id}</span>\n`;
+            html += `                    <h3 class="track-title">${track.title}</h3>\n`;
+            html += `                </div>\n`;
 
             track.modules.forEach(modId => {
                 const mod = modules.find(m => m.id === modId);
                 if (!mod) return;
                 const counts = moduleExerciseCounts[mod.id] || { warmups: 0, challenges: 0 };
-                html += `                <div class="module-item" data-module="${mod.id}" data-warmups="${counts.warmups}" data-challenges="${counts.challenges}">\n`;
-                html += `                    <input type="checkbox" class="module-checkbox" id="m${mod.id}">\n`;
+                const totalExercises = counts.warmups + counts.challenges;
+                const exerciseLabel = totalExercises > 0
+                    ? `${counts.warmups} warmups / ${counts.challenges} challenges`
+                    : 'Reference module';
+                html += `                <article class="module-item module-row" data-module="${mod.id}" data-warmups="${counts.warmups}" data-challenges="${counts.challenges}">\n`;
+                html += `                    <label class="module-check" for="m${mod.id}"><input type="checkbox" class="module-checkbox" id="m${mod.id}"><span aria-hidden="true"></span></label>\n`;
                 const modHref = mod.isSplit ? `module${mod.id}-1.html` : `${mod.file}.html`;
                 html += `                    <a href="${modHref}" class="module-link">\n`;
-                html += `                        <span class="module-num">MODULE ${mod.num}</span>\n`;
+                html += `                        <span class="module-num">Module ${mod.num}</span>\n`;
                 html += `                        <span class="module-name">${mod.title}</span>\n`;
+                html += `                        <span class="module-desc-inline">${mod.description || ''}</span>\n`;
                 html += `                    </a>\n`;
-                html += `                    <span class="readiness-badge" id="readiness-${mod.id}"></span>\n`;
-                html += `                    <a class="next-cta hidden" id="next-cta-${mod.id}"></a>\n`;
-                html += `                    <span class="exercise-progress-inline" id="ex-progress-${mod.id}"></span>\n`;
-                html += `                    <span class="last-studied" id="last-${mod.id}"></span>\n`;
-                html += `                </div>\n`;
+                html += `                    <div class="module-row-meta">\n`;
+                html += `                        <span class="readiness-badge fresh" id="readiness-${mod.id}">Not started</span>\n`;
+                html += `                        <span class="exercise-count">${exerciseLabel}</span>\n`;
+                html += `                        <span class="exercise-progress-inline" id="ex-progress-${mod.id}"></span>\n`;
+                html += `                        <span class="last-studied" id="last-${mod.id}"></span>\n`;
+                html += `                        <a class="next-cta hidden" id="next-cta-${mod.id}"></a>\n`;
+                html += `                    </div>\n`;
+                html += `                </article>\n`;
             });
 
             html += `            </div>\n\n`;
         });
 
         html += `            <!-- Projects -->\n`;
-        html += `            <div class="track-section">\n`;
-        html += `                <div class="track-title">Projects • Capstone</div>\n`;
+        html += `            <div class="track-section project-section">\n`;
+        html += `                <div class="track-heading">\n`;
+        html += `                    <span class="track-kicker">Milestones</span>\n`;
+        html += `                    <h3 class="track-title">Projects</h3>\n`;
+        html += `                </div>\n`;
 
         projects.forEach(proj => {
-            html += `                <div class="module-item" data-module="${proj.id}">\n`;
-            html += `                    <input type="checkbox" class="module-checkbox" id="m${proj.id}">\n`;
+            html += `                <article class="module-item module-row project-milestone" data-module="${proj.id}">\n`;
+            html += `                    <label class="module-check" for="m${proj.id}"><input type="checkbox" class="module-checkbox" id="m${proj.id}"><span aria-hidden="true"></span></label>\n`;
             html += `                    <a href="${proj.file}.html" class="module-link">\n`;
-            html += `                        <span class="module-num">PROJECT ${proj.num}</span>\n`;
+            html += `                        <span class="module-num">Project ${proj.num}</span>\n`;
             html += `                        <span class="module-name">${proj.title}</span>\n`;
+            html += `                        <span class="module-desc-inline">${proj.description || ''}</span>\n`;
             html += `                    </a>\n`;
-            html += `                    <span class="last-studied" id="last-${proj.id}"></span>\n`;
-            html += `                </div>\n`;
+            html += `                    <div class="module-row-meta">\n`;
+            html += `                        <span class="readiness-badge milestone">Milestone</span>\n`;
+            html += `                        <span class="last-studied" id="last-${proj.id}"></span>\n`;
+            html += `                    </div>\n`;
+            html += `                </article>\n`;
         });
 
         html += `            </div>\n`;

@@ -9,9 +9,9 @@
 {{> dashboard-nav}}
 
         <div class="module-header algo-header">
-            <div class="module-tag">// ALGORITHM PRACTICE</div>
-            <h1>Algorithm Practice</h1>
-            <p class="module-desc">Master common algorithm patterns with progressive difficulty variants in Go.</p>
+            <div class="module-tag">Algorithm practice</div>
+            <h1>Pattern practice</h1>
+            <p class="module-desc">Practice common algorithm patterns with progressive variants and honest self-rating.</p>
         </div>
 
         <!-- Stats -->
@@ -38,7 +38,7 @@
         <div class="session-config focus-content" id="algo-config">
             <!-- Category Grid (Feature 1) -->
             <div class="algo-category-section">
-                <span class="session-config-label">Category:</span>
+                <span class="session-config-label">Category</span>
                 <div class="algo-category-grid" id="algo-category-grid">
                     <!-- Populated by renderCategoryGrid() -->
                 </div>
@@ -46,7 +46,7 @@
 
             <!-- Session Type Toggle (Feature 3) -->
             <div class="session-config-row">
-                <span class="session-config-label">Session Type:</span>
+                <span class="session-config-label">Session type</span>
                 <div class="session-config-options" id="algo-type-options">
                     <button class="session-option active" data-type="practice">Practice</button>
                     <button class="session-option" data-type="pattern-drill">Pattern Drill</button>
@@ -61,7 +61,7 @@
 
             <!-- Practice-specific config rows (hidden when pattern-drill) -->
             <div class="session-config-row practice-config-row">
-                <span class="session-config-label">Difficulty:</span>
+                <span class="session-config-label">Difficulty</span>
                 <div class="session-config-options" id="algo-difficulty-options">
                     <button class="session-option" data-difficulty="easy">Easy</button>
                     <button class="session-option active" data-difficulty="balanced">Balanced</button>
@@ -70,7 +70,7 @@
                 </div>
             </div>
             <div class="session-config-row practice-config-row">
-                <span class="session-config-label">Mode:</span>
+                <span class="session-config-label">Mode</span>
                 <div class="session-config-options" id="algo-mode-options">
                     <button class="session-option" data-mode="discover">Discover</button>
                     <button class="session-option active" data-mode="mixed">Mixed</button>
@@ -79,7 +79,7 @@
                 </div>
             </div>
             <div class="session-config-row practice-config-row">
-                <span class="session-config-label">Blind Mode:</span>
+                <span class="session-config-label">Blind mode</span>
                 <div class="session-config-options" id="algo-blind-options">
                     <button class="session-option active" data-blind="off">Off</button>
                     <button class="session-option" data-blind="on">On</button>
@@ -88,7 +88,7 @@
             </div>
 
             <div class="session-config-row">
-                <span class="session-config-label">Session Size:</span>
+                <span class="session-config-label">Session size</span>
                 <div class="session-config-options" id="algo-count-options">
                     <button class="session-option" data-count="5">5</button>
                     <button class="session-option active" data-count="10">10</button>
@@ -98,7 +98,7 @@
             </div>
 
             <div class="session-start-area">
-                <button class="session-start-btn-main" id="algo-start" onclick="AlgorithmPractice.startSession()" style="width: 100%; padding: 1rem; font-size: 1.1rem;">Start Session</button>
+                <button class="session-start-btn-main" id="algo-start" onclick="AlgorithmPractice.startSession()" style="width: 100%; padding: 1rem; font-size: 1.1rem;">Start practice</button>
                 <p id="algo-start-hint" style="color: var(--purple); font-size: 0.85rem; margin-top: 0.5rem; display: none;"></p>
             </div>
         </div>
@@ -123,7 +123,7 @@
         <!-- Documentation section -->
         <div class="algo-help-section" id="algo-help">
             <details>
-                <summary>How Algorithm Practice Works</summary>
+                <summary>How algorithm practice works</summary>
                 <div class="algo-help-content">
                     <h4>Session Types</h4>
                     <p><strong>Practice</strong> - Standard coding practice with hints, solutions, and pattern primers available</p>

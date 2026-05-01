@@ -7,16 +7,13 @@
     <title>vibe-learn</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="style.css">
 {{THEME_LINKS}}
     <style>
         /* =========================================
-           Landing Page — "Scholarly Terminal"
-           Blends editorial serif elegance with
-           terminal precision. Unexpected for a
-           dev tool. Memorable.
+           Landing Page
            ========================================= */
 
         :root {
@@ -54,41 +51,14 @@
         body {
             background: var(--land-bg);
             color: var(--land-text);
-            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-family: Inter, ui-sans-serif, system-ui, sans-serif;
             -webkit-font-smoothing: antialiased;
             overflow-x: hidden;
         }
 
-        /* --- Noise texture overlay --- */
-        body::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
-            background-repeat: repeat;
-            background-size: 256px 256px;
-            pointer-events: none;
-            z-index: 9998;
-            opacity: 0.5;
-        }
-
-        /* --- Ambient glow --- */
+        body::before,
         body::after {
-            content: '';
-            position: fixed;
-            top: -20%;
-            left: 50%;
-            width: 120vw;
-            height: 60vh;
-            transform: translateX(-50%);
-            background: radial-gradient(ellipse at center, rgba(196, 181, 255, 0.06) 0%, transparent 65%);
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        [data-theme="light"] body::before { opacity: 0.15; }
-        [data-theme="light"] body::after {
-            background: radial-gradient(ellipse at center, rgba(107, 82, 192, 0.05) 0%, transparent 65%);
+            display: none;
         }
 
         .landing {
@@ -185,11 +155,11 @@
             animation-delay: 0.1s;
         }
         .hero h1 {
-            font-family: 'Space Grotesk', sans-serif; font-weight: 700;
-            font-size: clamp(3rem, 7vw, 5rem);
+            font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-weight: 700;
+            font-size: 4.5rem;
             font-weight: 400;
             line-height: 1.08;
-            letter-spacing: -0.03em;
+            letter-spacing: 0;
             color: var(--land-text);
             margin-bottom: 1.75rem;
             animation: fadeUp 0.7s ease both;
@@ -375,7 +345,7 @@
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
         }
         .step-number {
-            font-family: 'Space Grotesk', sans-serif; font-weight: 700;
+            font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-weight: 700;
             font-size: 2.2rem;
             color: var(--land-accent);
             opacity: 0.25;
@@ -450,11 +420,11 @@
             box-shadow: 0 12px 36px rgba(30, 20, 60, 0.08);
         }
         .course-card .course-name {
-            font-family: 'Space Grotesk', sans-serif; font-weight: 700;
+            font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-weight: 700;
             font-size: 1.45rem;
             font-weight: 400;
             margin-bottom: 0.6rem;
-            letter-spacing: -0.01em;
+            letter-spacing: 0;
         }
         .course-card .course-desc {
             color: var(--land-text-dim);
@@ -630,11 +600,11 @@
             padding: 4rem 0 2rem;
         }
         .cta-heading {
-            font-family: 'Space Grotesk', sans-serif; font-weight: 700;
+            font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-weight: 700;
             font-size: 2.2rem;
             font-weight: 400;
             margin-bottom: 0.75rem;
-            letter-spacing: -0.02em;
+            letter-spacing: 0;
         }
         .cta-heading em {
             font-style: italic;
@@ -686,7 +656,7 @@
         @media (max-width: 768px) {
             .landing { padding: 0 1.25rem; }
             .hero { padding: 3.5rem 0 2.5rem; }
-            .hero h1 { font-size: clamp(2.2rem, 8vw, 3.2rem); }
+            .hero h1 { font-size: 2.6rem; }
             .hero-sub { font-size: 1rem; }
             .steps { grid-template-columns: 1fr; gap: 1rem; }
             .feature-grid { grid-template-columns: 1fr; }
@@ -713,6 +683,593 @@
                 transform: translateY(8px);
             }
         }
+
+        /* =========================================
+           Public Page Refresh
+           ========================================= */
+        :root {
+            --public-bg: #101714;
+            --public-surface: #151d19;
+            --public-surface-2: #1b2520;
+            --public-surface-3: #223028;
+            --public-border: #2c3a33;
+            --public-border-strong: #3d5147;
+            --public-text: #eef4ef;
+            --public-muted: #a4afa7;
+            --public-faint: #66746a;
+            --public-accent: #65d6ba;
+            --public-accent-2: #f1b869;
+            --public-accent-muted: rgba(101, 214, 186, 0.12);
+            --public-primary-bg: #0f8f78;
+            --public-primary-hover: #0b705f;
+            --public-primary-text: #f8fffc;
+            --public-nav: rgba(16, 23, 20, 0.92);
+        }
+
+        [data-theme="light"] {
+            --public-bg: #f4f7f3;
+            --public-surface: #ffffff;
+            --public-surface-2: #eef3ef;
+            --public-surface-3: #e6eee8;
+            --public-border: #d5ded7;
+            --public-border-strong: #bbc9bf;
+            --public-text: #14201a;
+            --public-muted: #526159;
+            --public-faint: #7a8980;
+            --public-accent: #087b68;
+            --public-accent-2: #a7611b;
+            --public-accent-muted: rgba(8, 123, 104, 0.10);
+            --public-primary-bg: #087b68;
+            --public-primary-hover: #075f52;
+            --public-primary-text: #ffffff;
+            --public-nav: rgba(244, 247, 243, 0.92);
+        }
+
+        html {
+            background: var(--public-bg);
+        }
+
+        body {
+            background: var(--public-bg);
+            color: var(--public-text);
+            font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+            line-height: 1.5;
+        }
+
+        body::before,
+        body::after {
+            display: none;
+        }
+
+        .landing {
+            max-width: 1180px;
+            padding: 0 1.5rem;
+        }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            height: 64px;
+            padding: 0;
+            border-bottom: 1px solid var(--public-border);
+            background: var(--public-nav);
+            backdrop-filter: blur(14px);
+            animation: none;
+        }
+
+        .topbar-brand,
+        .topbar-links a,
+        .section-label,
+        .step-cmd,
+        .course-card .course-status,
+        .course-card .course-meta,
+        .course-progress-indicator,
+        .terminal-title,
+        .di-code,
+        .footer-links a,
+        .footer-tag {
+            letter-spacing: 0;
+        }
+
+        .topbar-brand {
+            color: var(--public-text);
+            font-size: 0.86rem;
+        }
+
+        .topbar-links {
+            gap: 0.5rem;
+        }
+
+        .topbar-links a {
+            color: var(--public-muted);
+            border: 1px solid transparent;
+            border-radius: 6px;
+            padding: 0.45rem 0.65rem;
+            font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+            font-size: 0.86rem;
+            font-weight: 500;
+        }
+
+        .topbar-links a:hover {
+            color: var(--public-text);
+            border-color: var(--public-border);
+            background: var(--public-surface);
+        }
+
+        .hero {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(360px, 440px);
+            gap: 2.5rem;
+            align-items: end;
+            max-width: none;
+            padding: 3.5rem 0 2.25rem;
+            border-bottom: 1px solid var(--public-border);
+        }
+
+        .hero-eyebrow {
+            margin: 0 0 0.9rem;
+            color: var(--public-accent-2);
+            font-size: 0.78rem;
+            letter-spacing: 0;
+            animation: none;
+        }
+
+        .hero h1 {
+            max-width: 680px;
+            margin: 0 0 1rem;
+            color: var(--public-text);
+            font-size: 3.2rem;
+            font-weight: 750;
+            line-height: 1.04;
+            animation: none;
+        }
+
+        .hero h1 em,
+        .cta-heading em {
+            color: var(--public-accent);
+            font-style: normal;
+        }
+
+        .hero-sub {
+            max-width: 620px;
+            color: var(--public-muted);
+            font-size: 1.03rem;
+            line-height: 1.7;
+            animation: none;
+        }
+
+        .hero-sub strong {
+            color: var(--public-text);
+        }
+
+        .hero-actions {
+            gap: 0.7rem;
+            margin-top: 1.5rem;
+            animation: none;
+        }
+
+        .btn-primary,
+        .btn-ghost {
+            min-height: 40px;
+            border-radius: 8px;
+            padding: 0.6rem 0.9rem;
+            font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+            font-size: 0.9rem;
+            font-weight: 650;
+            letter-spacing: 0;
+            transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+        }
+
+        .btn-primary {
+            border: 1px solid var(--public-primary-bg);
+            background: var(--public-primary-bg);
+            color: var(--public-primary-text);
+        }
+
+        .btn-primary:hover {
+            transform: none;
+            box-shadow: none;
+            background: var(--public-primary-hover);
+            border-color: var(--public-primary-hover);
+            color: var(--public-primary-text);
+        }
+
+        [data-theme="light"] .btn-primary:hover {
+            box-shadow: none;
+            background: var(--public-primary-hover);
+            border-color: var(--public-primary-hover);
+            color: var(--public-primary-text);
+        }
+
+        .btn-ghost {
+            color: var(--public-muted);
+            border: 1px solid var(--public-border);
+            background: transparent;
+        }
+
+        .btn-ghost:hover,
+        [data-theme="light"] .btn-ghost:hover {
+            color: var(--public-text);
+            border-color: var(--public-border-strong);
+            background: var(--public-surface-2);
+        }
+
+        .terminal {
+            grid-column: 2;
+            grid-row: 1 / span 5;
+            width: 100%;
+            max-width: none;
+            margin: 0;
+            background: #0b100d;
+            border: 1px solid var(--public-border);
+            border-radius: 8px;
+            box-shadow: none;
+            animation: none;
+        }
+
+        [data-theme="light"] .terminal {
+            background: #ffffff;
+            box-shadow: none;
+        }
+
+        .terminal-bar {
+            border-bottom: 1px solid var(--public-border);
+            padding: 0.65rem 0.8rem;
+        }
+
+        .terminal-title {
+            color: var(--public-faint);
+        }
+
+        .terminal pre {
+            padding: 1rem;
+            color: var(--public-muted);
+            font-size: 0.76rem;
+            line-height: 1.8;
+        }
+
+        .terminal .prompt,
+        .terminal .comment {
+            color: var(--public-faint);
+        }
+
+        .terminal .cmd {
+            color: var(--public-text);
+        }
+
+        .terminal .cursor {
+            background: var(--public-accent);
+        }
+
+        .section-label {
+            gap: 0.75rem;
+            margin: 3.25rem 0 1rem;
+            color: var(--public-faint);
+            font-size: 0.78rem;
+            text-transform: uppercase;
+        }
+
+        .section-label::after {
+            background: var(--public-border);
+        }
+
+        .steps,
+        .feature-grid {
+            gap: 1rem;
+        }
+
+        .step,
+        .feature-card,
+        .course-card {
+            background: var(--public-surface);
+            border-color: var(--public-border);
+            border-radius: 8px;
+            box-shadow: none;
+        }
+
+        .step,
+        .feature-card {
+            padding: 1.15rem;
+        }
+
+        .step:hover,
+        .feature-card:hover,
+        .course-card:hover {
+            transform: none;
+            box-shadow: none;
+            border-color: var(--public-border-strong);
+            background: var(--public-surface-2);
+        }
+
+        .step-number {
+            margin-bottom: 0.85rem;
+            color: var(--public-accent);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82rem;
+            font-weight: 700;
+            opacity: 1;
+        }
+
+        .step-title,
+        .feature-title {
+            color: var(--public-text);
+            font-size: 0.98rem;
+            font-weight: 700;
+        }
+
+        .step-desc,
+        .feature-desc,
+        .course-card .course-desc {
+            color: var(--public-muted);
+            font-size: 0.88rem;
+            line-height: 1.65;
+        }
+
+        .step-cmd {
+            color: var(--public-accent);
+            background: var(--public-accent-muted);
+            border-color: rgba(101, 214, 186, 0.18);
+            overflow-wrap: anywhere;
+        }
+
+        [data-theme="light"] .step-cmd {
+            background: var(--public-accent-muted);
+            border-color: rgba(8, 123, 104, 0.16);
+        }
+
+        .course-grid {
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 1rem;
+        }
+
+        .course-card {
+            min-height: 180px;
+            padding: 1.2rem;
+        }
+
+        .course-card::before {
+            display: none;
+        }
+
+        .course-card .course-name {
+            color: var(--public-text);
+            font-size: 1.08rem;
+            font-weight: 750;
+            line-height: 1.25;
+        }
+
+        .course-card .course-status {
+            color: var(--public-accent-2);
+            font-size: 0.75rem;
+        }
+
+        .course-card .course-meta,
+        .course-progress-indicator {
+            color: var(--public-faint);
+            font-size: 0.75rem;
+        }
+
+        .course-progress-indicator::before {
+            background: var(--public-accent);
+        }
+
+        .feature-icon,
+        [data-theme="light"] .feature-icon {
+            width: 34px;
+            height: 34px;
+            margin-bottom: 0.85rem;
+            color: var(--public-accent);
+            background: var(--public-accent-muted);
+            border-color: rgba(101, 214, 186, 0.18);
+        }
+
+        .feature-icon.warm,
+        [data-theme="light"] .feature-icon.warm {
+            color: var(--public-accent-2);
+            background: rgba(241, 184, 105, 0.10);
+            border-color: rgba(241, 184, 105, 0.18);
+        }
+
+        .discovery {
+            margin-top: 3.25rem;
+            padding: 1.25rem 0 0;
+            border-top: 1px solid var(--public-border);
+        }
+
+        .discovery-intro {
+            max-width: 620px;
+            margin-bottom: 1.25rem;
+            color: var(--public-muted);
+            font-size: 0.96rem;
+        }
+
+        .discovery-items {
+            gap: 0;
+            background: transparent;
+            border: 1px solid var(--public-border);
+            border-radius: 8px;
+        }
+
+        .discovery-item {
+            grid-template-columns: 28px 1fr;
+            background: var(--public-surface);
+            border-top: 1px solid var(--public-border);
+            padding: 1rem;
+        }
+
+        .discovery-item:first-child {
+            border-top: 0;
+        }
+
+        .discovery-item:hover {
+            background: var(--public-surface-2);
+        }
+
+        .di-arrow {
+            color: var(--public-accent);
+            text-align: left;
+        }
+
+        .di-title {
+            color: var(--public-text);
+            font-size: 0.94rem;
+        }
+
+        .di-desc {
+            color: var(--public-muted);
+        }
+
+        .di-desc code,
+        [data-theme="light"] .di-desc code {
+            color: var(--public-accent);
+            background: var(--public-accent-muted);
+        }
+
+        .di-code {
+            color: var(--public-faint);
+        }
+
+        .cta-section {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1.5rem;
+            text-align: left;
+            padding: 2.5rem 0;
+            margin-top: 2.5rem;
+            border-top: 1px solid var(--public-border);
+        }
+
+        .cta-heading {
+            color: var(--public-text);
+            font-size: 1.55rem;
+            font-weight: 750;
+        }
+
+        .cta-sub {
+            max-width: 620px;
+            margin: 0.4rem 0 0;
+            color: var(--public-muted);
+            line-height: 1.6;
+        }
+
+        .cta-sub a {
+            color: var(--public-accent);
+        }
+
+        .landing-footer {
+            padding: 1.75rem 0 2.5rem;
+            border-color: var(--public-border);
+        }
+
+        .footer-links {
+            gap: 0.9rem;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a,
+        .footer-tag {
+            color: var(--public-faint);
+        }
+
+        .footer-links a:hover {
+            color: var(--public-accent);
+        }
+
+        .reveal,
+        .reveal.visible {
+            opacity: 1;
+            transform: none;
+            transition: none;
+        }
+
+        @media (min-width: 769px) {
+            .feature-grid .feature-card:nth-child(odd) {
+                transform: none;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .hero {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+
+            .terminal {
+                grid-column: auto;
+                grid-row: auto;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .landing {
+                padding: 0 1rem;
+            }
+
+            .hero {
+                padding: 2.25rem 0 1.5rem;
+            }
+
+            .hero h1 {
+                font-size: 2.25rem;
+            }
+
+            .section-label {
+                margin: 2.5rem 0 0.9rem;
+            }
+
+            .steps,
+            .feature-grid,
+            .course-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .cta-section,
+            .landing-footer {
+                align-items: flex-start;
+                flex-direction: column;
+                text-align: left;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .topbar-links a:not(:last-child) {
+                display: inline-flex;
+            }
+
+            .topbar-links a:last-child {
+                display: none;
+            }
+
+            .topbar-links {
+                padding-right: 2.75rem;
+            }
+
+            .topbar-links a {
+                padding: 0.38rem 0.45rem;
+                font-size: 0.8rem;
+            }
+
+            .hero h1 {
+                font-size: 1.9rem;
+            }
+
+            .hero-actions {
+                align-items: stretch;
+                width: 100%;
+            }
+
+            .btn-primary,
+            .btn-ghost {
+                justify-content: center;
+                width: 100%;
+            }
+
+            .terminal pre {
+                font-size: 0.68rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -729,19 +1286,16 @@
         <!-- Hero -->
         <header class="hero">
             <div class="hero-eyebrow">Open-source course engine</div>
-            <h1>Build an interactive<br>course <em>on anything</em></h1>
+            <h1>Interactive courses built around your goals</h1>
             <p class="hero-sub">
-                Most courses teach in the abstract. Create one built around <strong>your goal</strong> &mdash;
-                Go for CLI tools, Rust for a game engine, Python for your data pipeline.
-                Tell your AI coding tool what to teach. One build command does the rest.
+                Build a course that meets the learner where they are: practical lessons, exercises,
+                flashcards, spaced repetition, and progress tracking. Describe the audience and outcome,
+                let an AI coding tool generate the content, then ship a static course site.
             </p>
             <div class="hero-actions">
-                <a href="https://github.com/jmilne22/vibe-learn" class="btn-primary">
-                    Get Started
-                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
-                </a>
-                <a href="guide.html" class="btn-ghost">Platform Guide</a>
-                <a href="infra-go/index.html" class="btn-ghost">Live Course &rarr;</a>
+                <a href="guide.html" class="btn-primary">Read the guide</a>
+                <a href="infra-go/index.html" class="btn-ghost">Open live course</a>
+                <a href="https://github.com/jmilne22/vibe-learn" class="btn-ghost">GitHub</a>
             </div>
 
             <!-- Terminal -->
@@ -751,41 +1305,41 @@
                     <div class="terminal-title">terminal</div>
                     <div style="width: 36px;"></div>
                 </div>
-                <pre><span class="prompt">$</span> <span class="cmd">git clone https://github.com/jmilne22/vibe-learn</span>
+                <pre><span class="prompt">$</span> <span class="cmd">gh repo clone jmilne22/vibe-learn</span>
 <span class="prompt">$</span> <span class="cmd">npm run new-course -- python</span>
-<span class="prompt">$</span> <span class="cmd">claude "Create a Python course for JS developers"</span>
+<span class="prompt">$</span> <span class="cmd">claude "Create a Python course"</span>
 <span class="prompt">$</span> <span class="cmd">npm run build</span>
 <span class="comment"># Course ready at dist/python/</span><span class="cursor"></span></pre>
             </div>
         </header>
 
+        <!-- Courses -->
+        <div class="section-label reveal">Available courses</div>
+        <div class="course-grid reveal">
+{{COURSE_CARDS}}
+        </div>
+
         <!-- How It Works -->
         <div class="section-label reveal">How it works</div>
         <div class="steps reveal">
             <div class="step">
-                <div class="step-number">1</div>
+                <div class="step-number">01</div>
                 <div class="step-title">Scaffold</div>
-                <div class="step-desc">One command creates the course directory with the right structure.</div>
+                <div class="step-desc">Create a course directory with the right lesson, exercise, and asset structure.</div>
                 <div class="step-cmd">npm run new-course -- python</div>
             </div>
             <div class="step">
-                <div class="step-number">2</div>
+                <div class="step-number">02</div>
                 <div class="step-title">Generate</div>
-                <div class="step-desc">Point your AI tool at the starter prompt. It writes lessons, exercises, flashcards.</div>
+                <div class="step-desc">Give your AI tool the starter prompt, learner profile, and target outcome.</div>
                 <div class="step-cmd">claude "Create a Python course"</div>
             </div>
             <div class="step">
-                <div class="step-number">3</div>
-                <div class="step-title">Build &amp; Ship</div>
-                <div class="step-desc">One command compiles everything into a static site. Deploy anywhere.</div>
+                <div class="step-number">03</div>
+                <div class="step-title">Build and ship</div>
+                <div class="step-desc">Compile markdown and YAML into a static site that can be deployed anywhere.</div>
                 <div class="step-cmd">npm run build</div>
             </div>
-        </div>
-
-        <!-- Courses -->
-        <div class="section-label reveal">Built with vibe-learn</div>
-        <div class="course-grid reveal">
-{{COURSE_CARDS}}
         </div>
 
         <!-- Features -->
@@ -842,12 +1396,11 @@
 
         <!-- CTA -->
         <div class="cta-section reveal">
-            <div class="cta-heading">Start building <em>your</em> course</div>
-            <p class="cta-sub">Works with Claude Code, Cursor, Copilot, Augment, or any AI coding tool.<br>See <a href="https://github.com/jmilne22/vibe-learn/blob/main/STARTER_PROMPT.md">STARTER_PROMPT.md</a> to get started.</p>
-            <a href="https://github.com/jmilne22/vibe-learn" class="btn-primary">
-                Fork on GitHub
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
-            </a>
+            <div>
+                <div class="cta-heading">Start building <em>your</em> course</div>
+                <p class="cta-sub">Works with Claude Code, Cursor, Copilot, Augment, or any AI coding tool. See <a href="https://github.com/jmilne22/vibe-learn/blob/main/STARTER_PROMPT.md">STARTER_PROMPT.md</a> to get started.</p>
+            </div>
+            <a href="https://github.com/jmilne22/vibe-learn" class="btn-primary">Fork on GitHub</a>
         </div>
 
         <!-- Footer -->

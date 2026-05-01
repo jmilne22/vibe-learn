@@ -67,7 +67,7 @@
         if (!container || !variantsData || !variantsData.warmups || variantsData.warmups.length === 0) return;
 
         var header = document.createElement('h3');
-        header.style.cssText = 'display:flex;align-items:center;gap:0.75rem;';
+        header.className = 'exercise-section-heading';
         header.innerHTML = Icons.fire + ' Warmups';
 
         var btn = EC.createShuffleBtn({ id: 'shuffle-warmups-btn', color: 'green-bright', onClick: function() { shuffleWarmups(); } });
@@ -84,9 +84,7 @@
 
         var heading = document.getElementById('challenges');
         if (heading && heading.tagName === 'H3') {
-            heading.style.display = 'flex';
-            heading.style.alignItems = 'center';
-            heading.style.gap = '0.75rem';
+            heading.classList.add('exercise-section-heading');
             heading.appendChild(btn);
         } else {
             container.parentNode.insertBefore(btn, container);
@@ -229,7 +227,7 @@
         var html = '';
 
         if (warmups.length === 0) {
-            html = '<p style="color: var(--text-secondary); text-align: center;">No warmups match this filter.</p>';
+            html = '<p class="exercise-empty-state">No warmups match this filter.</p>';
             container.innerHTML = html;
             return;
         }
@@ -246,13 +244,13 @@
             var shuffled = allVariants.sort(function() { return Math.random() - 0.5; });
             var selected = shuffled.slice(0, 5);
 
-            html += '<p style="color: var(--green-bright); font-size: 0.9rem; margin: 0 0 1rem; font-weight: 600;">Practicing: ' + currentWarmupConceptFilter + ' (' + selected.length + ' of ' + allVariants.length + ' variants)</p>';
+            html += '<p class="exercise-filter-summary">Practicing: ' + currentWarmupConceptFilter + ' (' + selected.length + ' of ' + allVariants.length + ' variants)</p>';
 
             selected.forEach(function(item, idx) {
                 var conceptLink = window.conceptLinks[item.warmup.concept];
                 var conceptHtml = conceptLink
-                    ? '<a href="' + conceptLink + '" class="concept-link" style="color: var(--green-dim); opacity: 0.8;">(' + item.warmup.concept + ' \u2197)</a>'
-                    : '<span style="font-size: 0.75rem; opacity: 0.6; color: var(--text-secondary);">(' + item.warmup.concept + ')</span>';
+                    ? '<a href="' + conceptLink + '" class="concept-link">(' + item.warmup.concept + ' \u2197)</a>'
+                    : '<span class="concept-link concept-link--static">(' + item.warmup.concept + ')</span>';
 
                 item.variant.warmupId = item.warmup.id;
                 html += ER().renderExerciseCard({
@@ -280,8 +278,8 @@
 
             var conceptLink = window.conceptLinks[warmup.concept];
             var conceptHtml = conceptLink
-                ? '<a href="' + conceptLink + '" class="concept-link" style="color: var(--green-dim); opacity: 0.8;">(' + warmup.concept + ' \u2197)</a>'
-                : '<span style="font-size: 0.75rem; opacity: 0.6; color: var(--text-secondary);">(' + warmup.concept + ')</span>';
+                ? '<a href="' + conceptLink + '" class="concept-link">(' + warmup.concept + ' \u2197)</a>'
+                : '<span class="concept-link concept-link--static">(' + warmup.concept + ')</span>';
 
             variant.warmupId = warmup.id;
             html += ER().renderExerciseCard({
@@ -316,13 +314,13 @@
             if (hasEasierVariants) {
                 difficultyNav += '<button class="easier-variant-btn" data-challenge-id="' + challenge.id + '">' + Icons.chartDown + ' Get Easier Version</button>';
             } else if (variantDiff === 1) {
-                difficultyNav += '<button class="easier-variant-btn" disabled title="This is already the easiest variant">\u2713 Already Easiest</button>';
+                difficultyNav += '<button class="easier-variant-btn" disabled title="This is already the easiest variant">\u2713 Easiest version</button>';
             }
 
             if (hasHarderVariants) {
                 difficultyNav += '<button class="harder-variant-btn" data-challenge-id="' + challenge.id + '">' + Icons.chartUp + ' Get Harder Version</button>';
             } else if (variantDiff === 3) {
-                difficultyNav += '<button class="harder-variant-btn" disabled title="This is already the hardest variant">\u2713 Already Hardest</button>';
+                difficultyNav += '<button class="harder-variant-btn" disabled title="This is already the hardest variant">\u2713 Hardest version</button>';
             }
 
             difficultyNav += '</div>';
@@ -351,7 +349,7 @@
         var blockNames = (window.moduleData && window.moduleData.blockNames) || {};
 
         if (challenges.length === 0) {
-            html = '<p style="color: var(--text-secondary); text-align: center;">No challenges match this filter.</p>';
+            html = '<p class="exercise-empty-state">No challenges match this filter.</p>';
             container.innerHTML = html;
             return;
         }
@@ -376,17 +374,17 @@
             }
 
             var totalVariants = challenges.reduce(function(sum, c) { return sum + c.variants.length; }, 0);
-            html += '<p style="color: var(--orange); font-size: 0.9rem; margin: 0 0 1rem; font-weight: 600;">Practicing: ' + currentConceptFilter + ' (' + conceptFilterSelection.length + ' of ' + totalVariants + ' variants)</p>';
+            html += '<p class="exercise-filter-summary exercise-filter-summary--challenge">Practicing: ' + currentConceptFilter + ' (' + conceptFilterSelection.length + ' of ' + totalVariants + ' variants)</p>';
 
             var firstChallenge = challenges[0];
             if (firstChallenge && firstChallenge.patternPrimer) {
                 var pp = firstChallenge.patternPrimer;
-                html += '<details style="border: 2px solid var(--orange); border-radius: 6px; padding: 1rem; margin-bottom: 1.5rem;">' +
-                    '<summary style="color: var(--orange); font-weight: 600; cursor: pointer;">Pattern Primer: ' + currentConceptFilter + ' (brute force + best approach)</summary>' +
-                    '<div class="hint-content" style="margin-top: 1rem;">' +
-                        '<div style="margin-bottom: 0.75rem;"><strong>Brute force:</strong> ' + pp.bruteForce + '</div>' +
-                        '<div style="margin-bottom: 0.75rem;"><strong>Best approach:</strong> ' + pp.bestApproach + '</div>' +
-                        '<div><strong>Typical:</strong> ' + pp.typical + '</div>' +
+                html += '<details class="pattern-primer">' +
+                    '<summary>Pattern primer: ' + currentConceptFilter + ' (brute force + best approach)</summary>' +
+                    '<div class="hint-content">' +
+                        '<div class="pattern-primer-row"><strong>Brute force:</strong> ' + pp.bruteForce + '</div>' +
+                        '<div class="pattern-primer-row"><strong>Best approach:</strong> ' + pp.bestApproach + '</div>' +
+                        '<div class="pattern-primer-row"><strong>Typical:</strong> ' + pp.typical + '</div>' +
                     '</div></details>';
             }
 
@@ -454,7 +452,7 @@
             if (challenge.block !== currentBlock) {
                 currentBlock = challenge.block;
                 var blockLabel = blockNames[currentBlock] ? 'Block ' + currentBlock + ': ' + blockNames[currentBlock] : 'Block ' + currentBlock;
-                html += '<p style="color: var(--cyan); font-size: 0.85rem; margin: 1.5rem 0 0.5rem; font-weight: 600;">' + blockLabel + ' <span style="opacity: 0.7">' + difficultyStars + '</span></p>';
+                html += '<p class="exercise-block-label">' + blockLabel + ' <span>' + difficultyStars + '</span></p>';
             }
 
             html += renderSingleChallenge(displayNum, variant, challenge, difficultyStars);
@@ -723,8 +721,8 @@
 
                 var conceptLink = window.conceptLinks[warmup.concept];
                 var conceptHtml = conceptLink
-                    ? '<a href="' + conceptLink + '" class="concept-link" style="color: var(--green-dim); opacity: 0.8;">(' + warmup.concept + ' \u2197)</a>'
-                    : '<span style="font-size: 0.75rem; opacity: 0.6; color: var(--text-secondary);">(' + warmup.concept + ')</span>';
+                    ? '<a href="' + conceptLink + '" class="concept-link">(' + warmup.concept + ' \u2197)</a>'
+                    : '<span class="concept-link concept-link--static">(' + warmup.concept + ')</span>';
 
                 variant.warmupId = warmup.id;
                 html += ER().renderExerciseCard({
@@ -907,21 +905,6 @@
     }
 
     document.addEventListener('DOMContentLoaded', initWhenReady);
-
-    // Style the shuffle buttons hover
-    document.addEventListener('DOMContentLoaded', function() {
-        var chalBtn = document.getElementById('shuffle-challenges-btn');
-        if (chalBtn) {
-            chalBtn.addEventListener('mouseenter', function() {
-                chalBtn.style.background = 'var(--orange)';
-                chalBtn.style.color = 'white';
-            });
-            chalBtn.addEventListener('mouseleave', function() {
-                chalBtn.style.background = 'var(--bg-surface)';
-                chalBtn.style.color = 'var(--orange)';
-            });
-        }
-    });
 
     // Expose functions globally for onclick handlers
     window.shuffleWarmups = shuffleWarmups;

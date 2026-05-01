@@ -9,9 +9,9 @@
 {{> dashboard-nav}}
 
         <div class="module-header dp-header">
-            <div class="module-tag">// DAILY PRACTICE</div>
-            <h1>Practice Session</h1>
-            <p class="module-desc">Review exercises across all modules, weighted by what you need most.</p>
+            <div class="module-tag">Daily practice</div>
+            <h1>Review queue</h1>
+            <p class="module-desc">A focused set of exercises weighted by what is due, weak, or still undiscovered.</p>
         </div>
 
         <!-- Stats -->
@@ -33,7 +33,7 @@
         <!-- Configuration -->
         <div class="session-config focus-content" id="dp-config">
             <div class="session-config-row">
-                <span class="session-config-label">Exercises:</span>
+                    <span class="session-config-label">Exercises</span>
                 <div class="session-config-options" id="dp-count-options">
                     <button class="session-option" data-count="5">5</button>
                     <button class="session-option active" data-count="10">10</button>
@@ -42,7 +42,7 @@
                 </div>
             </div>
             <div class="session-config-row">
-                <span class="session-config-label">Mode:</span>
+                    <span class="session-config-label">Mode</span>
                 <div class="session-config-options" id="dp-mode-options">
                     <button class="session-option active" data-mode="review">Due for Review</button>
                     <button class="session-option" data-mode="weakest">Weakest</button>
@@ -51,7 +51,7 @@
                 </div>
             </div>
             <div class="session-config-row">
-                <span class="session-config-label">Type:</span>
+                    <span class="session-config-label">Type</span>
                 <div class="session-config-options" id="dp-type-options">
                     <button class="session-option active" data-type="all">All</button>
                     <button class="session-option" data-type="warmup">Warmups</button>
@@ -59,13 +59,13 @@
                 </div>
             </div>
             <div class="session-config-row">
-                <span class="session-config-label">Modules:</span>
+                    <span class="session-config-label">Modules</span>
                 <div class="session-config-options" id="dp-module-options">
 {{MODULE_FILTER_BUTTONS}}
                 </div>
             </div>
             <div class="session-start-area">
-                <button class="session-start-btn-main" id="dp-start" onclick="startSession()" style="width: 100%; padding: 1rem; font-size: 1.1rem;">Start Session</button>
+                <button class="session-start-btn-main" id="dp-start" onclick="startSession()" style="width: 100%; padding: 1rem; font-size: 1.1rem;">Start review</button>
                 <p id="dp-start-hint" style="color: var(--accent); font-size: 0.85rem; margin-top: 0.5rem; display: none;"></p>
             </div>
         </div>

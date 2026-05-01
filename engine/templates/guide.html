@@ -7,7 +7,7 @@
     <title>Platform Guide — vibe-learn</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="style.css">
 {{THEME_LINKS}}
@@ -42,7 +42,7 @@
         .hero h1 {
             font-size: 2.4rem;
             font-weight: 700;
-            letter-spacing: -0.02em;
+            letter-spacing: 0;
             line-height: 1.15;
             margin-bottom: 1rem;
         }
@@ -376,6 +376,417 @@
             .yaml-example { font-size: 0.65rem; }
             .toc-list a { font-size: 0.8rem; }
         }
+
+        /* --- Production docs refresh --- */
+        :root {
+            --docs-bg: #101714;
+            --docs-surface: #151d19;
+            --docs-surface-2: #1b2520;
+            --docs-code: #0b100d;
+            --docs-border: #2c3a33;
+            --docs-border-strong: #3d5147;
+            --docs-text: #eef4ef;
+            --docs-muted: #a4afa7;
+            --docs-faint: #66746a;
+            --docs-accent: #65d6ba;
+            --docs-warm: #f1b869;
+        }
+
+        [data-theme="light"] {
+            --docs-bg: #f4f7f3;
+            --docs-surface: #ffffff;
+            --docs-surface-2: #eef3ef;
+            --docs-code: #f8faf7;
+            --docs-border: #d5ded7;
+            --docs-border-strong: #bbc9bf;
+            --docs-text: #14201a;
+            --docs-muted: #526159;
+            --docs-faint: #7a8980;
+            --docs-accent: #087b68;
+            --docs-warm: #a7611b;
+        }
+
+        html {
+            background: var(--docs-bg);
+        }
+
+        body {
+            background: var(--docs-bg);
+            color: var(--docs-text);
+            font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        }
+
+        .landing {
+            display: grid;
+            grid-template-columns: 250px minmax(0, 760px);
+            column-gap: 3.5rem;
+            max-width: 1180px;
+            padding: 0 1.5rem 4rem;
+        }
+
+        .guide-nav {
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: center;
+            min-height: 64px;
+            margin: 0 0 2rem;
+            border-bottom: 1px solid var(--docs-border);
+            font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+            font-size: 0.9rem;
+        }
+
+        .guide-nav a {
+            color: var(--docs-muted);
+            border: 1px solid transparent;
+            border-radius: 6px;
+            padding: 0.45rem 0.65rem;
+            text-decoration: none;
+        }
+
+        .guide-nav a:hover {
+            color: var(--docs-text);
+            border-color: var(--docs-border);
+            background: var(--docs-surface);
+        }
+
+        .hero {
+            grid-column: 2;
+            max-width: 760px;
+            padding: 0 0 1.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--docs-border);
+        }
+
+        .hero-brand,
+        .toc-label,
+        .section-label,
+        .tool-card .tool-cmd,
+        .plugin-card .plugin-activate,
+        .plugin-features-label,
+        .plugin-card-tag,
+        .callout-label,
+        .guide-table th {
+            letter-spacing: 0;
+        }
+
+        .hero-brand {
+            margin: 0 0 0.75rem;
+            color: var(--docs-warm);
+            font-size: 0.78rem;
+        }
+
+        .hero h1 {
+            margin: 0 0 0.75rem;
+            color: var(--docs-text);
+            font-size: 2.55rem;
+            font-weight: 750;
+            line-height: 1.08;
+        }
+
+        .hero h1 .accent {
+            color: var(--docs-accent);
+        }
+
+        .hero-sub {
+            max-width: 680px;
+            margin: 0;
+            color: var(--docs-muted);
+            font-size: 1rem;
+            line-height: 1.7;
+        }
+
+        .toc {
+            grid-column: 1;
+            grid-row: 3 / span 20;
+            align-self: start;
+            position: sticky;
+            top: 1rem;
+            margin: 0;
+            padding: 0.9rem;
+            background: var(--docs-surface);
+            border: 1px solid var(--docs-border);
+            border-radius: 8px;
+            box-shadow: none;
+        }
+
+        .toc-label {
+            margin-bottom: 0.7rem;
+            color: var(--docs-faint);
+            font-size: 0.74rem;
+            text-transform: uppercase;
+        }
+
+        .toc-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+        }
+
+        .toc-list a {
+            min-height: 34px;
+            align-items: center;
+            gap: 0.55rem;
+            border-radius: 6px;
+            color: var(--docs-muted);
+            font-size: 0.86rem;
+            line-height: 1.3;
+            padding: 0.35rem 0.45rem;
+        }
+
+        .toc-list a:hover {
+            color: var(--docs-text);
+            background: var(--docs-surface-2);
+        }
+
+        .toc-num {
+            width: 1.25rem;
+            color: var(--docs-accent);
+            text-align: left;
+        }
+
+        .guide-section {
+            grid-column: 2;
+            max-width: 760px;
+            margin: 0 0 3rem;
+            scroll-margin-top: 5rem;
+        }
+
+        .section-label {
+            margin: 0 0 1rem;
+            color: var(--docs-accent);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+        }
+
+        .section-lead {
+            max-width: 720px;
+            color: var(--docs-muted);
+            font-size: 1rem;
+            line-height: 1.75;
+        }
+
+        .guide-section h3 {
+            margin: 1.8rem 0 0.65rem;
+            color: var(--docs-text);
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .guide-section p,
+        .guide-section li,
+        .plugin-card p,
+        .plugin-card li,
+        .tool-card p,
+        .tool-card li {
+            color: var(--docs-muted);
+            font-size: 0.92rem;
+            line-height: 1.72;
+        }
+
+        .guide-section strong {
+            color: var(--docs-text);
+        }
+
+        .guide-section a {
+            color: var(--docs-accent);
+        }
+
+        .yaml-example {
+            background: var(--docs-code);
+            color: var(--docs-text);
+            border: 1px solid var(--docs-border);
+            border-radius: 8px;
+            padding: 0.9rem 1rem;
+            font-size: 0.8rem;
+            line-height: 1.65;
+        }
+
+        .fp,
+        .guide-table code {
+            background: var(--docs-surface-2);
+            color: var(--docs-accent);
+            border: 1px solid var(--docs-border);
+            border-radius: 4px;
+        }
+
+        .callout,
+        .tool-card,
+        .plugin-card {
+            background: var(--docs-surface);
+            border: 1px solid var(--docs-border);
+            border-radius: 8px;
+            box-shadow: none;
+        }
+
+        .callout {
+            border-left: 3px solid var(--docs-warm);
+            padding: 0.9rem 1rem;
+        }
+
+        .callout-label {
+            color: var(--docs-warm);
+            font-size: 0.76rem;
+        }
+
+        .tool-card,
+        .plugin-card {
+            padding: 1rem;
+        }
+
+        .tool-card:hover,
+        .plugin-card:hover {
+            transform: none;
+            box-shadow: none;
+            border-color: var(--docs-border-strong);
+        }
+
+        .tool-card h4,
+        .plugin-card h4 {
+            color: var(--docs-text);
+            font-size: 1rem;
+        }
+
+        .tool-card .tool-cmd,
+        .plugin-card .plugin-activate {
+            color: var(--docs-warm);
+        }
+
+        .plugin-card {
+            border-left: 3px solid var(--docs-accent);
+        }
+
+        .plugin-card.accent-orange {
+            border-left-color: var(--docs-warm);
+        }
+
+        .plugin-card.accent-cyan,
+        .plugin-card.accent-purple {
+            border-left-color: var(--docs-accent);
+        }
+
+        .plugin-card.accent-red {
+            border-left-color: #df6b74;
+        }
+
+        .plugin-card-tag {
+            color: #07120f;
+            background: var(--docs-accent);
+        }
+
+        .plugin-card-tag.tag-plugin {
+            color: var(--docs-text);
+            background: var(--docs-surface-2);
+            border: 1px solid var(--docs-border);
+        }
+
+        .plugin-features {
+            border-top-color: var(--docs-border);
+        }
+
+        .plugin-features-label {
+            color: var(--docs-faint);
+        }
+
+        .guide-table {
+            border-color: var(--docs-border);
+            border-radius: 8px;
+            background: var(--docs-surface);
+        }
+
+        .guide-table th,
+        .guide-table td {
+            border-bottom-color: var(--docs-border);
+        }
+
+        .guide-table th {
+            color: var(--docs-faint);
+            background: var(--docs-surface-2);
+        }
+
+        .guide-table td {
+            color: var(--docs-muted);
+        }
+
+        .section-divider {
+            grid-column: 2;
+            width: 100%;
+            margin: 0 0 3rem;
+            border-top-color: var(--docs-border);
+        }
+
+        .landing-footer {
+            grid-column: 1 / -1;
+            margin-top: 1rem;
+            border-top-color: var(--docs-border);
+            color: var(--docs-faint);
+        }
+
+        .landing-footer a {
+            color: var(--docs-accent);
+        }
+
+        @media (max-width: 980px) {
+            .landing {
+                display: block;
+                max-width: 820px;
+                padding: 0 1.25rem 3rem;
+            }
+
+            .guide-nav {
+                margin-bottom: 1.5rem;
+            }
+
+            .hero {
+                max-width: none;
+            }
+
+            .hero h1 {
+                font-size: 2.25rem;
+            }
+
+            .toc {
+                position: static;
+                margin: 1rem 0 2rem;
+            }
+
+            .guide-section,
+            .section-divider {
+                max-width: none;
+            }
+        }
+
+        @media (max-width: 680px) {
+            .landing {
+                padding: 0 1rem 2.5rem;
+            }
+
+            .hero h1 {
+                font-size: 1.9rem;
+            }
+
+            .hero-sub,
+            .section-lead {
+                font-size: 0.95rem;
+            }
+
+            .toc-list a {
+                font-size: 0.84rem;
+            }
+
+            .guide-section {
+                margin-bottom: 2.5rem;
+            }
+
+            .yaml-example {
+                padding: 0.75rem;
+                font-size: 0.72rem;
+            }
+
+            .guide-table {
+                display: block;
+                overflow-x: auto;
+            }
+        }
     </style>
 </head>
 <body>
@@ -384,7 +795,7 @@
 
         <!-- Hero -->
         <div class="hero">
-            <div class="hero-brand">// platform guide</div>
+            <div class="hero-brand">Platform guide</div>
             <h1>Create a Course <span class="accent">with AI</span></h1>
             <p class="hero-sub">
                 Scaffold a course, tell your AI tool what to teach, run one build command.
@@ -403,7 +814,7 @@
 
         <!-- Table of Contents -->
         <nav class="toc">
-            <div class="toc-label">// on this page</div>
+            <div class="toc-label">On this page</div>
             <ol class="toc-list">
                 <li><a href="#getting-started"><span class="toc-num">1</span> Getting Started</a></li>
                 <li><a href="#ai-tools"><span class="toc-num">2</span> Using AI Tools</a></li>
@@ -421,7 +832,7 @@
         <!-- 1. Getting Started                                            -->
         <!-- ============================================================ -->
         <div class="guide-section" id="getting-started">
-            <div class="section-label">// 1 &mdash; getting started</div>
+            <div class="section-label">1. Getting started</div>
             <p class="section-lead">
                 Most courses teach a language in the abstract. You learn syntax, do toy exercises, and never
                 build anything real. vibe-learn exists because learning works better when the course is built
@@ -493,7 +904,7 @@ $ npm run build</div>
         <!-- 2. Using AI Tools                                             -->
         <!-- ============================================================ -->
         <div class="guide-section" id="ai-tools">
-            <div class="section-label">// 2 &mdash; using AI tools</div>
+            <div class="section-label">2. Using AI tools</div>
             <p class="section-lead">
                 <span class="fp">STARTER_PROMPT.md</span> is a self-contained generation prompt that works with any
                 AI coding tool. It includes every schema, every file naming convention, and a verification checklist.
@@ -618,7 +1029,7 @@ $ npm run build</div>
         <!-- 3. Course Setup                                               -->
         <!-- ============================================================ -->
         <div class="guide-section" id="course-setup">
-            <div class="section-label">// 3 &mdash; course setup</div>
+            <div class="section-label">3. Course setup</div>
             <p class="section-lead">
                 Each course lives in its own folder under <span class="fp">courses/</span>.
                 The build discovers it automatically &mdash; no registration step.
@@ -706,7 +1117,7 @@ projects:                                     # optional — capstone projects
         <!-- 4. Writing Lessons                                            -->
         <!-- ============================================================ -->
         <div class="guide-section" id="writing-lessons">
-            <div class="section-label">// 4 &mdash; writing lessons</div>
+            <div class="section-label">4. Writing lessons</div>
             <p class="section-lead">
                 Lessons are standard Markdown files in <span class="fp">content/lessons/</span>, one per module,
                 named to match the module's file field: <span class="fp">module0.md</span>, <span class="fp">module1.md</span>, etc.
@@ -778,7 +1189,7 @@ for i := 0; i &lt; 5; i++ {
         <!-- 5. Content Types (Plugin Catalog)                             -->
         <!-- ============================================================ -->
         <div class="guide-section" id="content-types">
-            <div class="section-label">// 5 &mdash; content types</div>
+            <div class="section-label">5. Content types</div>
             <p class="section-lead">
                 Beyond lessons, a course can include exercises, flashcards, algorithm problems, and real-world challenges.
                 Each content type is either a core feature (exercises) or a plugin that auto-activates when the
@@ -1091,7 +1502,7 @@ variants:
         <!-- 6. Spaced Repetition                                          -->
         <!-- ============================================================ -->
         <div class="guide-section" id="spaced-repetition">
-            <div class="section-label">// 6 &mdash; spaced repetition</div>
+            <div class="section-label">6. Spaced repetition</div>
             <p class="section-lead">
                 The platform uses the SM-2 algorithm (the same algorithm behind Anki) to schedule reviews.
                 Every exercise variant and flashcard is tracked independently with its own ease factor and review interval.
@@ -1126,7 +1537,7 @@ variants:
         <!-- 7. Themes                                                     -->
         <!-- ============================================================ -->
         <div class="guide-section" id="themes">
-            <div class="section-label">// 7 &mdash; themes</div>
+            <div class="section-label">7. Themes</div>
             <p class="section-lead">
                 Two themes &mdash; Dark and Light &mdash; switchable via the sun/moon toggle in the top-right corner.
                 The selection persists in localStorage and defaults to your system preference (<span class="fp">prefers-color-scheme</span>).
@@ -1151,7 +1562,7 @@ variants:
         <!-- 8. Building Plugins                                           -->
         <!-- ============================================================ -->
         <div class="guide-section" id="extending">
-            <div class="section-label">// 8 &mdash; building plugins</div>
+            <div class="section-label">8. Building plugins</div>
             <p class="section-lead">
                 Plugins add new feature pages to courses. If you want to extend the platform beyond the built-in
                 content types, this section explains how. If you're only writing course content, you can skip this.
@@ -1307,7 +1718,7 @@ variants:
         <!-- 9. Build & Deploy                                             -->
         <!-- ============================================================ -->
         <div class="guide-section" id="build-deploy">
-            <div class="section-label">// 9 &mdash; build &amp; deploy</div>
+            <div class="section-label">9. Build &amp; deploy</div>
 
             <h3 id="building">Building</h3>
             <div class="yaml-example">npm run build            # build all courses + landing page

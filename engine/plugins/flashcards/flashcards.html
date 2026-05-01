@@ -10,21 +10,21 @@
 {{> dashboard-nav}}
 
         <div class="module-header">
-            <div class="module-tag">// FLASHCARDS</div>
-            <h1>Concept Recall</h1>
-            <p class="module-desc">Quick two-sided cards for drilling concepts. Flip, rate, repeat.</p>
+            <div class="module-tag">Flashcards</div>
+            <h1>Concept recall</h1>
+            <p class="module-desc">Two-sided cards for lightweight recall practice. Flip, rate, and keep moving.</p>
         </div>
 
         <!-- Config section -->
         <div id="fc-config" class="session-config focus-content">
             <div class="session-config-row">
-                <span class="session-config-label">Module:</span>
+                <span class="session-config-label">Module</span>
                 <div class="session-config-options" id="fc-module-options">
                     <!-- JS populates module filter buttons -->
                 </div>
             </div>
             <div class="session-config-row">
-                <span class="session-config-label">Cards:</span>
+                <span class="session-config-label">Cards</span>
                 <div class="session-config-options" id="fc-count-options">
                     <button class="session-option" data-count="10">10</button>
                     <button class="session-option active" data-count="20">20</button>
@@ -32,7 +32,7 @@
                 </div>
             </div>
             <div class="session-config-row">
-                <span class="session-config-label">Mode:</span>
+                <span class="session-config-label">Mode</span>
                 <div class="session-config-options" id="fc-mode-options">
                     <button class="session-option active" data-mode="random">Random</button>
                     <button class="session-option" data-mode="due">Due for Review</button>
@@ -40,7 +40,7 @@
                 </div>
             </div>
             <div class="session-start-area">
-                <button class="session-start-btn-main" onclick="startFlashcardSession()" style="width: 100%; padding: 1rem; font-size: 1.1rem;">Start Session</button>
+                <button class="session-start-btn-main" onclick="startFlashcardSession()" style="width: 100%; padding: 1rem; font-size: 1.1rem;">Start recall</button>
                 <p id="fc-start-hint" style="color: var(--accent); font-size: 0.85rem; margin-top: 0.5rem; display: none;"></p>
             </div>
         </div>
@@ -55,7 +55,7 @@
                 <div class="session-progress-fill" id="fc-progress-bar" style="width: 0%;"></div>
             </div>
 
-            <div id="fc-card" class="flashcard" onclick="flipCard()">
+            <div id="fc-card" class="flashcard" role="button" tabindex="0" aria-label="Flip flashcard" onclick="flipCard()" onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); flipCard(); }">
                 <div class="flashcard-inner">
                     <div class="flashcard-front">
                         <div id="fc-question" class="fc-card-content"></div>
@@ -81,10 +81,10 @@
 
         <!-- Results view -->
         <div id="fc-results" class="session-complete" style="display: none;">
-            <h2>Session Complete</h2>
+            <h2>Session complete</h2>
             <div class="session-complete-stats" id="fc-results-stats"></div>
             <div style="margin-top: 1.5rem;">
-                <button onclick="resetFlashcards()" class="session-start-btn-main">New Session</button>
+                <button onclick="resetFlashcards()" class="session-start-btn-main">New session</button>
                 <a href="index.html" style="margin-left: 1rem; color: var(--text-secondary);">Back to Dashboard</a>
             </div>
         </div>

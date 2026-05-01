@@ -6,34 +6,36 @@
     <title>{{PAGE_TITLE}} | {{COURSE_NAME}}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="style.css">
 {{THEME_LINKS}}
 </head>
 <body data-module="{{MODULE_ID}}">
     <div class="scroll-progress" aria-hidden="true"></div>
-    <div class="container">
-        <nav>
+    <main class="workbook-shell">
+    <div class="container workbook-container">
+        <nav class="workbook-top-nav" aria-label="Page navigation">
 {{NAV_LINKS}}
         </nav>
 
-        <div class="breadcrumb">
+        <div class="breadcrumb workbook-breadcrumb">
             {{BREADCRUMB}}
         </div>
 
-        <div class="module-header">
+        <header class="module-header lesson-header">
             <div class="module-tag">{{SECTION_TAG}}</div>
             <h1>{{TITLE}}</h1>
             <p class="module-desc">{{MODULE_DESC}}</p>
-        </div>
+        </header>
 
-        <div class="lesson">
+        <article class="lesson workbook-content">
 {{LESSON_CONTENT}}
-        </div>
+        </article>
 
 {{NAV_BUTTONS}}
     </div>
+    </main>
 
     <script src="course-data.js"></script>
     <script src="course-config.js"></script>

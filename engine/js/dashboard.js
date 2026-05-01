@@ -99,21 +99,36 @@ function renderReadinessBadges(progress, exerciseProgress) {
         const r = computeReadiness(id, warmupTotal, challengeTotal, exerciseProgress);
         const effectiveState = manuallyCompleted ? 'ready' : r.state;
 
-        // Only show a text badge for "in-progress". 🟢 is conveyed by the CTA;
-        // ⚪ (fresh) and 0-exercise modules show nothing — empty card == fresh.
-        badge.classList.remove('ready', 'in-progress', 'fresh');
-        if (effectiveState === 'in-progress') {
+        badge.classList.remove('ready', 'in-progress', 'fresh', 'complete', 'none');
+        item.classList.remove('is-ready', 'is-in-progress', 'is-fresh', 'is-complete');
+
+        if (manuallyCompleted) {
+            badge.classList.add('complete');
+            badge.textContent = 'Complete';
+            item.classList.add('is-complete');
+        } else if (effectiveState === 'ready') {
+            badge.classList.add('ready');
+            badge.textContent = 'Ready to advance';
+            item.classList.add('is-ready');
+        } else if (effectiveState === 'in-progress') {
             badge.classList.add('in-progress');
-            badge.textContent = 'Keep going';
+            badge.textContent = 'In progress';
+            item.classList.add('is-in-progress');
+        } else if (effectiveState === 'none') {
+            badge.classList.add('none');
+            badge.textContent = 'Reference';
+            item.classList.add('is-fresh');
         } else {
-            badge.textContent = '';
+            badge.classList.add('fresh');
+            badge.textContent = 'Not started';
+            item.classList.add('is-fresh');
         }
 
         if (cta) {
             const nextHref = nextHrefs[id];
             if (effectiveState === 'ready' && nextHref) {
                 cta.href = nextHref;
-                cta.textContent = 'Next: Module ' + (parseInt(id, 10) + 1) + ' →';
+                cta.textContent = 'Next module';
                 cta.classList.remove('hidden');
             } else {
                 cta.classList.add('hidden');
@@ -199,16 +214,34 @@ function saveProgress(moduleId, completed) {
 function updateStats() {
     const progress = loadProgress();
     const moduleItems = document.querySelectorAll('.module-item[data-module]');
-    const total = Array.from(moduleItems).filter(function (el) {
+    const numericModuleItems = Array.from(moduleItems).filter(function (el) {
         return /^\d+$/.test(el.dataset.module);
+    });
+    const total = numericModuleItems.length;
+    const completed = numericModuleItems.filter(function (el) {
+        const entry = progress[el.dataset.module];
+        return entry && entry.completed;
     }).length;
-    const completed = Object.values(progress).filter(function (p) { return p.completed; }).length;
     const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
 
     var completedEl = document.getElementById('completed-count');
     if (completedEl) completedEl.textContent = completed;
+    var totalEl = document.getElementById('total-modules-count');
+    if (totalEl) totalEl.textContent = total;
     var percentEl = document.getElementById('progress-percent');
     if (percentEl) percentEl.textContent = percent + '%';
+    var overallProgressValue = document.getElementById('overall-progress-value');
+    if (overallProgressValue) overallProgressValue.textContent = percent + '%';
+    var overallProgressFill = document.getElementById('overall-progress-fill');
+    if (overallProgressFill) overallProgressFill.style.width = percent + '%';
+    var moduleProgressLabel = document.getElementById('module-progress-label');
+    if (moduleProgressLabel) {
+        moduleProgressLabel.textContent = completed === 0
+            ? 'Not started'
+            : completed === total
+                ? 'Course complete'
+                : completed + ' of ' + total + ' modules';
+    }
 
     // Exercise-level progress from progress.js API
     const exerciseProgress = window.ExerciseProgress ? window.ExerciseProgress.loadAll() : {};
@@ -228,15 +261,25 @@ function updateStats() {
 
     const exercisesEl = document.getElementById('exercises-count');
     if (exercisesEl) exercisesEl.textContent = totalExercises;
+    const todayExerciseLabel = document.getElementById('today-exercise-label');
+    if (todayExerciseLabel) {
+        todayExerciseLabel.textContent = totalExercises === 0 ? 'No reps yet' : 'Practice reps logged';
+    }
 
     // SRS due count
     const dueEl = document.getElementById('due-count');
     var dueCount = 0;
+    var weakCount = 0;
     if (window.SRS) {
         dueCount = window.SRS.getDueCount();
+        weakCount = window.SRS.getWeakestExercises ? window.SRS.getWeakestExercises(10).length : 0;
     }
     if (dueEl) {
         dueEl.textContent = dueCount;
+    }
+    const todayDueLabel = document.getElementById('today-due-label');
+    if (todayDueLabel) {
+        todayDueLabel.textContent = dueCount === 0 ? 'Nothing due' : 'Ready for review';
     }
 
     // Today's Focus section
@@ -249,6 +292,8 @@ function updateStats() {
             todayDueCount.classList.remove('zero');
         }
     }
+
+    updateTodayPanel(progress, dueCount, weakCount, percent);
 
     // Segmented progress bar
     var segmentsEl = document.getElementById('progress-segments');
@@ -293,21 +338,85 @@ function updateStats() {
             if (progress[id].completed) {
                 item.classList.add('completed');
             }
-            if (progress[id].lastStudied && lastStudied) {
-                const date = new Date(progress[id].lastStudied);
-                lastStudied.textContent = date.toLocaleDateString();
-            }
+        } else if (checkbox) {
+            checkbox.checked = false;
+            item.classList.remove('completed');
+        }
+        if (progress[id] && progress[id].lastStudied && lastStudied) {
+            const date = new Date(progress[id].lastStudied);
+            lastStudied.textContent = 'Last studied ' + date.toLocaleDateString();
+        } else if (lastStudied) {
+            lastStudied.textContent = '';
         }
 
         // Show exercise completion count per module (numeric only)
         if (exProgress && exercisesByModule[id]) {
             const count = exercisesByModule[id];
             exProgress.innerHTML = '<span class="exercise-progress-bar"><span class="exercise-progress-fill" style="width: 100%"></span></span> ' + count + ' done';
+        } else if (exProgress) {
+            exProgress.innerHTML = '';
         }
     });
 
     renderReadinessBadges(progress, exerciseProgress);
     renderStaleReturnBanner(progress, exerciseProgress);
+}
+
+function findModulePage(moduleId) {
+    var pages = (window.CourseConfig && window.CourseConfig.sidebarPages) || [];
+    var page = pages.find(function(p) {
+        return (p.type === 'module' && String(p.id) === String(moduleId)) ||
+               (p.type === 'section' && String(p.moduleId) === String(moduleId) && p.sectionIndex === 0);
+    });
+    return page ? page.file : ('module' + moduleId + '.html');
+}
+
+function updateTodayPanel(progress, dueCount, weakCount, percent) {
+    var title = document.getElementById('today-primary-title');
+    var meta = document.getElementById('today-primary-meta');
+    var action = document.getElementById('resume-btn');
+    var heading = document.getElementById('course-progress-heading');
+    var copy = document.getElementById('course-progress-copy');
+    if (!title || !meta || !action) return;
+
+    action.removeAttribute('data-href');
+    action.textContent = 'Continue learning';
+
+    if (dueCount > 0) {
+        title.textContent = dueCount + ' review' + (dueCount === 1 ? '' : 's') + ' due';
+        meta.textContent = 'Start with spaced repetition while the material is ready to be reinforced.';
+        action.textContent = 'Start daily practice';
+        action.setAttribute('data-href', 'daily-practice.html');
+    } else {
+        var lastModule = localStorage.getItem(LAST_MODULE_KEY);
+        if (lastModule && /^\d+$/.test(lastModule)) {
+            var moduleName = window.CourseConfigHelper ? window.CourseConfigHelper.getModuleName(parseInt(lastModule, 10)) : ('Module ' + lastModule);
+            title.textContent = 'Continue ' + moduleName;
+            meta.textContent = weakCount > 0
+                ? weakCount + ' weak area' + (weakCount === 1 ? '' : 's') + ' will stay queued for practice.'
+                : 'No review is due right now. Keep the path moving while the context is warm.';
+            action.textContent = 'Resume module';
+            action.setAttribute('data-href', findModulePage(lastModule));
+        } else {
+            title.textContent = 'Start the course path';
+            meta.textContent = 'Begin with the reference module, then move into the first hands-on bootcamp.';
+            action.textContent = 'Start Module 00';
+            action.setAttribute('data-href', 'module0.html');
+        }
+    }
+
+    if (heading) {
+        heading.textContent = percent === 0
+            ? 'Your course spine is ready.'
+            : percent === 100
+                ? 'The full path is complete.'
+                : 'You are ' + percent + '% through the path.';
+    }
+    if (copy) {
+        copy.textContent = dueCount > 0
+            ? 'Review is waiting. Clear it first, then continue the next module.'
+            : 'No due review is blocking you. Continue the path or start a timed study block.';
+    }
 }
 
 function recordModuleVisit(moduleId) {
@@ -322,15 +431,14 @@ function recordModuleVisit(moduleId) {
 
 function resumeLastModule(e) {
     e.preventDefault();
+    var directHref = e.currentTarget && e.currentTarget.getAttribute('data-href');
+    if (directHref) {
+        window.location.href = directHref;
+        return;
+    }
     const lastModule = localStorage.getItem(LAST_MODULE_KEY);
     if (lastModule) {
-        // Find the correct page for this module (handles split modules)
-        var pages = (window.CourseConfig && window.CourseConfig.sidebarPages) || [];
-        var page = pages.find(function(p) {
-            return (p.type === 'module' && String(p.id) === String(lastModule)) ||
-                   (p.type === 'section' && String(p.moduleId) === String(lastModule) && p.sectionIndex === 0);
-        });
-        window.location.href = page ? page.file : ('module' + lastModule + '.html');
+        window.location.href = findModulePage(lastModule);
     } else {
         window.location.href = 'module0.html';
     }
