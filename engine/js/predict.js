@@ -116,6 +116,16 @@
             outputEl.hidden = false;
             block.classList.add('predict-revealed');
 
+            // "Try again" — wipe state and restore the input UI
+            if (!promptDiv.querySelector('.predict-retry-btn')) {
+                var retry = document.createElement('button');
+                retry.type = 'button';
+                retry.className = 'predict-retry-btn';
+                retry.textContent = 'Try again';
+                retry.addEventListener('click', function() { resetBlock(); });
+                promptDiv.appendChild(retry);
+            }
+
             if (persist) {
                 var data = loadAll();
                 data[id] = {
@@ -125,19 +135,40 @@
                 };
                 saveAll(data);
 
-                var saved = block.querySelector('.predict-saved-note');
-                if (!saved) {
-                    saved = document.createElement('div');
-                    saved.className = 'predict-saved-note';
-                    saved.textContent = 'Saved to your predictions log';
-                    block.appendChild(saved);
+                var savedNote = block.querySelector('.predict-saved-note');
+                if (!savedNote) {
+                    savedNote = document.createElement('div');
+                    savedNote.className = 'predict-saved-note';
+                    savedNote.textContent = 'Saved to your predictions log';
+                    block.appendChild(savedNote);
                 }
-                saved.classList.remove('predict-saved-note--fade');
-                // Trigger fade after a beat
+                savedNote.classList.remove('predict-saved-note--fade');
                 setTimeout(function() {
-                    saved.classList.add('predict-saved-note--fade');
+                    savedNote.classList.add('predict-saved-note--fade');
                 }, 1800);
             }
+        }
+
+        function resetBlock() {
+            var data = loadAll();
+            delete data[id];
+            saveAll(data);
+
+            input.value = '';
+            inputWrap.style.display = '';
+
+            var yours = block.querySelector('.predict-yours');
+            if (yours) yours.remove();
+            var aLabel = block.querySelector('.predict-actual-label');
+            if (aLabel) aLabel.remove();
+            var note = block.querySelector('.predict-saved-note');
+            if (note) note.remove();
+            var retry = promptDiv.querySelector('.predict-retry-btn');
+            if (retry) retry.remove();
+
+            outputEl.hidden = true;
+            block.classList.remove('predict-revealed');
+            input.focus();
         }
 
         revealBtn.addEventListener('click', function() { doReveal(true); });

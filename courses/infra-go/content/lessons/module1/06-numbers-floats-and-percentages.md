@@ -29,6 +29,21 @@ fmt.Printf("%.1f%%\n", pct)                     // "58.3%"
 
 The `float64()` calls do the conversion. `%%` prints a literal percent sign (because `%` is the format specifier prefix).
 
+### Floating-Point Surprises
+
+<predict prompt="What does this print?">
+```go
+fmt.Println(0.1 + 0.2)
+fmt.Println(0.1 + 0.2 == 0.3)
+```
+```
+0.30000000000000004
+false
+```
+</predict>
+
+This isn't a Go bug — every language using IEEE 754 floats has it. `0.1` and `0.2` can't be represented exactly in binary, so the sum is slightly off. **Never use `==` to compare floats.** Compare with a tolerance: `math.Abs(a-b) < 0.0001`. For money, use integers (cents) — never floats.
+
 ### Rounding
 
 `math.Round` rounds to the nearest integer. But what if you want 1 decimal place? There's no `math.Round(x, places)`. The trick: multiply to shift the decimal point, round, then divide back.

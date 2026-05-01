@@ -44,6 +44,30 @@ default:
 }
 ```
 
+<variations runner="go">
+template: |
+  package main
+  import "fmt"
+  func main() {
+      ch := make(chan int)
+      select {
+      case v := <-ch:
+          fmt.Println("got", v)
+      {{DEFAULT}}
+      }
+      fmt.Println("done")
+  }
+cases:
+  - name: with default
+    DEFAULT: |2-
+      default:
+              fmt.Println("nothing ready")
+  - name: without default
+    DEFAULT: ''
+</variations>
+
+`default` is what makes a `select` non-blocking. With it, the runtime picks the default branch the instant no other case is ready. Without it, `select` blocks until *some* case becomes ready — and since this channel has no senders, every goroutine is asleep, and Go's runtime detects the deadlock and panics. Use `default` when you want polling semantics ("send if you can, otherwise drop"); leave it off when you genuinely want to wait.
+
 ### Select in a Loop
 
 ```go

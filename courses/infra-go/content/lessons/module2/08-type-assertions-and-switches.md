@@ -4,6 +4,28 @@ When you have an interface value and need the concrete type underneath.
 
 ### Comma-Ok Pattern
 
+<predict prompt="What happens when this runs?">
+```go
+type HealthChecker interface{ IsHealthy() bool }
+type Pod struct{ Name string }
+type Service struct{ Port int }
+
+func (Pod) IsHealthy() bool     { return true }
+func (Service) IsHealthy() bool { return true }
+
+func main() {
+    var c HealthChecker = Service{Port: 80}
+    pod := c.(Pod)
+    fmt.Println(pod.Name)
+}
+```
+```
+panic: interface conversion: main.Service is not main.Pod: missing method
+```
+</predict>
+
+A bare type assertion panics if the underlying type doesn't match. This is fine in tests where you control the input; in production code you want the comma-ok form so you can handle the mismatch:
+
 ```go
 var c HealthChecker = Pod{Name: "web-1", Status: "Running"}
 

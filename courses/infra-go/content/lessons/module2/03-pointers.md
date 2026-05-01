@@ -23,34 +23,34 @@ fmt.Println(x)  // 100 — x changed!
 
 ### Pass by Value vs Pass by Pointer
 
-<predict prompt="What does this print?">
-```go
-type Pod struct{ Name, Status string }
+Go copies everything by default. When you pass a struct to a function, the function gets a copy. Changes to the copy don't affect the original. The fix is to pass a pointer:
 
-func resetStatus(p Pod) {
-    p.Status = "Pending"
-}
+<variations runner="go">
+template: |
+  package main
+  import "fmt"
 
-pod := Pod{Name: "web-1", Status: "Running"}
-resetStatus(pod)
-fmt.Println(pod.Status)
-```
-```
-Running
-```
-</predict>
+  type Pod struct{ Name, Status string }
 
-Go copies everything by default. When you pass a struct to a function, the function gets a copy. Changes to the copy don't affect the original. To actually modify the caller's value, take a pointer:
+  func resetStatus({{SIG}}) {
+      p.Status = "Pending"
+  }
 
-```go
-// Pass by pointer — gets the ADDRESS
-func resetStatusPtr(p *Pod) {
-    p.Status = "Pending"  // changes the original
-}
+  func main() {
+      pod := Pod{Name: "web-1", Status: "Running"}
+      resetStatus({{ARG}})
+      fmt.Println(pod.Status)
+  }
+cases:
+  - name: by value
+    SIG: 'p Pod'
+    ARG: 'pod'
+  - name: by pointer
+    SIG: 'p *Pod'
+    ARG: '&pod'
+</variations>
 
-resetStatusPtr(&pod)
-fmt.Println(pod.Status)  // "Pending"
-```
+The "by value" version compiles and runs without error — but the assignment lands on the copy that lives only inside `resetStatus`, and is thrown away when the function returns. The "by pointer" version takes the address with `&pod`; `p.Status = "Pending"` writes through that address to the original struct, so the change sticks after the call returns.
 
 *Python comparison*
 
@@ -58,6 +58,50 @@ fmt.Println(pod.Status)  // "Pending"
 # Python: mutable objects (lists, dicts, class instances) are always references
 # Go: you choose. Value = safe copy. Pointer = shared, mutable.
 ```
+
+### Pointer Aliasing
+
+<predict prompt="What does this print?">
+```go
+type Pod struct{ Status string }
+
+func main() {
+    a := &Pod{Status: "Running"}
+    b := a
+    b.Status = "Pending"
+    fmt.Println(a.Status)
+}
+```
+```
+Pending
+```
+</predict>
+
+`b := a` doesn't copy the struct — it copies the *pointer*. Both `a` and `b` now hold the same address, so writing through `b` is the same as writing through `a`. To get a real, independent copy of the struct, dereference and assign: `b := *a` produces a fresh `Pod` whose modifications don't affect `a`.
+
+This is why pointers are powerful and dangerous in equal measure. Every function call that takes `*Pod` is potentially a function that can change your `Pod` out from under you — including changes you didn't ask for, on a separate goroutine you didn't know was running.
+
+### Pointers to Local Variables
+
+<predict prompt="What does this print?">
+```go
+type Pod struct{ Status string }
+
+func newPod() *Pod {
+    p := Pod{Status: "Running"}
+    return &p
+}
+
+func main() {
+    fmt.Println(newPod().Status)
+}
+```
+```
+Running
+```
+</predict>
+
+If you're coming from C, this looks like a use-after-free bug — `p` is a local variable that goes out of scope when `newPod` returns. In Go it's safe: the compiler's *escape analysis* notices that `p`'s address leaves the function, so it allocates `p` on the heap instead of the stack. The garbage collector keeps it alive as long as any pointer references it. This is why `return &Pod{...}` is the idiomatic Go constructor pattern — no manual `malloc`, no risk of dangling pointers.
 
 ### When to Use Pointers
 
@@ -154,6 +198,33 @@ pod := NewPod("web-1", "production")  // pod is *Pod
 pod.SetStatus("Running")               // pointer receiver
 ```
 
-> **Slices, maps, and channels** are already reference types internally. You don't need to pass `*[]Pod` — just `[]Pod` is fine. Appending inside a function won't grow the caller's slice though, so return the new slice if appending.
+> **Slices, maps, and channels** are already reference types internally. You don't need to pass `*[]Pod` — just `[]Pod` is fine for reading and even for mutating elements. But the slice *header* (`{ptr, len, cap}`) is itself a value, so a function that appends has to either return the new slice or take a pointer to it.
+
+<variations runner="go">
+template: |
+  package main
+  import "fmt"
+
+  func addItem({{SIG}}, item string) {
+      {{ASSIGN}}
+  }
+
+  func main() {
+      items := []string{"a", "b"}
+      addItem({{ARG}}, "c")
+      fmt.Println(items)
+  }
+cases:
+  - name: by value
+    SIG: 's []string'
+    ASSIGN: 's = append(s, item)'
+    ARG: 'items'
+  - name: by pointer
+    SIG: 's *[]string'
+    ASSIGN: '*s = append(*s, item)'
+    ARG: '&items'
+</variations>
+
+In the "by value" case, the local `s` gets the result of `append`, but the caller's `items` is never updated. In the "by pointer" case, `&items` passes the address of the slice header; `*s = append(...)` writes through that address, so the caller sees the new slice. The idiom most Go code uses is to skip the pointer and return the new slice instead — `items = addItem(items, "c")` — but `*[]T` is the right tool when the function genuinely needs to grow the caller's slice in place.
 
 <div class="inline-exercises" data-concept="Pointers"></div>

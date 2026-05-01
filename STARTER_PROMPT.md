@@ -255,6 +255,42 @@ Rules:
 - Use sparingly — 1–3 per lesson section. Best deployed where the *output* is non-obvious and the learner is likely to have a wrong mental model worth surfacing (e.g., slice/list mutation semantics, integer division, truthiness edge cases, scope/closure surprises).
 - Skip them on trivial examples; predicting `print("hello")` adds no value.
 
+**"What-if?" variation tabbers:**
+
+Pre-rendered code variations the learner can click through to explore how a function behaves across edge cases. The author writes a code template with `{{KEY}}` placeholders and a list of cases that substitute different values; the build runs each case and captures the output, shipping a static tabber. No runtime, no judgment — just a fast way to read about a function's full behavior.
+
+````markdown
+<variations title="How SplitN handles edge cases" runner="go">
+template: |
+  package main
+  import (
+      "fmt"
+      "strings"
+  )
+  func main() {
+      parts := strings.SplitN({{INPUT}}, "=", 2)
+      fmt.Printf("%d parts: %q\n", len(parts), parts)
+  }
+cases:
+  - name: simple
+    INPUT: '"key=value"'
+  - name: no separator
+    INPUT: '"justakey"'
+  - name: empty
+    INPUT: '""'
+</variations>
+````
+
+Rules:
+- The block body is YAML with two top-level keys: `template` (multi-line code with `{{KEY}}` placeholders) and `cases` (an array of objects, each with a `name` plus the keys to substitute).
+- `name` is the tab label. Every other key in a case is treated as a placeholder substitution.
+- Keys in cases are quoted YAML strings — wrap Go string literals as `'"hello"'` (outer single quotes for YAML, inner double quotes for the Go literal).
+- The `runner` attribute defaults to `go`. Other values: `bash`, `node`, `python` (more can be added). The runner must be installed on the build machine.
+- The `title` attribute is optional but recommended — it's the heading shown above the tabber.
+- Build runs each case once and caches results in `.variations-cache/` keyed by code hash. Re-running the build is instant; changing the template or any case re-executes only that case.
+- Use this when the *space* of behaviors is what matters, not a single canonical answer (e.g., "how does this stdlib function behave on edge cases?", "what does `make([]int, n, m)` produce for different `n` and `m`?"). Use a `<predict>` block instead when there's one specific surprising answer the learner should commit to.
+- Cases that produce a panic / non-zero exit are valid — the panic text shows up as the output and is highlighted. Useful for showing "this works" vs "this crashes" in one tabber.
+
 ### Exercise section (CRITICAL — single-file modules only)
 
 **Note:** If using the directory format (split sections), skip this entirely — the exercises page is auto-generated.

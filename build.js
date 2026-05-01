@@ -18,6 +18,9 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
+const os = require('os');
+const { spawnSync } = require('child_process');
 const { marked } = require('marked');
 const { markedHighlight } = require('marked-highlight');
 const hljs = require('highlight.js');
@@ -190,6 +193,190 @@ const themeFiles = fs.readdirSync(
 const themeInitScript = `    <script>(function(){var d=document.documentElement;var lights={'light':1,'gruvbox-light':1,'solarized-light':1,'everforest-light':1,'terminal-light':1};try{var t=localStorage.getItem('vibe-learn-theme');if(t&&t!=='dark'&&t!=='light'){t=lights[t]?'light':'dark';localStorage.setItem('vibe-learn-theme',t)}if(!t){t=window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'}d.setAttribute('data-theme',t);if(t==='light'){var l=document.createElement('link');l.rel='stylesheet';l.id='theme-css';l.href='themes/light.css';document.head.appendChild(l)}}catch(e){}var p=location.pathname.split('/').pop()||'index.html';if(p!=='index.html')d.classList.add('has-sidebar')})()</script>`;
 
 const themeLinksHtml = themeInitScript;
+
+// ---------------------------------------------------------------------------
+// Pre-process: transform <variations> blocks into pre-rendered tabbers
+// ---------------------------------------------------------------------------
+/**
+ * Detects "what-if?" variation blocks in raw markdown:
+ *
+ *   <variations title="What changes when input shape changes?">
+ *   template: |
+ *     package main
+ *     import ("fmt"; "strings")
+ *     func main() {
+ *         parts := strings.SplitN({{INPUT}}, ",", 2)
+ *         fmt.Printf("len=%d %v\n", len(parts), parts)
+ *     }
+ *   cases:
+ *     - name: baseline
+ *       INPUT: '"a,b,c"'
+ *     - name: empty
+ *       INPUT: '""'
+ *   </variations>
+ *
+ * For each case, substitutes {{KEY}} placeholders into the template,
+ * runs the result through the configured runner (default: go), captures
+ * stdout+stderr, and embeds the pre-rendered code+output as a JSON data
+ * island. The runtime variations.js renders this as a tabber.
+ *
+ * Caching: results are cached at .variations-cache/<sha256>.json keyed by
+ * runner + rendered code, so unchanged variations don't re-execute.
+ *
+ * Optional attributes on <variations>:
+ *   title="..."   — heading shown above the tabber
+ *   runner="..."  — go (default), bash, node, python
+ */
+const VARIATIONS_RUNNERS = {
+    go:     { ext: '.go',  cmd: ['go', 'run'],  lang: 'go' },
+    bash:   { ext: '.sh',  cmd: ['bash'],       lang: 'bash' },
+    node:   { ext: '.js',  cmd: ['node'],       lang: 'javascript' },
+    python: { ext: '.py',  cmd: ['python3'],    lang: 'python' }
+};
+const VARIATIONS_CACHE_DIR = path.join(ROOT, '.variations-cache');
+const VARIATIONS_TIMEOUT_MS = 5000;
+
+function runVariation(runnerName, code) {
+    const runner = VARIATIONS_RUNNERS[runnerName];
+    if (!runner) throw new Error(`Unknown variations runner: ${runnerName}`);
+
+    const hash = crypto.createHash('sha256')
+        .update(runnerName + '\0' + code)
+        .digest('hex');
+    const cachePath = path.join(VARIATIONS_CACHE_DIR, hash + '.json');
+
+    if (fs.existsSync(cachePath)) {
+        return JSON.parse(fs.readFileSync(cachePath, 'utf8'));
+    }
+
+    mkdirp(VARIATIONS_CACHE_DIR);
+    const tmpFile = path.join(os.tmpdir(), 'variation-' + hash + runner.ext);
+    fs.writeFileSync(tmpFile, code);
+
+    let stdout = '', stderr = '', exitCode = 0;
+    try {
+        const result = spawnSync(
+            runner.cmd[0],
+            runner.cmd.slice(1).concat([tmpFile]),
+            { encoding: 'utf8', timeout: VARIATIONS_TIMEOUT_MS, maxBuffer: 1024 * 1024 }
+        );
+        stdout = result.stdout || '';
+        stderr = result.stderr || '';
+        exitCode = result.status === null ? -1 : result.status;
+        if (result.signal === 'SIGTERM') {
+            stderr += '\n[timeout — exceeded ' + VARIATIONS_TIMEOUT_MS + 'ms]';
+        }
+    } catch (e) {
+        stderr = e.message;
+        exitCode = -1;
+    } finally {
+        try { fs.unlinkSync(tmpFile); } catch (e) {}
+    }
+
+    let output = stdout;
+    if (stderr) {
+        output = output ? output.trimEnd() + '\n' + stderr : stderr;
+    }
+    output = output.replace(/\r\n/g, '\n').replace(/\n+$/, '');
+    // Hide the temp-file path from panic stack traces
+    const tmpEsc = tmpFile.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    output = output.replace(new RegExp(tmpEsc, 'g'), 'example' + runner.ext);
+
+    const data = { output: output, exitCode: exitCode };
+    fs.writeFileSync(cachePath, JSON.stringify(data));
+    return data;
+}
+
+function processVariationsBlocks(md, pageId) {
+    let counter = 0;
+    return md.replace(/<variations(\s+[^>]*)?>([\s\S]*?)<\/variations>/g, (match, attrs, body) => {
+        let title = '';
+        let runner = 'go';
+        if (attrs) {
+            const tm = attrs.match(/title="([^"]+)"/);
+            if (tm) title = tm[1];
+            const rm = attrs.match(/runner="([^"]+)"/);
+            if (rm) runner = rm[1];
+        }
+
+        if (!VARIATIONS_RUNNERS[runner]) {
+            console.warn(`  Warning: <variations> on "${pageId}" uses unknown runner "${runner}". Supported: ${Object.keys(VARIATIONS_RUNNERS).join(', ')}. Skipping.`);
+            return match;
+        }
+        const lang = VARIATIONS_RUNNERS[runner].lang;
+
+        let parsed;
+        try {
+            parsed = yaml.load(body) || {};
+        } catch (e) {
+            console.warn(`  Warning: <variations> on "${pageId}" has invalid YAML: ${e.message}. Skipping.`);
+            return match;
+        }
+
+        const template = parsed.template;
+        const cases = parsed.cases;
+        if (typeof template !== 'string' || !Array.isArray(cases) || cases.length === 0) {
+            console.warn(`  Warning: <variations> on "${pageId}" needs both "template" (string) and non-empty "cases" array. Skipping.`);
+            return match;
+        }
+
+        const rendered = [];
+        let baselineRawCode = null;
+        for (let i = 0; i < cases.length; i++) {
+            const c = cases[i];
+            if (!c || typeof c.name !== 'string') {
+                console.warn(`  Warning: <variations> on "${pageId}" case ${i} missing "name" string. Skipping case.`);
+                continue;
+            }
+            let code = template;
+            Object.keys(c).forEach(key => {
+                if (key === 'name') return;
+                const placeholder = new RegExp('\\{\\{\\s*' + key + '\\s*\\}\\}', 'g');
+                code = code.replace(placeholder, String(c[key]));
+            });
+
+            // Line-level diff vs baseline (first rendered case). Empty for baseline itself.
+            let changedLines = [];
+            if (rendered.length === 0) {
+                baselineRawCode = code;
+            } else {
+                const baseLines = baselineRawCode.split('\n');
+                const caseLines = code.split('\n');
+                const maxLen = Math.max(baseLines.length, caseLines.length);
+                for (let li = 0; li < maxLen; li++) {
+                    if (baseLines[li] !== caseLines[li]) changedLines.push(li);
+                }
+            }
+
+            const result = runVariation(runner, code);
+            const codeHtml = marked.parse('```' + lang + '\n' + code + '\n```').trim();
+            rendered.push({
+                name: c.name,
+                codeHtml: codeHtml,
+                output: result.output,
+                exitCode: result.exitCode,
+                changedLines: changedLines
+            });
+        }
+
+        if (rendered.length === 0) {
+            console.warn(`  Warning: <variations> on "${pageId}" had no valid cases. Skipping.`);
+            return match;
+        }
+
+        const id = pageId + '-v' + counter++;
+        const data = JSON.stringify({ id, title, runner, cases: rendered });
+        const safeData = data.replace(/<\/script/gi, '<\\/script');
+
+        return [
+            '',
+            `<div class="variations-block" data-variations-id="${id}">`,
+            `<script type="application/json" class="variations-data">${safeData}</script>`,
+            `</div>`,
+            ''
+        ].join('\n');
+    });
+}
 
 // ---------------------------------------------------------------------------
 // Pre-process: transform <predict> blocks into structured HTML before marked
@@ -585,7 +772,7 @@ function buildCourse(slug) {
                 const sectionLabel = `${mod.id}.${sectionNum}`;
                 const mdContent = fs.readFileSync(path.join(mdDir, file), 'utf8');
                 const sectionPageId = `${course.slug}-module${mod.id}-${sectionNum}`;
-                const preprocessed = processPredictBlocks(mdContent, sectionPageId);
+                const preprocessed = processPredictBlocks(processVariationsBlocks(mdContent, sectionPageId), sectionPageId);
                 const htmlContent = processCallouts(processCodeBlocks(marked.parse(preprocessed)));
                 const extracted = extractSectionTitle(htmlContent);
                 const outFile = `module${mod.id}-${sectionNum}.html`;
@@ -737,7 +924,7 @@ function buildCourse(slug) {
         } else if (fs.existsSync(mdFile)) {
             const mdContent = fs.readFileSync(mdFile, 'utf8');
             const modulePageId = `${course.slug}-module${mod.id}`;
-            const preprocessed = processPredictBlocks(mdContent, modulePageId);
+            const preprocessed = processPredictBlocks(processVariationsBlocks(mdContent, modulePageId), modulePageId);
             let htmlContent = processCallouts(processCodeBlocks(marked.parse(preprocessed)));
 
             if (mod.hasExercises) {
@@ -810,7 +997,7 @@ function buildCourse(slug) {
 
         const mdContent = fs.readFileSync(mdFile, 'utf8');
         const projectPageId = `${course.slug}-${proj.file}`;
-        const preprocessed = processPredictBlocks(mdContent, projectPageId);
+        const preprocessed = processPredictBlocks(processVariationsBlocks(mdContent, projectPageId), projectPageId);
         const htmlContent = processCallouts(processCodeBlocks(marked.parse(preprocessed)));
         const currentFile = proj.file + '.html';
 

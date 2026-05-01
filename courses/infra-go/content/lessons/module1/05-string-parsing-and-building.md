@@ -34,6 +34,34 @@ joined := strings.Join(names, " | ")
 
 `strings.SplitN(s, sep, n)` splits into at most `n` pieces. Use `SplitN(s, "=", 2)` whenever the value side might contain the delimiter. A naive `Split` will break any value that contains extra `=` signs.
 
+<variations title="How SplitN handles edge cases" runner="go">
+template: |
+  package main
+  import (
+      "fmt"
+      "strings"
+  )
+  func main() {
+      parts := strings.SplitN({{INPUT}}, "=", 2)
+      fmt.Printf("%d parts: %q\n", len(parts), parts)
+  }
+cases:
+  - name: simple
+    INPUT: '"key=value"'
+  - name: equals in value
+    INPUT: '"name=Tom = Jerry"'
+  - name: trailing equals
+    INPUT: '"key="'
+  - name: leading equals
+    INPUT: '"=value"'
+  - name: no separator
+    INPUT: '"justakey"'
+  - name: empty string
+    INPUT: '""'
+</variations>
+
+Three things worth noticing in the above: the no-separator case returns a single-element slice (not an empty one), the empty-string case returns `[""]` (a slice with one empty string, not `[]`), and trailing/leading equals produce one empty side. Always check `len(parts)` before indexing into `parts[1]`.
+
 ### Checking Content
 
 ```go

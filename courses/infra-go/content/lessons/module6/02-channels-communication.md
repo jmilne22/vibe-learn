@@ -52,6 +52,37 @@ fmt.Println(<-ch) // "first"
 
 Use buffered channels when the producer and consumer run at different speeds.
 
+<variations runner="go">
+template: |
+  package main
+  import "fmt"
+  func main() {
+      ch := make(chan int, {{BUF}})
+      for i := 0; i < {{N}}; i++ {
+          ch <- i
+      }
+      fmt.Println("sent", {{N}})
+  }
+cases:
+  - name: buf 1, send 1
+    BUF: 1
+    N: 1
+  - name: buf 3, send 3
+    BUF: 3
+    N: 3
+  - name: buf 0, send 1
+    BUF: 0
+    N: 1
+  - name: buf 1, send 2
+    BUF: 1
+    N: 2
+  - name: buf 3, send 4
+    BUF: 3
+    N: 4
+</variations>
+
+The first two cases succeed because the buffer has room for every send. The remaining cases deadlock: with no receiver running, the goroutine fills the buffer and then blocks on the next send forever. Go's runtime detects that *every* goroutine is blocked and panics with "all goroutines are asleep - deadlock". The unbuffered case (`buf 0`) deadlocks immediately because an unbuffered channel needs a simultaneous receiver, not a buffer.
+
 ### Closing Channels
 
 ```go
@@ -69,6 +100,24 @@ for val := range ch {
 ```
 
 **Only the sender closes.** Never close from the receiver side. Closing a closed channel panics.
+
+<predict prompt="What does this print?">
+```go
+ch := make(chan int, 1)
+ch <- 42
+close(ch)
+
+a := <-ch
+b := <-ch
+c := <-ch
+fmt.Println(a, b, c)
+```
+```
+42 0 0
+```
+</predict>
+
+After a channel is closed, you can keep reading from it forever — every read returns the zero value of the element type (`0` for int, `""` for string, `nil` for pointers). No error, no panic, no signal. To distinguish "real value" from "channel drained and closed", use the comma-ok form: `v, ok := <-ch`. `ok` is `false` once you've drained a closed channel.
 
 ### Direction-Restricted Channels
 
