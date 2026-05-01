@@ -232,6 +232,29 @@ Use this when a comparison language was specified — show concepts in both lang
 > **Note:** Additional context here.
 ```
 
+**Predict-the-output blocks:**
+
+Active-reading prompt that asks the learner to commit to a guess before the answer reveals. The learner types what they think the code prints; clicking Reveal shows their guess next to the canonical output. The platform never grades the prediction — the act of committing is the value. Use these to break up dense reading and force engagement with concrete behavior.
+
+````markdown
+<predict prompt="What does this print?">
+```python
+nums = [1, 2, 3, 4]
+nums[1:3] = [99]
+print(nums, len(nums))
+```
+```
+[1, 99, 4] 3
+```
+</predict>
+````
+
+Rules:
+- Inside the `<predict>` block, write **two** fenced code blocks: the first is the code shown to the learner, the second is the canonical output.
+- The `prompt` attribute is optional and defaults to `"What does this print?"`. Override when the question needs to be more specific (e.g., `prompt="What's the value of x after the loop?"`).
+- Use sparingly — 1–3 per lesson section. Best deployed where the *output* is non-obvious and the learner is likely to have a wrong mental model worth surfacing (e.g., slice/list mutation semantics, integer division, truthiness edge cases, scope/closure surprises).
+- Skip them on trivial examples; predicting `print("hello")` adds no value.
+
 ### Exercise section (CRITICAL — single-file modules only)
 
 **Note:** If using the directory format (split sections), skip this entirely — the exercises page is auto-generated.

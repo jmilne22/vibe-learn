@@ -10,6 +10,20 @@ Maps are your most-used data structure after slices. Counting, grouping, lookup 
 
 ### Create & Access
 
+<predict prompt="What does this print?">
+```go
+scores := map[string]int{"Alice": 95, "Bob": 0}
+fmt.Println(scores["Alice"])
+fmt.Println(scores["Dave"])
+```
+```
+95
+0
+```
+</predict>
+
+`scores["Dave"]` doesn't error and doesn't return nil — it returns the zero value of the value type. For `int` that's `0`. So you can't tell "Dave scored 0" apart from "Dave isn't in the map" without the comma-ok pattern below.
+
 ```go
 // Literal
 scores := map[string]int{
@@ -110,11 +124,21 @@ Order matters. If you copied `powerUp` first and `base` second, the base values 
 
 When you need two levels of lookup (like INI file sections → keys → values):
 
+<predict prompt="What happens when this runs?">
 ```go
 config := make(map[string]map[string]string)
+config["database"]["host"] = "localhost"
+fmt.Println(config)
+```
+```
+panic: assignment to entry in nil map
+```
+</predict>
 
-// DANGER: the inner map doesn't exist yet
-// config["database"]["host"] = "localhost"  // PANIC — nil map write
+The outer `make` only allocates the *outer* map. The inner `map[string]string` for `"database"` doesn't exist yet — reading a missing key returns a nil map, and writing to a nil map panics. Always initialize before writing:
+
+```go
+config := make(map[string]map[string]string)
 
 // Initialize the inner map before writing to it
 section := "database"

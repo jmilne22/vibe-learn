@@ -4,6 +4,17 @@ Infrastructure code mostly deals with integers (ports, counts, bytes), but repor
 
 ### Percentage Calculation
 
+<predict prompt="What does this print?">
+```go
+passed := 3
+total := 8
+fmt.Println(passed / total)
+```
+```
+0
+```
+</predict>
+
 In Go, dividing two ints gives an int — the decimal part is thrown away. `3 / 8` is `0`, not `0.375`. This is different from Python 3 where `/` always gives a float.
 
 So to get a real percentage, you must convert to `float64` *before* dividing:

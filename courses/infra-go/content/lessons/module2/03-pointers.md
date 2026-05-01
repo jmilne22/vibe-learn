@@ -23,18 +23,26 @@ fmt.Println(x)  // 100 — x changed!
 
 ### Pass by Value vs Pass by Pointer
 
-Go copies everything by default. When you pass a struct to a function, the function gets a copy. Changes to the copy don't affect the original.
-
+<predict prompt="What does this print?">
 ```go
-// Pass by value — gets a COPY
+type Pod struct{ Name, Status string }
+
 func resetStatus(p Pod) {
-    p.Status = "Pending"  // only changes the copy
+    p.Status = "Pending"
 }
 
 pod := Pod{Name: "web-1", Status: "Running"}
 resetStatus(pod)
-fmt.Println(pod.Status)  // still "Running"!
+fmt.Println(pod.Status)
+```
+```
+Running
+```
+</predict>
 
+Go copies everything by default. When you pass a struct to a function, the function gets a copy. Changes to the copy don't affect the original. To actually modify the caller's value, take a pointer:
+
+```go
 // Pass by pointer — gets the ADDRESS
 func resetStatusPtr(p *Pod) {
     p.Status = "Pending"  // changes the original
@@ -87,14 +95,21 @@ func double(x int) int { return x * 2 }
 
 A pointer that hasn't been assigned points to nothing — it's `nil`. This is Go's version of Python's `None`, but only for pointers, slices, maps, channels, interfaces, and functions.
 
+<predict prompt="What happens when this runs?">
 ```go
-var p *Pod            // declared but not assigned
-fmt.Println(p)        // <nil>
-fmt.Println(p == nil) // true
+var p *Pod
+fmt.Println(p == nil)
+fmt.Println(p.Name)
+```
+```
+true
+panic: runtime error: invalid memory address or nil pointer dereference
+```
+</predict>
 
-// DANGER: using a nil pointer crashes
-// fmt.Println(p.Name)  // panic: nil pointer dereference
+`p == nil` is fine — comparing to nil is always safe. But `p.Name` follows the pointer to read the struct's field, and there's no struct to read. This is the most common crash in Go infrastructure code: an API call returns nil, you forget to check, and the next field access panics.
 
+```go
 // Always check first
 if p != nil {
     fmt.Println(p.Name)

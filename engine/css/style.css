@@ -783,6 +783,179 @@ pre::-webkit-scrollbar-thumb:hover {
 }
 
 /* ============================================
+   10d. Predict-the-output blocks
+   ============================================ */
+.predict-block {
+    border: 1px solid var(--border-default);
+    border-left: 3px solid var(--slate);
+    border-radius: var(--radius-lg);
+    background: var(--bg-surface);
+    margin: var(--space-6) 0;
+    padding: var(--space-4) var(--space-5);
+    box-shadow: var(--shadow-xs);
+}
+
+.predict-prompt-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+}
+
+.predict-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--slate);
+    background: var(--slate-glow);
+    padding: 2px var(--space-2);
+    border-radius: var(--radius-sm);
+}
+
+.predict-prompt-text {
+    color: var(--text-primary);
+    font-size: 0.95rem;
+}
+
+.predict-block .predict-code {
+    margin: 0;
+}
+
+.predict-block .predict-code pre {
+    margin: var(--space-2) 0 var(--space-3);
+}
+
+.predict-input-wrap {
+    margin-top: var(--space-3);
+}
+
+.predict-input {
+    width: 100%;
+    min-height: 60px;
+    padding: var(--space-3);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    background: var(--bg-base);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    resize: vertical;
+    box-sizing: border-box;
+}
+
+.predict-input:focus {
+    outline: none;
+    border-color: var(--slate);
+    box-shadow: 0 0 0 3px var(--slate-glow);
+}
+
+.predict-input::placeholder {
+    color: var(--text-tertiary);
+    font-style: italic;
+}
+
+.predict-actions {
+    display: flex;
+    gap: var(--space-2);
+    margin-top: var(--space-2);
+    align-items: center;
+}
+
+.predict-reveal-btn {
+    padding: var(--space-2) var(--space-4);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: #fff;
+    background: var(--slate);
+    border: 1px solid var(--slate);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: filter 0.12s ease, transform 0.06s ease;
+}
+
+.predict-reveal-btn:hover {
+    filter: brightness(1.08);
+}
+
+.predict-reveal-btn:active {
+    transform: translateY(1px);
+}
+
+.predict-skip-btn {
+    padding: var(--space-2) var(--space-3);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--text-tertiary);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+}
+
+.predict-skip-btn:hover {
+    color: var(--text-secondary);
+}
+
+.predict-yours {
+    margin-top: var(--space-3);
+}
+
+.predict-yours-label,
+.predict-actual-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin-bottom: var(--space-1);
+}
+
+.predict-actual-label {
+    margin-top: var(--space-3);
+    color: var(--slate);
+}
+
+.predict-yours-text {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    background: var(--bg-base);
+    border: 1px dashed var(--border-default);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.predict-yours-text--skipped {
+    color: var(--text-tertiary);
+    font-style: italic;
+}
+
+.predict-block .predict-output pre {
+    margin: 0;
+}
+
+.predict-saved-note {
+    display: inline-block;
+    margin-top: var(--space-3);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--text-tertiary);
+    opacity: 1;
+    transition: opacity 1.2s ease;
+}
+
+.predict-saved-note--fade {
+    opacity: 0;
+}
+
+/* ============================================
    11. Exercises and Hints/Solutions
    ============================================ */
 .js-required {

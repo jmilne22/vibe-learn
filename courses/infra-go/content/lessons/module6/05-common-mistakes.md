@@ -2,11 +2,17 @@
 
 ### Closing a Channel Twice
 
+<predict prompt="What happens when this runs?">
 ```go
 ch := make(chan int)
 close(ch)
-close(ch) // PANIC: close of closed channel
+close(ch)
+fmt.Println("done")
 ```
+```
+panic: close of closed channel
+```
+</predict>
 
 Only close once, and only from the sender.
 
