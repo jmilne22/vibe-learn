@@ -192,6 +192,73 @@ const themeInitScript = `    <script>(function(){var d=document.documentElement;
 const themeLinksHtml = themeInitScript;
 
 // ---------------------------------------------------------------------------
+// Pre-process: transform <predict> blocks into structured HTML before marked
+// ---------------------------------------------------------------------------
+/**
+ * Detects predict-the-output blocks in raw markdown:
+ *
+ *   <predict prompt="What does this print?">
+ *   ```go
+ *   fmt.Println(strings.SplitN("a,b,c", ",", 2))
+ *   ```
+ *   ```
+ *   [a b,c]
+ *   ```
+ *   </predict>
+ *
+ * The first fenced block is the code; the second is the canonical output.
+ * Both are rendered with marked separately, then wrapped in a structured
+ * <div class="predict-block"> with stable data-predict-id derived from
+ * pageId. The runtime predict.js finds these blocks and adds the prompt
+ * UI around them.
+ *
+ * The `prompt` attribute is optional — defaults to "What does this print?".
+ */
+function processPredictBlocks(md, pageId) {
+    let counter = 0;
+    return md.replace(/<predict(\s+[^>]*)?>([\s\S]*?)<\/predict>/g, (match, attrs, inner) => {
+        let prompt = 'What does this print?';
+        if (attrs) {
+            const pm = attrs.match(/prompt="([^"]+)"/);
+            if (pm) prompt = pm[1];
+        }
+
+        // Extract fenced code blocks from the inner content
+        const fenceRe = /```(\w*)\n([\s\S]*?)\n```/g;
+        const fences = [];
+        let m;
+        while ((m = fenceRe.exec(inner)) !== null) {
+            fences.push({ lang: m[1] || '', code: m[2] });
+        }
+
+        if (fences.length < 2) {
+            console.warn(`  Warning: <predict> block on page "${pageId}" has ${fences.length} code fence(s); needs 2 (code + output). Skipping.`);
+            return match;
+        }
+
+        const code = fences[0];
+        const output = fences[1];
+
+        const codeMd = '```' + code.lang + '\n' + code.code + '\n```';
+        const outputMd = '```\n' + output.code + '\n```';
+        const codeHtml = marked.parse(codeMd).trim();
+        const outputHtml = marked.parse(outputMd).trim();
+
+        const id = pageId + '-' + counter++;
+        const escPrompt = prompt.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+
+        return [
+            '',
+            `<div class="predict-block" data-predict-id="${id}" data-predict-prompt="${escPrompt}">`,
+            `<div class="predict-code">${codeHtml}</div>`,
+            `<div class="predict-output" hidden>${outputHtml}</div>`,
+            `</div>`,
+            ''
+        ].join('\n');
+    });
+}
+
+// ---------------------------------------------------------------------------
 // Post-process: transform GitHub-style callouts into structured cards
 // ---------------------------------------------------------------------------
 /**
@@ -517,7 +584,9 @@ function buildCourse(slug) {
                 const sectionNum = idx + 1;
                 const sectionLabel = `${mod.id}.${sectionNum}`;
                 const mdContent = fs.readFileSync(path.join(mdDir, file), 'utf8');
-                const htmlContent = processCallouts(processCodeBlocks(marked.parse(mdContent)));
+                const sectionPageId = `${course.slug}-module${mod.id}-${sectionNum}`;
+                const preprocessed = processPredictBlocks(mdContent, sectionPageId);
+                const htmlContent = processCallouts(processCodeBlocks(marked.parse(preprocessed)));
                 const extracted = extractSectionTitle(htmlContent);
                 const outFile = `module${mod.id}-${sectionNum}.html`;
                 const slug = file.replace(/^\d+-/, '').replace(/\.md$/, '');
@@ -667,7 +736,9 @@ function buildCourse(slug) {
             }
         } else if (fs.existsSync(mdFile)) {
             const mdContent = fs.readFileSync(mdFile, 'utf8');
-            let htmlContent = processCallouts(processCodeBlocks(marked.parse(mdContent)));
+            const modulePageId = `${course.slug}-module${mod.id}`;
+            const preprocessed = processPredictBlocks(mdContent, modulePageId);
+            let htmlContent = processCallouts(processCodeBlocks(marked.parse(preprocessed)));
 
             if (mod.hasExercises) {
                 htmlContent = injectExerciseAnchors(htmlContent);
@@ -738,7 +809,9 @@ function buildCourse(slug) {
         }
 
         const mdContent = fs.readFileSync(mdFile, 'utf8');
-        const htmlContent = processCallouts(processCodeBlocks(marked.parse(mdContent)));
+        const projectPageId = `${course.slug}-${proj.file}`;
+        const preprocessed = processPredictBlocks(mdContent, projectPageId);
+        const htmlContent = processCallouts(processCodeBlocks(marked.parse(preprocessed)));
         const currentFile = proj.file + '.html';
 
         let page = projectTemplate

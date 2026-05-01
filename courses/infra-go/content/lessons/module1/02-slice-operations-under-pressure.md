@@ -43,13 +43,16 @@ fruits[len(fruits)-2:] // ["date", "elderberry"]
 
 ### Append & Grow
 
-Spot the bug:
-
+<predict prompt="What does this print?">
 ```go
 pods := []string{"web-1"}
-append(pods, "web-2")       // add a pod...
-fmt.Println(pods)            // ["web-1"] — where did web-2 go?
+append(pods, "web-2")
+fmt.Println(pods)
 ```
+```
+[web-1]
+```
+</predict>
 
 `append` doesn't modify the original — it returns a *new* slice. If you throw away the return value, you throw away the data. The fix is one character:
 

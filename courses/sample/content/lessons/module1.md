@@ -16,6 +16,17 @@ def greet(name: str) -> str:
 print(greet("World"))
 ```
 
+<predict prompt="What does this print?">
+```python
+nums = [1, 2, 3, 4]
+nums[1:3] = [99]
+print(nums, len(nums))
+```
+```
+[1, 99, 4] 3
+```
+</predict>
+
 ```javascript
 function greet(name) {
     return `Hello, ${name}!`;
