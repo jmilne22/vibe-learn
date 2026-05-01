@@ -210,15 +210,22 @@ Three things that will bite you if you don't know them:
 
 **Range gives you a copy.** The `v` in `for _, v := range nums` is a *copy* of the element. Mutating it does nothing to the slice:
 
+<predict prompt="What does this print?">
 ```go
 nums := []int{1, 2, 3}
-
-// BUG: v is a copy — changing it does nothing to the slice
 for _, v := range nums {
     v = v * 10
 }
-fmt.Println(nums) // [1 2 3] — unchanged!
+fmt.Println(nums)
+```
+```
+[1 2 3]
+```
+</predict>
 
+The fix is to use the index instead of the value-copy:
+
+```go
 // FIX: use the index to modify in place
 for i := range nums {
     nums[i] = nums[i] * 10
@@ -228,19 +235,24 @@ fmt.Println(nums) // [10 20 30]
 
 **Range locks the length at loop start.** If you `append` during a `range` loop, the new elements won't be visited — the iteration count was set when the loop began:
 
+<predict prompt="How many iterations does this loop run, and what does the slice look like at the end?">
 ```go
 nums := []int{1, 2, 3}
-
+iters := 0
 for i := range nums {
+    iters++
     if nums[i] == 2 {
         nums = append(nums, 99)
     }
 }
-
-// 99 was appended — but range already decided to run 3 times
-fmt.Println(nums)      // [1 2 3 99]
-fmt.Println(len(nums)) // 4
+fmt.Println(iters, nums)
 ```
+```
+3 [1 2 3 99]
+```
+</predict>
+
+Range decided to run 3 times the moment the loop began. The append succeeded, but the new element wasn't visited — the iteration count was already locked in.
 
 **Use `for i := range` when you need to mutate.** If you need to change elements, use the index form. If you just need to read them, `for _, v := range` is fine.
 

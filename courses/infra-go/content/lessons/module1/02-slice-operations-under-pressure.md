@@ -95,6 +95,40 @@ fmt.Printf("len=%d cap=%d %v\n", len(steps), cap(steps), steps)
 
 When you know the size upfront, pre-allocate. When your monitoring tool processes 50,000 metrics per scrape, the difference between "grow the backing array 17 times" and "one allocation" is the difference between a smooth scrape and a GC pause that trips your own alerts.
 
+<variations title="What happens to cap as you append past it?" runner="go">
+template: |
+  package main
+  import "fmt"
+  func main() {
+      s := make([]int, 0, {{INITIAL_CAP}})
+      for i := 0; i < {{N}}; i++ {
+          s = append(s, i)
+      }
+      fmt.Printf("len=%d cap=%d\n", len(s), cap(s))
+  }
+cases:
+  - name: cap 4, append 4
+    INITIAL_CAP: 4
+    N: 4
+  - name: cap 4, append 5
+    INITIAL_CAP: 4
+    N: 5
+  - name: cap 4, append 9
+    INITIAL_CAP: 4
+    N: 9
+  - name: cap 4, append 100
+    INITIAL_CAP: 4
+    N: 100
+  - name: cap 0, append 5
+    INITIAL_CAP: 0
+    N: 5
+  - name: cap 1000, append 5
+    INITIAL_CAP: 1000
+    N: 5
+</variations>
+
+Each time `len` exceeds `cap`, Go reallocates a bigger backing array. The growth strategy isn't fixed — for small slices it roughly doubles, for larger ones it grows ~25%. The exact numbers don't matter; what matters is that pre-allocating with the right `cap` upfront skips all the copying.
+
 ```go
 // Bad: grows the backing array multiple times
 var results []string

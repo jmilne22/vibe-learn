@@ -4,6 +4,27 @@ Methods are functions attached to a type. In Go, you define them outside the str
 
 ### Value Receivers
 
+<predict prompt="What does this print?">
+```go
+type Counter struct{ n int }
+
+func (c Counter) Inc() { c.n++ }
+
+func main() {
+    c := Counter{}
+    c.Inc()
+    c.Inc()
+    c.Inc()
+    fmt.Println(c.n)
+}
+```
+```
+0
+```
+</predict>
+
+`Inc` has a *value* receiver — every call gets its own copy of `c`, increments that copy's `n`, and throws the copy away when the method returns. The original is never touched. This is the most common method-receiver bug; the fix is a pointer receiver (next section).
+
 ```go
 // Value receiver — gets a COPY of the struct
 func (p Pod) FullName() string {

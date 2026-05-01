@@ -1,5 +1,6 @@
 dist/
 node_modules/
+.variations-cache/
 *-backup-*.json
 architecture-course-plan.md
 k8s-course-plan.md

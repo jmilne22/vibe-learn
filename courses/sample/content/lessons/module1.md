@@ -27,6 +27,28 @@ print(nums, len(nums))
 ```
 </predict>
 
+<variations title="How does SplitN behave on edge cases?" runner="go">
+template: |
+  package main
+  import (
+      "fmt"
+      "strings"
+  )
+  func main() {
+      parts := strings.SplitN({{INPUT}}, "=", 2)
+      fmt.Printf("%d parts: %q\n", len(parts), parts)
+  }
+cases:
+  - name: simple
+    INPUT: '"key=value"'
+  - name: equals in value
+    INPUT: '"name=Tom = Jerry"'
+  - name: no equals
+    INPUT: '"justakey"'
+  - name: empty
+    INPUT: '""'
+</variations>
+
 ```javascript
 function greet(name) {
     return `Hello, ${name}!`;

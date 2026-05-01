@@ -65,19 +65,20 @@ items = append(items[:i], items[i+1:]...)
 
 If you don't care about order, there's an O(1) trick: copy the last element into the gap, then shrink:
 
+<predict prompt="What does this print?">
 ```go
 items := []string{"a", "b", "c", "d", "e"}
-i := 1 // remove "b"
-
-// Overwrite the gap with the last element, then shrink
+i := 1
 items[i] = items[len(items)-1]
 items = items[:len(items)-1]
-
-// Before: [a b c d e]
-// After:  [a e c d]
+fmt.Println(items)
 ```
+```
+[a e c d]
+```
+</predict>
 
-Only two operations regardless of slice size. Use this when order doesn't matter — like removing a terminated pod from a running list.
+Two operations regardless of slice size. The "removed" element `b` is gone, but `e` jumped from the end into its slot — order is no longer preserved. Use this when order doesn't matter (e.g., removing a terminated pod from a running list).
 
 ### Filter In Place
 
