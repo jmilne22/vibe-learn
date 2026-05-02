@@ -172,7 +172,11 @@
                 clearStatus();
                 setStatus('info', 'Testing...');
                 try {
-                    const r = await window.VibeSync.testConnection();
+                    // Use form values directly so you don't have to Save first.
+                    const r = await window.VibeSync.testConnection({
+                        url: urlEl.value.trim(),
+                        secret: secretEl.value.trim(),
+                    });
                     setStatus('ok', 'Connected. Remote has ' + r.remoteKeys + ' key(s).');
                 } catch (e) {
                     setStatus('err', e.message);

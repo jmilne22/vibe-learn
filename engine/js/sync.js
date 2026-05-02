@@ -67,16 +67,19 @@
     });
   }
 
-  async function request(method, body) {
-    const cfg = getConfig();
-    if (!cfg) throw new Error('Sync not configured.');
+  async function request(method, body, overrideConfig) {
+    const cfg = overrideConfig || getConfig();
+    if (!cfg || !cfg.url || !cfg.secret) {
+      throw new Error('Sync not configured.');
+    }
+    const url = cfg.url.replace(/\/+$/, '');
     const headers = { Authorization: 'Bearer ' + cfg.secret };
     const opts = { method, headers };
     if (body !== undefined) {
       headers['Content-Type'] = 'application/json';
       opts.body = JSON.stringify(body);
     }
-    const res = await fetch(cfg.url + '/state', opts);
+    const res = await fetch(url + '/state', opts);
     const text = await res.text();
     let data;
     try { data = text ? JSON.parse(text) : {}; }
@@ -89,8 +92,8 @@
     return data;
   }
 
-  async function testConnection() {
-    const data = await request('GET');
+  async function testConnection(overrideConfig) {
+    const data = await request('GET', undefined, overrideConfig);
     const remoteKeys = data && typeof data === 'object' ? Object.keys(data).length : 0;
     return { ok: true, remoteKeys };
   }
