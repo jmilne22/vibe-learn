@@ -15,9 +15,7 @@ A `contain` command that:
 
 ## Why This Project
 
-You've been running Docker containers for years. Now you understand what it actually does. This project is Linux-specific (won't work on macOS) and uses real kernel features. It's the deepest systems programming project in the course.
-
-If you can explain namespaces, cgroups, and pivot_root in an interview — and point to code you wrote that uses them — you're operating at a level most DevOps engineers never reach.
+This project connects Linux isolation primitives to Go code: namespaces, cgroups, pivot_root, process execution, and cleanup. It is Linux-specific and uses real kernel features, so it gives you a concrete way to inspect the mechanics behind container runtimes.
 
 ## Usage
 

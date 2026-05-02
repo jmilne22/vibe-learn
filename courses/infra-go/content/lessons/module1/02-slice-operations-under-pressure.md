@@ -1,6 +1,6 @@
 ## Slice Operations Under Pressure
 
-<p class="scene"><span class="timestamp">SHIFT 1 · 02:47 UTC</span> — Welcome to Hailwave. Small infra team, three services on fire most weeks: <code>checkout-api</code>, <code>ledger-worker</code>, <code>edge-proxy</code>. The pager just went off and the only tools you have are the standard library and a terminal. Tonight you're going to live in slices: a parser is dropping log lines, and the runbook says the fix starts with <code>s[start:end]</code>.</p>
+Operational tools often start by selecting, trimming, or reordering slices: log lines, pod names, metric labels, and file paths. This section focuses on the slice expressions and boundary checks behind those transformations.
 
 > *"Make the zero value useful."* — Go Proverb
 

@@ -1,6 +1,6 @@
 ## String Parsing & Building
 
-<p class="scene"><span class="timestamp">03:42 UTC</span> — Prometheus scrape just landed and half the alerts are firing on labels that don't parse. <code>method="GET",status="200",service="checkout-api"</code> — that's the shape you need to crack open with <code>strings.SplitN</code> before grafana stops yelling.</p>
+Infrastructure data spends a lot of time as strings: log lines, metric labels, config keys, paths, and command output. This section covers the standard-library operations that turn those strings into structured values.
 
 > *"A little copying is better than a little dependency."* — Go Proverb
 

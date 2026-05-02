@@ -1,7 +1,7 @@
 course:
   name: "Infrastructure Development with Go"
   slug: infra-go
-  description: "From DevOps engineer to infrastructure developer. Build real infra tools, nail Go fundamentals under pressure, and ace technical interviews. 14 modules, 5 projects, algorithms throughout."
+  description: "From DevOps engineer to infrastructure developer. Build CLI tools, API clients, concurrent services, networking utilities, container internals, Kubernetes controllers, and algorithm practice."
   storagePrefix: infra-go
 
 tracks:
@@ -13,7 +13,7 @@ tracks:
     modules: [6, 7]
   - title: Networking & Infrastructure
     modules: [8, 9, 10, 11]
-  - title: Level Up
+  - title: Algorithms & Source Reading
     modules: [12, 13]
 
 modules:
@@ -22,7 +22,7 @@ modules:
     hasExercises: false
 
   - title: Data Manipulation Bootcamp
-    description: "Shift 1 at Hailwave. Slice the access logs, parse the metric labels, count the 5xx, and dedup the offending IPs — the bread-and-butter loops every on-call shift comes back to."
+    description: "Slice logs, parse metric labels, count 5xx responses, deduplicate IPs, and practice the data-manipulation loops used in operational tools."
 
   - title: Pointers, Structs & Interfaces
     description: "Pointers and nil, model real infrastructure with structs, compose with embedding, and design small interfaces the Go way."
@@ -37,7 +37,7 @@ modules:
     description: "Talk to APIs, handle auth, paginate results. Build tools that query cloud providers."
 
   - title: Goroutines & Channels
-    description: "Launch concurrent work, collect results, coordinate with WaitGroups. The basics of Go's superpower."
+    description: "Launch concurrent work, collect results, and coordinate goroutines with WaitGroups."
 
   - title: Concurrency Patterns
     description: "Fan-out/fan-in, worker pools, rate limiting, select. Context, cancellation, graceful shutdown."
@@ -49,7 +49,7 @@ modules:
     description: "TCP/UDP from scratch, DNS wire format, gRPC and protobuf. Understand the network layer."
 
   - title: Container Internals
-    description: "What Docker actually does: namespaces, cgroups, pivot_root from Go. 20 years of Linux, now understand it from code."
+    description: "Namespaces, cgroups, pivot_root, and process isolation from Go."
 
   - title: Kubernetes from Go
     description: "client-go, informers, reconciliation loops. Build an operator that watches custom resources."

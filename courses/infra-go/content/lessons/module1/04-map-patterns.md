@@ -1,6 +1,6 @@
 ## Map Patterns
 
-<p class="scene"><span class="timestamp">03:14 UTC</span> — The dashboard shows a status-code histogram you need to rebuild from raw access logs. Counting <code>200</code> vs <code>404</code> vs <code>503</code> across 50k lines means one thing: a <code>map[int]int</code>.</p>
+Maps are the default tool for counts, lookups, grouping, deduplication, and index tables. If raw records need to become a histogram or a fast lookup, a map is usually the first structure to reach for.
 
 > *"Clear is better than clever."* — Go Proverb
 
@@ -166,7 +166,7 @@ for k, v := range m {
 }
 ```
 
-Go randomizes map iteration order on purpose — so you don't accidentally depend on it. Yes, they did this intentionally. Yes, it's annoying the first time you write a test that passes one run and fails the next. And yes, you'll eventually appreciate it — because that flaky test just saved you from a production bug where "it worked on my machine" because the map happened to iterate in the order you expected.
+Go randomizes map iteration order on purpose so code does not accidentally depend on it. Tests that compare map-derived output should sort keys before formatting or comparing results.
 
 If you need deterministic output (sorted keys), you have to sort yourself:
 

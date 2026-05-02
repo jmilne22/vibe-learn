@@ -2,7 +2,7 @@
 
 Build a CLI tool that reads Kubernetes YAML files, validates them against a set of rules, and reports violations with file, line, and severity.
 
-You've practiced all the pieces — now compose them into a real tool.
+This project composes the earlier parsing, validation, file I/O, and CLI pieces into one tool.
 
 Your program should:
 
@@ -14,7 +14,7 @@ Your program should:
 
 ## Why This Project
 
-Every infra team needs config validation. This project exercises everything from Track 1 (slices, maps, structs, error handling, testing) plus CLI and file I/O from Module 4. It's also the kind of tool that impresses in interviews — "I built a linter" shows you think about code quality and automation.
+Every infra team needs config validation. This project exercises everything from Track 1 (slices, maps, structs, error handling, testing) plus CLI and file I/O from Module 4.
 
 ## Usage
 

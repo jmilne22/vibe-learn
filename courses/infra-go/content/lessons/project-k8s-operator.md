@@ -14,7 +14,7 @@ A K8s operator that:
 
 ## Why This Project
 
-Operators are the standard pattern for extending Kubernetes. Companies like Redis, Elastic, and MongoDB build operators to manage their products on K8s. If you can build an operator from scratch, you understand K8s at a level that most users never reach.
+Operators are the standard pattern for extending Kubernetes. Companies like Redis, Elastic, and MongoDB build operators to manage their products on K8s. Building one from scratch gives you direct practice with the API machinery behind that pattern.
 
 This project ties together everything: structs, interfaces, error handling, HTTP clients (the K8s API), concurrency (informers and work queues), and testing.
 
