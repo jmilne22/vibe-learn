@@ -84,7 +84,7 @@
 </head>
 <body>
     <div class="wrap">
-        <div class="nav"><a href="index.html">&larr; back</a></div>
+        <div class="nav"><a id="back-link" href="index.html">&larr; back</a></div>
         <h1>Settings</h1>
         <p class="sub">Cross-device sync. Off by default — fill in below to enable on this device.</p>
 
@@ -215,6 +215,21 @@
                 setStatus('info', 'Config cleared.');
                 renderMeta();
             });
+
+            // Point "back" at the page we came from (a course dashboard,
+            // typically) when same-origin. Falls back to landing page.
+            (function setBackLink() {
+                const back = document.getElementById('back-link');
+                if (!back) return;
+                const ref = document.referrer;
+                if (!ref) return;
+                try {
+                    const u = new URL(ref);
+                    if (u.origin === location.origin && u.pathname !== location.pathname) {
+                        back.href = u.pathname + u.search;
+                    }
+                } catch (e) { /* ignore */ }
+            })();
 
             loadIntoForm();
             renderMeta();
