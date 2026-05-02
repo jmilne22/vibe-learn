@@ -1,0 +1,8 @@
+name = "vibe-sync"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+
+# `id` is filled in automatically by setup.sh (run it once after `wrangler login`).
+kv_namespaces = [
+  { binding = "STATE", id = "fc34ba119cf842db8b39d44044bfdfac" }
+]

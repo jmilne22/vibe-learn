@@ -70,6 +70,7 @@ See the [Platform Guide](https://jmilne22.github.io/vibe-learn/guide.html) for d
 - **Pomodoro timer** — session presets (25/5, 50/10, 90/20) with break reminders
 - **Offline support** via service worker
 - **Zero backend** — pure static site, host on GitHub Pages, Netlify, S3, or any web server
+- **Cross-device sync (optional)** — opt-in Cloudflare Worker stores progress as a JSON blob; off by default, see [Cross-device sync](#cross-device-sync-optional)
 
 ## Quick start
 
@@ -284,6 +285,53 @@ jobs:
 | Everforest Light | Soft green light |
 | OLED Dark | True black background |
 | Factorio Dark | Industrial amber |
+
+## Cross-device sync (optional)
+
+Off by default. The deployed site has no sync UI unless you go to `/settings.html` directly and configure it.
+
+**Architecture**: a tiny Cloudflare Worker stores a JSON snapshot of localStorage in KV. Each device pulls on demand and pushes after writes. The static site stays static — no credentials shipped in the bundle, each device holds its own URL + secret in localStorage.
+
+```
+browser ──→ vibe-learn.ai          (GitHub Pages: HTML/JS/CSS)
+       └──→ vibe-sync.<sub>.workers.dev/state   (Cloudflare: JSON blob in KV)
+```
+
+### One-time backend setup
+
+```bash
+cd sync-worker
+npm i -g wrangler         # Cloudflare CLI
+wrangler login            # opens browser
+./setup.sh                # creates KV, deploys Worker, sets a 32-byte secret
+```
+
+`setup.sh` is idempotent — re-running skips finished steps. It writes the secret to `sync-worker/.dev.vars` (gitignored) and prints it once at the end.
+
+### Per-device setup
+
+1. Open `https://your-site/settings.html` (no nav link points here — direct URL only).
+2. Paste the Worker URL and the secret. Click **Save** → **Test connection**.
+3. Use **Push** to upload current state, **Pull** to overwrite local with remote.
+
+That's it — the device is now linked. To unlink, click **Clear config** on that device.
+
+### Behavior notes
+
+- **Pull is destructive** in the current implementation: it replaces all non-sync localStorage keys with the remote snapshot. There's a confirm dialog. (A merge-aware mode is planned but not shipped.)
+- **Sync config is intentionally NOT synced** — each device holds its own URL/secret so pulling can't clobber credentials.
+- **CORS** in the Worker is locked to `https://vibe-learn.ai` and `localhost:8765` for local dev. Edit `sync-worker/src/index.js` if you host elsewhere.
+- **Disable globally**: delete the Worker (`wrangler delete`) or rotate the secret (`wrangler secret put SYNC_SECRET`) — every device with the old secret will start failing auth.
+
+### Files
+
+| File | Purpose |
+|---|---|
+| `sync-worker/src/index.js` | The Worker (~50 lines) |
+| `sync-worker/wrangler.toml` | Worker config; KV namespace ID lives here |
+| `sync-worker/setup.sh` | One-shot bootstrap |
+| `engine/js/sync.js` | Client-side sync API (`window.VibeSync`) |
+| `engine/templates/settings.html` | The `/settings.html` page (built into `dist/`) |
 
 ## Project structure
 

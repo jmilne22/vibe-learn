@@ -1552,6 +1552,25 @@ function buildGuidePage() {
 }
 
 // ---------------------------------------------------------------------------
+// buildSettingsPage() — generates dist/settings.html (cross-device sync UI).
+// Reachable only via direct URL; nothing in the default UI links to it.
+// ---------------------------------------------------------------------------
+function buildSettingsPage() {
+    console.log('\n========== Building settings page ==========');
+
+    const settingsTemplate = loadTemplate('settings.html');
+    const page = settingsTemplate.replace('{{THEME_LINKS}}', themeLinksHtml);
+    fs.writeFileSync(path.join(ROOT_DIST, 'settings.html'), page);
+    console.log('  dist/settings.html');
+
+    const syncJs = path.join(JS_DIR, 'sync.js');
+    if (fs.existsSync(syncJs)) {
+        fs.copyFileSync(syncJs, path.join(ROOT_DIST, 'sync.js'));
+        console.log('  dist/sync.js');
+    }
+}
+
+// ---------------------------------------------------------------------------
 // CLI entry point
 // ---------------------------------------------------------------------------
 const args = process.argv.slice(2);
@@ -1582,6 +1601,7 @@ if (requestedSlug) {
     const courseInfos = availableCourses.map(slug => buildCourse(slug));
     buildLandingPage(courseInfos);
     buildGuidePage();
+    buildSettingsPage();
 
     console.log(`\n========== All done! ==========`);
     console.log(`Built ${courseInfos.length} course(s) + landing page + guide in dist/`);

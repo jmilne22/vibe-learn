@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <title>Settings — vibe-learn</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="style.css">
+{{THEME_LINKS}}
+    <style>
+        .wrap { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+        h1 { font-size: 1.6rem; margin: 0 0 0.25rem; }
+        .sub { color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 2rem; }
+        .nav { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; margin-bottom: 1.5rem; }
+        .nav a { color: var(--green-dim); text-decoration: none; }
+        .nav a:hover { color: var(--green-bright); }
+
+        section {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-default);
+            border-radius: 10px;
+            padding: 1.25rem 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        section h2 {
+            font-size: 1rem;
+            margin: 0 0 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--green-bright);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        label { display: block; font-size: 0.85rem; margin: 0.85rem 0 0.35rem; color: var(--text-secondary); }
+        input[type=text], input[type=password] {
+            width: 100%;
+            padding: 0.55rem 0.7rem;
+            background: var(--bg-default);
+            border: 1px solid var(--border-default);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            box-sizing: border-box;
+        }
+
+        .row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem; }
+        button {
+            padding: 0.55rem 1rem;
+            background: var(--bg-default);
+            border: 1px solid var(--border-default);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+        button:hover { border-color: var(--green-bright); color: var(--green-bright); }
+        button.primary { background: var(--green-bright); color: var(--bg-default); border-color: var(--green-bright); }
+        button.primary:hover { opacity: 0.9; color: var(--bg-default); }
+        button.danger:hover { border-color: #d33; color: #d33; }
+
+        .status {
+            margin-top: 1rem;
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            white-space: pre-wrap;
+            word-break: break-word;
+            display: none;
+        }
+        .status.ok    { background: rgba(0,200,80,0.08);  border: 1px solid rgba(0,200,80,0.3);  color: var(--green-bright); display: block; }
+        .status.err   { background: rgba(220,60,60,0.08); border: 1px solid rgba(220,60,60,0.3); color: #ff8080;             display: block; }
+        .status.info  { background: var(--bg-default);     border: 1px solid var(--border-default); color: var(--text-secondary); display: block; }
+
+        .meta { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: var(--text-secondary); line-height: 1.7; }
+        .meta b { color: var(--text-primary); font-weight: 500; }
+        .pill { display: inline-block; padding: 0.1rem 0.5rem; border-radius: 999px; font-size: 0.7rem; }
+        .pill.on  { background: rgba(0,200,80,0.15); color: var(--green-bright); }
+        .pill.off { background: rgba(120,120,120,0.15); color: var(--text-secondary); }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <div class="nav"><a href="index.html">&larr; back</a></div>
+        <h1>Settings</h1>
+        <p class="sub">Cross-device sync. Off by default — fill in below to enable on this device.</p>
+
+        <section>
+            <h2>Sync <span id="sync-pill" class="pill off">off</span></h2>
+            <label for="sync-url">Worker URL</label>
+            <input type="text" id="sync-url" placeholder="https://vibe-sync.<sub>.workers.dev" autocomplete="off" spellcheck="false">
+            <label for="sync-secret">Secret</label>
+            <input type="password" id="sync-secret" placeholder="(64-char hex)" autocomplete="off" spellcheck="false">
+            <label for="sync-device">Device label (optional)</label>
+            <input type="text" id="sync-device" placeholder="e.g. laptop, desktop" autocomplete="off" spellcheck="false">
+            <div class="row">
+                <button class="primary" id="btn-save">Save</button>
+                <button id="btn-test">Test connection</button>
+                <button id="btn-pull">Pull from remote</button>
+                <button id="btn-push">Push to remote</button>
+                <button class="danger" id="btn-clear">Clear config</button>
+            </div>
+            <div id="status" class="status"></div>
+            <p class="meta" id="meta"></p>
+        </section>
+    </div>
+
+    <script src="sync.js"></script>
+    <script>
+        (function () {
+            const $ = (id) => document.getElementById(id);
+            const urlEl    = $('sync-url');
+            const secretEl = $('sync-secret');
+            const deviceEl = $('sync-device');
+            const pillEl   = $('sync-pill');
+            const statusEl = $('status');
+            const metaEl   = $('meta');
+
+            function setStatus(kind, msg) {
+                statusEl.className = 'status ' + kind;
+                statusEl.textContent = msg;
+            }
+            function clearStatus() { statusEl.className = 'status'; statusEl.textContent = ''; }
+
+            function fmt(ts) { return ts ? new Date(ts).toLocaleString() : '—'; }
+
+            function renderMeta() {
+                const cfg = window.VibeSync.getConfig();
+                if (!cfg) {
+                    pillEl.textContent = 'off';
+                    pillEl.className = 'pill off';
+                    metaEl.innerHTML = 'No sync configured.';
+                    return;
+                }
+                pillEl.textContent = 'on';
+                pillEl.className = 'pill on';
+                metaEl.innerHTML =
+                    '<b>device:</b> ' + (cfg.device || '—') + '<br>' +
+                    '<b>last push:</b> ' + fmt(cfg.lastPushAt) +
+                        (cfg.lastPushKeys != null ? ' (' + cfg.lastPushKeys + ' keys)' : '') + '<br>' +
+                    '<b>last pull:</b> ' + fmt(cfg.lastPullAt) +
+                        (cfg.lastPullKeys != null ? ' (' + cfg.lastPullKeys + ' keys)' : '');
+            }
+
+            function loadIntoForm() {
+                const cfg = window.VibeSync.getConfig();
+                if (cfg) {
+                    urlEl.value = cfg.url || '';
+                    secretEl.value = cfg.secret || '';
+                    deviceEl.value = cfg.device || '';
+                }
+            }
+
+            $('btn-save').addEventListener('click', () => {
+                try {
+                    window.VibeSync.saveConfig({
+                        url: urlEl.value.trim(),
+                        secret: secretEl.value.trim(),
+                        device: deviceEl.value.trim(),
+                    });
+                    setStatus('ok', 'Config saved.');
+                    renderMeta();
+                } catch (e) {
+                    setStatus('err', e.message);
+                }
+            });
+
+            $('btn-test').addEventListener('click', async () => {
+                clearStatus();
+                setStatus('info', 'Testing...');
+                try {
+                    const r = await window.VibeSync.testConnection();
+                    setStatus('ok', 'Connected. Remote has ' + r.remoteKeys + ' key(s).');
+                } catch (e) {
+                    setStatus('err', e.message);
+                }
+            });
+
+            $('btn-push').addEventListener('click', async () => {
+                clearStatus();
+                setStatus('info', 'Pushing...');
+                try {
+                    const r = await window.VibeSync.push();
+                    setStatus('ok', 'Pushed ' + r.keys + ' key(s) (' + r.bytes + ' bytes).');
+                    renderMeta();
+                } catch (e) {
+                    setStatus('err', e.message);
+                }
+            });
+
+            $('btn-pull').addEventListener('click', async () => {
+                if (!confirm('Pull will overwrite ALL local progress with whatever is on the server. Continue?')) return;
+                clearStatus();
+                setStatus('info', 'Pulling...');
+                try {
+                    const r = await window.VibeSync.pull();
+                    setStatus('ok', 'Pulled ' + r.keys + ' key(s). Reload to see changes.');
+                    renderMeta();
+                } catch (e) {
+                    setStatus('err', e.message);
+                }
+            });
+
+            $('btn-clear').addEventListener('click', () => {
+                if (!confirm('Clear sync config from this device? (Remote data is untouched.)')) return;
+                window.VibeSync.clearConfig();
+                urlEl.value = ''; secretEl.value = ''; deviceEl.value = '';
+                setStatus('info', 'Config cleared.');
+                renderMeta();
+            });
+
+            loadIntoForm();
+            renderMeta();
+        })();
+    </script>
+</body>
+</html>
