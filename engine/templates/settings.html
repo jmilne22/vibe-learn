@@ -216,17 +216,30 @@
                 renderMeta();
             });
 
-            // Point "back" at the page we came from (a course dashboard,
-            // typically) when same-origin. Falls back to landing page.
+            // Back link: prefer document.referrer; fall back to a sessionStorage
+            // breadcrumb dropped by course dashboards (so hard refreshes here
+            // still resolve correctly). Default href stays as the landing page.
             (function setBackLink() {
                 const back = document.getElementById('back-link');
                 if (!back) return;
+                const STORE_KEY = 'vibe-learn:sync:back-to';
+
                 const ref = document.referrer;
-                if (!ref) return;
+                if (ref) {
+                    try {
+                        const u = new URL(ref);
+                        if (u.origin === location.origin && u.pathname !== location.pathname) {
+                            back.href = u.pathname + u.search;
+                            try { sessionStorage.setItem(STORE_KEY, back.href); } catch (e) { /* ignore */ }
+                            return;
+                        }
+                    } catch (e) { /* ignore */ }
+                }
+
                 try {
-                    const u = new URL(ref);
-                    if (u.origin === location.origin && u.pathname !== location.pathname) {
-                        back.href = u.pathname + u.search;
+                    const stored = sessionStorage.getItem(STORE_KEY);
+                    if (stored && stored !== location.pathname) {
+                        back.href = stored;
                     }
                 } catch (e) { /* ignore */ }
             })();
