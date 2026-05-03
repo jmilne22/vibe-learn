@@ -567,9 +567,9 @@
 [data-theme="light"] .exercise pre,
 [data-theme="light"] .expected pre,
 [data-theme="light"] .function-signature pre {
-    background: #101817;
-    border-color: #263331;
-    color: #ecf4f1;
+    background: #F7F5FC;
+    border-color: rgba(30, 24, 48, 0.14);
+    color: var(--text-primary);
     box-shadow: none;
 }
 
