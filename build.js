@@ -718,7 +718,7 @@ function buildCourse(slug) {
     function buildExerciseScripts(moduleId) {
         const mod = modules.find(m => m.id === moduleId);
         if (!mod || !mod.hasExercises) return '';
-        return `    <script src="icons.js"></script>\n    <script src="exercise-core.js"></script>\n    <script src="concept-index.js"></script>\n    <script src="course.js"></script>\n    <script src="exercise-renderer.js"></script>\n    <script src="module-loader.js"></script>\n    <script src="scaffold-drill.js"></script>`;
+        return `    <script src="icons.js"></script>\n    <script src="exercise-core.js?v=notes-timer-1"></script>\n    <script src="concept-index.js"></script>\n    <script src="course.js"></script>\n    <script src="exercise-renderer.js"></script>\n    <script src="module-loader.js"></script>\n    <script src="scaffold-drill.js"></script>`;
     }
 
     // 7. Generate module HTML pages

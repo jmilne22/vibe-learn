@@ -242,11 +242,11 @@
             .personal-notes {
                 margin-top: 0.5rem;
             }
-            .personal-notes summary {
+            .personal-notes > summary {
                 cursor: pointer;
-                color: var(--purple);
-                font-weight: 600;
-                padding: 0.5rem 0;
+                color: var(--text-primary);
+                font-weight: 650;
+                padding: 0.65rem 0.75rem;
             }
             .personal-notes-textarea {
                 width: 100%;
