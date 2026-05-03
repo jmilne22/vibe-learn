@@ -190,7 +190,7 @@ const themeFiles = fs.readdirSync(
 
 // Inline script checks localStorage for theme, honors prefers-color-scheme,
 // and dynamically loads themes/light.css only when needed. No render-blocking link.
-const themeInitScript = `    <script>(function(){var d=document.documentElement;var lights={'light':1,'gruvbox-light':1,'solarized-light':1,'everforest-light':1,'terminal-light':1};try{var t=localStorage.getItem('vibe-learn-theme');if(t&&t!=='dark'&&t!=='light'){t=lights[t]?'light':'dark';localStorage.setItem('vibe-learn-theme',t)}if(!t){t=window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'}d.setAttribute('data-theme',t);if(t==='light'){var l=document.createElement('link');l.rel='stylesheet';l.id='theme-css';l.href='themes/light.css';document.head.appendChild(l)}}catch(e){}var p=location.pathname.split('/').pop()||'index.html';if(p!=='index.html')d.classList.add('has-sidebar')})()</script>`;
+const themeInitScript = `    <script>(function(){var d=document.documentElement;var lights={'light':1,'gruvbox-light':1,'solarized-light':1,'everforest-light':1,'terminal-light':1};try{var t=localStorage.getItem('vibe-learn-theme');if(t&&t!=='dark'&&t!=='light'){t=lights[t]?'light':'dark';localStorage.setItem('vibe-learn-theme',t)}if(!t){t=window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'}d.setAttribute('data-theme',t);if(t==='light'){var l=document.createElement('link');l.rel='stylesheet';l.id='theme-css';l.href='themes/light.css?v=light-code-1';document.head.appendChild(l)}}catch(e){}var p=location.pathname.split('/').pop()||'index.html';if(p!=='index.html')d.classList.add('has-sidebar')})()</script>`;
 
 const themeLinksHtml = themeInitScript;
 
@@ -718,7 +718,7 @@ function buildCourse(slug) {
     function buildExerciseScripts(moduleId) {
         const mod = modules.find(m => m.id === moduleId);
         if (!mod || !mod.hasExercises) return '';
-        return `    <script src="icons.js"></script>\n    <script src="exercise-core.js?v=notes-timer-1"></script>\n    <script src="concept-index.js"></script>\n    <script src="course.js"></script>\n    <script src="exercise-renderer.js"></script>\n    <script src="module-loader.js"></script>\n    <script src="scaffold-drill.js"></script>`;
+        return `    <script src="icons.js"></script>\n    <script src="exercise-core.js?v=light-code-1"></script>\n    <script src="concept-index.js"></script>\n    <script src="course.js"></script>\n    <script src="exercise-renderer.js"></script>\n    <script src="module-loader.js"></script>\n    <script src="scaffold-drill.js"></script>`;
     }
 
     // 7. Generate module HTML pages
