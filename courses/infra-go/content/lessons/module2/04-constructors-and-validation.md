@@ -2,18 +2,20 @@
 
 Go has no constructors as a language feature. The convention is a `New*` function that returns `(T, error)`.
 
+In §03 you saw the bare-bones version: `NewPod(name, ns) *Pod`. Real infra constructors do two more things — validate inputs and surface failures. The canonical signature becomes `(*T, error)`:
+
 ```go
-func NewPod(name, namespace string, memMB, cpuM int) (Pod, error) {
+func NewPod(name, namespace string, memMB, cpuM int) (*Pod, error) {
     if name == "" {
-        return Pod{}, fmt.Errorf("pod name cannot be empty")
+        return nil, fmt.Errorf("pod name cannot be empty")
     }
     if namespace == "" {
         namespace = "default"
     }
     if memMB < 0 {
-        return Pod{}, fmt.Errorf("memory cannot be negative: %d", memMB)
+        return nil, fmt.Errorf("memory cannot be negative: %d", memMB)
     }
-    return Pod{
+    return &Pod{
         Name:      name,
         Namespace: namespace,
         Status:    "Pending",
@@ -21,6 +23,8 @@ func NewPod(name, namespace string, memMB, cpuM int) (Pod, error) {
     }, nil
 }
 ```
+
+Returning `nil` on failure is the convention — callers check `err`, not the value, so a nil pointer plus a non-nil error is unambiguous. Errors are covered properly in Module 3; for now just notice the shape.
 
 **Why this pattern matters:** In infra, invalid data causes outages. A pod with empty name, a service with port 0, a config with negative TTL — these are bugs that should be caught at construction time, not at deploy time.
 

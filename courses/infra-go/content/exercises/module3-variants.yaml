@@ -1,10 +1,11 @@
 conceptLinks:
   Errors as Values: errors-as-values
   Wrapping: wrapping-and-unwrapping
+  Inspecting Errors: wrapping-and-unwrapping
   Sentinel Errors: sentinel-and-custom-errors
   Writing Tests: writing-your-first-tests
   Table-Driven Tests: table-driven-tests
-  Testing Infra Code: testing-infra-code
+  Test Helpers: test-helpers-and-error-assertions
 sharedContent: {}
 variants:
   warmups:
@@ -86,7 +87,10 @@ variants:
                 }
                 return data, nil
             }
-        - id: v2
+    - id: warmup_3
+      concept: Inspecting Errors
+      variants:
+        - id: v1
           title: Check with errors.Is
           description: >-
             Write a function <code>configExists(path string) bool</code> that calls <code>os.Stat(path)</code>. Use
@@ -107,7 +111,7 @@ variants:
                 fmt.Printf("unexpected error checking %s: %v\n", path, err)
                 return false
             }
-        - id: v3
+        - id: v2
           title: Extract with errors.As
           description: >-
             Given a function that returns errors, write code that checks if the error is a <code>*net.OpError</code>
@@ -122,7 +126,24 @@ variants:
             } else {
                 fmt.Printf("error: %v\n", err)
             }
-    - id: warmup_3
+        - id: v3
+          title: Is Through a Chain
+          description: >-
+            Given <code>err := fmt.Errorf("loading config: %w", os.ErrNotExist)</code>, write the check that confirms
+            the underlying error is <code>os.ErrNotExist</code>. Then write the <em>wrong</em> way (using
+            <code>==</code>) and explain why it fails.
+          hints:
+            - <code>errors.Is</code> walks the chain of wrapped errors. <code>==</code> only compares the outer error.
+            - "<code>%w</code> wraps the error so the original is still reachable via <code>errors.Is</code> / <code>Unwrap</code>."
+          solution: |-
+            err := fmt.Errorf("loading config: %w", os.ErrNotExist)
+
+            // Right — walks the chain
+            fmt.Println(errors.Is(err, os.ErrNotExist)) // true
+
+            // Wrong — only compares the outer wrapped error to the sentinel
+            fmt.Println(err == os.ErrNotExist) // false
+    - id: warmup_4
       concept: Sentinel Errors
       variants:
         - id: v1
@@ -194,7 +215,7 @@ variants:
                 // ... lookup logic ...
                 return Service{}, fmt.Errorf("service %s in namespace %s: %w", name, namespace, ErrNotFound)
             }
-    - id: warmup_4
+    - id: warmup_5
       concept: Writing Tests
       variants:
         - id: v1
@@ -267,7 +288,7 @@ variants:
                 err := validatePort(-1)
                 assertError(t, err, "must be >= 1")
             }
-    - id: warmup_5
+    - id: warmup_6
       concept: Table-Driven Tests
       variants:
         - id: v1
@@ -1046,7 +1067,7 @@ variants:
     - id: challenge_4
       block: 4
       difficulty: 2
-      concept: Testing Infra Code
+      concept: Test Helpers
       variants:
         - id: v1
           title: Test a Config Linter
@@ -1295,3 +1316,247 @@ variants:
               text: >-
                 Integration tests prove the system works end-to-end. Combine with unit tests (table-driven) for thorough
                 coverage.
+    - id: challenge_5
+      block: 2
+      difficulty: 2
+      concept: Wrapping
+      variants:
+        - id: v1
+          title: Layered Config Loader
+          description: >-
+            Write <code>loadConfig(path string) (Config, error)</code> that reads a file and parses YAML. At each layer —
+            file read, YAML parse — wrap the error with context using <code>%w</code>. Then write a caller that uses
+            <code>errors.Is</code> to detect <code>os.ErrNotExist</code> through the wrapping and falls back to a default
+            config.
+          functionSignature: func loadConfig(path string) (Config, error)
+          difficulty: 2
+          testCases:
+            - input: loadConfig("/exists/valid.yaml")
+              output: (Config{...}, nil)
+            - input: loadConfig("/missing.yaml")
+              output: '(Config{}, "loading config /missing.yaml: ... no such file or directory")'
+          hints:
+            - title: Think about it
+              content: >-
+                Two layers of wrapping. The caller wants to handle <code>os.ErrNotExist</code> specifically — so wrapping
+                must use <code>%w</code>, not <code>%v</code>.
+            - title: Hint
+              content: >-
+                <code>fmt.Errorf("loading config %s: %w", path, err)</code>. Then in the caller,
+                <code>errors.Is(err, os.ErrNotExist)</code> sees through both wraps.
+          solution: |-
+            type Config struct {
+                Name string `yaml:"name"`
+                Port int    `yaml:"port"`
+            }
+
+            func loadConfig(path string) (Config, error) {
+                data, err := os.ReadFile(path)
+                if err != nil {
+                    return Config{}, fmt.Errorf("loading config %s: %w", path, err)
+                }
+                var cfg Config
+                if err := yaml.Unmarshal(data, &cfg); err != nil {
+                    return Config{}, fmt.Errorf("parsing config %s: %w", path, err)
+                }
+                return cfg, nil
+            }
+
+            func loadConfigOrDefault(path string) Config {
+                cfg, err := loadConfig(path)
+                if err == nil {
+                    return cfg
+                }
+                if errors.Is(err, os.ErrNotExist) {
+                    return Config{Name: "default", Port: 8080}
+                }
+                log.Fatalf("config error: %v", err)
+                return Config{}
+            }
+          annotations:
+            - type: idiom
+              label: '%w preserves identity'
+              text: >-
+                Use <code>%w</code> when callers might want to inspect the error. Use <code>%v</code> only when the
+                wrapped error is opaque to callers.
+            - type: gotcha
+              label: One %w per Errorf
+              text: >-
+                <code>fmt.Errorf</code> only allows a single <code>%w</code> verb. For multiple wrapping, nest calls.
+        - id: v2
+          title: Typed Error Inspection
+          description: >-
+            Define a custom error type <code>RetryableError</code> with a <code>RetryAfter time.Duration</code> field.
+            Write <code>callAPI(url string) (string, error)</code> that wraps a transient failure as a
+            <code>*RetryableError</code> with a 5-second retry. Then write <code>callWithRetry(url string)</code> that
+            uses <code>errors.As</code> to detect the retryable error, sleeps the requested duration, and retries up to
+            3 times.
+          functionSignature: func callWithRetry(url string) (string, error)
+          difficulty: 3
+          testCases:
+            - input: callWithRetry("https://flaky.example.com")
+              output: '("ok", nil) after retries'
+            - input: callWithRetry("https://broken.example.com")
+              output: "(\"\", \"giving up after 3 attempts: ...\")"
+          hints:
+            - title: Think about it
+              content: >-
+                <code>errors.As</code> walks the chain looking for an error assignable to your target. So
+                <code>callAPI</code> can <code>%w</code>-wrap the <code>RetryableError</code> and the caller still
+                extracts it.
+            - title: Hint
+              content: >-
+                <code>var re *RetryableError; if errors.As(err, &amp;re) { time.Sleep(re.RetryAfter); continue }</code>.
+                Pointer receiver on <code>Error()</code> means you need <code>*RetryableError</code> in
+                <code>errors.As</code>.
+          solution: |-
+            type RetryableError struct {
+                Underlying error
+                RetryAfter  time.Duration
+            }
+
+            func (e *RetryableError) Error() string {
+                return fmt.Sprintf("transient: %v (retry in %s)", e.Underlying, e.RetryAfter)
+            }
+
+            func (e *RetryableError) Unwrap() error { return e.Underlying }
+
+            func callAPI(url string) (string, error) {
+                resp, err := http.Get(url)
+                if err != nil {
+                    return "", fmt.Errorf("calling %s: %w", url, &RetryableError{
+                        Underlying: err,
+                        RetryAfter: 5 * time.Second,
+                    })
+                }
+                defer resp.Body.Close()
+                body, _ := io.ReadAll(resp.Body)
+                return string(body), nil
+            }
+
+            func callWithRetry(url string) (string, error) {
+                var lastErr error
+                for attempt := 1; attempt <= 3; attempt++ {
+                    body, err := callAPI(url)
+                    if err == nil {
+                        return body, nil
+                    }
+                    lastErr = err
+                    var re *RetryableError
+                    if errors.As(err, &re) {
+                        time.Sleep(re.RetryAfter)
+                        continue
+                    }
+                    return "", fmt.Errorf("non-retryable: %w", err)
+                }
+                return "", fmt.Errorf("giving up after 3 attempts: %w", lastErr)
+            }
+          annotations:
+            - type: pattern
+              label: Implement Unwrap
+              text: >-
+                Custom error types should implement <code>Unwrap() error</code> if they wrap another error. That's how
+                <code>errors.Is</code> walks past your type.
+            - type: gotcha
+              label: Pointer vs value receiver
+              text: >-
+                If <code>Error()</code> has a pointer receiver, <code>errors.As</code> needs a <code>**T</code> target.
+                Pick one and stick with it.
+    - id: challenge_6
+      block: 2
+      difficulty: 1
+      concept: Writing Tests
+      variants:
+        - id: v1
+          title: Test a Validator
+          description: >-
+            Given <code>func ValidatePort(p int) error</code> that errors when <code>p &lt; 1</code> or
+            <code>p &gt; 65535</code>, write three named tests: <code>TestValidatePort_Valid</code>,
+            <code>TestValidatePort_Zero</code>, <code>TestValidatePort_TooHigh</code>. Use <code>t.Errorf</code> for
+            unexpected results and <code>t.Fatal</code> when continuing would be meaningless.
+          functionSignature: TestValidatePort_Valid(t *testing.T)
+          difficulty: 1
+          testCases:
+            - input: go test -run TestValidatePort
+              output: PASS
+          hints:
+            - title: Think about it
+              content: >-
+                One test function per case. <code>t.Fatal</code> when the next assertion would crash; <code>t.Errorf</code>
+                when you want to keep going.
+            - title: Hint
+              content: >-
+                <code>if err == nil { t.Fatal("expected error, got nil") }</code> for negative cases. <code>if err != nil
+                { t.Errorf("unexpected error: %v", err) }</code> for positive cases.
+          solution: |-
+            func TestValidatePort_Valid(t *testing.T) {
+                if err := ValidatePort(8080); err != nil {
+                    t.Errorf("ValidatePort(8080) returned error: %v", err)
+                }
+            }
+
+            func TestValidatePort_Zero(t *testing.T) {
+                err := ValidatePort(0)
+                if err == nil {
+                    t.Fatal("ValidatePort(0) should error, got nil")
+                }
+                if !strings.Contains(err.Error(), "port") {
+                    t.Errorf("error %q should mention 'port'", err.Error())
+                }
+            }
+
+            func TestValidatePort_TooHigh(t *testing.T) {
+                if err := ValidatePort(70000); err == nil {
+                    t.Fatal("ValidatePort(70000) should error, got nil")
+                }
+            }
+          annotations:
+            - type: idiom
+              label: 'Test name = Test<Func>_<Case>'
+              text: >-
+                The convention. Makes <code>go test -run TestValidatePort_Zero</code> select exactly the test you want.
+            - type: pattern
+              label: Fatal vs Error
+              text: Fatal stops this test. Error continues. Use Fatal when continuing is unsafe (nil deref looms).
+        - id: v2
+          title: Test a Function That Returns a Map
+          description: >-
+            Given <code>func CountStatuses(pods []Pod) map[string]int</code>, write
+            <code>TestCountStatuses</code> that builds a sample slice of Pods, calls the function, and checks that each
+            expected status has the right count. Map iteration is random — assert by key lookup, not by iterating the map.
+          functionSignature: TestCountStatuses(t *testing.T)
+          difficulty: 2
+          testCases:
+            - input: go test -run TestCountStatuses
+              output: PASS
+          hints:
+            - title: Think about it
+              content: >-
+                Don't loop the map and compare to a slice — iteration order is random. Look up each expected key directly
+                in <code>got</code>.
+            - title: Hint
+              content: >-
+                <code>if got["Running"] != 3 { t.Errorf(...) }</code>. Or use <code>reflect.DeepEqual</code> to compare
+                two maps wholesale.
+          solution: |-
+            func TestCountStatuses(t *testing.T) {
+                pods := []Pod{
+                    {Status: "Running"}, {Status: "Running"}, {Status: "Running"},
+                    {Status: "Pending"},
+                    {Status: "Failed"}, {Status: "Failed"},
+                }
+                got := CountStatuses(pods)
+                want := map[string]int{"Running": 3, "Pending": 1, "Failed": 2}
+                if !reflect.DeepEqual(got, want) {
+                    t.Errorf("CountStatuses() = %v, want %v", got, want)
+                }
+            }
+          annotations:
+            - type: gotcha
+              label: Map iteration is random
+              text: >-
+                Never compare maps by iterating them. Use <code>reflect.DeepEqual</code> or look up each expected key.
+            - type: stdlib
+              label: reflect.DeepEqual
+              text: >-
+                Works for maps, slices, structs, pointers — anything. Slow, but fine for tests.

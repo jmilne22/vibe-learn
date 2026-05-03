@@ -1,5 +1,7 @@
 ## Sentinel & Custom Errors
 
+*A pod lookup that returns `ErrNotFound` lets the caller branch on it with `errors.Is` — "missing pod, create it" vs "transient failure, retry". A `*ValidationError` carrying `Field` and `Message` lets the caller render the failure to the user. Pick the shape based on what the caller will do.*
+
 ### Sentinel Errors
 
 Package-level variables for well-known error conditions:
@@ -70,3 +72,5 @@ if errors.As(err, &valErr) {
 | `fmt.Errorf("context: %w", err)` | Adding context while preserving the original |
 | `var ErrFoo = errors.New(...)` | Callers need to check for this specific condition |
 | `type FooError struct{...}` | Callers need structured data from the error |
+
+<div class="inline-exercises" data-concept="Sentinel Errors"></div>

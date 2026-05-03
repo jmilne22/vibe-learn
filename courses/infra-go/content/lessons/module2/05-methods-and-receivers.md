@@ -1,5 +1,7 @@
 ## Methods & Receivers
 
+*`pod.SetStatus("Running")` versus `MarkRunning(pod)` is the choice between method and free function. The receiver kind — value or pointer — decides whether the call mutates the pod or silently writes to a copy.*
+
 Methods are functions attached to a type. In Go, you define them outside the struct — they're just functions with a receiver parameter.
 
 ### Value Receivers

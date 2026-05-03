@@ -850,10 +850,10 @@ function buildCourse(slug) {
             .replace(/\{\{MODULE_NUM\}\}/g, mod.num)
             .replace(/\{\{MODULE_ID\}\}/g, String(moduleId))
             .replace(/\{\{MODULE_DESC\}\}/g, desc)
-            .replace('{{SECTION_TAG}}', sectionTag)
-            .replace('{{BREADCRUMB}}', breadcrumb)
-            .replace('{{LESSON_CONTENT}}', htmlContent)
-            .replace('{{THEME_LINKS}}', themeLinksHtml)
+            .replace('{{SECTION_TAG}}', () => sectionTag)
+            .replace('{{BREADCRUMB}}', () => breadcrumb)
+            .replace('{{LESSON_CONTENT}}', () => htmlContent)
+            .replace('{{THEME_LINKS}}', () => themeLinksHtml)
             .replace('{{NAV_LINKS}}', buildNavLinks(currentFile))
             .replace('{{NAV_BUTTONS}}', buildNavButtons(currentFile))
             .replace('{{SCRIPTS}}', buildExerciseScripts(moduleId));
@@ -1005,10 +1005,10 @@ function buildCourse(slug) {
             .replace(/\{\{COURSE_NAME\}\}/g, course.name)
             .replace(/\{\{TITLE\}\}/g, proj.title)
             .replace(/\{\{MODULE_DESC\}\}/g, proj.description)
-            .replace('{{LESSON_CONTENT}}', htmlContent)
-            .replace('{{THEME_LINKS}}', themeLinksHtml)
-            .replace('{{NAV_LINKS}}', buildNavLinks(currentFile))
-            .replace('{{NAV_BUTTONS}}', buildNavButtons(currentFile));
+            .replace('{{LESSON_CONTENT}}', () => htmlContent)
+            .replace('{{THEME_LINKS}}', () => themeLinksHtml)
+            .replace('{{NAV_LINKS}}', () => buildNavLinks(currentFile))
+            .replace('{{NAV_BUTTONS}}', () => buildNavButtons(currentFile));
 
         fs.writeFileSync(path.join(COURSE_DIST, currentFile), page);
         console.log(`  ${currentFile}`);
