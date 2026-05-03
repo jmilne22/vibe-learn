@@ -17,8 +17,8 @@ tracks:
     modules: [12, 13]
 
 modules:
-  - title: Reference & Setup
-    description: "Go toolchain, project layout, editor setup, and quick reference. Your cheat sheet for the course."
+  - title: Start Here & Go Setup
+    description: "Get Go running, create a local playground, understand the course loop, and keep a compact command/error reference nearby."
     hasExercises: false
 
   - title: Data Manipulation Bootcamp

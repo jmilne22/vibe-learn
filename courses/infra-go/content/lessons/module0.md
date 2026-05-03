@@ -1,240 +1,362 @@
-Your cheat sheet. Come back here whenever you need a quick lookup.
+Use this page once to get moving, then come back when Go, your editor, or the course UI gets in your way.
+
+Module 0 is not the first lesson. It is the launchpad: install Go, run one tiny infra-flavored program, understand how practice works here, and keep a compact reference nearby.
 
 ---
 
-## How to Use This Course
+## Your First 10 Minutes
 
-The course is five tracks. Each track builds on the last, but not every module within a track is required to move forward.
+By the end of this section, you should have a local Go module that runs a small log summary program.
 
-**Track 1 (Modules 1-3)** is drill-heavy on purpose. Slices, maps, structs, errors, testing — you do these until they're automatic. Don't rush through. If the warmups feel hard, re-read the lesson. If the warmups are easy but challenges are hard, that's working as intended — use the hints.
+### 1. Install and Verify Go
 
-**Track 2-3 (Modules 4-7)** shift to building real things: CLIs, API clients, concurrency. Projects start appearing. Do the projects — they're portfolio pieces, not homework.
-
-**Track 4 (Modules 8-11)** is the steepest ramp. HTTP servers → raw networking → container internals → K8s operators. If a module feels too hard, here's what's safe to skip or reorder:
-- **Module 10 (Containers)** is the most independent. You can skip it and do Module 11 (K8s) without it — they use different APIs entirely. Come back to containers later.
-- **Module 9 (Networking)** is needed for Project 3 (DNS server) but not for Modules 10-11.
-
-**Track 5 (Modules 12-13)** is interview prep and open source. The algorithms plugin gives you practice throughout the course, so Module 12 is reinforcement, not a cold start.
-
-### Working through a module
-
-Each module has a **lesson**, **warmups**, and **challenges**. Here's the flow:
-
-1. **Read the lesson first.** Skim the whole thing, then come back to sections you need.
-2. **Do the warmups.** These are quick drills — one concept each, multiple variants. Use the concept filter to focus on areas you're shaky on, or just go through them all. If a warmup feels hard, the gap is in the lesson — go re-read that section.
-3. **Move to challenges.** These are deeper, multi-step problems. Pick a difficulty mode:
-   - **Easy** — only difficulty 1 variants. Start here if the module is new territory.
-   - **Progressive** — starts easy, ramps up as you go. Good default for a first pass.
-   - **Balanced** — weighted mix (35% easy, 40% medium, 25% hard). Best for review.
-   - **Hard** — difficulty 3+ only. Use this when you're confident and want to test yourself.
-   - **Mixed** — fully random. Good for simulating real-world unpredictability.
-4. **Self-rate honestly.** After viewing a solution, rate yourself: *Got it*, *Struggled*, or *Needed solution*. These ratings drive spaced repetition — honest ratings mean better review scheduling.
-
-Every exercise has multiple variants, so you can shuffle and get a fresh version of the same concept. Use the shuffle button liberally. If a challenge is too hard, hit "Get Easier Version" to step down a difficulty level (and "Get Harder Version" when you're ready to push).
-
-### The thinking timer
-
-When you open an exercise, you'll see a thinking timer option. It locks the hints and solution for 45 seconds, forcing you to actually think before reaching for help. Use it. The point of exercises is the struggle, not the answer.
-
-### Daily practice and review
-
-Your self-ratings feed into a spaced repetition system. Exercises you struggled with come back sooner; ones you nailed fade into longer intervals. Use **Daily Practice** to stay sharp across modules — it pulls exercises that are due for review or that you've historically found hard.
-
-### When you're stuck
-
-- **Warmups are the canary.** If warmups are hard, the gap is in the lesson, not the exercise. Re-read.
-- **Difficulty 3 challenges are optional.** They exist for depth, not as gates. Skip and come back.
-- **Projects aren't blockers.** If a project feels too ambitious, keep going with the next module. The project will still be there.
-
----
-
-## Go Toolchain
-
-Install from [go.dev/dl](https://go.dev/dl/) or your package manager. Verify:
+Install Go from [go.dev/dl](https://go.dev/dl/) or your package manager. Go 1.22 or newer is enough for this course.
 
 ```bash
-go version    # go1.22+ recommended
-which go      # should be in $PATH
+go version
+which go
 ```
 
-On Void Linux:
+Common installs:
 
 ```bash
+# macOS
+brew install go
+
+# Void Linux
 sudo xbps-install -S go
 ```
 
-### Module System
+If `go version` works, keep moving. Do not tune your editor before you have run a program.
+
+### 2. Create a Playground Module
+
+Use a scratch directory outside the course repo:
 
 ```bash
-go mod init github.com/you/project   # create go.mod (do this first in every project)
-go mod tidy                           # add missing deps, remove unused ones
-go get github.com/spf13/cobra@latest  # add a dependency
+mkdir -p ~/code/infra-go-playground
+cd ~/code/infra-go-playground
+go mod init example.com/infra-go-playground
 ```
 
-`go.mod` tracks dependencies. `go.sum` locks checksums. Both get committed to git.
+That creates `go.mod`. Every real Go project starts with one.
 
-## Project Layout
+### 3. Run a Tiny Report
 
+Create `main.go`:
+
+```go
+package main
+
+import (
+	"fmt"
+	"sort"
+	"strings"
+)
+
+func main() {
+	input := `
+checkout-api 200
+ledger-worker 500
+checkout-api 200
+edge-proxy 404
+ledger-worker 503
+`
+
+	byService := map[string]int{}
+	byStatus := map[string]int{}
+
+	for _, line := range strings.Split(input, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+
+		fields := strings.Fields(line)
+		if len(fields) != 2 {
+			continue
+		}
+
+		service := fields[0]
+		status := fields[1]
+
+		byService[service]++
+		byStatus[status]++
+	}
+
+	services := sortedKeys(byService)
+	statuses := sortedKeys(byStatus)
+
+	fmt.Println("Requests by service:")
+	for _, service := range services {
+		fmt.Printf("%s %d\n", service, byService[service])
+	}
+
+	fmt.Println()
+	fmt.Println("Requests by status:")
+	for _, status := range statuses {
+		fmt.Printf("%s %d\n", status, byStatus[status])
+	}
+}
+
+func sortedKeys(counts map[string]int) []string {
+	keys := make([]string, 0, len(counts))
+	for key := range counts {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
+}
 ```
-myproject/
-├── go.mod              # module definition + dependencies
-├── go.sum              # dependency checksums (auto-generated)
-├── main.go             # entry point (small projects)
-├── cmd/                # entry points (multi-binary projects)
-│   └── myapp/
-│       └── main.go
-├── internal/           # private packages — can't be imported by other modules
-│   ├── config/
-│   └── server/
-├── pkg/                # public packages — can be imported (optional, some projects skip this)
-└── Makefile            # build/test/lint shortcuts
+
+Run it:
+
+```bash
+go run .
 ```
 
-**Rules of thumb:**
-- Start flat (everything in `main.go`) until it gets painful
-- Move code to `internal/` when you have multiple packages that shouldn't be imported externally
-- Only use `pkg/` when you intentionally want other projects to import your library code
-- One `main.go` per binary, under `cmd/` if you have multiple
+You should see:
+
+```txt
+Requests by service:
+checkout-api 2
+edge-proxy 1
+ledger-worker 2
+
+Requests by status:
+200 2
+404 1
+500 1
+503 1
+```
+
+That is the seed of Module 1 and P0.1 Log Summary Reporter. You just split text, skipped blanks, counted with maps, sorted output, and produced a stable operational summary.
+
+---
+
+## How This Course Works
+
+Treat each module as a practice loop:
+
+1. Read a lesson section.
+2. Do the inline practice under that section.
+3. Use warmups until the concept feels familiar.
+4. Use challenges when you want multi-step pressure.
+5. Build the project when the module introduces one.
+
+Warmups are reps. They isolate one concept. Challenges are integration practice. They are less tidy on purpose.
+
+### Self-Rating
+
+After viewing a solution, rate yourself honestly:
+
+| Rating | Use it when |
+| --- | --- |
+| `Got it` | You could solve a close variant without looking |
+| `Struggled` | You got there, but the path was shaky |
+| `Needed solution` | You needed the answer or copied the shape |
+
+Daily Practice uses those ratings. Honest ratings make review useful; generous ratings hide the exact reps you need.
+
+### Difficulty
+
+Use this as your default path:
+
+| Situation | Best move |
+| --- | --- |
+| New concept feels vague | Re-read the lesson section, then do warmups |
+| Warmups feel easy | Move to challenges |
+| Challenges feel impossible | Step down difficulty or return to warmups |
+| You solved it slowly | Rate `Struggled` and keep going |
+| Project feels too large | Build the smallest working version first |
+
+Difficulty 3 challenges are depth, not gates. Skip them when they would stall momentum.
+
+---
+
+## The Early Progression
+
+The first three modules are deliberately drill-heavy because they become the muscle memory for every later tool.
+
+| Step | What you practice | What you build |
+| --- | --- | --- |
+| Module 1 | slices, maps, strings, parsing, sorting | P0.1 Log Summary Reporter |
+| Module 2 | structs, pointers, methods, interfaces | P0.2 Resource Modeler |
+| Module 3 | errors, wrapping, tests, table-driven cases | P0.3 Tested Config Parser |
+| Module 4 | CLI shape and config files | P1 Config Linter |
+
+Projects are where syntax drills become deliverables. They are not extra decoration; they are the proof that the module stuck.
+
+---
+
+## Recommended Workspace
+
+Keep your course projects in normal local folders. Do not build them inside this static course repo unless you are working on the course platform itself.
+
+```txt
+~/code/infra-go/
+  playground/
+  p0-log-summary-reporter/
+  p0-resource-modeler/
+  p0-tested-config-parser/
+  p1-config-linter/
+```
+
+For small projects, start flat:
+
+```txt
+p0-log-summary-reporter/
+  go.mod
+  main.go
+```
+
+Only add folders when the code asks for them:
+
+```txt
+config-linter/
+  go.mod
+  cmd/
+    config-linter/
+      main.go
+  internal/
+    config/
+    rules/
+    report/
+```
+
+Rules of thumb:
+
+- Start with one `main.go` until it gets uncomfortable.
+- Use `cmd/` when you have multiple binaries or a larger CLI.
+- Use `internal/` for packages that belong only to this program.
+- Avoid `pkg/` unless you intentionally want other projects to import your code.
+
+---
+
+## Command Survival Kit
+
+Use these constantly:
+
+| Command | What it does |
+| --- | --- |
+| `go run .` | Compile and run the current package |
+| `go build -o myapp .` | Build a binary |
+| `go test ./...` | Run all tests under the module |
+| `go test -v ./...` | Show each test name |
+| `go test -run TestName` | Run one test or matching group |
+| `go test -count=1 ./...` | Ignore cached test results |
+| `go fmt ./...` | Format Go files |
+| `go vet ./...` | Catch common suspicious code |
+| `go mod tidy` | Sync `go.mod` and `go.sum` with imports |
+| `go doc fmt.Sprintf` | Show docs for one symbol |
+| `go doc -all net/http` | Show full package docs |
+
+Useful project commands:
+
+```bash
+# Add a dependency
+go get github.com/spf13/cobra@latest
+
+# Cross-compile for Linux from another OS
+GOOS=linux GOARCH=amd64 go build -o myapp .
+
+# Run tests with the race detector
+go test -race ./...
+```
+
+`go.mod` records your direct dependencies. `go.sum` records checksums. Commit both.
+
+---
 
 ## Editor Setup
 
-### Helix
+You only need three things from your editor:
 
-Helix has built-in LSP support. Just install `gopls`:
+1. Format on save.
+2. Import cleanup.
+3. Jump-to-definition and inline errors.
+
+Install the Go language server and import formatter:
 
 ```bash
 go install golang.org/x/tools/gopls@latest
+go install golang.org/x/tools/cmd/goimports@latest
 ```
 
-Helix auto-detects `gopls` for `.go` files. Verify in `~/.config/helix/languages.toml`:
+### VS Code
+
+Install the official **Go** extension by the Go team. It handles `gopls`, formatting, tests, and debugging.
+
+### Helix
+
+Helix has built-in LSP support. A minimal Go setup:
 
 ```toml
 [[language]]
 name = "go"
 auto-format = true
-formatter = { command = "goimports", args = ["-local", "github.com/you"] }
-```
-
-Install `goimports` for auto-organizing imports:
-
-```bash
-go install golang.org/x/tools/cmd/goimports@latest
+formatter = { command = "goimports" }
 ```
 
 ### Neovim
 
-If using `nvim-lspconfig`:
+With `nvim-lspconfig`:
 
 ```lua
-require('lspconfig').gopls.setup{}
+require("lspconfig").gopls.setup({})
 ```
 
-For format-on-save, add to your config:
+Add format-on-save however your Neovim config normally handles LSP formatting.
 
-```lua
-vim.api.nvim_create_autocmd("BufWritePre", {
-    pattern = "*.go",
-    callback = function()
-        vim.lsp.buf.format({ async = false })
-    end,
-})
-```
+---
 
-### VS Code
+## When Go Complains
 
-Install the official **Go** extension by the Go team. It handles `gopls`, formatting, testing, and debugging out of the box.
+Go compiler errors are blunt, but usually precise. Start with the file and line number, then fix the first error first.
 
-## Common Commands
+### `imported and not used`
 
-| Command | What it does |
-|---------|-------------|
-| `go run main.go` | Compile and run in one step |
-| `go run .` | Run the package in the current directory |
-| `go build -o myapp .` | Compile to binary |
-| `go test ./...` | Run all tests recursively |
-| `go test -v ./...` | Verbose test output (see each test name) |
-| `go test -run TestName` | Run a specific test |
-| `go test -count=1 ./...` | Skip test cache |
-| `go fmt ./...` | Format all Go files |
-| `go vet ./...` | Catch common mistakes (unused vars, printf mismatches) |
-| `go mod tidy` | Sync go.mod with actual imports |
-| `go doc fmt.Sprintf` | Show docs for a function |
-| `go doc -all net/http` | Full package docs |
-
-### Build Flags You'll Use
-
-```bash
-# Cross-compile for Linux (useful on Mac)
-GOOS=linux GOARCH=amd64 go build -o myapp .
-
-# Build with version info embedded
-go build -ldflags "-X main.version=1.2.3" -o myapp .
-
-# Race detector — catches data races in tests
-go test -race ./...
-```
-
-## Essential Links
-
-| Resource | URL | When to use |
-|----------|-----|-------------|
-| Go Playground | [go.dev/play](https://go.dev/play/) | Quick experiments, sharing snippets |
-| Package Docs | [pkg.go.dev](https://pkg.go.dev/) | Look up any package's API |
-| Effective Go | [go.dev/doc/effective_go](https://go.dev/doc/effective_go) | Go idioms and style |
-| Go by Example | [gobyexample.com](https://gobyexample.com/) | Concise examples of every feature |
-| Go Wiki | [go.dev/wiki](https://go.dev/wiki/) | Community knowledge base |
-| Go Blog | [go.dev/blog](https://go.dev/blog/) | Official announcements and deep dives |
-| Go Spec | [go.dev/ref/spec](https://go.dev/ref/spec) | When you need the exact language rules |
-
-## Common Errors & Fixes
-
-### "imported and not used"
-
-Go won't compile with unused imports. Fix: remove the import, or use `_` to suppress:
+Go will not compile with unused imports. Delete the import or let `goimports` clean it up.
 
 ```go
-import _ "net/http/pprof"  // side-effect import (registers handlers)
+import _ "net/http/pprof" // only for intentional side-effect imports
 ```
 
-Better fix: use `goimports` — it adds/removes imports automatically on save.
+### `declared and not used`
 
-### "declared and not used"
+Unused variables are compile errors. Use the variable, delete it, or temporarily assign it to `_` while debugging:
 
-Same deal — unused variables are compile errors in Go. Either use the variable or delete it. During debugging, `_ = myVar` suppresses the error temporarily.
+```go
+_ = value
+```
 
-### "cannot use X as type Y"
+### `cannot use X as Y`
 
-Type mismatch. Go has no implicit conversions. Common cases:
+Go does not do implicit conversions:
 
 ```go
 var x int = 42
-var y int64 = int64(x)   // explicit conversion required
+var y int64 = int64(x)
 
-var s []byte = []byte("hello")  // string → []byte
-var t string = string(s)         // []byte → string
+var b []byte = []byte("hello")
+var s string = string(b)
 ```
 
-### "invalid memory address or nil pointer dereference"
+### `invalid memory address or nil pointer dereference`
 
-You called a method or accessed a field on a `nil` pointer. Debug steps:
-
-1. Find which variable is nil (the stack trace tells you the line)
-2. Trace back to where it was supposed to be initialized
-3. Add a nil check or fix the initialization
+Something is `nil`, and you tried to use it. The stack trace points to the line. Check where that value should have been initialized.
 
 ```go
-// Common cause: uninitialized map
-var m map[string]int
-m["key"] = 1  // PANIC — m is nil
+var counts map[string]int
+counts["api"] = 1 // panic
 
-// Fix: initialize with make
-m := make(map[string]int)
-m["key"] = 1  // fine
+counts = make(map[string]int)
+counts["api"] = 1 // ok
 ```
 
-### "multiple-value in single-value context"
+### `multiple-value in single-value context`
 
-You're ignoring an error return:
+You ignored one of a function's return values:
 
 ```go
 // Wrong
@@ -243,72 +365,69 @@ file := os.Open("config.yaml")
 // Right
 file, err := os.Open("config.yaml")
 if err != nil {
-    log.Fatal(err)
+	return err
 }
+_ = file
 ```
 
-### "short variable declaration := not allowed at package level"
+### `:= not allowed at package level`
 
-`:=` only works inside functions. At package level, use `var`:
+Short declaration only works inside functions:
 
 ```go
-// Package level
 var version = "1.0.0"
 
 func main() {
-    // Inside functions, := works
-    name := "myapp"
+	name := "config-linter"
+	_ = name
 }
 ```
 
-## Go vs Python Quick Reference
+---
 
-Things you'll reach for instinctively and need the Go equivalent.
+## Python To Go Survival Guide
 
-### Check membership
+<details>
+<summary>Open this when your hands want to write Python</summary>
 
-*Python*
+### Membership
 
 ```python
-if x in my_list:
+if x in items:
     print("found")
 ```
 
-*Go — no `in` keyword. Loop or use a map.*
+Go has no `in` keyword for slices. Loop, or use a map as a set.
 
 ```go
-// Option 1: loop
-for _, v := range mySlice {
-    if v == x {
-        fmt.Println("found")
-        break
-    }
+for _, item := range items {
+	if item == x {
+		fmt.Println("found")
+		break
+	}
 }
 
-// Option 2: use a set
-seen := map[string]bool{"a": true, "b": true}
-if seen["a"] { fmt.Println("found") }
+seen := map[string]bool{"api": true, "worker": true}
+if seen["api"] {
+	fmt.Println("found")
+}
 ```
 
-### Append, last element, negative indexing
-
-*Python*
+### Append And Last Element
 
 ```python
-nums.append(99)
-last = nums[-1]
+items.append("api")
+last = items[-1]
 ```
 
-*Go — must reassign append, no negative indexing.*
+Go requires reassignment after `append`, and it has no negative indexing.
 
 ```go
-nums = append(nums, 99)    // must reassign!
-last := nums[len(nums)-1]  // no negative indexing
+items = append(items, "api")
+last := items[len(items)-1]
 ```
 
-### String operations
-
-*Python*
+### Strings
 
 ```python
 ", ".join(items)
@@ -317,8 +436,6 @@ s.strip()
 f"hello {name}"
 ```
 
-*Go*
-
 ```go
 strings.Join(items, ", ")
 strings.Split(s, ",")
@@ -326,9 +443,7 @@ strings.TrimSpace(s)
 fmt.Sprintf("hello %s", name)
 ```
 
-### Error handling
-
-*Python*
+### Errors
 
 ```python
 try:
@@ -337,58 +452,71 @@ except FileNotFoundError:
     print("missing")
 ```
 
-*Go — errors are values, not exceptions.*
+Go returns errors as values:
 
 ```go
 f, err := os.Open("config.yaml")
 if err != nil {
-    fmt.Println("missing")
+	fmt.Println("missing")
+	return
 }
+_ = f
 ```
 
-### Dict access
-
-*Python*
+### Dictionary Access
 
 ```python
-val = ages.get("dave", 0)
+value = ages.get("dave", 0)
 ```
 
-*Go — comma-ok pattern.*
+Go uses the comma-ok pattern:
 
 ```go
-val, ok := ages["dave"]
+value, ok := ages["dave"]
 if !ok {
-    val = 0 // handle missing key yourself
+	value = 0
 }
 ```
 
-### Loops and sorting
-
-*Python*
+### Loops And Sorting
 
 ```python
-for i, v in enumerate(items):
-    print(i, v)
+for i, value in enumerate(items):
+    print(i, value)
 
 sorted(items, key=lambda x: x.age)
 ```
 
-*Go*
-
 ```go
-for i, v := range items {
-    fmt.Println(i, v)
+for i, value := range items {
+	fmt.Println(i, value)
 }
 
 sort.Slice(items, func(i, j int) bool {
-    return items[i].Age < items[j].Age
+	return items[i].Age < items[j].Age
 })
 ```
 
-### Things that don't exist in Go
+### Missing Pythonisms
 
-- **List comprehensions** — use a loop with append and if
-- **None** — `nil` (works for pointers, interfaces, maps, slices, channels)
-- **@dataclass** — `type X struct { ... }` and write your own constructor
-- **isinstance** — `v, ok := x.(T)` (type assertion)
+- No list comprehensions: use a loop with `append`.
+- No `None`: use `nil` for pointers, interfaces, maps, slices, and channels.
+- No `@dataclass`: define a `struct` and write the constructor you need.
+- No `isinstance`: use a type assertion or type switch.
+
+</details>
+
+---
+
+## Useful Links
+
+| Resource | When to use it |
+| --- | --- |
+| [Go Playground](https://go.dev/play/) | Quick experiments and shareable snippets |
+| [Package Docs](https://pkg.go.dev/) | Look up package APIs |
+| [Effective Go](https://go.dev/doc/effective_go) | Go idioms and style |
+| [Go by Example](https://gobyexample.com/) | Small examples for language features |
+| [Go Blog](https://go.dev/blog/) | Official announcements and deep dives |
+| [Go Spec](https://go.dev/ref/spec) | Exact language rules |
+
+Now go to Module 1. Come back here when the toolchain, editor, or compiler gets noisy.
