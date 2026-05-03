@@ -2,6 +2,8 @@
 
 > *"Don't communicate by sharing memory, share memory by communicating."* — Go Proverb
 
+*Filtering 50k audit-log lines down to the failures, or removing terminated pods from a running list, without doubling memory: a write-index loop and `s = s[:n]` is the move.*
+
 Sometimes you can't afford a copy. Modify a slice without creating a new one.
 
 ### Swap Two Elements

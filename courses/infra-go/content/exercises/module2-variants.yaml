@@ -116,6 +116,107 @@ variants:
             fmt.Printf("Name=%q Namespace=%q MemoryMB=%d Ready=%t\n", p.Name, p.Namespace, p.MemoryMB, p.Ready)
             // Name="web-1" Namespace="" MemoryMB=0 Ready=false
     - id: warmup_2
+      concept: Pointers
+      variants:
+        - id: v0a
+          title: Pass by Value vs Pointer
+          description: >-
+            Create a <code>Counter</code> struct with a <code>Count</code> (int) field. Write two functions:
+            <code>incrementValue(c Counter)</code> (takes by value) and <code>incrementPointer(c *Counter)</code>
+            (takes by pointer). Both should add 1 to Count. Call each and print the counter after to see which one
+            actually changed it.
+          hints:
+            - "By value: the function gets a copy, so changes don't affect the original."
+            - "By pointer: the function modifies the original via <code>c.Count++</code>."
+          solution: |-
+            type Counter struct {
+                Count int
+            }
+
+            func incrementValue(c Counter) {
+                c.Count++ // modifies the copy only
+            }
+
+            func incrementPointer(c *Counter) {
+                c.Count++ // modifies the original
+            }
+
+            c := Counter{Count: 0}
+            incrementValue(c)
+            fmt.Println(c.Count) // 0 (unchanged!)
+            incrementPointer(&c)
+            fmt.Println(c.Count) // 1 (changed)
+        - id: v1
+          title: Pointer Basics
+          description: >-
+            Create a <code>Pod</code> struct with <code>Name</code> and <code>Status</code> fields. Write a function
+            <code>markRunning(p *Pod)</code> that takes a pointer to a Pod and sets its Status to <code>"Running"</code>.
+            Create a pod with status <code>"Pending"</code>, call the function, and print the status to confirm it changed.
+          hints:
+            - "Use <code>*Pod</code> in the parameter — the <code>*</code> means pointer"
+            - "Pass with <code>&pod</code> — the <code>&</code> means address-of"
+          solution: |-
+            type Pod struct {
+                Name   string
+                Status string
+            }
+
+            func markRunning(p *Pod) {
+                p.Status = "Running"
+            }
+
+            pod := Pod{Name: "web-1", Status: "Pending"}
+            markRunning(&pod)
+            fmt.Println(pod.Status) // "Running"
+        - id: v2
+          title: Nil Pointer Check
+          description: >-
+            Write a function <code>podStatus(p *Pod) string</code> that returns the pod's Status if p is not nil, or
+            <code>"unknown"</code> if p is nil. Test it with both a valid pod and a nil pointer.
+          hints:
+            - Check <code>p == nil</code> before accessing any fields
+            - A nil pointer dereference causes a panic — always guard against it
+          solution: |-
+            type Pod struct {
+                Name   string
+                Status string
+            }
+
+            func podStatus(p *Pod) string {
+                if p == nil {
+                    return "unknown"
+                }
+                return p.Status
+            }
+
+            pod := &Pod{Name: "web-1", Status: "Running"}
+            fmt.Println(podStatus(pod)) // "Running"
+            fmt.Println(podStatus(nil)) // "unknown"
+        - id: v3
+          title: Swap with Pointers
+          description: >-
+            Write a function <code>swapStatus(a, b *Pod)</code> that swaps the Status fields of two pods using pointers.
+            Create two pods — one <code>"Running"</code>, one <code>"Pending"</code> — call swap, and print both to
+            confirm.
+          hints:
+            - "Store one status in a temp variable: <code>tmp := a.Status</code>"
+            - You're swapping the field values, not the pointers themselves
+          solution: |-
+            type Pod struct {
+                Name   string
+                Status string
+            }
+
+            func swapStatus(a, b *Pod) {
+                a.Status, b.Status = b.Status, a.Status
+            }
+
+            p1 := Pod{Name: "web-1", Status: "Running"}
+            p2 := Pod{Name: "web-2", Status: "Pending"}
+            swapStatus(&p1, &p2)
+            fmt.Println(p1.Status) // "Pending"
+            fmt.Println(p2.Status) // "Running"
+    - id: warmup_3
       concept: Constructors
       variants:
         - id: v1
@@ -200,7 +301,7 @@ variants:
                     Status: "Ready", PodCount: 0,
                 }, nil
             }
-    - id: warmup_3
+    - id: warmup_4
       concept: Methods
       variants:
         - id: v0a
@@ -328,7 +429,7 @@ variants:
             node := Node{Name: "node-1", MemoryGB: 64, CPUCores: 16, AllocatedPods: 42}
             fmt.Println(node.CanSchedule(8, 2))   // true
             fmt.Println(node.CanSchedule(128, 2)) // false
-    - id: warmup_4
+    - id: warmup_5
       concept: Composition
       variants:
         - id: v1
@@ -393,7 +494,7 @@ variants:
                 Status:       "Running",
             }
             fmt.Printf("%s: %dMB, %dm CPU\n", pod.Name, pod.MemoryMB, pod.CPUM)
-    - id: warmup_5
+    - id: warmup_6
       concept: Interfaces
       variants:
         - id: v1
@@ -497,7 +598,7 @@ variants:
                 }
                 return errs
             }
-    - id: warmup_6
+    - id: warmup_7
       concept: Type Assertions
       variants:
         - id: v1
@@ -563,107 +664,6 @@ variants:
             } else {
                 fmt.Println("not a pod")
             }
-    - id: warmup_7
-      concept: Pointers
-      variants:
-        - id: v0a
-          title: Pass by Value vs Pointer
-          description: >-
-            Create a <code>Counter</code> struct with a <code>Count</code> (int) field. Write two functions:
-            <code>incrementValue(c Counter)</code> (takes by value) and <code>incrementPointer(c *Counter)</code>
-            (takes by pointer). Both should add 1 to Count. Call each and print the counter after to see which one
-            actually changed it.
-          hints:
-            - "By value: the function gets a copy, so changes don't affect the original."
-            - "By pointer: the function modifies the original via <code>c.Count++</code>."
-          solution: |-
-            type Counter struct {
-                Count int
-            }
-
-            func incrementValue(c Counter) {
-                c.Count++ // modifies the copy only
-            }
-
-            func incrementPointer(c *Counter) {
-                c.Count++ // modifies the original
-            }
-
-            c := Counter{Count: 0}
-            incrementValue(c)
-            fmt.Println(c.Count) // 0 (unchanged!)
-            incrementPointer(&c)
-            fmt.Println(c.Count) // 1 (changed)
-        - id: v1
-          title: Pointer Basics
-          description: >-
-            Create a <code>Pod</code> struct with <code>Name</code> and <code>Status</code> fields. Write a function
-            <code>markRunning(p *Pod)</code> that takes a pointer to a Pod and sets its Status to <code>"Running"</code>.
-            Create a pod with status <code>"Pending"</code>, call the function, and print the status to confirm it changed.
-          hints:
-            - "Use <code>*Pod</code> in the parameter — the <code>*</code> means pointer"
-            - "Pass with <code>&pod</code> — the <code>&</code> means address-of"
-          solution: |-
-            type Pod struct {
-                Name   string
-                Status string
-            }
-
-            func markRunning(p *Pod) {
-                p.Status = "Running"
-            }
-
-            pod := Pod{Name: "web-1", Status: "Pending"}
-            markRunning(&pod)
-            fmt.Println(pod.Status) // "Running"
-        - id: v2
-          title: Nil Pointer Check
-          description: >-
-            Write a function <code>podStatus(p *Pod) string</code> that returns the pod's Status if p is not nil, or
-            <code>"unknown"</code> if p is nil. Test it with both a valid pod and a nil pointer.
-          hints:
-            - Check <code>p == nil</code> before accessing any fields
-            - A nil pointer dereference causes a panic — always guard against it
-          solution: |-
-            type Pod struct {
-                Name   string
-                Status string
-            }
-
-            func podStatus(p *Pod) string {
-                if p == nil {
-                    return "unknown"
-                }
-                return p.Status
-            }
-
-            pod := &Pod{Name: "web-1", Status: "Running"}
-            fmt.Println(podStatus(pod)) // "Running"
-            fmt.Println(podStatus(nil)) // "unknown"
-        - id: v3
-          title: Swap with Pointers
-          description: >-
-            Write a function <code>swapStatus(a, b *Pod)</code> that swaps the Status fields of two pods using pointers.
-            Create two pods — one <code>"Running"</code>, one <code>"Pending"</code> — call swap, and print both to
-            confirm.
-          hints:
-            - "Store one status in a temp variable: <code>tmp := a.Status</code>"
-            - You're swapping the field values, not the pointers themselves
-          solution: |-
-            type Pod struct {
-                Name   string
-                Status string
-            }
-
-            func swapStatus(a, b *Pod) {
-                a.Status, b.Status = b.Status, a.Status
-            }
-
-            p1 := Pod{Name: "web-1", Status: "Running"}
-            p2 := Pod{Name: "web-2", Status: "Pending"}
-            swapStatus(&p1, &p2)
-            fmt.Println(p1.Status) // "Pending"
-            fmt.Println(p2.Status) // "Running"
   challenges:
     - id: challenge_1
       block: 1

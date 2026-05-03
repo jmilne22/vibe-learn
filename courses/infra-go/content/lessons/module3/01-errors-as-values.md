@@ -1,5 +1,7 @@
 ## Errors as Values
 
+*Every API call, file read, and config parse can fail. The `(value, error)` return shape is how Go forces every one of those failure paths into the type system, where the compiler can check you handled them.*
+
 In Go, errors are just values that implement one interface:
 
 ```go
@@ -81,4 +83,3 @@ if err != nil {
 ```
 
 <div class="inline-exercises" data-concept="Errors as Values"></div>
-<div class="inline-exercises" data-concept="Sentinel Errors"></div>

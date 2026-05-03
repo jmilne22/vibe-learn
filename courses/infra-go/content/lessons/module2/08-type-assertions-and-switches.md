@@ -1,5 +1,7 @@
 ## Type Assertions & Switches
 
+*A logging pipeline that accepts `Resource` and prints `Pod` differently than `Service` is a `switch v := r.(type)` away. Use it at boundaries — display, serialization, CLI output — not in core logic.*
+
 When you have an interface value and need the concrete type underneath.
 
 ### Comma-Ok Pattern

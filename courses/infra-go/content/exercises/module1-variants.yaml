@@ -1,4 +1,5 @@
 conceptLinks:
+  Range Gotchas: go-syntax-youll-use
   Slice Operations: slice-operations-under-pressure
   In-Place Manipulation: in-place-manipulation
   Map Patterns: map-patterns
@@ -10,6 +11,74 @@ conceptLinks:
 sharedContent: {}
 variants:
   warmups:
+    - id: warmup_0
+      concept: Range Gotchas
+      variants:
+        - id: v1
+          title: Range Value-Copy
+          description: >-
+            Given <code>memMB := []int{512, 1024, 2048}</code>, write a loop that uses <code>for _, v := range memMB</code>
+            and tries to double each value via <code>v *= 2</code>. Print the slice after the loop. Then fix it so the slice
+            actually changes.
+          hints:
+            - "<code>v</code> in <code>for _, v := range</code> is a copy. Mutating it does nothing to the slice."
+            - "Use <code>for i := range memMB</code> and write through <code>memMB[i]</code>."
+          solution: |-
+            memMB := []int{512, 1024, 2048}
+
+            // Doesn't work — v is a copy
+            for _, v := range memMB {
+                v *= 2
+            }
+            fmt.Println(memMB) // [512 1024 2048] — unchanged
+
+            // Works — index in, write through the slice
+            for i := range memMB {
+                memMB[i] *= 2
+            }
+            fmt.Println(memMB) // [1024 2048 4096]
+        - id: v2
+          title: Append During Range
+          description: >-
+            Given <code>names := []string{"web-1", "web-2", "web-3"}</code>, write a range loop that appends
+            <code>"-canary"</code> versions of each name (so the slice doubles in size). Count how many iterations actually
+            ran and print the final length. Explain what you see.
+          hints:
+            - "Range locks the iteration count when the loop starts. New elements added during the loop aren't visited."
+            - "Even though the slice grows to 6, the loop ran 3 times."
+          solution: |-
+            names := []string{"web-1", "web-2", "web-3"}
+            iters := 0
+            for _, n := range names {
+                iters++
+                names = append(names, n+"-canary")
+            }
+            fmt.Println(iters, len(names), names)
+            // 3 6 [web-1 web-2 web-3 web-1-canary web-2-canary web-3-canary]
+            // Range locked the iteration count to 3 at loop start.
+        - id: v3
+          title: Mutating Without the Index
+          description: >-
+            Given a slice of <code>Pod</code> structs each with a <code>Status</code> field, try to mark every pod as
+            <code>"Healthy"</code> using <code>for _, p := range pods</code>. Confirm it does nothing, then fix it.
+          hints:
+            - "<code>p</code> is a copy of the struct. Writing to <code>p.Status</code> writes to the copy."
+            - "Use the index form: <code>for i := range pods</code>, then <code>pods[i].Status = \"Healthy\"</code>."
+          solution: |-
+            type Pod struct{ Name, Status string }
+            pods := []Pod{{"web-1", "Pending"}, {"web-2", "Pending"}}
+
+            // Doesn't work
+            for _, p := range pods {
+                p.Status = "Healthy"
+            }
+            fmt.Println(pods[0].Status) // "Pending" — unchanged
+
+            // Works
+            for i := range pods {
+                pods[i].Status = "Healthy"
+            }
+            fmt.Println(pods[0].Status) // "Healthy"
     - id: warmup_1
       concept: Slice Operations
       variants:

@@ -62,3 +62,4 @@ if errors.As(err, &pathErr) {
 `errors.As` unwraps the chain looking for an error that can be assigned to your target variable. Use this when you need fields from the error, not just identity.
 
 <div class="inline-exercises" data-concept="Wrapping"></div>
+<div class="inline-exercises" data-concept="Inspecting Errors"></div>

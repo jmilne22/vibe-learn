@@ -1,5 +1,7 @@
 ## Writing Your First Tests
 
+*Every function from here on lands in a `_test.go` file with at least one `Test*` function. The `testing` package is in the standard library — no test framework, no fixtures, just `go test ./...`.*
+
 ### Test File Convention
 
 Tests live next to the code they test, in files ending with `_test.go`:
@@ -58,4 +60,3 @@ go test -race ./...        # detect data races
 ```
 
 <div class="inline-exercises" data-concept="Writing Tests"></div>
-<div class="inline-exercises" data-concept="Table-Driven Tests"></div>

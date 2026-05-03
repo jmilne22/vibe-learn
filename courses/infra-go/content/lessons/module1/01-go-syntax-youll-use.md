@@ -256,4 +256,6 @@ Range decided to run 3 times the moment the loop began. The append succeeded, bu
 
 **Use `for i := range` when you need to mutate.** If you need to change elements, use the index form. If you just need to read them, `for _, v := range` is fine.
 
+<div class="inline-exercises" data-concept="Range Gotchas"></div>
+
 ---

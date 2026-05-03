@@ -1,4 +1,6 @@
-## Testing Infra Code
+## Test Helpers and Error Assertions
+
+The previous two sections covered the table-driven shape. This section covers the two assertion patterns you'll add on top of every infra test from here on: shared helpers (so failures point at the test, not the helper) and error-kind assertions (so you check `errors.Is` / `errors.As`, not message strings).
 
 ### Testing Validators
 
@@ -88,4 +90,4 @@ func TestValidateConfig_ErrorType(t *testing.T) {
 
 ---
 
-<div class="inline-exercises" data-concept="Testing Infra Code"></div>
+<div class="inline-exercises" data-concept="Test Helpers"></div>
