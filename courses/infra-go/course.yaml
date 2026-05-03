@@ -18,7 +18,7 @@ tracks:
 
 modules:
   - title: Start Here & Course Map
-    description: "Understand the course loop, early project progression, workspace conventions, and compact Go command/error reference."
+    description: "Course loop, early project progression, workspace conventions, and compact Go command/error reference."
     hasExercises: false
 
   - title: Data Manipulation Bootcamp

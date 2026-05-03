@@ -1,21 +1,21 @@
 Use this page when you want the map, not a tutorial.
 
-You already know how to install tools, run commands, read logs, and debug systems. Module 0 is here to show how this course turns those instincts into Go projects: what to practice first, how the projects build, and where to look when Go's compiler or project layout gets noisy.
+No install checklist, no hello world, no generic onboarding. Module 0 is the control panel for this course: what to do first, when to drill, when to build, and where to look when Go-specific details get noisy.
 
 ---
 
 ## What This Page Is For
 
-This page is not a setup checklist. It is the operating manual for the course.
+This page is not a setup checklist. It is the operating manual for the path through the course.
 
 Use it to answer four questions:
 
 - What should I focus on first?
 - When should I drill versus build?
 - Where should my project code live?
-- What Go commands and errors will I keep reaching for?
+- Which Go commands and errors are worth keeping close?
 
-Skip anything you already have handled. The useful parts are the course rhythm, the early progression, the workspace conventions, and the quick references.
+The useful parts are the course rhythm, the early progression, the workspace conventions, and the quick references.
 
 ---
 
