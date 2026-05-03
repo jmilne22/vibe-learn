@@ -1,136 +1,21 @@
-Use this page once to get moving, then come back when Go, your editor, or the course UI gets in your way.
+Use this page when you want the map, not a tutorial.
 
-Module 0 is not the first lesson. It is the launchpad: install Go, run one tiny infra-flavored program, understand how practice works here, and keep a compact reference nearby.
+You already know how to install tools, run commands, read logs, and debug systems. Module 0 is here to show how this course turns those instincts into Go projects: what to practice first, how the projects build, and where to look when Go's compiler or project layout gets noisy.
 
 ---
 
-## Your First 10 Minutes
+## What This Page Is For
 
-By the end of this section, you should have a local Go module that runs a small log summary program.
+This page is not a setup checklist. It is the operating manual for the course.
 
-### 1. Install and Verify Go
+Use it to answer four questions:
 
-Install Go from [go.dev/dl](https://go.dev/dl/) or your package manager. Go 1.22 or newer is enough for this course.
+- What should I focus on first?
+- When should I drill versus build?
+- Where should my project code live?
+- What Go commands and errors will I keep reaching for?
 
-```bash
-go version
-which go
-```
-
-Common installs:
-
-```bash
-# macOS
-brew install go
-
-# Void Linux
-sudo xbps-install -S go
-```
-
-If `go version` works, keep moving. Do not tune your editor before you have run a program.
-
-### 2. Create a Playground Module
-
-Use a scratch directory outside the course repo:
-
-```bash
-mkdir -p ~/code/infra-go-playground
-cd ~/code/infra-go-playground
-go mod init example.com/infra-go-playground
-```
-
-That creates `go.mod`. Every real Go project starts with one.
-
-### 3. Run a Tiny Report
-
-Create `main.go`:
-
-```go
-package main
-
-import (
-	"fmt"
-	"sort"
-	"strings"
-)
-
-func main() {
-	input := `
-checkout-api 200
-ledger-worker 500
-checkout-api 200
-edge-proxy 404
-ledger-worker 503
-`
-
-	byService := map[string]int{}
-	byStatus := map[string]int{}
-
-	for _, line := range strings.Split(input, "\n") {
-		line = strings.TrimSpace(line)
-		if line == "" {
-			continue
-		}
-
-		fields := strings.Fields(line)
-		if len(fields) != 2 {
-			continue
-		}
-
-		service := fields[0]
-		status := fields[1]
-
-		byService[service]++
-		byStatus[status]++
-	}
-
-	services := sortedKeys(byService)
-	statuses := sortedKeys(byStatus)
-
-	fmt.Println("Requests by service:")
-	for _, service := range services {
-		fmt.Printf("%s %d\n", service, byService[service])
-	}
-
-	fmt.Println()
-	fmt.Println("Requests by status:")
-	for _, status := range statuses {
-		fmt.Printf("%s %d\n", status, byStatus[status])
-	}
-}
-
-func sortedKeys(counts map[string]int) []string {
-	keys := make([]string, 0, len(counts))
-	for key := range counts {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-	return keys
-}
-```
-
-Run it:
-
-```bash
-go run .
-```
-
-You should see:
-
-```txt
-Requests by service:
-checkout-api 2
-edge-proxy 1
-ledger-worker 2
-
-Requests by status:
-200 2
-404 1
-500 1
-503 1
-```
-
-That is the seed of Module 1 and P0.1 Log Summary Reporter. You just split text, skipped blanks, counted with maps, sorted output, and produced a stable operational summary.
+Skip anything you already have handled. The useful parts are the course rhythm, the early progression, the workspace conventions, and the quick references.
 
 ---
 
