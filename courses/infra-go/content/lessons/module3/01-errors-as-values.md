@@ -81,4 +81,3 @@ if err != nil {
 ```
 
 <div class="inline-exercises" data-concept="Errors as Values"></div>
-<div class="inline-exercises" data-concept="Sentinel Errors"></div>
