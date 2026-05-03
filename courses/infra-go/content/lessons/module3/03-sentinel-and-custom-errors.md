@@ -70,3 +70,5 @@ if errors.As(err, &valErr) {
 | `fmt.Errorf("context: %w", err)` | Adding context while preserving the original |
 | `var ErrFoo = errors.New(...)` | Callers need to check for this specific condition |
 | `type FooError struct{...}` | Callers need structured data from the error |
+
+<div class="inline-exercises" data-concept="Sentinel Errors"></div>

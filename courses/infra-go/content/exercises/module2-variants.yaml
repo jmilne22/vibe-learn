@@ -1568,3 +1568,240 @@ variants:
               text: >-
                 This is the upgrade from Module 1's count → sort-keys → format. Structs let you sort by value (count)
                 instead of just by key. Same pattern, more power.
+  scaffolds:
+    - id: scaffold_pointer_mutation
+      concept: "Pointers"
+      variants:
+        - id: v1
+          type: trace
+          title: Trace the Copy
+          description: |-
+            What does this print?
+            <pre>type Pod struct{ Status string }
+            func markReady(p Pod) {
+                p.Status = "Running"
+            }
+            pod := Pod{Status: "Pending"}
+            markReady(pod)
+            fmt.Println(pod.Status)</pre>
+          solution: |-
+            Pending
+            // markReady receives a copy. The original pod is unchanged.
+        - id: v2
+          type: fix
+          title: Make the Mutation Stick
+          description: |-
+            Fix the function so the caller's pod status changes:
+            <pre>func markReady(p Pod) {
+                p.Status = "Running"
+            }</pre>
+          hints:
+            - "The function needs the address of the original Pod."
+            - "Change the parameter type to <code>*Pod</code> and call it with <code>&pod</code>."
+          solution: |-
+            func markReady(p *Pod) {
+                p.Status = "Running"
+            }
+
+            pod := Pod{Status: "Pending"}
+            markReady(&pod)
+        - id: v3
+          type: complete
+          title: Complete the Constructor
+          description: |-
+            Fill in the blanks:
+            <pre>func NewPod(name string) *Pod {
+                p := Pod{Name: name, Status: "Pending"}
+                return _____
+            }</pre>
+          solution: |-
+            return &p
+            // Go escape analysis makes returning the address of a local safe.
+        - id: v4
+          type: produce
+          title: Produce a Setter
+          description: >-
+            Write <code>func setNamespace(p *Pod, namespace string)</code>. If namespace is empty, set it to
+            <code>"default"</code>. Otherwise set the pod namespace to the provided value.
+          solution: |-
+            func setNamespace(p *Pod, namespace string) {
+                if namespace == "" {
+                    namespace = "default"
+                }
+                p.Namespace = namespace
+            }
+    - id: scaffold_receiver_choice
+      concept: "Methods"
+      variants:
+        - id: v1
+          type: trace
+          title: Trace the Receiver
+          description: |-
+            What does this print?
+            <pre>type Counter struct{ n int }
+            func (c Counter) Inc() { c.n++ }
+            c := Counter{}
+            c.Inc()
+            fmt.Println(c.n)</pre>
+          solution: |-
+            0
+            // Inc has a value receiver, so it increments a copy.
+        - id: v2
+          type: fix
+          title: Fix the Receiver
+          description: |-
+            Fix this method so it modifies the deployment:
+            <pre>func (d Deployment) Scale(n int) {
+                d.Replicas = n
+            }</pre>
+          solution: |-
+            func (d *Deployment) Scale(n int) {
+                d.Replicas = n
+            }
+        - id: v3
+          type: complete
+          title: Choose Receiver Types
+          description: |-
+            Fill in value or pointer receivers:
+            <pre>func (p ___) FullName() string { return p.Namespace + "/" + p.Name }
+            func (p ___) SetStatus(status string) { p.Status = status }</pre>
+          solution: |-
+            func (p Pod) FullName() string { return p.Namespace + "/" + p.Name }
+            func (p *Pod) SetStatus(status string) { p.Status = status }
+        - id: v4
+          type: produce
+          title: Add a Safe Label Method
+          description: >-
+            Write <code>func (p *Pod) AddLabel(key, value string)</code>. Initialize <code>p.Labels</code> if it is nil,
+            then set the label.
+          solution: |-
+            func (p *Pod) AddLabel(key, value string) {
+                if p.Labels == nil {
+                    p.Labels = make(map[string]string)
+                }
+                p.Labels[key] = value
+            }
+    - id: scaffold_interface_design
+      concept: "Interfaces"
+      variants:
+        - id: v1
+          type: trace
+          title: Spot the Interface
+          description: |-
+            Which interface does Pod satisfy?
+            <pre>type Pod struct{ Name string }
+            func (p Pod) FullName() string { return p.Name }
+            func (p Pod) Validate() error { return nil }</pre>
+          solution: |-
+            Pod satisfies any interface requiring FullName() string, any interface requiring Validate() error, and any interface requiring both.
+        - id: v2
+          type: fix
+          title: Shrink the Interface
+          description: |-
+            This interface is too wide for a function that only calls Validate:
+            <pre>type Resource interface {
+                FullName() string
+                Validate() error
+                String() string
+            }</pre>
+            Write the smaller interface.
+          solution: |-
+            type Validator interface {
+                Validate() error
+            }
+        - id: v3
+          type: complete
+          title: Complete ValidateAll
+          description: |-
+            Fill in the loop:
+            <pre>func ValidateAll(items []Validator) []error {
+                var errs []error
+                for _, item := range items {
+                    if err := _______; err != nil {
+                        errs = append(errs, err)
+                    }
+                }
+                return errs
+            }</pre>
+          solution: |-
+            item.Validate()
+        - id: v4
+          type: produce
+          title: Produce a Health Interface
+          description: >-
+            Define a small interface for values that can report health, then write
+            <code>countHealthy(items []HealthChecker) int</code>.
+          solution: |-
+            type HealthChecker interface {
+                IsHealthy() bool
+            }
+
+            func countHealthy(items []HealthChecker) int {
+                n := 0
+                for _, item := range items {
+                    if item.IsHealthy() {
+                        n++
+                    }
+                }
+                return n
+            }
+    - id: scaffold_type_assertions
+      concept: "Type Assertions"
+      variants:
+        - id: v1
+          type: trace
+          title: Trace the Panic
+          description: |-
+            What happens here?
+            <pre>var r any = Service{Port: 80}
+            pod := r.(Pod)
+            fmt.Println(pod.Name)</pre>
+          solution: |-
+            It panics because the dynamic value is Service, not Pod.
+        - id: v2
+          type: fix
+          title: Use Comma-Ok
+          description: |-
+            Rewrite this assertion so it does not panic:
+            <pre>pod := r.(Pod)
+            fmt.Println(pod.Name)</pre>
+          solution: |-
+            pod, ok := r.(Pod)
+            if ok {
+                fmt.Println(pod.Name)
+            }
+        - id: v3
+          type: complete
+          title: Complete the Type Switch
+          description: |-
+            Fill in the missing type switch header:
+            <pre>func describe(r any) string {
+                switch v := _______ {
+                case Pod:
+                    return "pod " + v.Name
+                case Service:
+                    return fmt.Sprintf("service %d", v.Port)
+                default:
+                    return "unknown"
+                }
+            }</pre>
+          solution: |-
+            r.(type)
+        - id: v4
+          type: produce
+          title: Describe Resources
+          description: >-
+            Write <code>func describe(r any) string</code> using a type switch. For <code>Pod</code>, return
+            <code>"pod NAME"</code>. For <code>Service</code>, return <code>"service PORT"</code>. Return
+            <code>"unknown"</code> otherwise.
+          solution: |-
+            func describe(r any) string {
+                switch v := r.(type) {
+                case Pod:
+                    return "pod " + v.Name
+                case Service:
+                    return fmt.Sprintf("service %d", v.Port)
+                default:
+                    return "unknown"
+                }
+            }

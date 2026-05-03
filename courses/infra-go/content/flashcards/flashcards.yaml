@@ -123,3 +123,108 @@
       `make([]string, 0, n)` creates length 0, capacity n — use with `append`.
       `make([]string, n)` creates length AND capacity n — assign by index. Both avoid
       repeated array growth.
+
+"2":
+  - topic: Structs
+    q: Why should you usually use named fields in Go struct literals?
+    a: >-
+      Named fields make the literal readable and resilient to field-order changes:
+      `Pod{Name: "web-1", Status: "Running"}`. Positional literals break silently
+      when fields are added or reordered.
+  - topic: Zero Values
+    q: Why do zero values matter for infrastructure models?
+    a: >-
+      Zero values can be ambiguous. `MemoryMB == 0` might mean "not set" or "zero requested".
+      Constructors and validation clarify which values are valid and which need defaults.
+  - topic: Pointers
+    q: When should a function take `*Pod` instead of `Pod`?
+    a: >-
+      Use `*Pod` when the function must mutate the original, avoid copying a large struct,
+      or represent absence with `nil`. Use `Pod` for small read-only values.
+  - topic: Pointer Aliasing
+    q: What does `b := a` do when `a` is a `*Pod`?
+    a: >-
+      It copies the pointer, not the Pod. Both variables point at the same struct, so
+      mutations through `b` are visible through `a`.
+  - topic: Value Receivers
+    q: Why does `func (c Counter) Inc() { c.n++ }` not update the caller's counter?
+    a: >-
+      A value receiver gets a copy. The method increments the copy, then discards it.
+      Use `func (c *Counter) Inc()` when the method must mutate the original.
+  - topic: Pointer Receivers
+    q: What practical rule helps choose receiver types on one struct?
+    a: >-
+      If any method on a type needs a pointer receiver, use pointer receivers consistently
+      for that type unless there is a clear reason not to.
+  - topic: Embedding
+    q: What does embedding `Metadata` inside `Pod` do?
+    a: >-
+      Fields and methods from `Metadata` are promoted, so callers can use `pod.Name`
+      or `pod.FullName()` directly while the shared data still lives in a reusable struct.
+  - topic: Interfaces
+    q: What does "interfaces are satisfied implicitly" mean in Go?
+    a: >-
+      A type satisfies an interface by having the required methods. There is no
+      `implements` keyword. The compiler checks compatibility from the method set.
+  - topic: Interface Design
+    q: What does "accept interfaces, return structs" mean?
+    a: >-
+      Function parameters can accept small behavior-focused interfaces for flexibility.
+      Return concrete structs so callers know exactly what they received.
+  - topic: Type Assertions
+    q: Why is `pod := r.(Pod)` risky in production code?
+    a: >-
+      It panics if the dynamic value inside `r` is not a `Pod`. Use `pod, ok := r.(Pod)`
+      or a type switch when the concrete type may vary.
+
+"3":
+  - topic: Error Wrapping
+    q: What does `%w` do in `fmt.Errorf`?
+    a: >-
+      `%w` wraps the original error while adding context. The message gets richer, and
+      callers can still inspect the wrapped error with `errors.Is` or `errors.As`.
+  - topic: errors.Is
+    q: When should you use `errors.Is(err, target)`?
+    a: >-
+      Use it when checking whether an error chain contains a specific sentinel error,
+      such as `os.ErrNotExist` or your own `ErrNotFound`.
+  - topic: errors.As
+    q: When should you use `errors.As`?
+    a: >-
+      Use it when you need a concrete error type and its fields. Declare a target like
+      `var pathErr *os.PathError`, then call `errors.As(err, &pathErr)`.
+  - topic: Sentinel Errors
+    q: What is a sentinel error?
+    a: >-
+      A package-level error value for a known condition, usually named `ErrSomething`,
+      such as `var ErrNotFound = errors.New("not found")`. Callers check it with `errors.Is`.
+  - topic: Custom Errors
+    q: When should you define a custom error type?
+    a: >-
+      Define one when callers need structured data from the failure, such as a field name,
+      line number, port, path, or validation reason.
+  - topic: t.Fatal vs t.Error
+    q: When should a test use `t.Fatal` instead of `t.Error`?
+    a: >-
+      Use `t.Fatal` when continuing would be meaningless or would panic, such as after
+      an unexpected nil or setup failure. Use `t.Error` to collect independent failures.
+  - topic: t.Helper
+    q: Why should assertion helpers call `t.Helper()`?
+    a: >-
+      `t.Helper()` tells the test runner to report failures at the caller's line rather
+      than inside the helper, making failures much easier to locate.
+  - topic: Table-Driven Tests
+    q: What is the basic shape of a table-driven test in Go?
+    a: >-
+      Define a slice of test cases, loop over it, and call `t.Run(tt.name, func(t *testing.T) { ... })`
+      for each case. Each row names input, expected output, and whether an error is expected.
+  - topic: Testing Wrapped Errors
+    q: How do you test that a function returned a wrapped `ErrNotFound`?
+    a: >-
+      First assert the error is not nil. Then use `errors.Is(err, ErrNotFound)`.
+      Do not compare with `err == ErrNotFound`, because wrapping changes the outer error.
+  - topic: Testing Custom Errors
+    q: How do you test fields on a custom error type?
+    a: >-
+      Use `errors.As` to extract the custom type, then check its fields:
+      `var cfgErr *ConfigError; errors.As(err, &cfgErr); cfgErr.Line == want`.
