@@ -58,3 +58,4 @@ go test -race ./...        # detect data races
 ```
 
 <div class="inline-exercises" data-concept="Writing Tests"></div>
+<div class="inline-exercises" data-concept="Table-Driven Tests"></div>

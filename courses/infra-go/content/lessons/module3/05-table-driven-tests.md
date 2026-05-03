@@ -52,5 +52,3 @@ func TestParsePort(t *testing.T) {
 # Python: @pytest.mark.parametrize("input,expected", [...])
 # Go: same idea, but it's just a struct slice + loop. No framework needed.
 ```
-
-<div class="inline-exercises" data-concept="Table-Driven Tests"></div>

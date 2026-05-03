@@ -82,6 +82,5 @@ This function uses every pattern from the module: string splitting, `continue` f
 > **What's missing?** You might notice we sorted alphabetically, not by score descending. Sorting by value (to get "top N") requires bundling each key-value pair into a sortable unit — and that's exactly what structs unlock in Module 2. Once you learn structs, you'll upgrade this pattern to **accumulate → struct → sort → truncate → format**.
 
 <div class="inline-exercises" data-concept="Combining Patterns"></div>
-<div class="inline-exercises" data-concept="Log Summary Prep"></div>
 
 ---
