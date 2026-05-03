@@ -7,7 +7,6 @@ conceptLinks:
   Sorting & Filtering: sorting-and-filtering
   Line Parsing: line-by-line-parsing
   Combining Patterns: putting-it-together
-  Log Summary Prep: putting-it-together
 sharedContent: {}
 variants:
   warmups:
@@ -655,103 +654,6 @@ variants:
             }
             pct := float64(errors) / float64(len(lines)) * 100
             fmt.Printf("Error rate: %.1f%%\n", pct)
-    - id: warmup_9
-      concept: Log Summary Prep
-      variants:
-        - id: v1
-          title: Parse Status Field
-          description: >-
-            Given <code>line := "checkout-api status=200 latency_ms=34 region=us-east-1"</code>, parse the service name
-            and status code. Print <code>checkout-api 200</code>.
-          expected: checkout-api 200
-          hints:
-            - "Use <code>strings.Fields</code>. The service is the first field."
-            - "Find the field that starts with <code>status=</code>, split it with <code>strings.SplitN</code>, then convert the value with <code>strconv.Atoi</code>."
-          solution: |-
-            line := "checkout-api status=200 latency_ms=34 region=us-east-1"
-            fields := strings.Fields(line)
-            service := fields[0]
-            status := 0
-            for _, f := range fields[1:] {
-                parts := strings.SplitN(f, "=", 2)
-                if len(parts) == 2 && parts[0] == "status" {
-                    status, _ = strconv.Atoi(parts[1])
-                    break
-                }
-            }
-            fmt.Println(service, status)
-        - id: v2
-          title: Count Malformed Lines
-          description: >-
-            Given log lines, count how many non-empty, non-comment lines do not contain a valid
-            <code>status=NUMBER</code> field. Print the malformed count.
-          expected: "malformed=2"
-          hints:
-            - "Trim each line first. Skip blanks and lines starting with <code>#</code>."
-            - "Treat a line as valid only if a <code>status=</code> field exists and <code>strconv.Atoi</code> succeeds."
-          solution: |-
-            lines := []string{
-                "checkout-api status=200 latency_ms=34",
-                "# skip me",
-                "bad-line-here",
-                "metrics-relay status=oops latency_ms=40",
-                "ledger-worker status=503 latency_ms=120",
-            }
-            malformed := 0
-            for _, line := range lines {
-                line = strings.TrimSpace(line)
-                if line == "" || strings.HasPrefix(line, "#") {
-                    continue
-                }
-                ok := false
-                for _, f := range strings.Fields(line) {
-                    parts := strings.SplitN(f, "=", 2)
-                    if len(parts) == 2 && parts[0] == "status" {
-                        if _, err := strconv.Atoi(parts[1]); err == nil {
-                            ok = true
-                        }
-                    }
-                }
-                if !ok {
-                    malformed++
-                }
-            }
-            fmt.Printf("malformed=%d\n", malformed)
-        - id: v3
-          title: Stable Service Counts
-          description: >-
-            Given service log lines, count valid requests by service and print the counts in alphabetical order by
-            service name.
-          expected: |-
-            checkout-api 2
-            edge-proxy 1
-            ledger-worker 1
-          hints:
-            - "Count into <code>map[string]int</code>, then collect and sort the service names."
-            - "Use the sorted service names to read counts back out of the map."
-          solution: |-
-            lines := []string{
-                "checkout-api status=200 latency_ms=34",
-                "ledger-worker status=500 latency_ms=91",
-                "checkout-api status=200 latency_ms=41",
-                "edge-proxy status=404 latency_ms=12",
-            }
-            counts := make(map[string]int)
-            for _, line := range lines {
-                fields := strings.Fields(line)
-                if len(fields) == 0 {
-                    continue
-                }
-                counts[fields[0]]++
-            }
-            names := make([]string, 0, len(counts))
-            for name := range counts {
-                names = append(names, name)
-            }
-            sort.Strings(names)
-            for _, name := range names {
-                fmt.Printf("%s %d\n", name, counts[name])
-            }
   challenges:
     - id: challenge_1
       block: 1

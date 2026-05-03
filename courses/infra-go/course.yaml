@@ -62,27 +62,6 @@ modules:
     hasExercises: false
 
 projects:
-  - id: p0_1
-    num: P0.1
-    title: Log Summary Reporter
-    file: project-log-summary-reporter
-    afterModule: 1
-    description: "Build a small Go program that parses service logs, counts status codes, calculates error rate, and produces stable sorted reports. Applies Module 1."
-
-  - id: p0_2
-    num: P0.2
-    title: Resource Modeler
-    file: project-resource-modeler
-    afterModule: 2
-    description: "Model infrastructure resources with structs, constructors, methods, and small interfaces. Applies Modules 1-2."
-
-  - id: p0_3
-    num: P0.3
-    title: Tested Config Parser
-    file: project-tested-config-parser
-    afterModule: 3
-    description: "Build a config parser with explicit errors, wrapping, sentinel/custom errors, and table-driven tests. Applies Modules 1-3."
-
   - id: p1
     num: P1
     title: Config Linter
