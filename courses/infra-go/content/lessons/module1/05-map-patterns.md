@@ -64,13 +64,7 @@ for _, fruit := range basket {
 ### Grouping
 
 ```go
-// Group students by grade level (struct slice version)
-byGrade := make(map[string][]string)
-for _, s := range students {
-    byGrade[s.Grade] = append(byGrade[s.Grade], s.Name)
-}
-
-// Parallel slice version — names[i] goes with subjects[i]
+// Parallel slices — names[i] goes with subjects[i]
 names := []string{"Alice", "Bob", "Carol", "Dave"}
 subjects := []string{"math", "math", "science", "science"}
 
@@ -168,7 +162,7 @@ for k, v := range m {
 
 Go randomizes map iteration order on purpose so code does not accidentally depend on it. Tests that compare map-derived output should sort keys before formatting or comparing results.
 
-If you need deterministic output (sorted keys), you have to sort yourself. `sort.Strings` and friends get a proper introduction in §07; for now just notice the shape:
+If you need deterministic output (sorted keys), you have to sort yourself. `sort.Strings` and friends get a proper introduction in Sorting & Filtering; for now just notice the shape:
 
 1. Collect the keys into a slice (loop over the map, append each key)
 2. Sort the slice (`sort.Strings` for string keys)

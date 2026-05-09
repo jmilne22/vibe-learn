@@ -30,7 +30,7 @@
     var hasInlineExercises = false;
     var inlineContainers = [];   // [{element, concept}]
     var inlineConcepts = [];     // concept strings covered inline
-    var inlineVariantOrders = {}; // concept -> shuffled index array
+    var inlineVariantOrders = {}; // concept -> index array; first render preserves content order
 
     // Unified difficulty mode
     var difficultyMode = 'balanced';
@@ -701,15 +701,11 @@
                 return;
             }
 
-            // Use stored order if available, otherwise shuffle
+            // First exposure should follow content order. Shuffle only after the user asks.
             var key = 'inline_order_' + concept;
             var order = inlineVariantOrders[key];
             if (!order || order.length !== allVariants.length) {
                 order = allVariants.map(function(_, i) { return i; });
-                for (var k = order.length - 1; k > 0; k--) {
-                    var r = Math.floor(Math.random() * (k + 1));
-                    var tmp = order[k]; order[k] = order[r]; order[r] = tmp;
-                }
                 inlineVariantOrders[key] = order;
             }
 
@@ -769,8 +765,20 @@
     function shuffleInlineConcept(concept) {
         if (!variantsData || !variantsData.warmups) return;
 
-        // Clear stored order so renderInlineWarmups generates a new shuffle
-        delete inlineVariantOrders['inline_order_' + concept];
+        var warmups = variantsData.warmups.filter(function(w) {
+            return w.concept === concept;
+        });
+        var count = warmups.reduce(function(sum, warmup) {
+            return sum + warmup.variants.length;
+        }, 0);
+
+        var order = [];
+        for (var i = 0; i < count; i++) order.push(i);
+        for (var k = order.length - 1; k > 0; k--) {
+            var r = Math.floor(Math.random() * (k + 1));
+            var tmp = order[k]; order[k] = order[r]; order[r] = tmp;
+        }
+        inlineVariantOrders['inline_order_' + concept] = order;
 
         renderInlineWarmups();
 
