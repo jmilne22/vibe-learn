@@ -1,5 +1,5 @@
 conceptLinks:
-  Range Gotchas: go-syntax-youll-use
+  Range Gotchas: range-gotchas
   Slice Operations: slice-operations-under-pressure
   In-Place Manipulation: in-place-manipulation
   Map Patterns: map-patterns
@@ -113,7 +113,13 @@ variants:
             - "A slice expression <code>s[start:end]</code> gives you elements from start up to (not including) end."
             - "When the start index is 0, you can omit it from the slice expression."
           solution: |-
-            pods := []string{"checkout-api-xq2bn", "ledger-worker-h2k9p", "edge-proxy-rm3qw", "auth-svc-bk7vd", "metrics-relay-jp4tx"}
+            pods := []string{
+                "checkout-api-xq2bn",
+                "ledger-worker-h2k9p",
+                "edge-proxy-rm3qw",
+                "auth-svc-bk7vd",
+                "metrics-relay-jp4tx",
+            }
             first2 := pods[:2]
             fmt.Println(first2) // [checkout-api-xq2bn ledger-worker-h2k9p]
         - id: v0b
@@ -125,7 +131,13 @@ variants:
             - "The middle index of a slice with 5 elements is 2 (indices go 0,1,2,3,4)."
             - "Use <code>len(nodePools)/2</code> to compute the middle index."
           solution: |-
-            nodePools := []string{"pool-prod-001", "pool-prod-002", "pool-prod-003", "pool-spot-014", "pool-gpu-007"}
+            nodePools := []string{
+                "pool-prod-001",
+                "pool-prod-002",
+                "pool-prod-003",
+                "pool-spot-014",
+                "pool-gpu-007",
+            }
             mid := nodePools[len(nodePools)/2]
             fmt.Println(mid) // pool-prod-003
         - id: v1
@@ -137,24 +149,32 @@ variants:
             - How do you get elements from the end of a slice when Go doesn't support negative indexing?
             - "Think about using <code>len(s)</code> to calculate the starting position of your slice expression."
           solution: |-
-            pods := []string{"checkout-api-xq2bn", "ledger-worker-h2k9p", "edge-proxy-rm3qw", "auth-svc-bk7vd", "metrics-relay-jp4tx"}
+            pods := []string{
+                "checkout-api-xq2bn",
+                "ledger-worker-h2k9p",
+                "edge-proxy-rm3qw",
+                "auth-svc-bk7vd",
+                "metrics-relay-jp4tx",
+            }
             last3 := pods[len(pods)-3:]
             fmt.Println(last3) // [edge-proxy-rm3qw auth-svc-bk7vd metrics-relay-jp4tx]
         - id: v4
           title: Build a Pool List from Scratch
           description: >-
             Start with an empty slice. Append the strings <code>"pool-prod-001"</code> through
-            <code>"pool-prod-005"</code> using a loop. Then print the length, capacity, and contents.
-          expected: "len=5 cap=8 [pool-prod-001 pool-prod-002 pool-prod-003 pool-prod-004 pool-prod-005]"
+            <code>"pool-prod-005"</code> using a loop. Use <code>fmt.Sprintf("pool-prod-%03d", i)</code> to build
+            each name, then print the length and contents.
+          expected: "len=5 [pool-prod-001 pool-prod-002 pool-prod-003 pool-prod-004 pool-prod-005]"
           hints:
-            - Start with a nil slice and grow it inside a counting loop. You need to build each name dynamically from the loop index.
-            - "Check the lesson's Building Strings section for how to combine a string with a number. Use <code>len</code> and <code>cap</code> to inspect the slice afterwards. The <code>%03d</code> verb zero-pads to 3 digits."
+            - "Start with a nil slice and grow it inside a counting loop."
+            - "The name expression is provided; the slice move to drill is <code>pools = append(pools, name)</code>."
           solution: |-
             var pools []string
             for i := 1; i <= 5; i++ {
-                pools = append(pools, fmt.Sprintf("pool-prod-%03d", i))
+                name := fmt.Sprintf("pool-prod-%03d", i)
+                pools = append(pools, name)
             }
-            fmt.Printf("len=%d cap=%d %v\n", len(pools), cap(pools), pools)
+            fmt.Printf("len=%d %v\n", len(pools), pools)
         - id: v5
           title: Append a Severity
           description: >-
@@ -346,7 +366,11 @@ variants:
             - "Go has a built-in function specifically for removing map keys."
             - "The function is called <code>delete</code>. It takes two arguments: the map and the key to remove."
           solution: |-
-            config := map[string]string{"host": "localhost", "port": "5432", "debug": "true"}
+            config := map[string]string{
+                "host": "localhost",
+                "port": "5432",
+                "debug": "true",
+            }
             delete(config, "debug")
             fmt.Println(config) // map[host:localhost port:5432]
         - id: v6
@@ -567,7 +591,11 @@ variants:
             sort.Slice(latencies, func(i, j int) bool {
                 return latencies[i] > latencies[j]
             })
-            top3 := latencies[:3]
+            n := 3
+            if len(latencies) < n {
+                n = len(latencies)
+            }
+            top3 := latencies[:n]
             fmt.Println(top3) // [891 567 445]
     - id: warmup_7
       concept: Line Parsing
@@ -650,7 +678,14 @@ variants:
             - "Two patterns back to back: counting with a map, then sorted-keys iteration."
             - "After counting, collect keys into a slice, <code>sort.Strings</code>, then loop the sorted keys to print."
           solution: |-
-            statuses := []string{"Running", "Failed", "Running", "Pending", "Running", "Failed"}
+            statuses := []string{
+                "Running",
+                "Failed",
+                "Running",
+                "Pending",
+                "Running",
+                "Failed",
+            }
             counts := make(map[string]int)
             for _, s := range statuses {
                 counts[s]++
@@ -667,16 +702,21 @@ variants:
           title: Most Common Log Level
           description: >-
             Given log lines <code>["INFO request started", "ERROR timeout", "INFO done", "ERROR OOM", "WARN
-            slow"]</code>, parse the first word of each line as the level, count occurrences, and print the most
-            common level and its count. Format: <code>"INFO: 2"</code>.
-          expected: |-
-            INFO: 2
-            (INFO and ERROR are tied — either may appear)
+            slow", "ERROR disk full"]</code>, parse the first word of each line as the level, count occurrences,
+            and print the most common level and its count. Format: <code>"ERROR: 3"</code>.
+          expected: "ERROR: 3"
           hints:
             - "Parse each line with <code>strings.Fields</code> to get the first word. Count with a map."
             - "After counting, loop the map to find the key with the highest value — track both the max count and its key."
           solution: |-
-            lines := []string{"INFO request started", "ERROR timeout", "INFO done", "ERROR OOM", "WARN slow"}
+            lines := []string{
+                "INFO request started",
+                "ERROR timeout",
+                "INFO done",
+                "ERROR OOM",
+                "WARN slow",
+                "ERROR disk full",
+            }
             counts := make(map[string]int)
             for _, line := range lines {
                 fields := strings.Fields(line)
@@ -706,7 +746,14 @@ variants:
             - "Combine <code>SplitN</code> parsing with map grouping: <code>map[string][]string</code>."
             - "After grouping, use the sorted-keys pattern to print in deterministic order."
           solution: |-
-            lines := []string{"host=web-1", "env=prod", "host=web-2", "env=staging", "host=db-1", "env=prod"}
+            lines := []string{
+                "host=web-1",
+                "env=prod",
+                "host=web-2",
+                "env=staging",
+                "host=db-1",
+                "env=prod",
+            }
             groups := make(map[string][]string)
             for _, line := range lines {
                 parts := strings.SplitN(line, "=", 2)
@@ -943,93 +990,63 @@ variants:
                 This is the actual format Prometheus uses for metric labels. Tools like <code>promtool</code> parse this
                 exact syntax.
         - id: v2
-          title: Parse Full Metric Line
+          title: Parse Simple Metric Sample
           description: >-
-            Write <code>func parseMetric(line string) (string, map[string]string, float64, error)</code> that parses a
-            full Prometheus metric line like <code>http_requests_total{method="GET",status="200"} 1027</code> and
-            returns the metric name, labels map, value, and any error.<br><br>Handle metrics with no labels too:
-            <code>up 1</code> → name="up", empty labels, value=1.
-          functionSignature: func parseMetric(line string) (string, map[string]string, float64, error)
+            Write <code>func parseMetric(line string) (string, float64, error)</code> that parses a simple metric sample
+            in the format <code>"name value"</code>. Example: <code>"up 1"</code> returns name=<code>"up"</code>,
+            value=<code>1</code>, and nil error. Return an error if the line does not have exactly two fields or if
+            the value is not a number.
+          functionSignature: func parseMetric(line string) (string, float64, error)
           difficulty: 2
           testCases:
-            - input: parseMetric("http_requests{method=\"GET\"} 42")
-              output: "\"http_requests\", map[method:GET], 42.0, nil"
             - input: parseMetric("up 1")
-              output: "\"up\", map[], 1.0, nil"
+              output: "\"up\", 1.0, nil"
+            - input: parseMetric("http_requests_total 42")
+              output: "\"http_requests_total\", 42.0, nil"
           hints:
             - title: Think about it
               content: >-
-                There are two formats: with labels (<code>name{labels} value</code>) and without (<code>name
-                value</code>). How can you tell which format a line is? Handle them separately.
+                Split the line into fields first. The first field is the metric name; the second field is the numeric value.
             - title: Hint
               content: >-
-                For the labeled format, find the braces to identify three sections: the name (before <code>{</code>), the
-                labels (between the braces), and the value (after <code>}</code>). You can reuse your label parser from
-                the easier variant.
+                Use <code>strings.Fields</code>, check <code>len(fields) == 2</code>, then parse
+                <code>fields[1]</code> with <code>strconv.ParseFloat</code>.
           solution: |-
-            func parseMetric(line string) (string, map[string]string, float64, error) {
-                labels := make(map[string]string)
-                if strings.Contains(line, "{") {
-                    nameEnd := strings.Index(line, "{")
-                    name := line[:nameEnd]
-                    labelsEnd := strings.Index(line, "}")
-                    labelStr := line[nameEnd+1 : labelsEnd]
-                    if labelStr != "" {
-                        pairs := strings.Split(labelStr, ",")
-                        for _, pair := range pairs {
-                            parts := strings.SplitN(pair, "=", 2)
-                            if len(parts) == 2 {
-                                labels[parts[0]] = strings.Trim(parts[1], "\"")
-                            }
-                        }
-                    }
-                    valStr := strings.TrimSpace(line[labelsEnd+1:])
-                    val, err := strconv.ParseFloat(valStr, 64)
-                    if err != nil {
-                        return "", nil, 0, err
-                    }
-                    return name, labels, val, nil
-                }
+            func parseMetric(line string) (string, float64, error) {
                 parts := strings.Fields(line)
                 if len(parts) != 2 {
-                    return "", nil, 0, fmt.Errorf("invalid metric line: %s", line)
+                    return "", 0, fmt.Errorf("invalid metric line: %s", line)
                 }
                 val, err := strconv.ParseFloat(parts[1], 64)
                 if err != nil {
-                    return "", nil, 0, err
+                    return "", 0, err
                 }
-                return parts[0], labels, val, nil
+                return parts[0], val, nil
             }
           annotations:
-            - type: complexity
-              label: String Scanning
-              text: >-
-                This solution scans the string multiple times with Index calls. For a real metrics parser handling
-                millions of lines, you'd use a single-pass scanner. For now, clarity wins over performance.
             - type: interview
               label: String Parsing
               text: >-
-                Parsing structured text is a very common interview question. The key skill is breaking it into clear
-                steps: find boundaries, extract parts, parse values.
+                This is the smallest useful metric parser: split, validate shape, parse the number. Labels can come later.
         - id: v3
           title: Aggregate Metrics by Name
           description: >-
-            Write <code>func aggregateMetrics(lines []string) map[string]float64</code> that parses multiple Prometheus
-            metric lines and sums values by metric name (ignoring labels).
+            Write <code>func aggregateMetrics(lines []string) map[string]float64</code> that parses simple metric lines
+            in the format <code>"name value"</code> and sums values by metric name. Skip blank lines, comments, and
+            malformed samples.
           functionSignature: func aggregateMetrics(lines []string) map[string]float64
           difficulty: 3
           testCases:
-            - input: aggregateMetrics([]string{"req{m=\"GET\"} 10", "req{m=\"POST\"} 5", "up 1"})
+            - input: aggregateMetrics([]string{"req 10", "req 5", "up 1"})
               output: map[req:15 up:1]
           hints:
             - title: Think about it
               content: >-
-                You already have a metric parser. Now you need to loop through lines, parse each one, and accumulate
-                values. What map type stores running totals by name?
+                This is the same shape as counting with a map, except the value you add is a parsed float instead of 1.
             - title: Hint
               content: >-
-                Reuse your metric parser from the previous variant. Skip lines that fail to parse or that are comments.
-                The accumulation pattern is the same as counting, but with addition instead of increment.
+                Keep this function self-contained: trim the line, skip blanks/comments, split with
+                <code>strings.Fields</code>, parse the second field, then add it to <code>totals[name]</code>.
           solution: |-
             func aggregateMetrics(lines []string) map[string]float64 {
                 totals := make(map[string]float64)
@@ -1038,11 +1055,15 @@ variants:
                     if line == "" || strings.HasPrefix(line, "#") {
                         continue
                     }
-                    name, _, val, err := parseMetric(line)
+                    parts := strings.Fields(line)
+                    if len(parts) != 2 {
+                        continue
+                    }
+                    val, err := strconv.ParseFloat(parts[1], 64)
                     if err != nil {
                         continue
                     }
-                    totals[name] += val
+                    totals[parts[0]] += val
                 }
                 return totals
             }
@@ -1274,29 +1295,30 @@ variants:
                 Dockerfiles (current stage), Terraform configs (current block), and K8s multi-doc YAML (current
                 document).
         - id: v3
-          title: INI with Environment Variable Expansion
+          title: INI Section Key Counts
           description: >-
-            Write <code>func parseINIExpand(content string, env map[string]string) map[string]map[string]string</code>
-            that parses an INI file like above, but also expands <code>${VAR}</code> references in values using the
-            provided env map. Unknown variables become empty strings.
-          functionSignature: func parseINIExpand(content string, env map[string]string) map[string]map[string]string
+            Write <code>func sectionKeyCounts(content string) map[string]int</code> that parses a simple INI file and
+            returns how many key-value pairs appear under each section. Lines before any section go under
+            <code>"default"</code>. Skip comments and empty lines.
+          functionSignature: func sectionKeyCounts(content string) map[string]int
           difficulty: 3
           testCases:
-            - input: "parseINIExpand(\"[db]\\nhost=${DB_HOST}\\nport=5432\", map[string]string{\"DB_HOST\": \"prod-db\"})"
-              output: map[db:map[host:prod-db port:5432]]
+            - input: sectionKeyCounts("[db]\nhost=ledger-postgres\nport=5432\n[server]\naddr=:8080")
+              output: map[db:2 server:1]
+            - input: sectionKeyCounts("debug=true\n[db]\nhost=localhost\n# ignored")
+              output: map[default:1 db:1]
           hints:
             - title: Think about it
               content: >-
-                Build on your INI parser. After extracting each value, you need to find <code>${...}</code> patterns and
-                replace them with lookups from the env map.
+                This is a state-tracking parser. Keep a <code>currentSection</code> variable. When you see a section
+                header, update it. When you see a valid key-value line, increment that section's count.
             - title: Hint
               content: >-
-                Go's stdlib has a function in the <code>os</code> package that does variable expansion with a custom
-                lookup function. Check <code>go doc os.Expand</code> — it handles both <code>${VAR}</code> and
-                <code>$VAR</code> syntax.
+                You do not need a nested map here. A <code>map[string]int</code> is enough because the result only asks
+                for counts per section.
           solution: |-
-            func parseINIExpand(content string, env map[string]string) map[string]map[string]string {
-                result := make(map[string]map[string]string)
+            func sectionKeyCounts(content string) map[string]int {
+                counts := make(map[string]int)
                 currentSection := "default"
                 lines := strings.Split(content, "\n")
                 for _, line := range lines {
@@ -1312,24 +1334,16 @@ variants:
                     if len(parts) != 2 {
                         continue
                     }
-                    key := strings.TrimSpace(parts[0])
-                    val := strings.TrimSpace(parts[1])
-                    val = os.Expand(val, func(k string) string {
-                        return env[k]
-                    })
-                    if result[currentSection] == nil {
-                        result[currentSection] = make(map[string]string)
-                    }
-                    result[currentSection][key] = val
+                    counts[currentSection]++
                 }
-                return result
+                return counts
             }
           annotations:
-            - type: stdlib
-              label: os.Expand
+            - type: pattern
+              label: State + Count
               text: >-
-                Go's <code>os.Expand</code> handles <code>${VAR}</code> and <code>$VAR</code> expansion with a custom
-                mapping function. Much cleaner than regex. Used internally by Docker and other tools.
+                This keeps the same section-tracking shape as the INI parser, but swaps nested storage for a simple
+                counter. Same parser skeleton, smaller result.
     - id: challenge_5
       block: 5
       difficulty: 2
@@ -2182,7 +2196,7 @@ variants:
             }
             fmt.Println(count) // 3
     - id: scaffold_range
-      concept: "Slice Operations"
+      concept: "Range Gotchas"
       variants:
         - id: v1
           type: trace
@@ -2290,9 +2304,9 @@ variants:
             }
             fmt.Printf("_____\n", val) // 3.14</pre>
           solution: |-
-            strconv.ParseFloat(s, 64)
+            ParseFloat
             // and
-            fmt.Printf("%.2f\n", val)
+            %.2f
         - id: v4
           type: produce
           title: "Compute an Average"
@@ -2442,7 +2456,7 @@ variants:
           solution: |-
             counts[p]++
             // and
-            if n > 1 {
+            n > 1
         - id: v4
           type: produce
           title: "Top Error from Logs"
@@ -2450,7 +2464,14 @@ variants:
             Given <code>logs := []string{"disk full", "timeout", "disk full", "oom", "timeout", "disk full"}</code>, count each error, find the most frequent one, and print it as <code>"disk full (3)"</code>.
           hints: ["Count with a map, then loop the map to find the max. Track the winning key and count."]
           solution: |-
-            logs := []string{"disk full", "timeout", "disk full", "oom", "timeout", "disk full"}
+            logs := []string{
+                "disk full",
+                "timeout",
+                "disk full",
+                "oom",
+                "timeout",
+                "disk full",
+            }
             counts := make(map[string]int)
             for _, e := range logs {
                 counts[e]++
