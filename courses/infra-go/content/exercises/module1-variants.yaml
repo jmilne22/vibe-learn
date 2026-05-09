@@ -58,15 +58,36 @@ variants:
             // Range locked the iteration count to 3 at loop start.
         - id: v3
           title: Mutating Without the Index
-          description: >-
-            Given a slice of <code>Pod</code> structs each with a <code>Status</code> field, try to mark every pod as
-            <code>"Healthy"</code> using <code>for _, p := range pods</code>. Confirm it does nothing, then fix it.
+          description: |-
+            Use this starter code. The <code>type Pod struct</code> line defines the data shape; for this drill, focus on
+            what the two loops do to the slice.
+
+            <pre><code>type Pod struct {
+                Name   string
+                Status string
+            }
+
+            pods := []Pod{
+                {Name: "web-1", Status: "Pending"},
+                {Name: "web-2", Status: "Pending"},
+            }</code></pre>
+
+            First try to mark every pod as <code>"Healthy"</code> using <code>for _, p := range pods</code>. Print
+            <code>pods[0].Status</code> to confirm it did not change, then fix the loop.
           hints:
-            - "<code>p</code> is a copy of the struct. Writing to <code>p.Status</code> writes to the copy."
+            - "You do not need to know structs yet: <code>p.Status</code> means the <code>Status</code> field on this pod value."
+            - "<code>p</code> is a copy of the pod value. Writing to <code>p.Status</code> writes to the copy."
             - "Use the index form: <code>for i := range pods</code>, then <code>pods[i].Status = \"Healthy\"</code>."
           solution: |-
-            type Pod struct{ Name, Status string }
-            pods := []Pod{{"web-1", "Pending"}, {"web-2", "Pending"}}
+            type Pod struct {
+                Name   string
+                Status string
+            }
+
+            pods := []Pod{
+                {Name: "web-1", Status: "Pending"},
+                {Name: "web-2", Status: "Pending"},
+            }
 
             // Doesn't work
             for _, p := range pods {
