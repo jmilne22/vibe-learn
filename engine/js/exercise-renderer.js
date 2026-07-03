@@ -159,6 +159,91 @@
         });
     });
 
+    // --- Calibration tracking for test-backed exercises -------------------
+    // Before running go test the learner predicts pass/fail; afterwards they
+    // record the real outcome. Comparing predictions to outcomes over time
+    // gives feedback on judgment accuracy, not just performance.
+    function calibStorageKey() {
+        return window.CourseConfigHelper ? window.CourseConfigHelper.storageKey('calibration') : 'go-course-calibration';
+    }
+
+    function loadCalibration() {
+        try {
+            return JSON.parse(localStorage.getItem(calibStorageKey()) || '[]');
+        } catch {
+            return [];
+        }
+    }
+
+    function saveCalibration(entries) {
+        try {
+            localStorage.setItem(calibStorageKey(), JSON.stringify(entries));
+        } catch { /* ignore */ }
+    }
+
+    function calibrationStatsHTML(entries) {
+        var stats = { confident: { pass: 0, total: 0 }, unsure: { pass: 0, total: 0 } };
+        entries.forEach(function(e) {
+            var bucket = stats[e.prediction];
+            if (!e.result || !bucket) return;
+            bucket.total++;
+            if (e.result === 'pass') bucket.pass++;
+        });
+        if (stats.confident.total + stats.unsure.total === 0) return '';
+        var parts = [];
+        if (stats.confident.total) parts.push(`when confident: ${stats.confident.pass}/${stats.confident.total} pass`);
+        if (stats.unsure.total) parts.push(`when unsure: ${stats.unsure.pass}/${stats.unsure.total} pass`);
+        return `<span class="calibration-stats">Your calibration — ${parts.join(' · ')}</span>`;
+    }
+
+    function renderCalibrationByKey(exerciseKey) {
+        var entries = loadCalibration();
+        var pending = null;
+        for (var i = entries.length - 1; i >= 0; i--) {
+            if (entries[i].key === exerciseKey && !entries[i].result) { pending = entries[i]; break; }
+        }
+        var html = `<div class="calibration" data-exercise-key="${escapeHtml(exerciseKey)}">`;
+        if (!pending) {
+            html += `<span class="calibration-q">Before you run it — will your code pass <code>go test</code>?</span>
+                <button type="button" class="calibration-btn" data-calib="predict" data-prediction="confident">I think it'll pass</button>
+                <button type="button" class="calibration-btn" data-calib="predict" data-prediction="unsure">Not sure</button>`;
+        } else {
+            html += `<span class="calibration-q">You predicted <strong>${pending.prediction === 'confident' ? 'pass' : 'not sure'}</strong> — what did <code>go test</code> say?</span>
+                <button type="button" class="calibration-btn" data-calib="result" data-result="pass">Passed</button>
+                <button type="button" class="calibration-btn" data-calib="result" data-result="fail">Failed</button>`;
+        }
+        html += calibrationStatsHTML(entries);
+        html += '</div>';
+        return html;
+    }
+
+    function renderCalibration(variant, exerciseKey) {
+        if (!variant.practiceDir || !exerciseKey) return '';
+        return renderCalibrationByKey(exerciseKey);
+    }
+
+    // Delegated: calibration blocks are re-rendered with their card on
+    // shuffle/easier/harder, so per-block listeners would be lost.
+    document.addEventListener('click', function (e) {
+        var btn = e.target && e.target.closest ? e.target.closest('.calibration-btn') : null;
+        if (!btn) return;
+        var block = btn.closest('.calibration');
+        var key = block.getAttribute('data-exercise-key');
+        var entries = loadCalibration();
+        if (btn.getAttribute('data-calib') === 'predict') {
+            entries.push({ key: key, prediction: btn.getAttribute('data-prediction'), result: null, ts: Date.now() });
+        } else {
+            for (var i = entries.length - 1; i >= 0; i--) {
+                if (entries[i].key === key && !entries[i].result) {
+                    entries[i].result = btn.getAttribute('data-result');
+                    break;
+                }
+            }
+        }
+        saveCalibration(entries);
+        block.outerHTML = renderCalibrationByKey(key);
+    });
+
     // Render expected output / test cases
     function renderExpected(variant) {
         if (variant.testCases) {
@@ -274,6 +359,7 @@
             html += `<div class="exercise-description">${variant.description}</div>`;
             html += renderFunctionSignature(variant);
             html += renderWorkspacePath(variant);
+            html += renderCalibration(variant, exerciseKey);
             html += renderExpected(variant);
             html += renderHints(variant.hints);
             if (challenge && challenge.docLinks) html += renderDocLinks(challenge.docLinks);
@@ -297,6 +383,7 @@
             html += `<div class="exercise-description exercise-prompt">${variant.description}</div>`;
             html += renderFunctionSignature(variant);
             html += renderWorkspacePath(variant);
+            html += renderCalibration(variant, exerciseKey);
             html += renderExpected(variant);
             html += renderHints(variant.hints);
             if (challenge && challenge.docLinks) html += renderDocLinks(challenge.docLinks);

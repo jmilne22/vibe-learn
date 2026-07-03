@@ -1385,6 +1385,87 @@ pre::-webkit-scrollbar-thumb:hover {
     color: var(--text-secondary);
 }
 
+/* Calibration widget (test-backed exercises) */
+.calibration {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin: var(--space-3) 0;
+    padding: var(--space-2) var(--space-3);
+    border: 1px dashed rgba(224, 151, 106, 0.35);
+    border-radius: var(--radius-md);
+    font-size: 0.85rem;
+}
+
+.calibration-q {
+    color: var(--text-secondary);
+}
+
+.calibration-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    padding: 3px 10px;
+    border: 1px solid rgba(224, 151, 106, 0.35);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.calibration-btn:hover {
+    background: rgba(224, 151, 106, 0.12);
+}
+
+.calibration-stats {
+    flex-basis: 100%;
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+}
+
+/* Self-explanation prompt (gates the rating) */
+.self-explain {
+    margin: var(--space-4) 0 var(--space-2);
+}
+
+.self-explain-label {
+    display: block;
+    font-weight: 600;
+    font-size: 0.88rem;
+    margin-bottom: var(--space-2);
+}
+
+.self-explain-input {
+    width: 100%;
+    resize: vertical;
+    padding: var(--space-2) var(--space-3);
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+    border: 1px solid rgba(224, 151, 106, 0.25);
+    border-radius: var(--radius-md);
+    font-family: inherit;
+    font-size: 0.9rem;
+}
+
+.self-explain-skip {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    cursor: pointer;
+    padding: 2px 0;
+    text-decoration: underline;
+}
+
+.self-explain-skipped .self-explain-skip {
+    visibility: hidden;
+}
+
+.self-rating.rating-locked .rating-btn {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
 /* Test cases */
 .expected {
     margin-top: var(--space-5);
