@@ -153,6 +153,54 @@ variants:
               content: >-
                 Split the line with strings.Fields. Lock mu for writes (SET), RLock for reads (GET). Use bufio.Scanner
                 to read lines.
+          testGo: |-
+            func startKVConn(t *testing.T) (net.Conn, *bufio.Reader) {
+                t.Helper()
+                client, server := net.Pipe()
+                store := make(map[string]string)
+                var mu sync.RWMutex
+                go handleKVConn(server, store, &mu)
+                t.Cleanup(func() { client.Close() })
+                client.SetDeadline(time.Now().Add(3 * time.Second))
+                return client, bufio.NewReader(client)
+            }
+
+            func sendLine(t *testing.T, conn net.Conn, r *bufio.Reader, cmd string) string {
+                t.Helper()
+                if _, err := fmt.Fprintln(conn, cmd); err != nil {
+                    t.Fatalf("write %q: %v", cmd, err)
+                }
+                line, err := r.ReadString('\n')
+                if err != nil {
+                    t.Fatalf("read reply to %q: %v", cmd, err)
+                }
+                return strings.TrimSpace(line)
+            }
+
+            func TestKVSetGet(t *testing.T) {
+                conn, r := startKVConn(t)
+                if got := sendLine(t, conn, r, "SET name redis"); got != "OK" {
+                    t.Errorf("SET reply = %q, want OK", got)
+                }
+                if got := sendLine(t, conn, r, "GET name"); got != "redis" {
+                    t.Errorf("GET reply = %q, want redis", got)
+                }
+            }
+
+            func TestKVMissingKey(t *testing.T) {
+                conn, r := startKVConn(t)
+                if got := sendLine(t, conn, r, "GET nope"); got != "NOT FOUND" {
+                    t.Errorf("GET missing reply = %q, want NOT FOUND", got)
+                }
+            }
+
+            func TestKVMultiWordValue(t *testing.T) {
+                conn, r := startKVConn(t)
+                sendLine(t, conn, r, "SET greeting hello world")
+                if got := sendLine(t, conn, r, "GET greeting"); got != "hello world" {
+                    t.Errorf("GET reply = %q, want %q", got, "hello world")
+                }
+            }
           solution: |-
             func handleKVConn(conn net.Conn, store map[string]string, mu *sync.RWMutex) {
                 defer conn.Close()
@@ -216,6 +264,63 @@ variants:
               content: >-
                 Keep a map[net.Conn]string (conn → name). Mutex-protect add/remove. Broadcast by iterating the map and
                 writing to each conn. If write fails, remove that client.
+          testGo: |-
+            func freePort(t *testing.T) string {
+                t.Helper()
+                ln, err := net.Listen("tcp", "127.0.0.1:0")
+                if err != nil {
+                    t.Fatal(err)
+                }
+                addr := ln.Addr().String()
+                ln.Close()
+                return addr
+            }
+
+            func dialWithRetry(t *testing.T, addr string) net.Conn {
+                t.Helper()
+                deadline := time.Now().Add(2 * time.Second)
+                for time.Now().Before(deadline) {
+                    conn, err := net.Dial("tcp", addr)
+                    if err == nil {
+                        return conn
+                    }
+                    time.Sleep(20 * time.Millisecond)
+                }
+                t.Fatalf("could not connect to chat server at %s", addr)
+                return nil
+            }
+
+            func TestChatBroadcast(t *testing.T) {
+                addr := freePort(t)
+                go runChatServer(addr)
+
+                clientA := dialWithRetry(t, addr)
+                defer clientA.Close()
+                clientB := dialWithRetry(t, addr)
+                defer clientB.Close()
+
+                // Give the server a moment to register both clients.
+                time.Sleep(200 * time.Millisecond)
+
+                if _, err := fmt.Fprintln(clientA, "hello"); err != nil {
+                    t.Fatalf("send: %v", err)
+                }
+
+                clientB.SetReadDeadline(time.Now().Add(3 * time.Second))
+                line, err := bufio.NewReader(clientB).ReadString('\n')
+                if err != nil {
+                    t.Fatalf("client B never received the broadcast: %v", err)
+                }
+                if !strings.Contains(line, "hello") {
+                    t.Errorf("client B got %q, want a line containing the message", line)
+                }
+
+                // The sender must NOT receive its own message.
+                clientA.SetReadDeadline(time.Now().Add(300 * time.Millisecond))
+                if echoed, err := bufio.NewReader(clientA).ReadString('\n'); err == nil {
+                    t.Errorf("client A received its own message back: %q", echoed)
+                }
+            }
           solution: |-
             type ChatServer struct {
                 mu      sync.Mutex
@@ -294,6 +399,128 @@ variants:
               content: >-
                 Pool struct has <code>conns chan net.Conn</code> and <code>closed bool</code>. Pre-fill with Dial. Get
                 reads from channel, Put writes back. Close drains and closes all conns.
+          stubGo: |-
+            type ConnPool struct {
+                conns  chan net.Conn
+                addr   string
+                mu     sync.Mutex
+                closed bool
+            }
+
+            func NewConnPool(addr string, size int) (*ConnPool, error) {
+                panic("implement me")
+            }
+
+            func (p *ConnPool) Get() (net.Conn, error) {
+                panic("implement me")
+            }
+
+            func (p *ConnPool) Put(conn net.Conn) {
+                panic("implement me")
+            }
+
+            func (p *ConnPool) Close() {
+                panic("implement me")
+            }
+          testGo: |-
+            func startEchoListener(t *testing.T) string {
+                t.Helper()
+                ln, err := net.Listen("tcp", "127.0.0.1:0")
+                if err != nil {
+                    t.Fatal(err)
+                }
+                t.Cleanup(func() { ln.Close() })
+                go func() {
+                    for {
+                        conn, err := ln.Accept()
+                        if err != nil {
+                            return
+                        }
+                        go func(c net.Conn) {
+                            buf := make([]byte, 1024)
+                            for {
+                                if _, err := c.Read(buf); err != nil {
+                                    c.Close()
+                                    return
+                                }
+                            }
+                        }(conn)
+                    }
+                }()
+                return ln.Addr().String()
+            }
+
+            func TestPoolGetAndPut(t *testing.T) {
+                addr := startEchoListener(t)
+                pool, err := NewConnPool(addr, 2)
+                if err != nil {
+                    t.Fatalf("NewConnPool: %v", err)
+                }
+                defer pool.Close()
+
+                c1, err := pool.Get()
+                if err != nil || c1 == nil {
+                    t.Fatalf("Get 1: (%v, %v)", c1, err)
+                }
+                c2, err := pool.Get()
+                if err != nil || c2 == nil {
+                    t.Fatalf("Get 2: (%v, %v)", c2, err)
+                }
+
+                pool.Put(c1)
+                c3, err := pool.Get()
+                if err != nil || c3 == nil {
+                    t.Fatalf("Get after Put: (%v, %v) — returned connections must be reusable", c3, err)
+                }
+            }
+
+            func TestPoolGetBlocksWhenEmpty(t *testing.T) {
+                addr := startEchoListener(t)
+                pool, err := NewConnPool(addr, 1)
+                if err != nil {
+                    t.Fatalf("NewConnPool: %v", err)
+                }
+                defer pool.Close()
+
+                held, err := pool.Get()
+                if err != nil {
+                    t.Fatalf("Get: %v", err)
+                }
+
+                got := make(chan net.Conn, 1)
+                go func() {
+                    c, _ := pool.Get()
+                    got <- c
+                }()
+
+                select {
+                case <-got:
+                    t.Fatal("second Get returned from an empty pool — it must block until Put")
+                case <-time.After(200 * time.Millisecond):
+                }
+
+                pool.Put(held)
+                select {
+                case c := <-got:
+                    if c == nil {
+                        t.Error("blocked Get returned nil after Put")
+                    }
+                case <-time.After(2 * time.Second):
+                    t.Fatal("blocked Get never woke up after Put")
+                }
+            }
+
+            func TestPoolClose(t *testing.T) {
+                addr := startEchoListener(t)
+                pool, err := NewConnPool(addr, 2)
+                if err != nil {
+                    t.Fatalf("NewConnPool: %v", err)
+                }
+                pool.Close()
+                if _, err := pool.Get(); err == nil {
+                    t.Error("Get on a closed pool must return an error")
+                }
+            }
           solution: |-
             type ConnPool struct {
                 conns  chan net.Conn
@@ -379,6 +606,39 @@ variants:
               content: >-
                 Loop: read length byte. If 0, break. Read that many bytes as a label. Advance offset. Join labels with
                 dots.
+          testGo: |-
+            func TestDecodeDomain(t *testing.T) {
+                data := []byte{7, 'e', 'x', 'a', 'm', 'p', 'l', 'e', 3, 'c', 'o', 'm', 0}
+                domain, offset := decodeDomain(data, 0)
+                if domain != "example.com" {
+                    t.Errorf("domain = %q, want example.com", domain)
+                }
+                if offset != 13 {
+                    t.Errorf("offset = %d, want 13 (must consume the null terminator)", offset)
+                }
+            }
+
+            func TestDecodeDomainAtOffset(t *testing.T) {
+                prefix := []byte{0xAA, 0xBB, 0xCC}
+                name := []byte{3, 'a', 'p', 'i', 5, 'l', 'o', 'c', 'a', 'l', 0}
+                data := append(prefix, name...)
+
+                domain, offset := decodeDomain(data, 3)
+                if domain != "api.local" {
+                    t.Errorf("domain = %q, want api.local", domain)
+                }
+                if offset != 3+11 {
+                    t.Errorf("offset = %d, want %d", offset, 3+11)
+                }
+            }
+
+            func TestDecodeDomainSingleLabel(t *testing.T) {
+                data := []byte{9, 'l', 'o', 'c', 'a', 'l', 'h', 'o', 's', 't', 0}
+                domain, _ := decodeDomain(data, 0)
+                if domain != "localhost" {
+                    t.Errorf("domain = %q, want localhost (no trailing dot)", domain)
+                }
+            }
           solution: |-
             func decodeDomain(data []byte, offset int) (string, int) {
                 var labels []string
@@ -419,6 +679,64 @@ variants:
                 Question ends after the null-terminated domain name + 4 bytes (QTYPE + QCLASS). Use 0xC00C as a pointer
                 to the name at offset 12. Answer: pointer + type A (0x0001) + class IN (0x0001) + TTL (4 bytes) + length
                 4 + IP.
+          testGo: |-
+            func buildTestQuery(id uint16, labels ...string) []byte {
+                header := make([]byte, 12)
+                binary.BigEndian.PutUint16(header[0:2], id)
+                binary.BigEndian.PutUint16(header[2:4], 0x0100)
+                binary.BigEndian.PutUint16(header[4:6], 1)
+
+                query := header
+                for _, label := range labels {
+                    query = append(query, byte(len(label)))
+                    query = append(query, label...)
+                }
+                query = append(query, 0)    // end of name
+                query = append(query, 0, 1) // QTYPE A
+                query = append(query, 0, 1) // QCLASS IN
+                return query
+            }
+
+            func TestBuildAResponse(t *testing.T) {
+                query := buildTestQuery(0xAABB, "example", "com")
+                ip := net.ParseIP("93.184.216.34")
+
+                resp := buildAResponse(query, ip)
+
+                if got := binary.BigEndian.Uint16(resp[0:2]); got != 0xAABB {
+                    t.Errorf("response ID = %#x, want 0xAABB (copy the query ID)", got)
+                }
+                if got := binary.BigEndian.Uint16(resp[2:4]); got != 0x8180 {
+                    t.Errorf("flags = %#x, want 0x8180", got)
+                }
+                if got := binary.BigEndian.Uint16(resp[6:8]); got != 1 {
+                    t.Errorf("ANCOUNT = %d, want 1", got)
+                }
+
+                questionEnd := 12 + 13 + 4 // header + [7]example[3]com[0] + QTYPE/QCLASS
+                if !bytes.Equal(resp[12:questionEnd], query[12:questionEnd]) {
+                    t.Error("question section must be copied verbatim from the query")
+                }
+                if resp[questionEnd] != 0xC0 || resp[questionEnd+1] != 0x0C {
+                    t.Errorf("answer name = %#x %#x, want the 0xC00C pointer", resp[questionEnd], resp[questionEnd+1])
+                }
+                gotIP := net.IP(resp[len(resp)-4:])
+                if !gotIP.Equal(net.ParseIP("93.184.216.34")) {
+                    t.Errorf("answer IP = %v, want 93.184.216.34", gotIP)
+                }
+            }
+
+            func TestBuildAResponseDifferentQuery(t *testing.T) {
+                query := buildTestQuery(0x1234, "api", "local")
+                resp := buildAResponse(query, net.ParseIP("10.0.0.2"))
+                if got := binary.BigEndian.Uint16(resp[0:2]); got != 0x1234 {
+                    t.Errorf("response ID = %#x, want 0x1234", got)
+                }
+                gotIP := net.IP(resp[len(resp)-4:])
+                if !gotIP.Equal(net.ParseIP("10.0.0.2")) {
+                    t.Errorf("answer IP = %v, want 10.0.0.2", gotIP)
+                }
+            }
           solution: |-
             func buildAResponse(query []byte, ip net.IP) []byte {
                 id := binary.BigEndian.Uint16(query[0:2])
@@ -483,6 +801,81 @@ variants:
                 Build header (random ID, flags 0x0100, 1 question). Encode domain name. Append QTYPE=1 (A), QCLASS=1
                 (IN). Send via UDP with 3s deadline. Parse response: skip to answer section, read the last 4 bytes as
                 the IP.
+          stubGo: |-
+            func resolve(domain string, dnsServer string) (net.IP, error) {
+                panic("implement me")
+            }
+          testGo: |-
+            // encodeDomain is provided as scaffolding — the exercise is the resolver.
+            func encodeDomain(domain string) []byte {
+                var out []byte
+                for _, label := range strings.Split(domain, ".") {
+                    out = append(out, byte(len(label)))
+                    out = append(out, label...)
+                }
+                return append(out, 0)
+            }
+
+            // startFakeDNS runs a local UDP DNS server so tests never touch the network.
+            // It answers every A query for a known domain with 10.1.2.3 and returns
+            // NXDOMAIN (rcode 3) for anything containing "nonexistent".
+            func startFakeDNS(t *testing.T) string {
+                t.Helper()
+                pc, err := net.ListenPacket("udp", "127.0.0.1:0")
+                if err != nil {
+                    t.Fatal(err)
+                }
+                t.Cleanup(func() { pc.Close() })
+
+                go func() {
+                    buf := make([]byte, 512)
+                    for {
+                        n, addr, err := pc.ReadFrom(buf)
+                        if err != nil {
+                            return
+                        }
+                        query := buf[:n]
+                        nxdomain := bytes.Contains(query, []byte("nonexistent"))
+
+                        header := make([]byte, 12)
+                        copy(header[0:2], query[0:2]) // echo ID
+                        if nxdomain {
+                            binary.BigEndian.PutUint16(header[2:4], 0x8183) // NXDOMAIN
+                        } else {
+                            binary.BigEndian.PutUint16(header[2:4], 0x8180)
+                            binary.BigEndian.PutUint16(header[6:8], 1) // 1 answer
+                        }
+                        binary.BigEndian.PutUint16(header[4:6], 1)
+
+                        resp := append([]byte{}, header...)
+                        resp = append(resp, query[12:]...) // echo question
+                        if !nxdomain {
+                            resp = append(resp, 0xC0, 0x0C, 0, 1, 0, 1, 0, 0, 0, 60, 0, 4)
+                            resp = append(resp, 10, 1, 2, 3)
+                        }
+                        pc.WriteTo(resp, addr)
+                    }
+                }()
+                return pc.LocalAddr().String()
+            }
+
+            func TestResolve(t *testing.T) {
+                server := startFakeDNS(t)
+                ip, err := resolve("example.com", server)
+                if err != nil {
+                    t.Fatalf("unexpected error: %v", err)
+                }
+                if !ip.Equal(net.IPv4(10, 1, 2, 3)) {
+                    t.Errorf("resolved %v, want 10.1.2.3", ip)
+                }
+            }
+
+            func TestResolveNXDOMAIN(t *testing.T) {
+                server := startFakeDNS(t)
+                if _, err := resolve("nonexistent.invalid", server); err == nil {
+                    t.Fatal("want error for NXDOMAIN response, got nil")
+                }
+            }
           solution: |-
             func resolve(domain string, dnsServer string) (net.IP, error) {
                 // Build query

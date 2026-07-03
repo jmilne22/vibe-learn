@@ -17,6 +17,34 @@ A `contain` command that:
 
 This project connects Linux isolation primitives to Go code: namespaces, cgroups, pivot_root, process execution, and cleanup. It is Linux-specific and uses real kernel features, so it gives you a concrete way to inspect the mechanics behind container runtimes.
 
+## Milestones
+
+All within Module 10, but build in this order — each stage is independently verifiable in your VM.
+
+### Milestone 1 — Re-exec skeleton
+
+The `run`/`child` dispatch and the re-exec pattern (see `## Requirements`), no isolation yet — child just prints and runs the command.
+
+**Done when:** `sudo ./contain run -- /bin/echo hello` prints hello via the child process.
+
+### Milestone 2 — UTS + PID namespaces
+
+Add `CLONE_NEWUTS` + `CLONE_NEWPID`, set the hostname.
+
+**Done when:** the command inside reports your `--hostname` and sees itself as PID 1.
+
+### Milestone 3 — Filesystem isolation
+
+pivot_root into the Alpine rootfs, mount /proc, unmount the old root.
+
+**Done when:** `ps aux` inside shows only container processes and `ls /` shows the Alpine tree.
+
+### Milestone 4 — Cgroup limits + cleanup
+
+Memory/CPU/PID limits via cgroup v2 files, child PID registered, `defer`red cleanup. Unit-test the pure parts (`parseMemory`, path/format helpers — see `## Testing`).
+
+**Done when:** the OOM and fork-bomb checks in `## Testing` behave as documented, `go test ./...` passes, and no `contain-*` cgroup dirs remain after exit.
+
 ## Usage
 
 ```bash

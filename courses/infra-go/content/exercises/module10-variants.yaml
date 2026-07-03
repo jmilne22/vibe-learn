@@ -123,6 +123,94 @@ variants:
               content: >-
                 cpu.max format is "quota period" in microseconds. 50% = "50000 100000". Use os.WriteFile for each limit
                 file. Cleanup with os.Remove.
+          stubGo: |-
+            type CgroupManager struct {
+                path string
+            }
+
+            func NewCgroupManager(name string) (*CgroupManager, error) {
+                panic("implement me")
+            }
+
+            func (m *CgroupManager) SetMemory(bytes int64) error {
+                panic("implement me")
+            }
+
+            func (m *CgroupManager) SetCPU(percent int) error {
+                panic("implement me")
+            }
+
+            func (m *CgroupManager) SetPids(max int) error {
+                panic("implement me")
+            }
+
+            func (m *CgroupManager) AddProcess(pid int) error {
+                panic("implement me")
+            }
+
+            func (m *CgroupManager) Cleanup() error {
+                panic("implement me")
+            }
+          testGo: |-
+            // Tests point the manager at a temp dir — same file layout as
+            // /sys/fs/cgroup, no root required.
+            func testManager(t *testing.T) *CgroupManager {
+                t.Helper()
+                dir := filepath.Join(t.TempDir(), "contain-test")
+                if err := os.MkdirAll(dir, 0o755); err != nil {
+                    t.Fatal(err)
+                }
+                return &CgroupManager{path: dir}
+            }
+
+            func readLimit(t *testing.T, m *CgroupManager, file string) string {
+                t.Helper()
+                data, err := os.ReadFile(filepath.Join(m.path, file))
+                if err != nil {
+                    t.Fatalf("reading %s: %v", file, err)
+                }
+                return strings.TrimSpace(string(data))
+            }
+
+            func TestSetMemory(t *testing.T) {
+                m := testManager(t)
+                if err := m.SetMemory(256 * 1024 * 1024); err != nil {
+                    t.Fatal(err)
+                }
+                if got := readLimit(t, m, "memory.max"); got != "268435456" {
+                    t.Errorf("memory.max = %q, want 268435456", got)
+                }
+            }
+
+            func TestSetCPU(t *testing.T) {
+                m := testManager(t)
+                if err := m.SetCPU(50); err != nil {
+                    t.Fatal(err)
+                }
+                if got := readLimit(t, m, "cpu.max"); got != "50000 100000" {
+                    t.Errorf("cpu.max = %q, want %q (quota period, 50%% of 100000)", got, "50000 100000")
+                }
+            }
+
+            func TestSetPids(t *testing.T) {
+                m := testManager(t)
+                if err := m.SetPids(64); err != nil {
+                    t.Fatal(err)
+                }
+                if got := readLimit(t, m, "pids.max"); got != "64" {
+                    t.Errorf("pids.max = %q, want 64", got)
+                }
+            }
+
+            func TestCleanup(t *testing.T) {
+                m := testManager(t)
+                if err := m.Cleanup(); err != nil {
+                    t.Fatalf("Cleanup: %v", err)
+                }
+                if _, err := os.Stat(m.path); !os.IsNotExist(err) {
+                    t.Errorf("cgroup dir still exists after Cleanup")
+                }
+            }
           solution: |-
             type CgroupManager struct {
                 path string
@@ -191,6 +279,56 @@ variants:
               content: >-
                 Collect all errors in a slice. After checking all fields, join them into one error if any exist. This
                 gives the user complete feedback.
+          stubGo: |-
+            type ContainerConfig struct {
+                Command    string `json:"command"`
+                Hostname   string `json:"hostname"`
+                MemoryMB   int    `json:"memory_mb"`
+                CPUPercent int    `json:"cpu_percent"`
+                MaxPids    int    `json:"max_pids"`
+                Rootfs     string `json:"rootfs"`
+            }
+
+            func parseContainerConfig(data []byte) (*ContainerConfig, error) {
+                panic("implement me")
+            }
+          testGo: |-
+            func TestParseContainerConfigValid(t *testing.T) {
+                input := `{"command":"/bin/sh","hostname":"sandbox","memory_mb":256,"cpu_percent":50,"max_pids":64,"rootfs":"/tmp/rootfs"}`
+                cfg, err := parseContainerConfig([]byte(input))
+                if err != nil {
+                    t.Fatalf("unexpected error: %v", err)
+                }
+                if cfg.Command != "/bin/sh" || cfg.MemoryMB != 256 || cfg.CPUPercent != 50 {
+                    t.Errorf("got %+v, want the parsed fields", cfg)
+                }
+            }
+
+            func TestParseContainerConfigCollectsAllViolations(t *testing.T) {
+                input := `{"command":"/bin/sh","memory_mb":0,"cpu_percent":200,"max_pids":64}`
+                _, err := parseContainerConfig([]byte(input))
+                if err == nil {
+                    t.Fatal("want validation error, got nil")
+                }
+                msg := err.Error()
+                if !strings.Contains(msg, "memory_mb") || !strings.Contains(msg, "cpu_percent") {
+                    t.Errorf("error %q must list BOTH violations, not just the first", msg)
+                }
+            }
+
+            func TestParseContainerConfigMissingCommand(t *testing.T) {
+                input := `{"memory_mb":256,"cpu_percent":50,"max_pids":64}`
+                _, err := parseContainerConfig([]byte(input))
+                if err == nil || !strings.Contains(err.Error(), "command") {
+                    t.Errorf("err = %v, want a command-is-required violation", err)
+                }
+            }
+
+            func TestParseContainerConfigBadJSON(t *testing.T) {
+                if _, err := parseContainerConfig([]byte(`{nope`)); err == nil {
+                    t.Fatal("want error for invalid JSON, got nil")
+                }
+            }
           solution: |-
             type ContainerConfig struct {
                 Command    string `json:"command"`

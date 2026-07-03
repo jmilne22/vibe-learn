@@ -259,6 +259,57 @@ variants:
               content: >-
                 Define a <code>rawPod</code> struct matching the JSON shape, unmarshal into that, then build your flat
                 Pod from its fields. Use <code>Containers[0].Image</code> for the image.
+          stubGo: |-
+            type Pod struct {
+                Name      string
+                Namespace string
+                Image     string
+            }
+
+            func parsePodJSON(data []byte) (Pod, error) {
+                panic("implement me")
+            }
+          testGo: |-
+            func TestParsePodJSON(t *testing.T) {
+                tests := []struct {
+                    name    string
+                    input   string
+                    want    Pod
+                    wantErr bool
+                }{
+                    {
+                        name:  "basic pod",
+                        input: `{"metadata":{"name":"web","namespace":"prod"},"spec":{"containers":[{"name":"app","image":"nginx"}]}}`,
+                        want:  Pod{Name: "web", Namespace: "prod", Image: "nginx"},
+                    },
+                    {
+                        name:  "first container wins",
+                        input: `{"metadata":{"name":"db","namespace":"default"},"spec":{"containers":[{"name":"main","image":"postgres:16"},{"name":"sidecar","image":"envoy"}]}}`,
+                        want:  Pod{Name: "db", Namespace: "default", Image: "postgres:16"},
+                    },
+                    {
+                        name:    "invalid json",
+                        input:   `{not json`,
+                        wantErr: true,
+                    },
+                    {
+                        name:    "no containers",
+                        input:   `{"metadata":{"name":"web","namespace":"prod"},"spec":{"containers":[]}}`,
+                        wantErr: true,
+                    },
+                }
+                for _, tt := range tests {
+                    t.Run(tt.name, func(t *testing.T) {
+                        got, err := parsePodJSON([]byte(tt.input))
+                        if (err != nil) != tt.wantErr {
+                            t.Fatalf("err = %v, wantErr %v", err, tt.wantErr)
+                        }
+                        if !tt.wantErr && got != tt.want {
+                            t.Errorf("got %+v, want %+v", got, tt.want)
+                        }
+                    })
+                }
+            }
           solution: |-
             type Pod struct {
                 Name      string
@@ -320,6 +371,53 @@ variants:
               content: >-
                 Use <code>bytes.Split(data, []byte("---"))</code>. For each chunk, <code>bytes.TrimSpace</code> and skip
                 empty ones. Unmarshal each into a Manifest.
+          stubGo: |-
+            type Manifest struct {
+                APIVersion string `yaml:"apiVersion"`
+                Kind       string `yaml:"kind"`
+                Metadata   struct {
+                    Name string `yaml:"name"`
+                } `yaml:"metadata"`
+            }
+
+            func parseManifests(data []byte) ([]Manifest, error) {
+                panic("implement me")
+            }
+          testGo: |-
+            func TestParseManifests(t *testing.T) {
+                input := "apiVersion: v1\nkind: Pod\nmetadata:\n  name: web\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: api\n"
+                got, err := parseManifests([]byte(input))
+                if err != nil {
+                    t.Fatalf("unexpected error: %v", err)
+                }
+                if len(got) != 2 {
+                    t.Fatalf("got %d manifests, want 2", len(got))
+                }
+                if got[0].Kind != "Pod" || got[0].Metadata.Name != "web" {
+                    t.Errorf("doc 0 = %+v, want Pod/web", got[0])
+                }
+                if got[1].Kind != "Service" || got[1].Metadata.Name != "api" {
+                    t.Errorf("doc 1 = %+v, want Service/api", got[1])
+                }
+            }
+
+            func TestParseManifestsSkipsEmptyDocs(t *testing.T) {
+                input := "---\napiVersion: v1\nkind: Pod\nmetadata:\n  name: web\n---\n---\n"
+                got, err := parseManifests([]byte(input))
+                if err != nil {
+                    t.Fatalf("unexpected error: %v", err)
+                }
+                if len(got) != 1 {
+                    t.Fatalf("got %d manifests, want 1 (empty docs must be skipped)", len(got))
+                }
+            }
+
+            func TestParseManifestsBadYAML(t *testing.T) {
+                input := "apiVersion: v1\nkind: [unclosed\n"
+                if _, err := parseManifests([]byte(input)); err == nil {
+                    t.Fatal("want error for invalid YAML, got nil")
+                }
+            }
           solution: |-
             type Manifest struct {
                 APIVersion string `yaml:"apiVersion"`
@@ -372,6 +470,63 @@ variants:
               content: >-
                 Write a helper <code>mergeMaps(base, override map[string]any)</code> that iterates override keys. If
                 both values are maps, recurse. Otherwise, override wins.
+          testGo: |-
+            func writeConfig(t *testing.T, dir, name, content string) string {
+                t.Helper()
+                path := filepath.Join(dir, name)
+                if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+                    t.Fatal(err)
+                }
+                return path
+            }
+
+            func TestMergeConfigsOverride(t *testing.T) {
+                dir := t.TempDir()
+                base := writeConfig(t, dir, "base.yaml", "port: 8080\nname: app\n")
+                over := writeConfig(t, dir, "override.yaml", "port: 9090\n")
+
+                got, err := mergeConfigs([]string{base, over})
+                if err != nil {
+                    t.Fatalf("unexpected error: %v", err)
+                }
+                if got["port"] != 9090 {
+                    t.Errorf("port = %v, want 9090 (later file must win)", got["port"])
+                }
+                if got["name"] != "app" {
+                    t.Errorf("name = %v, want app (unoverridden keys must survive)", got["name"])
+                }
+            }
+
+            func TestMergeConfigsDeepMerge(t *testing.T) {
+                dir := t.TempDir()
+                base := writeConfig(t, dir, "base.yaml", "db:\n  host: localhost\n  port: 5432\n")
+                over := writeConfig(t, dir, "override.yaml", "db:\n  host: prod-db\n")
+
+                got, err := mergeConfigs([]string{base, over})
+                if err != nil {
+                    t.Fatalf("unexpected error: %v", err)
+                }
+                db, ok := got["db"].(map[string]any)
+                if !ok {
+                    t.Fatalf("db is %T, want nested map", got["db"])
+                }
+                if db["host"] != "prod-db" {
+                    t.Errorf("db.host = %v, want prod-db", db["host"])
+                }
+                if db["port"] != 5432 {
+                    t.Errorf("db.port = %v, want 5432 (nested keys must deep-merge, not replace)", db["port"])
+                }
+            }
+
+            func TestMergeConfigsMissingFile(t *testing.T) {
+                _, err := mergeConfigs([]string{"does-not-exist.yaml"})
+                if err == nil {
+                    t.Fatal("want error for missing file, got nil")
+                }
+                if !strings.Contains(err.Error(), "does-not-exist.yaml") {
+                    t.Errorf("error %q must contain the filename", err.Error())
+                }
+            }
           solution: |-
             func mergeConfigs(files []string) (map[string]any, error) {
                 result := make(map[string]any)
@@ -438,6 +593,43 @@ variants:
               content: >-
                 For character validation, use a regex or loop through runes checking <code>unicode.IsLetter</code>,
                 <code>unicode.IsDigit</code>, and allowed special chars.
+          testGo: |-
+            func TestValidateLabelsClean(t *testing.T) {
+                got := validateLabels(map[string]string{"app": "web", "env": "prod"})
+                if len(got) != 0 {
+                    t.Errorf("valid labels produced violations: %v", got)
+                }
+            }
+
+            func TestValidateLabelsEmptyKey(t *testing.T) {
+                got := validateLabels(map[string]string{"": "web"})
+                if len(got) != 1 {
+                    t.Fatalf("got %d violations, want 1: %v", len(got), got)
+                }
+                if !strings.Contains(got[0], "empty key") {
+                    t.Errorf("violation %q should mention the empty key", got[0])
+                }
+            }
+
+            func TestValidateLabelsTooLong(t *testing.T) {
+                longKey := strings.Repeat("a", 64)
+                longVal := strings.Repeat("b", 64)
+                got := validateLabels(map[string]string{longKey: "ok", "app": longVal})
+                if len(got) != 2 {
+                    t.Fatalf("got %d violations, want 2 (long key and long value): %v", len(got), got)
+                }
+            }
+
+            func TestValidateLabelsCollectsAll(t *testing.T) {
+                labels := map[string]string{
+                    "":                      "x",
+                    strings.Repeat("k", 70): "y",
+                }
+                got := validateLabels(labels)
+                if len(got) < 2 {
+                    t.Errorf("got %d violations, want all violations reported at once: %v", len(got), got)
+                }
+            }
           solution: |-
             func validateLabels(labels map[string]string) []string {
                 var errs []string
@@ -485,6 +677,70 @@ variants:
                 Parse to a struct matching the Deployment shape. For the :latest check, use
                 <code>strings.HasSuffix(image, ":latest") || !strings.Contains(image, ":")</code> — untagged images
                 default to latest.
+          stubGo: |-
+            type LintResult struct {
+                Severity string
+                Message  string
+            }
+
+            func lintDeployment(data []byte) ([]LintResult, error) {
+                panic("implement me")
+            }
+          testGo: |-
+            func deploymentYAML(kind, image string, replicas int) string {
+                return "apiVersion: apps/v1\nkind: " + kind + "\nspec:\n  replicas: " + strconv.Itoa(replicas) + "\n  template:\n    spec:\n      containers:\n        - name: app\n          image: " + image + "\n"
+            }
+
+            func countSeverity(results []LintResult, severity string) int {
+                n := 0
+                for _, r := range results {
+                    if r.Severity == severity {
+                        n++
+                    }
+                }
+                return n
+            }
+
+            func TestLintDeploymentClean(t *testing.T) {
+                got, err := lintDeployment([]byte(deploymentYAML("Deployment", "nginx:1.25", 3)))
+                if err != nil {
+                    t.Fatalf("unexpected error: %v", err)
+                }
+                if len(got) != 0 {
+                    t.Errorf("clean deployment produced results: %+v", got)
+                }
+            }
+
+            func TestLintDeploymentLatestTag(t *testing.T) {
+                for _, image := range []string{"nginx:latest", "nginx"} {
+                    got, err := lintDeployment([]byte(deploymentYAML("Deployment", image, 3)))
+                    if err != nil {
+                        t.Fatalf("unexpected error: %v", err)
+                    }
+                    if countSeverity(got, "warning") != 1 {
+                        t.Errorf("image %q: got %+v, want one :latest warning (untagged defaults to latest)", image, got)
+                    }
+                }
+            }
+
+            func TestLintDeploymentWrongKindAndReplicas(t *testing.T) {
+                got, err := lintDeployment([]byte(deploymentYAML("Service", "nginx:1.25", 0)))
+                if err != nil {
+                    t.Fatalf("unexpected error: %v", err)
+                }
+                if countSeverity(got, "error") < 1 {
+                    t.Errorf("wrong kind must produce an error result: %+v", got)
+                }
+                if countSeverity(got, "warning") < 1 {
+                    t.Errorf("replicas 0 must produce a warning: %+v", got)
+                }
+            }
+
+            func TestLintDeploymentBadYAML(t *testing.T) {
+                if _, err := lintDeployment([]byte("kind: [broken")); err == nil {
+                    t.Fatal("want error for invalid YAML, got nil")
+                }
+            }
           solution: |-
             type LintResult struct {
                 Severity string
@@ -568,6 +824,83 @@ variants:
               content: >-
                 Track <code>maxSeverity</code> across all files. If strict and any warnings exist, promote to error. Map
                 severity to exit code at the end.
+          stubGo: |-
+            func lintFiles(paths []string, strict bool) (int, error) {
+                panic("implement me")
+            }
+          testGo: |-
+            // Test doubles for the per-format linters lintFiles dispatches to.
+            // They flag lines containing WARN / ERROR markers.
+            type LintResult struct {
+                Severity string
+                Message  string
+            }
+
+            func lintYAML(path string, data []byte) ([]LintResult, error) {
+                var results []LintResult
+                if strings.Contains(string(data), "WARN") {
+                    results = append(results, LintResult{"warning", path})
+                }
+                if strings.Contains(string(data), "ERROR") {
+                    results = append(results, LintResult{"error", path})
+                }
+                return results, nil
+            }
+
+            func lintJSON(path string, data []byte) ([]LintResult, error) {
+                return lintYAML(path, data)
+            }
+
+            func writeLintFile(t *testing.T, name, content string) string {
+                t.Helper()
+                path := filepath.Join(t.TempDir(), name)
+                if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+                    t.Fatal(err)
+                }
+                return path
+            }
+
+            func TestLintFilesExitCodes(t *testing.T) {
+                clean := writeLintFile(t, "clean.yaml", "kind: Pod\n")
+                warn := writeLintFile(t, "warn.yaml", "note: WARN here\n")
+                bad := writeLintFile(t, "bad.yaml", "note: ERROR here\n")
+
+                tests := []struct {
+                    name   string
+                    paths  []string
+                    strict bool
+                    want   int
+                }{
+                    {"clean", []string{clean}, false, 0},
+                    {"warnings only", []string{clean, warn}, false, 1},
+                    {"warnings strict", []string{warn}, true, 2},
+                    {"errors", []string{bad}, false, 2},
+                }
+                for _, tt := range tests {
+                    t.Run(tt.name, func(t *testing.T) {
+                        got, err := lintFiles(tt.paths, tt.strict)
+                        if err != nil {
+                            t.Fatalf("unexpected error: %v", err)
+                        }
+                        if got != tt.want {
+                            t.Errorf("exit code = %d, want %d", got, tt.want)
+                        }
+                    })
+                }
+            }
+
+            func TestLintFilesUnsupportedExtension(t *testing.T) {
+                conf := writeLintFile(t, "app.toml", "x = 1\n")
+                if _, err := lintFiles([]string{conf}, false); err == nil {
+                    t.Fatal("want error for unsupported file type, got nil")
+                }
+            }
+
+            func TestLintFilesMissingFile(t *testing.T) {
+                if _, err := lintFiles([]string{"nope.yaml"}, false); err == nil {
+                    t.Fatal("want error for missing file, got nil")
+                }
+            }
           solution: |-
             func lintFiles(paths []string, strict bool) (int, error) {
                 var allResults []LintResult
@@ -649,6 +982,48 @@ variants:
               content: >-
                 Use <code>strings.Contains(line, pattern)</code> for simple matching. Don't forget <code>defer
                 f.Close()</code> and <code>scanner.Err()</code>.
+          testGo: |-
+            func TestGrepLog(t *testing.T) {
+                path := filepath.Join(t.TempDir(), "app.log")
+                content := "INFO started\nERROR db timeout\nINFO ok\nERROR disk full\n"
+                if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+                    t.Fatal(err)
+                }
+
+                got, err := grepLog(path, "ERROR")
+                if err != nil {
+                    t.Fatalf("unexpected error: %v", err)
+                }
+                want := []string{"ERROR db timeout", "ERROR disk full"}
+                if len(got) != len(want) {
+                    t.Fatalf("got %d lines %v, want %d", len(got), got, len(want))
+                }
+                for i := range want {
+                    if got[i] != want[i] {
+                        t.Errorf("line %d = %q, want %q", i, got[i], want[i])
+                    }
+                }
+            }
+
+            func TestGrepLogNoMatches(t *testing.T) {
+                path := filepath.Join(t.TempDir(), "app.log")
+                if err := os.WriteFile(path, []byte("INFO all good\n"), 0o644); err != nil {
+                    t.Fatal(err)
+                }
+                got, err := grepLog(path, "ERROR")
+                if err != nil {
+                    t.Fatalf("unexpected error: %v", err)
+                }
+                if len(got) != 0 {
+                    t.Errorf("got %v, want no matches", got)
+                }
+            }
+
+            func TestGrepLogMissingFile(t *testing.T) {
+                if _, err := grepLog("missing.log", "ERROR"); err == nil {
+                    t.Fatal("want error for missing file, got nil")
+                }
+            }
           solution: |-
             func grepLog(path, pattern string) ([]string, error) {
                 f, err := os.Open(path)
@@ -695,6 +1070,63 @@ variants:
               content: >-
                 Call <code>d.Info()</code> to get file size via <code>info.Size()</code>. Use
                 <code>filepath.Ext(path)</code> for extension. Accumulate into your Stats struct.
+          stubGo: |-
+            type Stats struct {
+                Files int
+                Bytes int64
+                ByExt map[string]int
+            }
+
+            func dirStats(root string) (Stats, error) {
+                panic("implement me")
+            }
+          testGo: |-
+            func TestDirStats(t *testing.T) {
+                root := t.TempDir()
+                if err := os.MkdirAll(filepath.Join(root, "nested"), 0o755); err != nil {
+                    t.Fatal(err)
+                }
+                files := map[string]string{
+                    "a.yaml":        "kind: Pod\n",
+                    "b.yaml":        "kind: Service\nname: api\n",
+                    "c.json":        "{}",
+                    "nested/d.yaml": "x: 1\n",
+                }
+                var wantBytes int64
+                for name, content := range files {
+                    if err := os.WriteFile(filepath.Join(root, name), []byte(content), 0o644); err != nil {
+                        t.Fatal(err)
+                    }
+                    wantBytes += int64(len(content))
+                }
+
+                got, err := dirStats(root)
+                if err != nil {
+                    t.Fatalf("unexpected error: %v", err)
+                }
+                if got.Files != 4 {
+                    t.Errorf("Files = %d, want 4 (must recurse into subdirectories)", got.Files)
+                }
+                if got.Bytes != wantBytes {
+                    t.Errorf("Bytes = %d, want %d", got.Bytes, wantBytes)
+                }
+                if got.ByExt[".yaml"] != 3 {
+                    t.Errorf("ByExt[.yaml] = %d, want 3", got.ByExt[".yaml"])
+                }
+                if got.ByExt[".json"] != 1 {
+                    t.Errorf("ByExt[.json] = %d, want 1", got.ByExt[".json"])
+                }
+            }
+
+            func TestDirStatsEmptyDir(t *testing.T) {
+                got, err := dirStats(t.TempDir())
+                if err != nil {
+                    t.Fatalf("unexpected error: %v", err)
+                }
+                if got.Files != 0 || got.Bytes != 0 {
+                    t.Errorf("empty dir: got %+v, want zero stats", got)
+                }
+            }
           solution: |-
             type Stats struct {
                 Files int
@@ -752,6 +1184,48 @@ variants:
               content: >-
                 WalkDir to find files, ReadFile each, yaml.Unmarshal into <code>map[string]any</code>. Wrap errors with
                 filepath context.
+          testGo: |-
+            func TestLoadAllConfigs(t *testing.T) {
+                root := t.TempDir()
+                write := func(name, content string) {
+                    t.Helper()
+                    if err := os.WriteFile(filepath.Join(root, name), []byte(content), 0o644); err != nil {
+                        t.Fatal(err)
+                    }
+                }
+                write("app.yaml", "port: 8080\n")
+                write("db.yml", "host: localhost\n")
+                write("notes.txt", "not yaml, must be ignored")
+
+                got, err := loadAllConfigs(root)
+                if err != nil {
+                    t.Fatalf("unexpected error: %v", err)
+                }
+                if len(got) != 2 {
+                    t.Fatalf("got %d configs %v, want 2 (.yaml and .yml only)", len(got), got)
+                }
+                app, ok := got[filepath.Join(root, "app.yaml")]
+                if !ok {
+                    t.Fatalf("app.yaml missing from result: %v", got)
+                }
+                if app["port"] != 8080 {
+                    t.Errorf("app.yaml port = %v, want 8080", app["port"])
+                }
+            }
+
+            func TestLoadAllConfigsBadYAML(t *testing.T) {
+                root := t.TempDir()
+                if err := os.WriteFile(filepath.Join(root, "bad.yaml"), []byte("a: [unclosed\n"), 0o644); err != nil {
+                    t.Fatal(err)
+                }
+                _, err := loadAllConfigs(root)
+                if err == nil {
+                    t.Fatal("want error for invalid YAML, got nil")
+                }
+                if !strings.Contains(err.Error(), "bad.yaml") {
+                    t.Errorf("error %q must contain the filename", err.Error())
+                }
+            }
           solution: |-
             func loadAllConfigs(root string) (map[string]map[string]any, error) {
                 result := make(map[string]map[string]any)

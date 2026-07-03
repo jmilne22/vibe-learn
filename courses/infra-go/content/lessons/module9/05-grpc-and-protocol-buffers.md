@@ -141,3 +141,5 @@ Bidirectional: Client <---stream--> Server
 - **Bidirectional:** Chat, real-time sync, terminal sessions
 
 ---
+
+> **Next:** the Build section — finish and ship the DNS server. Third repo of five.

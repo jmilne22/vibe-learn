@@ -13,7 +13,7 @@ tracks:
     modules: [6, 7]
   - title: Networking & Infrastructure
     modules: [8, 9, 10, 11]
-  - title: Algorithms & Source Reading
+  - title: "Optional: Interview Prep & Open Source"
     modules: [12, 13]
 
 modules:
@@ -67,21 +67,21 @@ projects:
     title: Config Linter
     file: project-config-linter
     afterModule: 4
-    description: "Build a CLI that reads K8s and Terraform YAML, validates against rules, and reports violations. Applies Modules 1-4."
+    description: "Build a CLI that reads K8s YAML, validates against rules, and reports violations. Built via the Build sections closing Modules 1-4; this page is the full spec and ship point."
 
   - id: p2
     num: P2
     title: Cloud Resource Reporter
     file: project-cloud-reporter
     afterModule: 5
-    description: "Query cloud APIs, aggregate resource data, output formatted reports. Applies Modules 1-5."
+    description: "Query cloud APIs, aggregate resource data, output formatted reports. Built via the Build sections closing Modules 5-7; this page is the full spec and ship point."
 
   - id: p3
     num: P3
     title: DNS Server
     file: project-dns-server
     afterModule: 9
-    description: "Build a DNS server from scratch. Parse binary DNS packets, resolve queries, handle concurrent requests. Applies Modules 6-9."
+    description: "Build a DNS server from scratch. Parse binary DNS packets, resolve queries, handle concurrent requests. Built via the Build sections closing Modules 8-9; this page is the full spec and ship point."
 
   - id: p4
     num: P4

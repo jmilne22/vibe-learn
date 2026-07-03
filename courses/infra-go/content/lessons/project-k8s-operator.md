@@ -18,6 +18,34 @@ Operators are the standard pattern for extending Kubernetes. Companies like Redi
 
 This project ties together everything: structs, interfaces, error handling, HTTP clients (the K8s API), concurrency (informers and work queues), and testing.
 
+## Milestones
+
+All within Module 11. Each stage leaves you with a working operator that does strictly more than the last one.
+
+### Milestone 1 — CRD accepted, reconciler logs
+
+Install the CRD, create a SimpleApp with `kubectl`, run a controller-runtime manager whose reconciler only logs the request.
+
+**Done when:** `kubectl apply -f config/samples/my-web-app.yaml` produces a log line from your reconciler.
+
+### Milestone 2 — Deployment + Service created
+
+Reconciler builds and creates the Deployment (hardcoded spec first, then read from the SimpleApp) and the Service.
+
+**Done when:** `kubectl get deployments,services` shows resources owned by your SimpleApp, and deleting them makes the reconciler recreate them.
+
+### Milestone 3 — Status, finalizers, idempotency
+
+Status subresource updates, finalizer-based cleanup, `CreateOrUpdate` so repeated reconciles don't churn.
+
+**Done when:** `kubectl get simpleapp my-web-app -o yaml` shows a live status block, and `kubectl delete simpleapp my-web-app` cleans up both children before the CR disappears.
+
+### Milestone 4 — Tests with the fake client
+
+Reconciler tests using the fake client (see `## Testing Without a Cluster`); README; ship it.
+
+**Done when:** `go test ./...` passes with no cluster running.
+
 ## The Custom Resource
 
 Your operator manages `SimpleApp` resources. A SimpleApp bundles a Deployment and a Service into a single resource:

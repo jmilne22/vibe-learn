@@ -84,3 +84,5 @@ This function uses every pattern from the module: string splitting, `continue` f
 <div class="inline-exercises" data-concept="Combining Patterns"></div>
 
 ---
+
+> **Next:** the module's Build section — your first real tool starts on the next page.

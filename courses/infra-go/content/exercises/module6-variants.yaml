@@ -187,6 +187,47 @@ variants:
               content: >-
                 Buffered channel: <code>make(chan Result, len(endpoints))</code>. Each goroutine records start time,
                 does the check, sends Result. Main reads exactly <code>len(endpoints)</code> times.
+          stubGo: |-
+            type Result struct {
+                URL     string
+                Healthy bool
+                Latency time.Duration
+            }
+
+            func checkHealth(endpoints []string) []Result {
+                panic("implement me")
+            }
+          testGo: |-
+            func TestCheckHealthReturnsAll(t *testing.T) {
+                endpoints := []string{"svc-a", "svc-b", "svc-c", "svc-d", "svc-e"}
+                got := checkHealth(endpoints)
+                if len(got) != len(endpoints) {
+                    t.Fatalf("got %d results, want %d", len(got), len(endpoints))
+                }
+                seen := make(map[string]bool)
+                for _, r := range got {
+                    seen[r.URL] = true
+                    if r.Latency <= 0 {
+                        t.Errorf("result %s has zero latency — record time.Since(start)", r.URL)
+                    }
+                }
+                for _, ep := range endpoints {
+                    if !seen[ep] {
+                        t.Errorf("no result for %s", ep)
+                    }
+                }
+            }
+
+            func TestCheckHealthRunsConcurrently(t *testing.T) {
+                endpoints := []string{"a", "b", "c", "d", "e"}
+                start := time.Now()
+                checkHealth(endpoints)
+                elapsed := time.Since(start)
+                // 5 sequential 50ms checks = 250ms; concurrent should be ~50ms.
+                if elapsed > 200*time.Millisecond {
+                    t.Errorf("took %v for 5 endpoints — checks are running sequentially, not concurrently", elapsed)
+                }
+            }
           solution: |-
             type Result struct {
                 URL     string
@@ -240,6 +281,57 @@ variants:
               content: >-
                 Define a result struct: <code>{Path string; Count int; Err error}</code>. Send one per goroutine. After
                 collecting all, check for errors.
+          testGo: |-
+            func TestProcessFiles(t *testing.T) {
+                counts := map[string]int{"a.log": 100, "b.log": 200, "c.log": 7}
+                fn := func(path string) (int, error) {
+                    return counts[path], nil
+                }
+                got, err := processFiles([]string{"a.log", "b.log", "c.log"}, fn)
+                if err != nil {
+                    t.Fatalf("unexpected error: %v", err)
+                }
+                if len(got) != 3 {
+                    t.Fatalf("got %d entries, want 3: %v", len(got), got)
+                }
+                for path, want := range counts {
+                    if got[path] != want {
+                        t.Errorf("got[%s] = %d, want %d", path, got[path], want)
+                    }
+                }
+            }
+
+            func TestProcessFilesError(t *testing.T) {
+                fn := func(path string) (int, error) {
+                    if path == "missing.log" {
+                        return 0, errors.New("no such file")
+                    }
+                    return 1, nil
+                }
+                _, err := processFiles([]string{"a.log", "missing.log", "b.log"}, fn)
+                if err == nil {
+                    t.Fatal("want error when a file fails, got nil")
+                }
+                if !strings.Contains(err.Error(), "missing.log") {
+                    t.Errorf("error %q must name the failing path", err.Error())
+                }
+            }
+
+            func TestProcessFilesConcurrent(t *testing.T) {
+                fn := func(path string) (int, error) {
+                    time.Sleep(40 * time.Millisecond)
+                    return 1, nil
+                }
+                start := time.Now()
+                _, err := processFiles([]string{"a", "b", "c", "d", "e"}, fn)
+                if err != nil {
+                    t.Fatalf("unexpected error: %v", err)
+                }
+                // 5 sequential 40ms calls = 200ms; concurrent should be ~40ms.
+                if elapsed := time.Since(start); elapsed > 160*time.Millisecond {
+                    t.Errorf("took %v for 5 files — processing is sequential, not concurrent", elapsed)
+                }
+            }
           solution: |-
             type fileResult struct {
                 Path  string
@@ -295,6 +387,42 @@ variants:
               content: >-
                 generate: create channel, goroutine sends 1-100, closes. filter: create output channel, goroutine ranges
                 over input, sends matches, closes output. Main: range over filter's output.
+          stubGo: |-
+            func generate() <-chan int {
+                panic("implement me")
+            }
+
+            func filter(in <-chan int) <-chan int {
+                panic("implement me")
+            }
+          testGo: |-
+            func TestPipeline(t *testing.T) {
+                collected := make(chan []int, 1)
+                go func() {
+                    var out []int
+                    for val := range filter(generate()) {
+                        out = append(out, val)
+                    }
+                    collected <- out
+                }()
+
+                var got []int
+                select {
+                case got = <-collected:
+                case <-time.After(2 * time.Second):
+                    t.Fatal("pipeline never finished — are both channels closed when their stage is done?")
+                }
+
+                want := []int{7, 14, 21, 28, 35, 42, 49, 56, 63, 70, 77, 84, 91, 98}
+                if len(got) != len(want) {
+                    t.Fatalf("got %v (%d values), want %d multiples of 7", got, len(got), len(want))
+                }
+                for i := range want {
+                    if got[i] != want[i] {
+                        t.Errorf("position %d = %d, want %d (single-stage pipelines preserve order)", i, got[i], want[i])
+                    }
+                }
+            }
           solution: |-
             func generate() <-chan int {
                 ch := make(chan int)
@@ -321,8 +449,10 @@ variants:
             }
 
             // Usage:
-            for val := range filter(generate()) {
-                fmt.Println(val)
+            func runPipeline() {
+                for val := range filter(generate()) {
+                    fmt.Println(val)
+                }
             }
           annotations:
             - type: pattern
@@ -362,6 +492,64 @@ variants:
               content: >-
                 Two goroutines range over their input and send to output. A third goroutine waits on the WaitGroup and
                 closes output.
+          testGo: |-
+            func TestMerge(t *testing.T) {
+                ch1 := make(chan string, 2)
+                ch2 := make(chan string, 2)
+                ch1 <- "a"
+                ch1 <- "b"
+                ch2 <- "c"
+                ch2 <- "d"
+                close(ch1)
+                close(ch2)
+
+                collected := make(chan []string, 1)
+                go func() {
+                    var out []string
+                    for v := range merge(ch1, ch2) {
+                        out = append(out, v)
+                    }
+                    collected <- out
+                }()
+
+                var got []string
+                select {
+                case got = <-collected:
+                case <-time.After(2 * time.Second):
+                    t.Fatal("merge output never closed — close it after BOTH inputs are drained")
+                }
+
+                if len(got) != 4 {
+                    t.Fatalf("got %v (%d values), want all 4", got, len(got))
+                }
+                sort.Strings(got)
+                want := []string{"a", "b", "c", "d"}
+                for i := range want {
+                    if got[i] != want[i] {
+                        t.Errorf("merged values = %v, want %v in any order", got, want)
+                        break
+                    }
+                }
+            }
+
+            func TestMergeEmptyInputs(t *testing.T) {
+                ch1 := make(chan string)
+                ch2 := make(chan string)
+                close(ch1)
+                close(ch2)
+
+                done := make(chan struct{})
+                go func() {
+                    for range merge(ch1, ch2) {
+                    }
+                    close(done)
+                }()
+                select {
+                case <-done:
+                case <-time.After(2 * time.Second):
+                    t.Fatal("merge of two closed channels must close immediately")
+                }
+            }
           solution: |-
             func merge(ch1, ch2 <-chan string) <-chan string {
                 out := make(chan string)
@@ -412,6 +600,36 @@ variants:
               content: >-
                 <code>select { case result := <-ch: return result, nil; case <-time.After(timeout): return "",
                 fmt.Errorf("timeout") }</code>
+          testGo: |-
+            func TestFetchWithTimeoutFastFn(t *testing.T) {
+                got, err := fetchWithTimeout(func() string { return "ok" }, 2*time.Second)
+                if err != nil {
+                    t.Fatalf("unexpected error: %v", err)
+                }
+                if got != "ok" {
+                    t.Errorf("got %q, want ok", got)
+                }
+            }
+
+            func TestFetchWithTimeoutSlowFn(t *testing.T) {
+                slow := func() string {
+                    time.Sleep(500 * time.Millisecond)
+                    return "late"
+                }
+                start := time.Now()
+                got, err := fetchWithTimeout(slow, 50*time.Millisecond)
+                elapsed := time.Since(start)
+
+                if err == nil {
+                    t.Fatalf("want timeout error, got %q", got)
+                }
+                if got != "" {
+                    t.Errorf("result = %q, want empty string on timeout", got)
+                }
+                if elapsed > 400*time.Millisecond {
+                    t.Errorf("returned after %v — must return at the 50ms timeout, not wait for fn", elapsed)
+                }
+            }
           solution: |-
             func fetchWithTimeout(fn func() string, timeout time.Duration) (string, error) {
                 ch := make(chan string, 1) // buffered so goroutine doesn't leak on timeout
@@ -458,6 +676,46 @@ variants:
                 Pre-allocate <code>results := make([]string, len(items))</code>. Semaphore: <code>sem := make(chan
                 struct{}, maxConcurrent)</code>. Each goroutine acquires (<code>sem <- struct{}{}</code>), processes,
                 writes to <code>results[i]</code>, releases (<code><-sem</code>).
+          testGo: |-
+            func TestProcessAllOrderPreserved(t *testing.T) {
+                items := []string{"a", "b", "c", "d", "e"}
+                got := processAll(items, 2, strings.ToUpper)
+                want := []string{"A", "B", "C", "D", "E"}
+                if len(got) != len(want) {
+                    t.Fatalf("got %d results, want %d", len(got), len(want))
+                }
+                for i := range want {
+                    if got[i] != want[i] {
+                        t.Errorf("results[%d] = %q, want %q — results must be in input order", i, got[i], want[i])
+                    }
+                }
+            }
+
+            func TestProcessAllBoundedConcurrency(t *testing.T) {
+                var current, max atomic.Int32
+                fn := func(s string) string {
+                    cur := current.Add(1)
+                    for {
+                        prev := max.Load()
+                        if cur <= prev || max.CompareAndSwap(prev, cur) {
+                            break
+                        }
+                    }
+                    time.Sleep(30 * time.Millisecond)
+                    current.Add(-1)
+                    return s
+                }
+
+                items := make([]string, 12)
+                for i := range items {
+                    items[i] = fmt.Sprintf("item-%d", i)
+                }
+                processAll(items, 3, fn)
+
+                if observed := max.Load(); observed > 3 {
+                    t.Errorf("observed %d goroutines in flight, want at most 3 — the semaphore is not limiting", observed)
+                }
+            }
           solution: |-
             func processAll(items []string, maxConcurrent int, fn func(string) string) []string {
                 results := make([]string, len(items))

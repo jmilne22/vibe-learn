@@ -1,45 +1,71 @@
 ## How This Course Works
 
-Five tracks. Each builds on the last, but not every module within a track is required to move forward.
+This course has one rule that overrides everything else: **the projects are the course**. The five projects are not rewards for finishing modules — they're the spine, and the modules exist to unblock them. You're done with this course when five real tools live in five real repos, not when you've read thirteen modules or cleared an exercise count.
 
-**Track 1 (Modules 1-3)** is drill-heavy on purpose. Slices, maps, structs, errors, testing — you do these until they're automatic. Don't rush through. If the warmups feel hard, re-read the lesson. If the warmups are easy but challenges are hard, that's working as intended — use the hints.
+### The loop
 
-**Track 2-3 (Modules 4-7)** shift to building real things: CLIs, API clients, concurrency. Projects start appearing. Do the projects — they're portfolio pieces, not homework.
+**Every module from 1 through 9 ends with a Build section** — a project milestone that is the module's real final exam. Module 1 ends with your linter reading its first file; Module 4 ends with you shipping it. The projects aren't waiting at the end of the course; they're threaded through it, one milestone per module, and each milestone is deliberately doable with only the modules behind it.
 
-**Track 4 (Modules 8-11)** is the steepest ramp. HTTP servers → raw networking → container internals → K8s operators. If a module feels too hard, here's what's safe to skip or reorder:
-- **Module 10 (Containers)** is the most independent. You can skip it and do Module 11 (K8s) without it — they use different APIs entirely. Come back to containers later.
-- **Module 9 (Networking)** is needed for Project 3 (DNS server) but not for Modules 10-11.
+Each work session runs the same loop:
 
-**Track 5 (Modules 12-13)** is interview prep and open source. The algorithms plugin gives you practice throughout the course, so Module 12 is reinforcement, not a cold start.
+1. **Open your current Build section** (the last page of the module you're in, or the next one you haven't done).
+2. **Attempt it.** Struggling at the right edge of your ability is the highest-value learning there is; the milestone is how you find out what you actually don't know yet.
+3. **When you're blocked, read the lesson section that unblocks you.** Not the whole module — the section. The lessons are written to be raided, not marched through.
+4. **Do 2–3 exercises for that concept**, then get back to the milestone. Exercises are reps for a specific weakness, not a curriculum.
 
-### Working through a module
+The project pages (P1–P5 in the sidebar) are the **full specs of the finished tools** — they sit at each project's ship point and become your assignment in the final milestone.
 
-Each module has a **lesson**, **warmups**, and **challenges**. Here's the flow:
+### Exercises: warmups, challenges, and the local workspace
 
-1. **Read the lesson first.** Skim the whole thing, then come back to sections you need.
-2. **Do the warmups.** These are quick drills — one concept each, multiple variants. Use the concept filter to focus on areas you're shaky on, or just go through them all. If a warmup feels hard, the gap is in the lesson — go re-read that section.
-3. **Move to challenges.** These are deeper, multi-step problems. Pick a difficulty mode:
-   - **Easy** — only difficulty 1 variants. Start here if the module is new territory.
-   - **Progressive** — starts easy, ramps up as you go. Good default for a first pass.
-   - **Balanced** — weighted mix (35% easy, 40% medium, 25% hard). Best for review.
-   - **Hard** — difficulty 3+ only. Use this when you're confident and want to test yourself.
-   - **Mixed** — fully random. Good for simulating real-world unpredictability.
-4. **Self-rate honestly.** After viewing a solution, rate yourself: *Got it*, *Struggled*, or *Needed solution*. These ratings drive spaced repetition — honest ratings mean better review scheduling.
+Each module has a **lesson**, **warmups**, and **challenges**:
 
-Every exercise has multiple variants, so you can shuffle and get a fresh version of the same concept. Use the shuffle button liberally. If a challenge is too hard, hit "Get Easier Version" to step down a difficulty level (and "Get Harder Version" when you're ready to push).
+- **Warmups** are quick one-concept drills. If a warmup feels hard, the gap is in the lesson — go re-read that section.
+- **Challenges** are multi-step problems with difficulty modes (Easy / Progressive / Balanced / Hard / Mixed). Progressive is the right default for a first pass.
 
-### The thinking timer
+**From Module 4 onward, challenges are done in your real editor and terminal.** One-time setup: clone the course repo and run
 
-When you open an exercise, you'll see a thinking timer option. It locks the hints and solution for 45 seconds, forcing you to actually think before reaching for help. Use it. The point of exercises is the struggle, not the answer.
+```bash
+npm run practice
+```
 
-### Daily practice and review
+This generates a `practice/` directory with one folder per challenge variant — each contains `exercise.go` (a stub) and `exercise_test.go` (a real test). Every challenge card on the site shows its folder. The flow:
 
-Your self-ratings feed into a spaced repetition system. Exercises you struggled with come back sooner; ones you nailed fade into longer intervals. Use **Daily Practice** to stay sharp across modules — it pulls exercises that are due for review or that you've historically found hard.
+```bash
+cd practice/module4/challenge_1_v1
+# write your code in exercise.go
+go test            # modules 6-9: go test -race
+```
+
+**A passing test is the definition of done.** Not "looks right," not "I'd have written that" — green. Self-ratings still matter for review scheduling, but the test is the ground truth under them. (First run needs network once, to download the YAML dependency.)
+
+Modules 1–3 stay eyeball-verified on purpose: you don't know testing yet. Module 3 changes that — it's where `go test` enters your life and never leaves.
+
+### Variants: the shuffle and the two-variant rule
+
+Every exercise has multiple variants — shuffle freely to get fresh versions of a concept, and use **Get Easier Version** / **Get Harder Version** to step difficulty. Stepping down when you're stuck is scaffolding; it's how the course is meant to work.
+
+But there's a limit: **two easier variants, max.** If you've stepped down twice and you're still stuck, more variants will not fix it — the gap is upstream, in the lesson. Go read the section, then come back. (Ask how a course ends up with 154 variants in Module 1 sometime.)
+
+### Self-rating and daily practice
+
+After viewing a solution, rate yourself honestly — *Got it*, *Struggled*, or *Needed solution*. Ratings drive spaced repetition; **Daily Practice** pulls exercises that are due for review. Use it as a 10-minute warmup before a build session, never as the session itself. The thinking timer (locks hints and solutions for 45 seconds) is worth keeping on — the point of an exercise is the struggle, not the answer.
+
+### The map
+
+- **Track 1 (Modules 1–3):** Go fundamentals, driven by Config Linter milestones 1–3.
+- **Tracks 2–3 (Modules 4–7):** Ship the Config Linter, then build and ship the Cloud Reporter. This is the heart of "CLI tools and services."
+- **Track 4 (Modules 8–11):** The steep ramp — HTTP servers, then the DNS server project, then containers and Kubernetes. Two things are safe to skip or defer:
+  - **Module 10 (Containers)** is fully independent — Module 11 doesn't need it.
+  - **Difficulty-3 challenges** everywhere are depth, not gates.
+- **Track 5 (Modules 12–13) is optional.** Algorithm patterns are interview prep, not tool-building; open source contribution is a great epilogue. Neither counts toward done.
 
 ### When you're stuck
 
-- **Warmups are the canary.** If warmups are hard, the gap is in the lesson, not the exercise. Re-read.
-- **Difficulty 3 challenges are optional.** They exist for depth, not as gates. Skip and come back.
-- **Projects aren't blockers.** If a project feels too ambitious, keep going with the next module. The project will still be there.
+- **Warmups hard?** The gap is in the lesson. Re-read.
+- **Challenge hard?** Two easier variants, then the lesson.
+- **Milestone hard?** That's normal and correct — it's supposed to be slightly ahead of you. Find the smallest piece you can't do and work on exactly that.
+- **A whole module feels too hard?** Check the map above for what's skippable, do the milestone with what you have, and come back.
+
+Five repos. That's the finish line.
 
 ---

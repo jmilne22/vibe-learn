@@ -50,3 +50,7 @@ Run it: `sudo go run main.go run /bin/sh`
 You now have a shell running in an isolated PID namespace, with its own hostname, limited to 256MB of memory, with a separate root filesystem. That's a container.
 
 ---
+
+### Ship your project: Mini Container Runtime
+
+Take what this module built up and make it a real tool: [Project 4: Mini Container Runtime](project-container-runtime.html), four milestones from re-exec skeleton to cgroup limits with cleanup. Work in a VM, ship it with the safety notes in its README — four of five.
