@@ -18,6 +18,33 @@
     'use strict';
 
     var PROGRESS_KEY = window.CourseConfigHelper ? window.CourseConfigHelper.storageKey('exercise-progress') : 'go-course-exercise-progress';
+    var EXPLAIN_KEY = window.CourseConfigHelper ? window.CourseConfigHelper.storageKey('self-explanations') : 'go-course-self-explanations';
+
+    function loadExplanations() {
+        try {
+            return JSON.parse(localStorage.getItem(EXPLAIN_KEY) || '{}');
+        } catch {
+            return {};
+        }
+    }
+
+    function saveExplanation(key, text) {
+        try {
+            const all = loadExplanations();
+            if (text) {
+                all[key] = text;
+            } else {
+                delete all[key];
+            }
+            localStorage.setItem(EXPLAIN_KEY, JSON.stringify(all));
+        } catch (e) {
+            console.warn('Failed to save self-explanation:', e);
+        }
+    }
+
+    function escapeHtml(s) {
+        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
 
     function getModuleNum() {
         return document.body?.dataset?.module ||
@@ -137,16 +164,53 @@
         }
     }
 
+    // Self-explanation prompt shown between solution reveal and rating.
+    // Rating stays locked until the learner writes a short explanation
+    // (or explicitly skips) — generating the "why" is where the learning
+    // happens, not reading the solution.
+    function createExplainHTML(key, saved) {
+        return `
+        <div class="self-explain">
+            <label class="self-explain-label" for="explain-${key}">Before you rate — why does this solution work?</label>
+            <textarea id="explain-${key}" class="self-explain-input" rows="2"
+                placeholder="One or two sentences, in your own words...">${escapeHtml(saved)}</textarea>
+            <button type="button" class="self-explain-skip">skip this one</button>
+        </div>`;
+    }
+
     function showRatingUI(exerciseEl, key) {
         // Don't add duplicate rating UI
         if (exerciseEl.querySelector('.self-rating')) return;
 
+        const savedExplanation = loadExplanations()[key] || '';
+        const alreadyRated = getExerciseProgress(key)?.status === 'completed';
+
         const ratingDiv = document.createElement('div');
-        ratingDiv.innerHTML = createRatingHTML(key);
-        const ratingEl = ratingDiv.firstElementChild;
+        ratingDiv.className = 'rating-flow';
+        ratingDiv.innerHTML = createExplainHTML(key, savedExplanation) + createRatingHTML(key);
+        const ratingEl = ratingDiv.querySelector('.self-rating');
+        const explainEl = ratingDiv.querySelector('.self-explain');
 
         // Insert before the last element (usually expected output or personal notes)
-        exerciseEl.appendChild(ratingEl);
+        exerciseEl.appendChild(ratingDiv);
+
+        const ratingButtons = ratingEl.querySelectorAll('.rating-btn');
+        function setRatingLocked(locked) {
+            ratingButtons.forEach(b => { b.disabled = locked; });
+            ratingEl.classList.toggle('rating-locked', locked);
+        }
+        setRatingLocked(!alreadyRated && savedExplanation.trim().length < 15);
+
+        const textarea = explainEl.querySelector('.self-explain-input');
+        textarea.addEventListener('input', function() {
+            const text = this.value.trim();
+            saveExplanation(key, text);
+            if (text.length >= 15) setRatingLocked(false);
+        });
+        explainEl.querySelector('.self-explain-skip').addEventListener('click', function() {
+            setRatingLocked(false);
+            explainEl.classList.add('self-explain-skipped');
+        });
 
         // Attach click handlers
         ratingEl.querySelectorAll('.rating-btn').forEach(btn => {

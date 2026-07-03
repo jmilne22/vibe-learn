@@ -46,9 +46,17 @@ Every exercise has multiple variants — shuffle freely to get fresh versions of
 
 But there's a limit: **two easier variants, max.** If you've stepped down twice and you're still stuck, more variants will not fix it — the gap is upstream, in the lesson. Go read the section, then come back. (Ask how a course ends up with 154 variants in Module 1 sometime.)
 
-### Self-rating and daily practice
+### Self-rating, self-explanation, and calibration
 
-After viewing a solution, rate yourself honestly — *Got it*, *Struggled*, or *Needed solution*. Ratings drive spaced repetition; **Daily Practice** pulls exercises that are due for review. Use it as a 10-minute warmup before a build session, never as the session itself. The thinking timer (locks hints and solutions for 45 seconds) is worth keeping on — the point of an exercise is the struggle, not the answer.
+After viewing a solution, you'll be asked one question before you can rate: **why does this solution work?** One or two sentences, in your own words. This isn't busywork — generating the explanation is one of the strongest effects in the learning research, and it's the difference between recognizing a solution and owning it. Then rate yourself honestly — *Got it*, *Struggled*, or *Needed solution*. Ratings drive spaced repetition; **Daily Practice** pulls exercises that are due for review. Use it as a 10-minute warmup before a build session, never as the session itself.
+
+Test-backed challenges (modules 4+) also ask you to **predict before you run**: will your code pass `go test`? Answer, run it, record what happened. Over time the card shows your hit rate — "when confident: 8/12 pass" — which is feedback on your *judgment*, not just your code. Bad calibration is how you end up grinding 154 variants of something you already know, or shipping something you never tested. Watch that number.
+
+The thinking timer (locks hints and solutions for 45 seconds) is worth keeping on — the point of an exercise is the struggle, not the answer.
+
+### Working with AI
+
+One rule: **AI explains concepts and reviews code you wrote — it never writes milestone or exercise code.** The research on AI assistants for learners is consistent: solutions-on-demand inflate confidence while measurably eroding debugging skill. Ask "why does my goroutine leak here?" all day. Never ask "write the worker pool."
 
 ### The map
 
