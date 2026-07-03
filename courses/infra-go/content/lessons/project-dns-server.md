@@ -17,6 +17,10 @@ DNS is the backbone of all infrastructure. Every service discovery system, every
 
 This is also a project that will stop interviewers in their tracks. "I built a DNS server in Go from scratch" changes the conversation.
 
+## How You Got Here
+
+This server was built across Modules 8–9, five milestones in those modules' final **Build** sections. This page is the complete spec of the finished server; shipping it is Module 9's Build assignment.
+
 ## Usage
 
 ```bash

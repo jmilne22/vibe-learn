@@ -174,6 +174,39 @@ variants:
               content: >-
                 Result struct: <code>{Path string; Err error}</code>. Workers range over jobs, send results. Main
                 collects len(paths) results.
+          testGo: |-
+            func TestValidateConfigs(t *testing.T) {
+                paths := []string{"good.yaml", "bad.yaml", "ok.yaml", "very-bad.yaml"}
+                got := validateConfigs(paths, 2)
+
+                if len(got) != len(paths) {
+                    t.Fatalf("got %d entries, want %d — every path needs a result", len(got), len(paths))
+                }
+                for _, p := range []string{"good.yaml", "ok.yaml"} {
+                    if err, present := got[p]; !present || err != nil {
+                        t.Errorf("got[%s] = %v (present=%v), want nil error", p, err, present)
+                    }
+                }
+                for _, p := range []string{"bad.yaml", "very-bad.yaml"} {
+                    if got[p] == nil {
+                        t.Errorf("got[%s] = nil, want a validation error", p)
+                    }
+                }
+            }
+
+            func TestValidateConfigsSingleWorker(t *testing.T) {
+                got := validateConfigs([]string{"a.yaml", "bad.yaml"}, 1)
+                if len(got) != 2 {
+                    t.Fatalf("got %d entries with 1 worker, want 2", len(got))
+                }
+            }
+
+            func TestValidateConfigsEmpty(t *testing.T) {
+                got := validateConfigs(nil, 3)
+                if len(got) != 0 {
+                    t.Errorf("got %v for no paths, want empty map", got)
+                }
+            }
           solution: |-
             type valResult struct {
                 Path string
@@ -244,6 +277,92 @@ variants:
               content: >-
                 Create a derived context with <code>context.WithCancel(ctx)</code>. On first error, call cancel.
                 Semaphore: <code>make(chan struct{}, maxConcurrent)</code>.
+          stubGo: |-
+            type Response struct {
+                URL    string
+                Status int
+                Err    error
+            }
+
+            func fetchAll(ctx context.Context, urls []string, maxConcurrent int) ([]Response, error) {
+                panic("implement me")
+            }
+          testGo: |-
+            func TestFetchAllSuccess(t *testing.T) {
+                var inFlight, maxInFlight atomic.Int32
+                server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+                    cur := inFlight.Add(1)
+                    for {
+                        prev := maxInFlight.Load()
+                        if cur <= prev || maxInFlight.CompareAndSwap(prev, cur) {
+                            break
+                        }
+                    }
+                    time.Sleep(30 * time.Millisecond)
+                    inFlight.Add(-1)
+                    fmt.Fprint(w, "ok")
+                }))
+                defer server.Close()
+
+                urls := make([]string, 9)
+                for i := range urls {
+                    urls[i] = fmt.Sprintf("%s/page-%d", server.URL, i)
+                }
+
+                got, err := fetchAll(context.Background(), urls, 3)
+                if err != nil {
+                    t.Fatalf("unexpected error: %v", err)
+                }
+                if len(got) != len(urls) {
+                    t.Fatalf("got %d responses, want %d", len(got), len(urls))
+                }
+                for _, r := range got {
+                    if r.Status != 200 {
+                        t.Errorf("%s status = %d, want 200", r.URL, r.Status)
+                    }
+                }
+                if observed := maxInFlight.Load(); observed > 3 {
+                    t.Errorf("observed %d concurrent requests, want at most 3", observed)
+                }
+            }
+
+            func TestFetchAllFirstErrorWins(t *testing.T) {
+                server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+                    fmt.Fprint(w, "ok")
+                }))
+                dead := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+                dead.Close() // connections to this URL now fail
+
+                urls := []string{server.URL, dead.URL, server.URL}
+                defer server.Close()
+
+                if _, err := fetchAll(context.Background(), urls, 3); err == nil {
+                    t.Fatal("want error when one fetch fails, got nil")
+                }
+            }
+
+            func TestFetchAllCancelledContext(t *testing.T) {
+                ctx, cancel := context.WithCancel(context.Background())
+                cancel()
+
+                server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+                    fmt.Fprint(w, "ok")
+                }))
+                defer server.Close()
+
+                done := make(chan struct{})
+                go func() {
+                    defer close(done)
+                    if _, err := fetchAll(ctx, []string{server.URL, server.URL}, 2); err == nil {
+                        t.Error("want error for cancelled context, got nil")
+                    }
+                }()
+                select {
+                case <-done:
+                case <-time.After(3 * time.Second):
+                    t.Fatal("fetchAll hung on a cancelled context")
+                }
+            }
           solution: |-
             type Response struct {
                 URL    string
@@ -322,6 +441,68 @@ variants:
               content: >-
                 Stage 1: goroutine with WalkDir, sends to paths channel, closes it. Stage 2: N workers range over paths,
                 send LintResult to results. Stage 3: range over results, count valid/invalid.
+          stubGo: |-
+            type LintResult struct {
+                Path  string
+                Valid bool
+                Err   string
+            }
+            type Summary struct {
+                Total, Valid, Invalid int
+            }
+
+            func lintPipeline(ctx context.Context, root string, workers int) (Summary, error) {
+                panic("implement me")
+            }
+          testGo: |-
+            func TestLintPipeline(t *testing.T) {
+                root := t.TempDir()
+                write := func(name, content string) {
+                    t.Helper()
+                    if err := os.WriteFile(filepath.Join(root, name), []byte(content), 0o644); err != nil {
+                        t.Fatal(err)
+                    }
+                }
+                write("a.yaml", "kind: Pod\n")
+                write("b.yaml", "replicas: 3\n")
+                write("c.yaml", "name: svc\n")
+                write("broken1.yaml", "a: [unclosed\n")
+                write("broken2.yaml", "x: {{nope\n")
+                write("ignored.txt", "not yaml at all")
+
+                got, err := lintPipeline(context.Background(), root, 3)
+                if err != nil {
+                    t.Fatalf("unexpected error: %v", err)
+                }
+                want := Summary{Total: 5, Valid: 3, Invalid: 2}
+                if got != want {
+                    t.Errorf("got %+v, want %+v (.txt files must be skipped)", got, want)
+                }
+            }
+
+            func TestLintPipelineSingleWorker(t *testing.T) {
+                root := t.TempDir()
+                if err := os.WriteFile(filepath.Join(root, "one.yaml"), []byte("a: 1\n"), 0o644); err != nil {
+                    t.Fatal(err)
+                }
+                got, err := lintPipeline(context.Background(), root, 1)
+                if err != nil {
+                    t.Fatalf("unexpected error: %v", err)
+                }
+                if got.Total != 1 || got.Valid != 1 {
+                    t.Errorf("got %+v, want Total:1 Valid:1", got)
+                }
+            }
+
+            func TestLintPipelineEmptyDir(t *testing.T) {
+                got, err := lintPipeline(context.Background(), t.TempDir(), 4)
+                if err != nil {
+                    t.Fatalf("unexpected error: %v", err)
+                }
+                if got.Total != 0 {
+                    t.Errorf("got %+v for empty dir, want zero summary", got)
+                }
+            }
           solution: |-
             type LintResult struct {
                 Path  string
@@ -425,6 +606,59 @@ variants:
               content: >-
                 Use a buffered results channel. After launching goroutines, collect with select: <code>case r :=
                 <-results</code> or <code>case <-ctx.Done()</code>.
+          stubGo: |-
+            type HealthResult struct {
+                URL     string
+                Healthy bool
+            }
+
+            func checkHealthWithTimeout(endpoints []string, timeout time.Duration) []HealthResult {
+                panic("implement me")
+            }
+          testGo: |-
+            func TestCheckHealthWithTimeoutAllFast(t *testing.T) {
+                healthy := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+                defer healthy.Close()
+                sick := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+                    w.WriteHeader(http.StatusInternalServerError)
+                }))
+                defer sick.Close()
+
+                got := checkHealthWithTimeout([]string{healthy.URL, sick.URL}, 5*time.Second)
+                if len(got) != 2 {
+                    t.Fatalf("got %d results, want 2", len(got))
+                }
+                byURL := map[string]bool{}
+                for _, r := range got {
+                    byURL[r.URL] = r.Healthy
+                }
+                if !byURL[healthy.URL] {
+                    t.Errorf("%s reported unhealthy, want healthy", healthy.URL)
+                }
+                if byURL[sick.URL] {
+                    t.Errorf("%s reported healthy, want unhealthy (500)", sick.URL)
+                }
+            }
+
+            func TestCheckHealthWithTimeoutPartialResults(t *testing.T) {
+                fast := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+                defer fast.Close()
+                slow := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+                    time.Sleep(3 * time.Second)
+                }))
+                defer slow.Close()
+
+                start := time.Now()
+                got := checkHealthWithTimeout([]string{fast.URL, slow.URL}, 400*time.Millisecond)
+                elapsed := time.Since(start)
+
+                if elapsed > 2*time.Second {
+                    t.Errorf("returned after %v — must give up at the 400ms timeout", elapsed)
+                }
+                if len(got) > 2 {
+                    t.Errorf("got %d results for 2 endpoints", len(got))
+                }
+            }
           solution: |-
             type HealthResult struct {
                 URL     string
@@ -489,6 +723,58 @@ variants:
               content: >-
                 Loop with select: <code>case job, ok := <-jobs</code> (process), <code>case <-ctx.Done()</code> (return
                 count). Check <code>!ok</code> for closed channel.
+          testGo: |-
+            func TestRunServiceDrainsClosedChannel(t *testing.T) {
+                jobs := make(chan string, 5)
+                for i := 0; i < 5; i++ {
+                    jobs <- fmt.Sprintf("job-%d", i)
+                }
+                close(jobs)
+
+                got := runService(context.Background(), jobs)
+                if got != 5 {
+                    t.Errorf("processed %d jobs, want 5 (drain the channel until closed)", got)
+                }
+            }
+
+            func TestRunServiceCancelledBeforeWork(t *testing.T) {
+                ctx, cancel := context.WithCancel(context.Background())
+                cancel()
+                jobs := make(chan string) // nothing ever arrives
+
+                done := make(chan int, 1)
+                go func() { done <- runService(ctx, jobs) }()
+
+                select {
+                case got := <-done:
+                    if got != 0 {
+                        t.Errorf("processed %d jobs on a cancelled context, want 0", got)
+                    }
+                case <-time.After(2 * time.Second):
+                    t.Fatal("runService did not return on a cancelled context")
+                }
+            }
+
+            func TestRunServiceStopsOnCancel(t *testing.T) {
+                ctx, cancel := context.WithCancel(context.Background())
+                jobs := make(chan string) // unbuffered, never closed
+
+                done := make(chan int, 1)
+                go func() { done <- runService(ctx, jobs) }()
+
+                jobs <- "one"
+                jobs <- "two"
+                cancel()
+
+                select {
+                case got := <-done:
+                    if got != 2 {
+                        t.Errorf("processed %d jobs, want 2 (finish current work, then stop)", got)
+                    }
+                case <-time.After(2 * time.Second):
+                    t.Fatal("runService did not return after cancellation")
+                }
+            }
           solution: |-
             func runService(ctx context.Context, jobs <-chan string) int {
                 count := 0
@@ -540,6 +826,75 @@ variants:
               content: >-
                 Service: <code>storeCtx, cancel := context.WithTimeout(ctx, 2*time.Second)</code>. Try store. If
                 deadline exceeded, try fallback with the parent ctx (which still has time).
+          stubGo: |-
+            // Simulated backends — store is slow (3s), fallback is fast (500ms).
+            // You implement service() and handler() on top of them.
+            func store(ctx context.Context) (string, error) {
+                select {
+                case <-ctx.Done():
+                    return "", ctx.Err()
+                case <-time.After(3 * time.Second):
+                    return "data from store", nil
+                }
+            }
+
+            func fallback(ctx context.Context) (string, error) {
+                select {
+                case <-ctx.Done():
+                    return "", ctx.Err()
+                case <-time.After(500 * time.Millisecond):
+                    return "data from fallback", nil
+                }
+            }
+
+            func service(ctx context.Context) (string, error) {
+                panic("implement me")
+            }
+
+            func handler(ctx context.Context) (string, error) {
+                panic("implement me")
+            }
+          testGo: |-
+            func TestHandlerFallsBack(t *testing.T) {
+                start := time.Now()
+                got, err := handler(context.Background())
+                elapsed := time.Since(start)
+
+                if err != nil {
+                    t.Fatalf("unexpected error: %v", err)
+                }
+                if got != "data from fallback" {
+                    t.Errorf("got %q, want data from fallback (store is too slow for its 2s budget)", got)
+                }
+                if elapsed < 1500*time.Millisecond {
+                    t.Errorf("returned in %v — the store call must get its full 2s before falling back", elapsed)
+                }
+                if elapsed > 4*time.Second {
+                    t.Errorf("took %v — fallback should complete well inside the 5s handler budget", elapsed)
+                }
+            }
+
+            func TestHandlerCancelledUpfront(t *testing.T) {
+                ctx, cancel := context.WithCancel(context.Background())
+                cancel()
+
+                done := make(chan struct{})
+                var got string
+                var err error
+                go func() {
+                    defer close(done)
+                    got, err = handler(ctx)
+                }()
+
+                select {
+                case <-done:
+                case <-time.After(2 * time.Second):
+                    t.Fatal("handler did not return promptly on a cancelled context")
+                }
+                if err == nil {
+                    t.Errorf("got (%q, nil), want a context error", got)
+                }
+            }
           solution: |-
             func store(ctx context.Context) (string, error) {
                 select {

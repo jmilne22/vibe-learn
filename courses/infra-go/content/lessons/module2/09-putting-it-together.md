@@ -123,3 +123,5 @@ Take stock of every Module 2 idea you used here:
 If anything here felt fuzzy, the cross-references are the place to go back. If it all clicked, you're ready for Module 3, where every one of these types gets a test.
 
 ---
+
+> **Next:** the Build section — Milestone 1's loose loops are begging for the types you just learned.

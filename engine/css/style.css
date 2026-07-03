@@ -1324,6 +1324,67 @@ pre::-webkit-scrollbar-thumb:hover {
     border-radius: 0;
 }
 
+/* Local practice workspace path */
+.workspace-path {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin: var(--space-4) 0;
+    padding: var(--space-2) var(--space-3);
+    background: var(--bg-elevated);
+    border: 1px solid rgba(224, 151, 106, 0.25);
+    border-radius: var(--radius-md);
+    font-size: 0.85rem;
+}
+
+.workspace-path-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--amber);
+}
+
+.workspace-path code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    background: none;
+    padding: 0;
+}
+
+.workspace-copy-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    padding: 2px 8px;
+    border: 1px solid rgba(224, 151, 106, 0.35);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--amber);
+    cursor: pointer;
+}
+
+.workspace-copy-btn:hover {
+    background: rgba(224, 151, 106, 0.12);
+}
+
+.workspace-copy-btn.copied {
+    color: var(--success, #7bc47f);
+    border-color: currentColor;
+}
+
+.workspace-path-hint {
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+}
+
+.workspace-path-hint code {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+}
+
 /* Test cases */
 .expected {
     margin-top: var(--space-5);

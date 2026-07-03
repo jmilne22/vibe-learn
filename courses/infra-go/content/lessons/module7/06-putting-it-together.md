@@ -40,3 +40,5 @@ func processQueue(ctx context.Context, jobs <-chan Job, workers int, ratePerSec 
 This combines everything: bounded workers, rate limiting, context cancellation, and clean channel lifecycle.
 
 ---
+
+> **Next:** the Build section — ship the reporter. Second repo of five.

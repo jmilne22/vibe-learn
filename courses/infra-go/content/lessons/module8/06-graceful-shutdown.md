@@ -39,3 +39,5 @@ func main() {
 `Shutdown` stops accepting new connections and waits for in-flight requests to complete. This is mandatory for K8s — without it, you drop requests during rolling deployments.
 
 ---
+
+> **Next:** the Build section — drop below HTTP and start the DNS server.

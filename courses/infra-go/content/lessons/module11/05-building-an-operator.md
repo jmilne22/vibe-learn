@@ -91,3 +91,7 @@ func (r *CronTabReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 **Why finalizers?** Without them, if you delete a CRD resource, any external resources it created (DNS records, cloud resources, etc.) become orphaned.
 
 ---
+
+### Ship your project: K8s Operator
+
+This module's exercises are deliberately thin — the real practice is [Project 5: K8s Operator](project-k8s-operator.html), four milestones from "reconciler logs a request" to "fake-client tests pass with no cluster." Ship it and you've completed the course the way it's meant to be completed: five real tools in five real repos.

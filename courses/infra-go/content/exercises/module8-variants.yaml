@@ -157,6 +157,27 @@ variants:
               content: What Content-Type header should a JSON response have?
             - title: Hint
               content: Set Content-Type to application/json, WriteHeader(200), then json.NewEncoder(w).Encode the map.
+          testGo: |-
+            func TestHealthHandler(t *testing.T) {
+                req := httptest.NewRequest("GET", "/healthz", nil)
+                rec := httptest.NewRecorder()
+
+                healthHandler(rec, req)
+
+                if rec.Code != http.StatusOK {
+                    t.Errorf("status = %d, want 200", rec.Code)
+                }
+                if ct := rec.Header().Get("Content-Type"); ct != "application/json" {
+                    t.Errorf("Content-Type = %q, want application/json", ct)
+                }
+                var body map[string]string
+                if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+                    t.Fatalf("body %q is not valid JSON: %v", rec.Body.String(), err)
+                }
+                if body["status"] != "ok" {
+                    t.Errorf("body = %v, want {\"status\":\"ok\"}", body)
+                }
+            }
           solution: |-
             func healthHandler(w http.ResponseWriter, r *http.Request) {
                 w.Header().Set("Content-Type", "application/json")
@@ -187,6 +208,49 @@ variants:
               content: >-
                 Iterate all checks, build a results map. If any check fails, set status to 503. Write the aggregated
                 results as JSON.
+          testGo: |-
+            func TestReadinessAllHealthy(t *testing.T) {
+                checks := map[string]func() error{
+                    "database": func() error { return nil },
+                    "cache":    func() error { return nil },
+                }
+                rec := httptest.NewRecorder()
+                readinessHandler(checks)(rec, httptest.NewRequest("GET", "/readyz", nil))
+
+                if rec.Code != http.StatusOK {
+                    t.Errorf("status = %d, want 200", rec.Code)
+                }
+                var body map[string]string
+                if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+                    t.Fatalf("invalid JSON body %q: %v", rec.Body.String(), err)
+                }
+                if body["database"] != "healthy" || body["cache"] != "healthy" {
+                    t.Errorf("body = %v, want both dependencies healthy", body)
+                }
+            }
+
+            func TestReadinessOneUnhealthy(t *testing.T) {
+                checks := map[string]func() error{
+                    "database": func() error { return errors.New("connection refused") },
+                    "cache":    func() error { return nil },
+                }
+                rec := httptest.NewRecorder()
+                readinessHandler(checks)(rec, httptest.NewRequest("GET", "/readyz", nil))
+
+                if rec.Code != http.StatusServiceUnavailable {
+                    t.Errorf("status = %d, want 503", rec.Code)
+                }
+                var body map[string]string
+                if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+                    t.Fatalf("invalid JSON body %q: %v", rec.Body.String(), err)
+                }
+                if !strings.Contains(body["database"], "unhealthy") || !strings.Contains(body["database"], "connection refused") {
+                    t.Errorf("database = %q, want unhealthy with the error message", body["database"])
+                }
+                if body["cache"] != "healthy" {
+                    t.Errorf("cache = %q, want healthy — check ALL dependencies, don't stop at the first failure", body["cache"])
+                }
+            }
           solution: |-
             func readinessHandler(checks map[string]func() error) http.HandlerFunc {
                 return func(w http.ResponseWriter, r *http.Request) {
@@ -234,6 +298,72 @@ variants:
               content: >-
                 For each check, create a context with timeout. Run the check in a goroutine, use select on the result
                 channel and ctx.Done(). Register both /healthz and /readyz on the mux.
+          stubGo: |-
+            func newHealthMux(checks map[string]func(context.Context) error, checkTimeout time.Duration) *http.ServeMux {
+                panic("implement me")
+            }
+          testGo: |-
+            func TestHealthMuxLiveness(t *testing.T) {
+                mux := newHealthMux(nil, time.Second)
+                rec := httptest.NewRecorder()
+                mux.ServeHTTP(rec, httptest.NewRequest("GET", "/healthz", nil))
+                if rec.Code != http.StatusOK {
+                    t.Errorf("/healthz status = %d, want 200", rec.Code)
+                }
+            }
+
+            func TestHealthMuxReadyAllPass(t *testing.T) {
+                checks := map[string]func(context.Context) error{
+                    "db":    func(ctx context.Context) error { return nil },
+                    "cache": func(ctx context.Context) error { return nil },
+                }
+                mux := newHealthMux(checks, time.Second)
+                rec := httptest.NewRecorder()
+                mux.ServeHTTP(rec, httptest.NewRequest("GET", "/readyz", nil))
+
+                if rec.Code != http.StatusOK {
+                    t.Errorf("/readyz status = %d, want 200", rec.Code)
+                }
+                var body map[string]string
+                if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+                    t.Fatalf("invalid JSON %q: %v", rec.Body.String(), err)
+                }
+                if body["db"] != "healthy" || body["cache"] != "healthy" {
+                    t.Errorf("body = %v, want both healthy", body)
+                }
+            }
+
+            func TestHealthMuxCheckTimeout(t *testing.T) {
+                checks := map[string]func(context.Context) error{
+                    "ok": func(ctx context.Context) error { return nil },
+                    "stuck": func(ctx context.Context) error {
+                        <-ctx.Done() // blocks until the per-check timeout fires
+                        return ctx.Err()
+                    },
+                }
+                mux := newHealthMux(checks, 100*time.Millisecond)
+                rec := httptest.NewRecorder()
+
+                start := time.Now()
+                mux.ServeHTTP(rec, httptest.NewRequest("GET", "/readyz", nil))
+                if elapsed := time.Since(start); elapsed > 2*time.Second {
+                    t.Errorf("readyz took %v — a stuck check must be cut off at its 100ms timeout", elapsed)
+                }
+
+                if rec.Code != http.StatusServiceUnavailable {
+                    t.Errorf("status = %d, want 503", rec.Code)
+                }
+                var body map[string]string
+                if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+                    t.Fatalf("invalid JSON %q: %v", rec.Body.String(), err)
+                }
+                if body["stuck"] != "unhealthy: timeout" {
+                    t.Errorf("stuck = %q, want \"unhealthy: timeout\"", body["stuck"])
+                }
+                if body["ok"] != "healthy" {
+                    t.Errorf("ok = %q, want healthy", body["ok"])
+                }
+            }
           solution: >-
             func newHealthMux(checks map[string]func(context.Context) error, checkTimeout time.Duration) *http.ServeMux
             {
@@ -305,6 +435,26 @@ variants:
               content: >-
                 Set <code>w.Header().Set("Access-Control-Allow-Origin", "*")</code> before calling
                 <code>next.ServeHTTP(w, r)</code>.
+          testGo: |-
+            func TestCORSMiddleware(t *testing.T) {
+                for _, method := range []string{"GET", "OPTIONS"} {
+                    called := false
+                    next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+                        called = true
+                        w.WriteHeader(http.StatusOK)
+                    })
+
+                    rec := httptest.NewRecorder()
+                    corsMiddleware(next).ServeHTTP(rec, httptest.NewRequest(method, "/api/pods", nil))
+
+                    if got := rec.Header().Get("Access-Control-Allow-Origin"); got != "*" {
+                        t.Errorf("%s: Access-Control-Allow-Origin = %q, want *", method, got)
+                    }
+                    if !called {
+                        t.Errorf("%s: next handler was not called", method)
+                    }
+                }
+            }
           solution: |-
             func corsMiddleware(next http.Handler) http.Handler {
                 return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -340,6 +490,47 @@ variants:
               content: >-
                 Use <code>r.RemoteAddr</code> for the IP. Lock the mutex, check and increment. If over limit, return
                 429. Start a goroutine with <code>time.NewTicker</code> to reset the map every minute.
+          testGo: |-
+            func rateLimitedRequest(handler http.Handler, ip string) int {
+                req := httptest.NewRequest("GET", "/", nil)
+                req.RemoteAddr = ip
+                rec := httptest.NewRecorder()
+                handler.ServeHTTP(rec, req)
+                return rec.Code
+            }
+
+            func TestRateLimitUnderLimit(t *testing.T) {
+                handler := rateLimitMiddleware(10)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+                for i := 0; i < 5; i++ {
+                    if code := rateLimitedRequest(handler, "10.0.0.1:1111"); code != http.StatusOK {
+                        t.Fatalf("request %d: status = %d, want 200", i+1, code)
+                    }
+                }
+            }
+
+            func TestRateLimitExceeded(t *testing.T) {
+                handler := rateLimitMiddleware(10)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+                for i := 0; i < 10; i++ {
+                    if code := rateLimitedRequest(handler, "10.0.0.2:2222"); code != http.StatusOK {
+                        t.Fatalf("request %d: status = %d, want 200", i+1, code)
+                    }
+                }
+                if code := rateLimitedRequest(handler, "10.0.0.2:2222"); code != http.StatusTooManyRequests {
+                    t.Errorf("11th request: status = %d, want 429", code)
+                }
+            }
+
+            func TestRateLimitPerIP(t *testing.T) {
+                handler := rateLimitMiddleware(10)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+                for i := 0; i < 10; i++ {
+                    if code := rateLimitedRequest(handler, "10.0.0.3:3333"); code != http.StatusOK {
+                        t.Fatalf("ip1 request %d: status = %d, want 200", i+1, code)
+                    }
+                    if code := rateLimitedRequest(handler, "10.0.0.4:4444"); code != http.StatusOK {
+                        t.Fatalf("ip2 request %d: status = %d, want 200 — counters must be per IP", i+1, code)
+                    }
+                }
+            }
           solution: |-
             func rateLimitMiddleware(maxPerMinute int) func(http.Handler) http.Handler {
                 var mu sync.Mutex
@@ -401,6 +592,49 @@ variants:
               content: >-
                 Iterate in reverse: <code>for i := len(mws)-1; i >= 0; i-- { handler = mws[i](handler) }</code>. This
                 makes the first middleware in the slice the outermost wrapper.
+          testGo: |-
+            func orderRecorder(name string, order *[]string) func(http.Handler) http.Handler {
+                return func(next http.Handler) http.Handler {
+                    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+                        *order = append(*order, name)
+                        next.ServeHTTP(w, r)
+                    })
+                }
+            }
+
+            func TestChainOrder(t *testing.T) {
+                var order []string
+                handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+                    order = append(order, "handler")
+                })
+
+                pipeline := Chain(
+                    orderRecorder("a", &order),
+                    orderRecorder("b", &order),
+                    orderRecorder("c", &order),
+                )(handler)
+
+                pipeline.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/", nil))
+
+                want := []string{"a", "b", "c", "handler"}
+                if len(order) != len(want) {
+                    t.Fatalf("execution order %v, want %v", order, want)
+                }
+                for i := range want {
+                    if order[i] != want[i] {
+                        t.Fatalf("execution order %v, want %v — Chain(a,b,c)(h) must run a first", order, want)
+                    }
+                }
+            }
+
+            func TestChainEmpty(t *testing.T) {
+                called := false
+                handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { called = true })
+                Chain()(handler).ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/", nil))
+                if !called {
+                    t.Error("Chain with no middleware must still call the handler")
+                }
+            }
           solution: |-
             func Chain(mws ...func(http.Handler) http.Handler) func(http.Handler) http.Handler {
                 return func(handler http.Handler) http.Handler {
@@ -412,12 +646,13 @@ variants:
             }
 
             // Usage:
-            pipeline := Chain(
-                recoveryMiddleware,
-                loggingMiddleware,
-                authMiddleware,
-            )
-            http.ListenAndServe(":8080", pipeline(mux))
+            //
+            //  pipeline := Chain(
+            //      recoveryMiddleware,
+            //      loggingMiddleware,
+            //      authMiddleware,
+            //  )
+            //  http.ListenAndServe(":8080", pipeline(mux))
           annotations:
             - type: pattern
               label: Middleware Composition

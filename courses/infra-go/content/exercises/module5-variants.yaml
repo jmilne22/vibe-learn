@@ -174,6 +174,77 @@ variants:
               content: >-
                 URL: <code>fmt.Sprintf("https://api.github.com/repos/%s/%s", owner, repo)</code>. Decode into a struct
                 with json tags matching GitHub's API (<code>stargazers_count</code>, <code>language</code>).
+          stubGo: |-
+            type Repo struct {
+                Name     string `json:"name"`
+                Stars    int    `json:"stargazers_count"`
+                Language string `json:"language"`
+            }
+
+            type GitHubClient struct {
+                token      string
+                httpClient *http.Client
+            }
+
+            func (c *GitHubClient) GetRepo(ctx context.Context, owner, repo string) (Repo, error) {
+                panic("implement me")
+            }
+          testGo: |-
+            // fakeTransport intercepts requests so no real network is used.
+            type fakeTransport struct {
+                lastReq *http.Request
+                status  int
+                body    string
+            }
+
+            func (f *fakeTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+                f.lastReq = req
+                return &http.Response{
+                    StatusCode: f.status,
+                    Body:       io.NopCloser(strings.NewReader(f.body)),
+                    Header:     make(http.Header),
+                    Request:    req,
+                }, nil
+            }
+
+            func TestGetRepo(t *testing.T) {
+                ft := &fakeTransport{status: 200, body: `{"name":"terraform","stargazers_count":40000,"language":"Go"}`}
+                c := &GitHubClient{token: "tok", httpClient: &http.Client{Transport: ft}}
+
+                got, err := c.GetRepo(context.Background(), "hashicorp", "terraform")
+                if err != nil {
+                    t.Fatalf("unexpected error: %v", err)
+                }
+                want := Repo{Name: "terraform", Stars: 40000, Language: "Go"}
+                if got != want {
+                    t.Errorf("got %+v, want %+v", got, want)
+                }
+                if ft.lastReq.URL.Path != "/repos/hashicorp/terraform" {
+                    t.Errorf("request path = %q, want /repos/hashicorp/terraform", ft.lastReq.URL.Path)
+                }
+                if auth := ft.lastReq.Header.Get("Authorization"); auth != "Bearer tok" {
+                    t.Errorf("Authorization = %q, want Bearer tok", auth)
+                }
+                if accept := ft.lastReq.Header.Get("Accept"); accept == "" {
+                    t.Error("Accept header must be set")
+                }
+            }
+
+            func TestGetRepoNon200(t *testing.T) {
+                ft := &fakeTransport{status: 404, body: `{"message":"Not Found"}`}
+                c := &GitHubClient{httpClient: &http.Client{Transport: ft}}
+                if _, err := c.GetRepo(context.Background(), "nope", "nope"); err == nil {
+                    t.Fatal("want error for 404 response, got nil")
+                }
+            }
+
+            func TestGetRepoBadJSON(t *testing.T) {
+                ft := &fakeTransport{status: 200, body: `{broken`}
+                c := &GitHubClient{httpClient: &http.Client{Transport: ft}}
+                if _, err := c.GetRepo(context.Background(), "a", "b"); err == nil {
+                    t.Fatal("want error for invalid JSON body, got nil")
+                }
+            }
           solution: |-
             type Repo struct {
                 Name     string `json:"name"`
@@ -245,6 +316,75 @@ variants:
               content: >-
                 In <code>do()</code>, if status >= 400, decode the error body into APIError, set StatusCode, return it.
                 Callers use <code>errors.As(err, &apiErr)</code> to check.
+          stubGo: |-
+            type APIError struct {
+                StatusCode int    `json:"-"`
+                Message    string `json:"message"`
+            }
+            func (e *APIError) Error() string {
+                return fmt.Sprintf("API error %d: %s", e.StatusCode, e.Message)
+            }
+
+            type CloudClient struct {
+                baseURL string
+                token   string
+                http    *http.Client
+            }
+
+            type Node struct {
+                ID   string `json:"id"`
+                Name string `json:"name"`
+            }
+
+            func (c *CloudClient) ListNodes(ctx context.Context) ([]Node, error) {
+                panic("implement me")
+            }
+          testGo: |-
+            func TestListNodes(t *testing.T) {
+                server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+                    if r.URL.Path != "/v1/nodes" {
+                        t.Errorf("path = %q, want /v1/nodes", r.URL.Path)
+                    }
+                    if auth := r.Header.Get("Authorization"); auth != "Bearer tok" {
+                        t.Errorf("Authorization = %q, want Bearer tok", auth)
+                    }
+                    fmt.Fprint(w, `{"nodes":[{"id":"n1","name":"web-1"},{"id":"n2","name":"web-2"}]}`)
+                }))
+                defer server.Close()
+
+                c := &CloudClient{baseURL: server.URL, token: "tok", http: server.Client()}
+                got, err := c.ListNodes(context.Background())
+                if err != nil {
+                    t.Fatalf("unexpected error: %v", err)
+                }
+                if len(got) != 2 || got[0].ID != "n1" || got[1].Name != "web-2" {
+                    t.Errorf("got %+v, want two nodes n1/web-1 n2/web-2", got)
+                }
+            }
+
+            func TestListNodesAPIError(t *testing.T) {
+                server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+                    w.WriteHeader(http.StatusUnauthorized)
+                    fmt.Fprint(w, `{"message":"unauthorized"}`)
+                }))
+                defer server.Close()
+
+                c := &CloudClient{baseURL: server.URL, token: "bad", http: server.Client()}
+                _, err := c.ListNodes(context.Background())
+                if err == nil {
+                    t.Fatal("want error for 401 response, got nil")
+                }
+                var apiErr *APIError
+                if !errors.As(err, &apiErr) {
+                    t.Fatalf("error %v (%T) must be a *APIError (callers need errors.As to work)", err, err)
+                }
+                if apiErr.StatusCode != 401 {
+                    t.Errorf("StatusCode = %d, want 401", apiErr.StatusCode)
+                }
+                if apiErr.Message != "unauthorized" {
+                    t.Errorf("Message = %q, want unauthorized (decode the error body)", apiErr.Message)
+                }
+            }
           solution: |-
             type APIError struct {
                 StatusCode int    `json:"-"`
@@ -333,6 +473,112 @@ variants:
               content: >-
                 Build URL with <code>url.Values</code> for the cursor param. Check <code>ctx.Err()</code> each iteration
                 for cancellation. Use a page counter and break at 100.
+          stubGo: |-
+            type Instance struct {
+                ID     string `json:"id"`
+                Name   string `json:"name"`
+                Type   string `json:"type"`
+                Region string `json:"region"`
+            }
+
+            func (c *CloudClient) ListAllInstances(ctx context.Context) ([]Instance, error) {
+                panic("implement me")
+            }
+          testGo: |-
+            // Scaffolding: the CloudClient and do() helper from the previous
+            // variant, provided so this exercise can focus on pagination.
+            type CloudClient struct {
+                baseURL string
+                token   string
+                http    *http.Client
+            }
+
+            func (c *CloudClient) do(ctx context.Context, method, path string) (*http.Response, error) {
+                req, err := http.NewRequestWithContext(ctx, method, c.baseURL+path, nil)
+                if err != nil {
+                    return nil, err
+                }
+                resp, err := c.http.Do(req)
+                if err != nil {
+                    return nil, err
+                }
+                if resp.StatusCode >= 400 {
+                    resp.Body.Close()
+                    return nil, fmt.Errorf("status %d", resp.StatusCode)
+                }
+                return resp, nil
+            }
+
+            func instancePage(start, count int, next string) string {
+                items := make([]string, count)
+                for i := 0; i < count; i++ {
+                    items[i] = fmt.Sprintf(`{"id":"i-%d","name":"vm-%d","type":"small","region":"us-east"}`, start+i, start+i)
+                }
+                return `{"instances":[` + strings.Join(items, ",") + `],"next_cursor":"` + next + `"}`
+            }
+
+            func TestListAllInstancesMultiPage(t *testing.T) {
+                server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+                    switch r.URL.Query().Get("cursor") {
+                    case "":
+                        fmt.Fprint(w, instancePage(0, 10, "p2"))
+                    case "p2":
+                        fmt.Fprint(w, instancePage(10, 10, "p3"))
+                    case "p3":
+                        fmt.Fprint(w, instancePage(20, 10, ""))
+                    default:
+                        t.Errorf("unexpected cursor %q", r.URL.Query().Get("cursor"))
+                        w.WriteHeader(http.StatusBadRequest)
+                    }
+                }))
+                defer server.Close()
+
+                c := &CloudClient{baseURL: server.URL, http: server.Client()}
+                got, err := c.ListAllInstances(context.Background())
+                if err != nil {
+                    t.Fatalf("unexpected error: %v", err)
+                }
+                if len(got) != 30 {
+                    t.Fatalf("got %d instances, want 30 (all three pages)", len(got))
+                }
+                if got[0].ID != "i-0" || got[29].ID != "i-29" {
+                    t.Errorf("results out of order: first %s last %s", got[0].ID, got[29].ID)
+                }
+            }
+
+            func TestListAllInstancesSinglePage(t *testing.T) {
+                server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+                    fmt.Fprint(w, instancePage(0, 5, ""))
+                }))
+                defer server.Close()
+
+                c := &CloudClient{baseURL: server.URL, http: server.Client()}
+                got, err := c.ListAllInstances(context.Background())
+                if err != nil {
+                    t.Fatalf("unexpected error: %v", err)
+                }
+                if len(got) != 5 {
+                    t.Errorf("got %d instances, want 5", len(got))
+                }
+            }
+
+            func TestListAllInstancesStuckCursor(t *testing.T) {
+                calls := 0
+                server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+                    calls++
+                    fmt.Fprint(w, instancePage(0, 1, "same-cursor-forever"))
+                }))
+                defer server.Close()
+
+                c := &CloudClient{baseURL: server.URL, http: server.Client()}
+                _, err := c.ListAllInstances(context.Background())
+                if err != nil {
+                    t.Fatalf("unexpected error: %v", err)
+                }
+                if calls > 100 {
+                    t.Errorf("made %d requests against a stuck cursor — the 100-page safety limit is missing", calls)
+                }
+            }
           solution: |-
             type Instance struct {
                 ID     string `json:"id"`
@@ -423,6 +669,58 @@ variants:
               content: >-
                 Use <code>code / 100</code> to get the class (2, 3, 4, 5). For isRetryable, check <code>code == 429 ||
                 code >= 500</code>.
+          stubGo: |-
+            func classifyStatus(code int) string {
+                panic("implement me")
+            }
+
+            func isRetryable(code int) bool {
+                panic("implement me")
+            }
+          testGo: |-
+            func TestClassifyStatus(t *testing.T) {
+                tests := []struct {
+                    code int
+                    want string
+                }{
+                    {200, "success"},
+                    {201, "success"},
+                    {299, "success"},
+                    {301, "redirect"},
+                    {404, "client_error"},
+                    {429, "client_error"},
+                    {500, "server_error"},
+                    {503, "server_error"},
+                    {599, "server_error"},
+                    {100, "unknown"},
+                    {700, "unknown"},
+                }
+                for _, tt := range tests {
+                    if got := classifyStatus(tt.code); got != tt.want {
+                        t.Errorf("classifyStatus(%d) = %q, want %q", tt.code, got, tt.want)
+                    }
+                }
+            }
+
+            func TestIsRetryable(t *testing.T) {
+                tests := []struct {
+                    code int
+                    want bool
+                }{
+                    {429, true},
+                    {500, true},
+                    {503, true},
+                    {404, false},
+                    {400, false},
+                    {200, false},
+                    {301, false},
+                }
+                for _, tt := range tests {
+                    if got := isRetryable(tt.code); got != tt.want {
+                        t.Errorf("isRetryable(%d) = %v, want %v", tt.code, got, tt.want)
+                    }
+                }
+            }
           solution: |-
             func classifyStatus(code int) string {
                 switch {
@@ -469,6 +767,72 @@ variants:
               content: >-
                 Read all bytes first with <code>io.ReadAll</code>. Try <code>json.Unmarshal</code> into a struct. If err
                 != nil, fall back to <code>string(body)</code> as message.
+          stubGo: |-
+            type APIError struct {
+                StatusCode int
+                Code       string `json:"code"`
+                Message    string `json:"message"`
+            }
+            func (e *APIError) Error() string {
+                if e.Code != "" {
+                    return fmt.Sprintf("API error %d (%s): %s", e.StatusCode, e.Code, e.Message)
+                }
+                return fmt.Sprintf("API error %d: %s", e.StatusCode, e.Message)
+            }
+
+            func handleAPIError(resp *http.Response) error {
+                panic("implement me")
+            }
+          testGo: |-
+            func fakeResponse(status int, body string) *http.Response {
+                return &http.Response{
+                    StatusCode: status,
+                    Body:       io.NopCloser(strings.NewReader(body)),
+                    Header:     make(http.Header),
+                }
+            }
+
+            func TestHandleAPIErrorJSON(t *testing.T) {
+                err := handleAPIError(fakeResponse(404, `{"error":{"code":"not_found","message":"Pod not found"}}`))
+                if err == nil {
+                    t.Fatal("want an error, got nil")
+                }
+                var apiErr *APIError
+                if !errors.As(err, &apiErr) {
+                    t.Fatalf("error %T must be *APIError", err)
+                }
+                if apiErr.StatusCode != 404 || apiErr.Code != "not_found" || apiErr.Message != "Pod not found" {
+                    t.Errorf("got %+v, want {404 not_found Pod not found}", apiErr)
+                }
+            }
+
+            func TestHandleAPIErrorPlainText(t *testing.T) {
+                err := handleAPIError(fakeResponse(500, "Internal Server Error"))
+                var apiErr *APIError
+                if !errors.As(err, &apiErr) {
+                    t.Fatalf("error %T must be *APIError", err)
+                }
+                if apiErr.StatusCode != 500 {
+                    t.Errorf("StatusCode = %d, want 500", apiErr.StatusCode)
+                }
+                if apiErr.Code != "" {
+                    t.Errorf("Code = %q, want empty for non-JSON body", apiErr.Code)
+                }
+                if apiErr.Message != "Internal Server Error" {
+                    t.Errorf("Message = %q, want raw body text fallback", apiErr.Message)
+                }
+            }
+
+            func TestHandleAPIErrorEmptyBody(t *testing.T) {
+                err := handleAPIError(fakeResponse(502, ""))
+                var apiErr *APIError
+                if !errors.As(err, &apiErr) {
+                    t.Fatalf("error %T must be *APIError", err)
+                }
+                if apiErr.StatusCode != 502 {
+                    t.Errorf("StatusCode = %d, want 502", apiErr.StatusCode)
+                }
+            }
           solution: |-
             type APIError struct {
                 StatusCode int
@@ -535,11 +899,100 @@ variants:
                 Backoff: <code>time.Duration(1<<attempt) * 100 * time.Millisecond</code>. For 429:
                 <code>strconv.Atoi(resp.Header.Get("Retry-After"))</code>. Use <code>select { case <-ctx.Done(): case
                 <-time.After(wait): }</code>.
+          stubGo: |-
+            func fetchWithRetry(ctx context.Context, client *http.Client, url string, maxRetries int) (*http.Response, error) {
+                panic("implement me")
+            }
+          testGo: |-
+            func TestFetchWithRetryEventualSuccess(t *testing.T) {
+                var calls atomic.Int32
+                server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+                    if calls.Add(1) <= 2 {
+                        w.WriteHeader(http.StatusServiceUnavailable)
+                        return
+                    }
+                    fmt.Fprint(w, "ok")
+                }))
+                defer server.Close()
+
+                resp, err := fetchWithRetry(context.Background(), server.Client(), server.URL, 5)
+                if err != nil {
+                    t.Fatalf("unexpected error: %v", err)
+                }
+                defer resp.Body.Close()
+                if resp.StatusCode != 200 {
+                    t.Errorf("status = %d, want 200", resp.StatusCode)
+                }
+                if calls.Load() != 3 {
+                    t.Errorf("server saw %d calls, want 3 (two 503s then success)", calls.Load())
+                }
+            }
+
+            func TestFetchWithRetryExhausted(t *testing.T) {
+                var calls atomic.Int32
+                server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+                    calls.Add(1)
+                    w.WriteHeader(http.StatusServiceUnavailable)
+                }))
+                defer server.Close()
+
+                _, err := fetchWithRetry(context.Background(), server.Client(), server.URL, 2)
+                if err == nil {
+                    t.Fatal("want error after exhausting retries, got nil")
+                }
+                if calls.Load() < 3 {
+                    t.Errorf("server saw %d calls, want at least 3 (initial + 2 retries)", calls.Load())
+                }
+            }
+
+            func TestFetchWithRetryNoRetryOn4xx(t *testing.T) {
+                var calls atomic.Int32
+                server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+                    calls.Add(1)
+                    w.WriteHeader(http.StatusNotFound)
+                }))
+                defer server.Close()
+
+                resp, err := fetchWithRetry(context.Background(), server.Client(), server.URL, 5)
+                if err != nil {
+                    t.Fatalf("unexpected error: %v", err)
+                }
+                defer resp.Body.Close()
+                if calls.Load() != 1 {
+                    t.Errorf("server saw %d calls, want 1 — 404 must not be retried", calls.Load())
+                }
+            }
+
+            func TestFetchWithRetryContextCancelled(t *testing.T) {
+                server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+                    w.WriteHeader(http.StatusServiceUnavailable)
+                }))
+                defer server.Close()
+
+                ctx, cancel := context.WithTimeout(context.Background(), 250*time.Millisecond)
+                defer cancel()
+
+                done := make(chan error, 1)
+                go func() {
+                    _, err := fetchWithRetry(ctx, server.Client(), server.URL, 10)
+                    done <- err
+                }()
+
+                select {
+                case err := <-done:
+                    if !errors.Is(err, context.DeadlineExceeded) {
+                        t.Errorf("err = %v, want context.DeadlineExceeded", err)
+                    }
+                case <-time.After(5 * time.Second):
+                    t.Fatal("fetchWithRetry did not return after context cancellation")
+                }
+            }
           solution: >-
             func fetchWithRetry(ctx context.Context, client *http.Client, url string, maxRetries int) (*http.Response,
             error) {
                 var lastErr error
                 for attempt := 0; attempt <= maxRetries; attempt++ {
+                    var wait time.Duration
                     req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
                     if err != nil {
                         return nil, err
@@ -550,7 +1003,6 @@ variants:
                     } else if resp.StatusCode < 400 {
                         return resp, nil
                     } else if resp.StatusCode == 429 || resp.StatusCode >= 500 {
-                        var wait time.Duration
                         if resp.StatusCode == 429 {
                             if s, err := strconv.Atoi(resp.Header.Get("Retry-After")); err == nil {
                                 wait = time.Duration(s) * time.Second

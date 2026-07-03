@@ -69,3 +69,7 @@ Convention: 0 = success, 1 = runtime error, 2 = validation failures. This lets C
 ---
 
 <div class="inline-exercises" data-concept="Validation"></div>
+
+---
+
+> **Next:** the Build section — ship the linter. First repo of five.

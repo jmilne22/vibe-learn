@@ -74,3 +74,5 @@ func withRetry(ctx context.Context, maxRetries int, fn func() (*http.Response, e
 Only retry on transient failures (5xx, timeouts). Never retry 4xx — those are your bug.
 
 ---
+
+> **Next:** the Build section — tool two starts, deliberately slow. Modules 6–7 will fix that.

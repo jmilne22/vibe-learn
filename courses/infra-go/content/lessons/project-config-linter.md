@@ -16,6 +16,10 @@ Your program should:
 
 Every infra team needs config validation. This project exercises everything from Track 1 (slices, maps, structs, error handling, testing) plus CLI and file I/O from Module 4.
 
+## How You Got Here
+
+This tool was built across Modules 1–4, one milestone per module — each module's final **Build** section. If you've arrived here through those, everything on this page is now your job; this is the complete spec of the finished tool, and shipping it is Module 4's Build assignment.
+
 ## Usage
 
 ```bash

@@ -172,3 +172,5 @@ func assertParseError(t *testing.T, err error, wantLine int) {
 If you want to push further: add a property test that random-generates configs and round-trips them through `ParseConfig` + a writer. The pattern still holds — table-driven, real `io.Reader`, error-kind assertions. The skeleton you built here will reappear in every Module 4-7 project, just with HTTP responses or YAML structs instead of `key=value` lines.
 
 ---
+
+> **Next:** the Build section — your linter gets error handling and a permanent test suite.

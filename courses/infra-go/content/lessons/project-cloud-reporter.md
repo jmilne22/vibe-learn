@@ -14,6 +14,10 @@ Your program should:
 
 This is the kind of tool every infra team builds internally. Whether it's querying AWS, GCP, or an internal inventory system, the pattern is always: connect → fetch → aggregate → report. This project exercises HTTP clients, JSON handling, pagination, and data aggregation.
 
+## How You Got Here
+
+This tool was built across Modules 5–7, one milestone per module — each module's final **Build** section. This page is the complete spec of the finished tool; shipping it is Module 7's Build assignment.
+
 ## Usage
 
 ```bash

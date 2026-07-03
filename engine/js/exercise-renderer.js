@@ -127,6 +127,38 @@
         </div>`;
     }
 
+    // Render the local practice workspace path for variants that have one.
+    // practiceDir is set at build time for challenge variants with a testGo
+    // block (see generate-practice.js); done = `go test` passing there.
+    function renderWorkspacePath(variant) {
+        var dir = variant.practiceDir;
+        if (!dir) return '';
+        var cmd = 'cd ' + dir;
+        return `<div class="workspace-path">
+            <span class="workspace-path-label">Work locally</span>
+            <code>${escapeHtml(cmd)}</code>
+            <button type="button" class="workspace-copy-btn" data-copy="${escapeHtml(cmd)}">Copy</button>
+            <span class="workspace-path-hint">edit exercise.go, then <code>go test</code></span>
+        </div>`;
+    }
+
+    // One delegated listener: cards are re-rendered on shuffle and
+    // easier/harder swaps, so per-card listeners would be lost.
+    document.addEventListener('click', function (e) {
+        var btn = e.target && e.target.closest ? e.target.closest('.workspace-copy-btn') : null;
+        if (!btn) return;
+        var text = btn.getAttribute('data-copy') || '';
+        navigator.clipboard.writeText(text).then(function () {
+            var original = btn.textContent;
+            btn.textContent = 'Copied!';
+            btn.classList.add('copied');
+            setTimeout(function () {
+                btn.textContent = original;
+                btn.classList.remove('copied');
+            }, 1500);
+        });
+    });
+
     // Render expected output / test cases
     function renderExpected(variant) {
         if (variant.testCases) {
@@ -241,6 +273,7 @@
             if (difficultyNav) html += difficultyNav;
             html += `<div class="exercise-description">${variant.description}</div>`;
             html += renderFunctionSignature(variant);
+            html += renderWorkspacePath(variant);
             html += renderExpected(variant);
             html += renderHints(variant.hints);
             if (challenge && challenge.docLinks) html += renderDocLinks(challenge.docLinks);
@@ -263,6 +296,7 @@
             if (difficultyNav) html += difficultyNav;
             html += `<div class="exercise-description exercise-prompt">${variant.description}</div>`;
             html += renderFunctionSignature(variant);
+            html += renderWorkspacePath(variant);
             html += renderExpected(variant);
             html += renderHints(variant.hints);
             if (challenge && challenge.docLinks) html += renderDocLinks(challenge.docLinks);

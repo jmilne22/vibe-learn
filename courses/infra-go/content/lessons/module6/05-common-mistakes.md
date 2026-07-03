@@ -59,3 +59,5 @@ for i := 0; i < 1000; i++ {
 Detect with `go test -race`. Fix with channels, sync.Mutex, or sync/atomic.
 
 ---
+
+> **Next:** the Build section — make your reporter concurrent. Every mistake above will try to happen there.

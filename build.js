@@ -1343,6 +1343,20 @@ function buildCourse(slug) {
         // Add blank lines between logical blocks in solutions for readability
         addSolutionSpacing(parsed);
 
+        // Variants with a testGo block get a local practice workspace
+        // (see generate-practice.js). Ship the path, not the test source.
+        if (Array.isArray(variants.challenges)) {
+            variants.challenges.forEach(challenge => {
+                (challenge.variants || []).forEach(v => {
+                    if (v.testGo) {
+                        v.practiceDir = `practice/module${moduleNum}/${challenge.id}_${v.id}`;
+                    }
+                    delete v.testGo;
+                    delete v.stubGo;
+                });
+            });
+        }
+
         const jsonStr = JSON.stringify(parsed);
         const js = `// Auto-generated from ${yamlFile} - do not edit directly\nwindow.moduleData = ${jsonStr};\nwindow.moduleDataRegistry = window.moduleDataRegistry || {};\nwindow.moduleDataRegistry[${moduleNum}] = window.moduleData;\n`;
 
