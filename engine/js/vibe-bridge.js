@@ -255,6 +255,11 @@
 
     function renderStatusPill(state) {
         var pill = document.getElementById('vibe-status-pill');
+        // Lesson pages show workbench status in the rail instead
+        if (document.querySelector('.rail-workbench')) {
+            if (pill) pill.remove();
+            return;
+        }
         if (!pill) {
             pill = document.createElement('div');
             pill.id = 'vibe-status-pill';
