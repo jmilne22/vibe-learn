@@ -369,8 +369,50 @@ function runWatch(args) {
         } else {
             console.log(C.dim(`  no built courses found — run \`npm run build\` first`));
         }
-        console.log(C.dim('  `vibe check` results reach the open course page automatically'));
+        const watching = startFileWatcher();
+        console.log(watching
+            ? C.dim('  watching practice/ — saving a .go file runs its tests automatically')
+            : C.dim('  practice/ not found — run `npm run practice`, then restart to enable auto-check'));
+        console.log(C.dim('  results reach the open course page within a few seconds'));
     });
+}
+
+// Rustlings-style auto-check: watch practice/ and run `vibe check` on the
+// exercise whose files you save. Runs checks serially in a child process so
+// the HTTP server stays responsive; results reach the browser the same way
+// manual checks do.
+function startFileWatcher() {
+    if (!fs.existsSync(PRACTICE_DIR)) return false;
+    const { spawn } = require('child_process');
+    const timers = new Map();  // exercise dir -> debounce timer
+    const queue = [];
+    let child = null;
+
+    const runNext = () => {
+        if (child || queue.length === 0) return;
+        const dir = queue.shift();
+        console.log(C.dim(`\n— ${path.relative(ROOT, dir)} saved — checking…`));
+        child = spawn(process.execPath, [__filename, 'check', dir], { stdio: 'inherit' });
+        child.on('exit', () => { child = null; runNext(); });
+    };
+
+    try {
+        fs.watch(PRACTICE_DIR, { recursive: true }, (event, filename) => {
+            if (!filename || !filename.endsWith('.go')) return;
+            const parts = filename.split(path.sep);
+            if (parts.length < 3 || !/^module\d+$/.test(parts[0])) return;
+            const dir = path.join(PRACTICE_DIR, parts[0], parts[1]);
+            clearTimeout(timers.get(dir));
+            timers.set(dir, setTimeout(() => {
+                timers.delete(dir);
+                if (!queue.includes(dir)) queue.push(dir);
+                runNext();
+            }, 400));
+        });
+        return true;
+    } catch (e) {
+        return false;
+    }
 }
 
 // --- main ---
