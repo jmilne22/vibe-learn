@@ -8438,3 +8438,8 @@ body.sidebar-open .sidebar-toggle {
     .mastery-row { grid-template-columns: 1fr; gap: 6px; }
     .session-plan h1 { font-size: 1.8rem; }
 }
+
+/* Global local-first enhancement on module-page cards */
+.vibe-panel { margin: 12px 0; }
+.vibe-graded .self-rating,
+.vibe-graded .self-rating-label { display: none; }

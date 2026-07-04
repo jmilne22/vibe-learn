@@ -166,8 +166,8 @@
     }
 
     /**
-     * Start the poll loop (idempotent). Re-probes when the daemon is down,
-     * so starting `vibe watch` mid-session reconnects automatically.
+     * Start the poll loop (idempotent). Re-probes (with backoff) when the
+     * daemon is down, so starting `vibe watch` mid-session reconnects.
      */
     function startPolling() {
         if (pollTimer) return;
@@ -177,15 +177,122 @@
                 if (data.now && !getLastSeen()) setLastSeen(data.now);
             }).catch(function() {});
         });
+        var tick = 0;
         pollTimer = setInterval(function() {
+            tick++;
             if (online) pollOnce();
-            else probe();
+            else if (tick % 4 === 0) probe(); // offline: back off to ~12s
         }, POLL_MS);
     }
 
     function stopPolling() {
         if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
         currentItem = null;
+    }
+
+    // --- Global card enhancement (module pages, exercises pages) ---
+    //
+    // Any rendered exercise card whose exercise has a local go-test
+    // workspace gets a "save to run" panel and objective grading; its
+    // self-rating buttons are hidden. Cards without a workspace are
+    // untouched.
+
+    function escapeHtml(s) {
+        return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+            return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c];
+        });
+    }
+
+    function workspaceDirOf(variantKey) {
+        var m = variantKey.match(/^m(\d+)_(.+)$/);
+        return m ? 'practice/module' + m[1] + '/' + m[2] : 'practice/';
+    }
+
+    function enhanceExerciseCards(root) {
+        if (!online) return;
+        (root || document).querySelectorAll('.exercise[data-exercise-key]').forEach(function(card) {
+            if (card.dataset.vibeEnhanced) return;
+            // Session pages render their own local-first cards
+            if (card.classList.contains('vibe-card')) return;
+            var key = card.dataset.exerciseKey;
+            var baseKey = key.replace(/_(?:v|tp)\w+$/, '');
+            var ws = resolveWorkspace(key) || resolveWorkspace(baseKey);
+            if (!ws) return;
+
+            card.dataset.vibeEnhanced = '1';
+            card.dataset.vibeKey = baseKey;
+            card.classList.add('vibe-graded');
+
+            var panel = document.createElement('div');
+            panel.className = 'vibe-panel';
+            panel.innerHTML =
+                '<div class="vibe-terminal">' +
+                    '<div class="vibe-terminal-head">' +
+                        '<span>in your editor — not here</span>' +
+                        '<span class="vibe-watch-status">watching for saves…</span>' +
+                    '</div>' +
+                    '<pre><span class="vibe-dim">edit &amp; save — tests run automatically</span>\n' +
+                    escapeHtml(workspaceDirOf(ws)) + '/exercise.go</pre>' +
+                '</div>' +
+                '<div class="vibe-results vibe-results-pane"><span class="vibe-dim">no run yet — saving the file runs its tests</span></div>';
+
+            var rating = card.querySelector('.self-rating');
+            if (rating && rating.parentNode) {
+                rating.parentNode.insertBefore(panel, rating);
+            } else {
+                card.appendChild(panel);
+            }
+        });
+    }
+
+    // Fill result panes on any page when a run lands
+    window.addEventListener('vibeResult', function(e) {
+        var result = e.detail.result;
+        document.querySelectorAll('[data-vibe-key="' + result.key + '"] .vibe-results-pane').forEach(function(pane) {
+            var html = '';
+            if (result.buildFailed) {
+                html += '<div class="vibe-line fail">✗ build failed</div>' +
+                    '<div class="vibe-line dim">' + escapeHtml((result.buildOutput || '').split('\n').slice(0, 6).join('\n')) + '</div>';
+            } else {
+                (result.tests || []).forEach(function(t) {
+                    html += '<div class="vibe-line ' + (t.pass ? 'pass' : 'fail') + '">' + (t.pass ? '✓' : '✗') + ' ' + escapeHtml(t.name) + '</div>';
+                    if (!t.pass && t.output) {
+                        var tail = t.output.split('\n').filter(function(l) { return /---|FAIL|got|want|expected/.test(l); }).slice(0, 3).join('\n');
+                        if (tail) html += '<div class="vibe-line dim">' + escapeHtml(tail) + '</div>';
+                    }
+                });
+            }
+            if (result.vetOk === false && result.vetOutput) {
+                html += '<div class="vibe-line dim">go vet: ' + escapeHtml(result.vetOutput.split('\n')[0]) + '</div>';
+            }
+            var entry = window.SRS && window.SRS.getAll()[result.key];
+            html += '<div class="vibe-line meta">' + (result.pass ? 'passed ✓' : 'failed') +
+                ' · attempt ' + result.attempt +
+                (entry && entry.interval ? ' · next review in ' + entry.interval + 'd' : '') + '</div>';
+            pane.innerHTML = html;
+        });
+    });
+
+    window.addEventListener('vibeStatusChanged', function(e) {
+        if (e.detail.online) setTimeout(function() { enhanceExerciseCards(); }, 50);
+    });
+
+    // Exercise cards render asynchronously on module pages
+    window.addEventListener('moduleDataLoaded', function() {
+        setTimeout(function() { enhanceExerciseCards(); }, 200);
+    });
+
+    function autoStart() {
+        // Only poll on pages that actually show exercises
+        if (document.querySelector('#warmups-container, #challenges-container, .inline-exercises, .exercise[data-exercise-key]')) {
+            startPolling();
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', autoStart);
+    } else {
+        autoStart();
     }
 
     window.VibeBridge = {
@@ -196,6 +303,7 @@
         announce: announce,
         startPolling: startPolling,
         stopPolling: stopPolling,
+        enhanceExerciseCards: enhanceExerciseCards,
         port: PORT
     };
 })();

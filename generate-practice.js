@@ -29,7 +29,6 @@ const { spawnSync } = require('child_process');
 const yaml = require('js-yaml');
 
 const ROOT = __dirname;
-const MODULES = [4, 5, 6, 7, 8, 9, 10, 11];
 const PRACTICE_DIR = path.join(ROOT, 'practice');
 const VERIFY_DIR = path.join(PRACTICE_DIR, '.verify');
 const GO_VERSION = '1.26';
@@ -224,12 +223,21 @@ function stripHTML(s) {
 function collectVariants(courseDir) {
   const exercisesDir = path.join(courseDir, 'content', 'exercises');
   const found = [];
-  for (const modNum of MODULES) {
+  const moduleNums = fs.existsSync(exercisesDir)
+    ? fs.readdirSync(exercisesDir)
+        .map(f => (f.match(/^module(\d+)-variants\.yaml$/) || [])[1])
+        .filter(Boolean)
+        .map(Number)
+        .sort((a, b) => a - b)
+    : [];
+  for (const modNum of moduleNums) {
     const file = path.join(exercisesDir, `module${modNum}-variants.yaml`);
-    if (!fs.existsSync(file)) continue;
     const parsed = yaml.load(fs.readFileSync(file, 'utf8'));
-    const challenges = (parsed && parsed.variants && parsed.variants.challenges) || [];
-    for (const challenge of challenges) {
+    const groups = [
+      ...((parsed && parsed.variants && parsed.variants.challenges) || []),
+      ...((parsed && parsed.variants && parsed.variants.warmups) || []),
+    ];
+    for (const challenge of groups) {
       for (const variant of challenge.variants || []) {
         if (!variant.testGo) continue;
         found.push({ modNum, challenge, variant });
