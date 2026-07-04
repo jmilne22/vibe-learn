@@ -486,6 +486,7 @@ function collectVariants(courseDir) {
       { groups: (parsed && parsed.variants && parsed.variants.challenges) || [], kind: 'challenge' },
       { groups: (parsed && parsed.variants && parsed.variants.warmups) || [], kind: 'warmup' },
     ];
+    process.stdout.write(`module${modNum}: probing solutions `);
     for (const { groups, kind } of kinds) {
       for (const challenge of groups) {
         for (const variant of challenge.variants || []) {
@@ -494,15 +495,19 @@ function collectVariants(courseDir) {
             const res = kind === 'warmup'
               ? autoGenWarmup(variant, context)
               : autoGenChallenge(challenge, variant, context);
+            process.stdout.write(res.error ? 'x' : '.');
             if (res.error) {
               skipped.push({ context, reason: res.error });
               continue;
             }
+          } else {
+            process.stdout.write('·');
           }
           found.push({ modNum, challenge, variant });
         }
       }
     }
+    process.stdout.write('\n');
   }
   fs.rmSync(AUTOGEN_DIR, { recursive: true, force: true });
   return { found, skipped };
