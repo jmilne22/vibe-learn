@@ -60,6 +60,8 @@ const IMPORT_MAP = {
   net: 'net',
   netip: 'net/netip',
   filepath: 'path/filepath',
+  exec: 'os/exec',
+  syscall: 'syscall',
   fs: 'io/fs',
   rand: 'math/rand',
   reflect: 'reflect',
@@ -248,6 +250,7 @@ function autogenKey(kind, variant, group) {
     AUTOGEN_VERSION, kind,
     variant.solution || '',
     variant.stubGo || '',
+    variant.driverGo || '',
     variant.functionSignature || '',
     variant.setupGo || (group && group.setupGo) || '',
     (variant.testCases || []).map((tc) => tc.input),
@@ -426,8 +429,48 @@ func TestOutput(t *testing.T) {
     }
 }`;
 
+// Replace every top-level func body with panic("implement me"), keeping
+// types/vars/consts verbatim — the stub for "write this function" warmups.
+function panicStubFromDecls(src) {
+  return declBlocks(src).map((b) => {
+    if (b.kind !== 'func') return b.text;
+    const sigEnd = b.text.indexOf('{');
+    if (sigEnd === -1) return b.text;
+    return b.text.slice(0, sigEnd).trimEnd() + ' {\n    panic("implement me")\n}';
+  }).join('\n\n');
+}
+
 function autoGenWarmup(variant, context) {
   if (!variant.solution) return { error: 'no solution' };
+
+  // Declaration-only warmups ("write NewService...") carry a driverGo:
+  // fixed statements that call the learner's code and print results. The
+  // canonical solution produces the golden output; the stub gives the
+  // driver in run() and panic-bodies for every func the learner writes.
+  if (variant.driverGo) {
+    const driver = String(variant.driverGo).trim();
+    const { decls } = splitTopLevel(variant.solution);
+    const probeBody =
+      (decls ? decls + '\n\n' : '') + 'func main() {\n' + indent(driver, '    ') + '\n}\n';
+    const probe = runProbe(probeBody, context);
+    if (probe.error) return { error: probe.error };
+    const golden = probe.output.replace(/\s+$/, '');
+    if (!golden.trim()) return { error: 'driver prints nothing' };
+
+    if (!variant.stubGo) {
+      variant.stubGo =
+        panicStubFromDecls(variant.solution) +
+        '\n\n// Driver — already wired up; make it print the expected output.\nfunc run() {\n' +
+        indent(driver, '    ') + '\n}\n';
+    }
+    variant.testGo =
+      'const expectedOutput = ' + goStr(golden) + '\n\n' + WARMUP_TEST_HARNESS + '\n';
+    variant._verifySolution =
+      (decls ? decls + '\n\n' : '') + 'func run() {\n' + indent(driver, '    ') + '\n}\n';
+    variant._expectedOutput = golden;
+    return {};
+  }
+
   const { decls, stmts } = splitTopLevel(variant.solution);
   if (!stmts) return { error: 'solution has no statements to run' };
 
