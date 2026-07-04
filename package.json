@@ -4,6 +4,8 @@
   "version": "1.0.0",
   "private": true,
   "description": "Reusable course engine — fork, replace content, build, deploy.",
+  "author": "James Milne",
+  "license": "MIT",
   "main": "desktop/main.js",
   "scripts": {
     "build": "node build.js",
