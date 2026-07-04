@@ -2,6 +2,8 @@
 
 ### With controller-runtime
 
+<attempt type="worked">
+
 `controller-runtime` (used by Kubebuilder and Operator SDK) simplifies everything:
 
 ```go
@@ -46,6 +48,8 @@ func main() {
 }
 ```
 
+</attempt>
+
 ### Finalizers
 
 Finalizers let you run cleanup before a resource is deleted:
@@ -89,6 +93,32 @@ func (r *CronTabReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 ```
 
 **Why finalizers?** Without them, if you delete a CRD resource, any external resources it created (DNS records, cloud resources, etc.) become orphaned.
+
+<attempt type="gaps">
+
+<gaps prompt="A minimal Backup reconciler — not-found is success, status has its own update path, and it re-checks itself every five minutes.">
+```go
+func (r *BackupReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+    var backup v1.Backup
+    if err := r.Get(ctx, req.«NamespacedName», &backup); err != nil {
+        return ctrl.Result{}, client.«IgnoreNotFound»(err)
+    }
+
+    // ... ensure the backup CronJob exists ...
+
+    backup.Status.LastRun = metav1.Now()
+    if err := r.«Status()».Update(ctx, &backup); err != nil {
+        return ctrl.Result{}, err
+    }
+
+    return ctrl.Result{«RequeueAfter»: 5 * time.Minute}, nil
+}
+```
+</gaps>
+
+The not-found swallow matters: after a delete, the reconciler still gets an event for the vanished object, and returning an error there would requeue it forever.
+
+</attempt>
 
 ---
 

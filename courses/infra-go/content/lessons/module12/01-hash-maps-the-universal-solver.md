@@ -2,7 +2,26 @@
 
 Maps solve a huge class of problems by giving you O(1) lookup.
 
+<attempt type="pretest">
+
+<predict prompt="What does this print?">
+```go
+counts := map[string]int{"Running": 3}
+counts["Pending"]++
+fmt.Println(counts["Pending"], counts["Failed"])
+```
+```
+1 0
+```
+</predict>
+
+Wrong is fine — every counting pattern below leans on exactly this behavior.
+
+</attempt>
+
 ### Two Sum Pattern
+
+<attempt type="worked">
 
 The classic: find two numbers that add to a target. Brute force is O(n²). A map makes it O(n):
 
@@ -22,6 +41,8 @@ func twoSum(latencies []int, target int) (int, int) {
 ```
 
 **The insight:** For each element, ask "have I already seen its complement?" Instead of searching the whole array, check the map.
+
+</attempt>
 
 ### Frequency Counting
 
@@ -70,4 +91,28 @@ func dedup(alerts []string) []string {
 
 **When to reach for a map:** "Have I seen this before?", "How many of each?", "Group by X", "Find pairs".
 
+<attempt type="gaps">
+
+<gaps prompt="Which two pods together fill the node's memory exactly? One pass — check before you insert.">
+```go
+seen := make(map[int]int) // memMB → index
+for i, mem := range pods {
+    need := «capacity - mem»
+    if j, ok := «seen[need]»; ok {
+        return j, i
+    }
+    «seen[mem]» = i
+}
+return -1, -1
+```
+</gaps>
+
+Inserting only after the check is what lets the pair meet on its second element — and it stops an element from matching itself.
+
+</attempt>
+
+<attempt type="scratch">
+
 <div class="inline-exercises" data-concept="Hash Maps"></div>
+
+</attempt>

@@ -95,6 +95,8 @@ func createConfigMap(clientset *kubernetes.Clientset, ns, name string, data map[
 
 ### Updating and Deleting
 
+<attempt type="worked">
+
 ```go
 // Update: Get → modify → Update
 cm, err := clientset.CoreV1().ConfigMaps("default").Get(
@@ -113,4 +115,35 @@ err = clientset.CoreV1().Pods("default").Delete(
 
 > **Gotcha:** Always Get before Update. K8s uses `resourceVersion` for optimistic concurrency — if another client updated the resource between your Get and Update, the Update fails with a Conflict error.
 
+</attempt>
+
+<attempt type="gaps">
+
+<gaps prompt="Filter server-side, then walk the result — fill in the client-go chain.">
+```go
+// Which web pods are actually Running right now?
+pods, err := clientset.CoreV1().Pods("production").«List»(
+    context.Background(),
+    metav1.«ListOptions»{
+        «LabelSelector»: "app=web",
+        FieldSelector:   "status.phase=Running",
+    },
+)
+if err != nil {
+    return err
+}
+for _, pod := range pods.«Items» {
+    fmt.Println(pod.Name, pod.Spec.NodeName)
+}
+```
+</gaps>
+
+Both selectors are evaluated by the API server, so the wire only carries the pods you asked for.
+
+</attempt>
+
+<attempt type="scratch">
+
 <div class="inline-exercises" data-concept="client-go"></div>
+
+</attempt>
