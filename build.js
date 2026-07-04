@@ -737,6 +737,15 @@ function buildCourse(slug) {
     console.log('Loading course manifest...');
     predictIndexCollector = [];
     sectionSummaryCollector = [];
+
+    // Which variants have local go-test workspaces (written by
+    // generate-practice.js, committed so CI builds see it too)
+    let practiceManifest = {};
+    try {
+        practiceManifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'practice-manifest.json'), 'utf8'));
+    } catch (e) {
+        console.warn('  practice-manifest.json missing — run `npm run practice`; only YAML testGo variants get workspace paths');
+    }
     const courseJson = loadCourseManifest(COURSE_DIR);
     const { course, tracks, modules, projects, annotationTypes } = courseJson;
 
@@ -1488,19 +1497,26 @@ function buildCourse(slug) {
         // Add blank lines between logical blocks in solutions for readability
         addSolutionSpacing(parsed);
 
-        // Variants with a testGo block get a local practice workspace
-        // (see generate-practice.js). Ship the path, not the test source.
-        if (Array.isArray(variants.challenges)) {
-            variants.challenges.forEach(challenge => {
+        // Variants with a local test workspace get practiceDir. The
+        // authoritative list is practice-manifest.json (written by
+        // generate-practice.js and committed — CI never generates
+        // practice/); YAML testGo remains a fallback.
+        [variants.challenges, variants.warmups].forEach(groups => {
+            if (!Array.isArray(groups)) return;
+            groups.forEach(challenge => {
                 (challenge.variants || []).forEach(v => {
-                    if (v.testGo) {
+                    const key = `m${moduleNum}_${challenge.id}_${v.id}`;
+                    if (practiceManifest[key]) {
+                        v.practiceDir = practiceManifest[key];
+                    } else if (v.testGo) {
                         v.practiceDir = `practice/module${moduleNum}/${challenge.id}_${v.id}`;
                     }
                     delete v.testGo;
                     delete v.stubGo;
+                    delete v.driverGo;
                 });
             });
-        }
+        });
 
         const jsonStr = JSON.stringify(parsed);
         const js = `// Auto-generated from ${yamlFile} - do not edit directly\nwindow.moduleData = ${jsonStr};\nwindow.moduleDataRegistry = window.moduleDataRegistry || {};\nwindow.moduleDataRegistry[${moduleNum}] = window.moduleData;\n`;

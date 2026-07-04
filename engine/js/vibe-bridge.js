@@ -299,9 +299,42 @@
         setTimeout(function() { enhanceExerciseCards(); }, 200);
     });
 
+    // --- Connection pill ---
+    // Fixed indicator on exercise pages: green when `vibe watch` is
+    // connected (tests run on save), amber with the command when not.
+
+    function renderStatusPill(state) {
+        var pill = document.getElementById('vibe-status-pill');
+        if (!pill) {
+            pill = document.createElement('div');
+            pill.id = 'vibe-status-pill';
+            pill.className = 'vibe-status-pill';
+            pill.title = 'The vibe daemon runs your exercises: edit → save → graded by go test';
+            document.body.appendChild(pill);
+        }
+        if (state === 'online') {
+            pill.className = 'vibe-status-pill online';
+            pill.innerHTML = '<span class="pill-dot"></span>workbench connected — save a file to run its tests';
+        } else if (state === 'offline') {
+            pill.className = 'vibe-status-pill offline';
+            pill.innerHTML = '<span class="pill-dot"></span>workbench offline — run <code>node vibe.js watch</code>';
+        } else {
+            pill.className = 'vibe-status-pill probing';
+            pill.innerHTML = '<span class="pill-dot"></span>looking for vibe watch…';
+        }
+    }
+
+    window.addEventListener('vibeStatusChanged', function(e) {
+        if (document.getElementById('vibe-status-pill')) {
+            renderStatusPill(e.detail.online ? 'online' : 'offline');
+        }
+    });
+
     function autoStart() {
         // Only poll on pages that actually show exercises
         if (document.querySelector('#warmups-container, #challenges-container, .inline-exercises, .exercise[data-exercise-key]')) {
+            renderStatusPill('probing');
+            probe().then(function(ok) { renderStatusPill(ok ? 'online' : 'offline'); });
             startPolling();
         }
     }
