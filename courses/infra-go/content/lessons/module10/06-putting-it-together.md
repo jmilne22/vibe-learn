@@ -1,5 +1,7 @@
 ## Putting It Together
 
+<attempt type="worked">
+
 A minimal container runtime in ~100 lines:
 
 ```go
@@ -48,6 +50,33 @@ func child() {
 Run it: `sudo go run main.go run /bin/sh`
 
 You now have a shell running in an isolated PID namespace, with its own hostname, limited to 256MB of memory, with a separate root filesystem. That's a container.
+
+</attempt>
+
+<attempt type="gaps">
+
+<gaps prompt="The child sequence, from memory — limits before user code, /proc after the pivot, teardown last.">
+```go
+func child() {
+    syscall.Sethostname([]byte("container"))
+
+    cgroupPath := "/sys/fs/cgroup/minicontainer"
+    «setCgroupMemory»(cgroupPath, 256*1024*1024)
+    setCgroupPids(cgroupPath, 64)
+
+    setupRootfs("/tmp/rootfs")
+    «mountProc»()
+
+    cmd := exec.Command(os.Args[2], os.Args[3:]...)
+    cmd.Run()
+
+    syscall.Unmount(«"/proc"», 0)
+    «cleanupCgroup»(cgroupPath)
+}
+```
+</gaps>
+
+</attempt>
 
 ---
 

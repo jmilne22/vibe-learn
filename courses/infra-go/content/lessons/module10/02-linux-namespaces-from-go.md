@@ -15,6 +15,8 @@ Namespaces are the core isolation primitive. Each namespace gives a process its 
 
 ### Creating Namespaces with exec.Cmd
 
+<attempt type="worked">
+
 Go's `os/exec` package lets you set namespace flags on child processes:
 
 ```go
@@ -48,4 +50,28 @@ func main() {
 }
 ```
 
+</attempt>
+
+<attempt type="gaps">
+
+<gaps prompt="The re-exec launch, from memory — which flags isolate PIDs, hostname, and mounts?">
+```go
+cmd := exec.Command(«"/proc/self/exe"», "child")
+cmd.SysProcAttr = &syscall.SysProcAttr{
+    Cloneflags: syscall.«CLONE_NEWPID» |
+                syscall.«CLONE_NEWUTS» |
+                syscall.«CLONE_NEWNS»,
+}
+if err := cmd.Run(); err != nil {
+    log.Fatal(err)
+}
+```
+</gaps>
+
+</attempt>
+
+<attempt type="scratch">
+
 <div class="inline-exercises" data-concept="Namespaces"></div>
+
+</attempt>

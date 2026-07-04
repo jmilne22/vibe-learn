@@ -4,6 +4,8 @@ UDP is connectionless — send a packet, don't wait for acknowledgment.
 
 ### Sending and Receiving
 
+<attempt type="worked">
+
 ```go
 // Server: listen for packets
 pc, err := net.ListenPacket("udp", ":5000")
@@ -39,6 +41,8 @@ n, _ := conn.Read(buf)
 fmt.Println(string(buf[:n])) // "ACK: hello"
 ```
 
+</attempt>
+
 ### When to Use UDP
 
 | Use Case | Why UDP |
@@ -51,4 +55,32 @@ fmt.Println(string(buf[:n])) // "ACK: hello"
 
 TCP guarantees delivery and ordering. UDP doesn't — but it's faster and simpler for fire-and-forget patterns.
 
+<attempt type="gaps">
+
+<gaps prompt="A UDP metrics listener, from memory — the packet API, not the stream API.">
+```go
+pc, err := net.«ListenPacket»("udp", ":9125")
+if err != nil {
+    log.Fatal(err)
+}
+defer pc.Close()
+
+buf := make([]byte, 1024)
+for {
+    n, addr, err := pc.«ReadFrom»(buf)
+    if err != nil {
+        continue
+    }
+    metric := string(«buf[:n]»)
+    pc.«WriteTo»([]byte("ok: "+metric), addr)
+}
+```
+</gaps>
+
+</attempt>
+
+<attempt type="scratch">
+
 <div class="inline-exercises" data-concept="UDP"></div>
+
+</attempt>

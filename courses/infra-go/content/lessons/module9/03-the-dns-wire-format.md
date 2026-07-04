@@ -2,6 +2,25 @@
 
 DNS is the protocol every infra person should understand at the byte level.
 
+<attempt type="pretest">
+
+<predict prompt="This mimics how DNS puts a name on the wire. What does it print?">
+```go
+domain := "web.local"
+for _, label := range strings.Split(domain, ".") {
+    fmt.Printf("[%d]%s", len(label), label)
+}
+fmt.Println("[0]")
+```
+```
+[3]web[5]local[0]
+```
+</predict>
+
+Wrong is fine — the encoding section below derives exactly this format.
+
+</attempt>
+
 ### Packet Structure
 
 Every DNS message (query and response) has the same format:
@@ -63,6 +82,8 @@ DNS uses big-endian (network byte order). `encoding/binary` is your tool for all
 
 ### Domain Name Encoding
 
+<attempt type="worked">
+
 DNS encodes domain names as length-prefixed labels:
 
 ```
@@ -97,6 +118,8 @@ func decodeDomain(data []byte, offset int) (string, int) {
     return strings.Join(labels, "."), offset
 }
 ```
+
+</attempt>
 
 ### Building a DNS Response
 
@@ -138,4 +161,26 @@ func buildResponse(query []byte, ip net.IP) []byte {
 }
 ```
 
+<attempt type="gaps">
+
+<gaps prompt="Encode a domain to wire format, from memory — prefix each label, then close the name.">
+```go
+func encodeDomain(domain string) []byte {
+    var buf []byte
+    for _, label := range strings.Split(domain, «"."») {
+        buf = append(buf, «byte(len(label))»)
+        buf = append(buf, []byte(label)...)
+    }
+    buf = append(buf, «0»)
+    return buf
+}
+```
+</gaps>
+
+</attempt>
+
+<attempt type="scratch">
+
 <div class="inline-exercises" data-concept="DNS Wire Format"></div>
+
+</attempt>

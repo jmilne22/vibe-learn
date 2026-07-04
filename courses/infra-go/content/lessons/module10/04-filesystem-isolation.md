@@ -2,6 +2,8 @@
 
 ### pivot_root: Changing the Root
 
+<attempt type="worked">
+
 `chroot` changes the apparent root, but processes can escape it. `pivot_root` is the real deal — it swaps the root mount:
 
 ```go
@@ -31,6 +33,25 @@ func setupRootfs(newRoot string) error {
     return nil
 }
 ```
+
+</attempt>
+
+<attempt type="gaps">
+
+<gaps prompt="The pivot sequence, from memory — bind-mount the new root, pivot, re-root, evict the old.">
+```go
+syscall.Mount(newRoot, newRoot, "", syscall.«MS_BIND»|syscall.MS_REC, "")
+
+oldRoot := filepath.Join(newRoot, ".old_root")
+os.MkdirAll(oldRoot, 0700)
+
+syscall.«PivotRoot»(newRoot, oldRoot)
+os.«Chdir»("/")
+syscall.Unmount("/.old_root", syscall.«MNT_DETACH»)
+```
+</gaps>
+
+</attempt>
 
 ### Mounting /proc
 

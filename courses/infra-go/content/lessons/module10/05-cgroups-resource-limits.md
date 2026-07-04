@@ -20,6 +20,8 @@ Modern Linux uses cgroup v2 (unified hierarchy):
 
 ### Setting Memory Limits
 
+<attempt type="worked">
+
 ```go
 func setCgroupMemory(cgroupPath string, limitBytes int64) error {
     // Create cgroup directory
@@ -41,6 +43,8 @@ func setCgroupMemory(cgroupPath string, limitBytes int64) error {
 // Usage: limit to 256MB
 setCgroupMemory("/sys/fs/cgroup/mycontainer", 256*1024*1024)
 ```
+
+</attempt>
 
 ### Setting CPU Limits
 
@@ -91,4 +95,26 @@ func cleanupCgroup(cgroupPath string) error {
 }
 ```
 
+<attempt type="gaps">
+
+<gaps prompt="CPU and process limits, from memory — the right control files and the CPU value format.">
+```go
+// half of one CPU
+period := 100000
+quota := period * 50 / 100
+cpuPath := filepath.Join(cgroupPath, «"cpu.max"»)
+os.WriteFile(cpuPath, []byte(fmt.Sprintf(«"%d %d"», quota, period)), 0644)
+
+// cap the process count
+pidsPath := filepath.Join(cgroupPath, «"pids.max"»)
+os.WriteFile(pidsPath, []byte("64"), 0644)
+```
+</gaps>
+
+</attempt>
+
+<attempt type="scratch">
+
 <div class="inline-exercises" data-concept="Cgroups"></div>
+
+</attempt>

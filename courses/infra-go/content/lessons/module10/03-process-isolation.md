@@ -1,6 +1,25 @@
 ## Process Isolation
 
+<attempt type="pretest">
+
+<predict prompt="The parent re-execs this function inside a new PID namespace. What does it print?">
+```go
+func child() {
+    fmt.Printf("inside: %d\n", os.Getpid())
+}
+```
+```
+inside: 1
+```
+</predict>
+
+Wrong is fine — the section explains exactly why this number matters.
+
+</attempt>
+
 ### Running in a New PID Namespace
+
+<attempt type="worked">
 
 With `CLONE_NEWPID`, the child process becomes PID 1 in its own namespace:
 
@@ -19,6 +38,8 @@ func child() {
     cmd.Run()
 }
 ```
+
+</attempt>
 
 ### What PID 1 Means
 
@@ -43,3 +64,21 @@ nsenter --target <pid> --mount --uts --ipc --net --pid
 ```
 
 This is what `docker exec` and `kubectl exec` do under the hood.
+
+<attempt type="gaps">
+
+<gaps prompt="The child side, from memory — claim the hostname, then hand off to the user's command.">
+```go
+func child() {
+    «syscall.Sethostname»([]byte("container"))
+
+    cmd := exec.Command(«os.Args[2]», «os.Args[3:]»...)
+    cmd.Stdin = os.Stdin
+    cmd.Stdout = os.Stdout
+    cmd.Stderr = os.Stderr
+    cmd.«Run»()
+}
+```
+</gaps>
+
+</attempt>

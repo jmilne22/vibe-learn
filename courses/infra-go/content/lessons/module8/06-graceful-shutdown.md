@@ -1,5 +1,7 @@
 ## Graceful Shutdown
 
+<attempt type="worked">
+
 ```go
 func main() {
     mux := http.NewServeMux()
@@ -37,6 +39,26 @@ func main() {
 ```
 
 `Shutdown` stops accepting new connections and waits for in-flight requests to complete. This is mandatory for K8s — without it, you drop requests during rolling deployments.
+
+</attempt>
+
+<attempt type="gaps">
+
+<gaps prompt="The shutdown tail, from memory — wait for the signal, then drain with a deadline.">
+```go
+ctx, stop := signal.«NotifyContext»(context.Background(), os.Interrupt, syscall.SIGTERM)
+defer stop()
+«<-ctx.Done()»
+
+shutdownCtx, cancel := context.«WithTimeout»(context.Background(), 10*time.Second)
+defer cancel()
+if err := srv.«Shutdown»(shutdownCtx); err != nil {
+    slog.Error("shutdown error", "error", err)
+}
+```
+</gaps>
+
+</attempt>
 
 ---
 
