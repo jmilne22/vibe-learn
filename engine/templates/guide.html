@@ -872,7 +872,7 @@ $ npm run build</div>
             <p>You provide content (markdown lessons, YAML exercises). The engine handles everything else:</p>
             <ul>
                 <li><strong>Interactive exercises</strong> with multiple variants, progressive hints, annotated solutions, and self-rating</li>
-                <li><strong>Spaced repetition</strong> (SM-2 algorithm) scheduling reviews across exercises and flashcards</li>
+                <li><strong>Spaced repetition</strong> (FSRS algorithm) scheduling reviews across exercises and flashcards</li>
                 <li><strong>Flashcard sessions</strong> with flip-and-rate interface, multiple review modes</li>
                 <li><strong>Daily practice</strong> that auto-selects exercises based on your SRS data</li>
                 <li><strong>Analytics dashboard</strong> with mastery overview, module health grid, action items, and detail panels</li>
@@ -1106,7 +1106,7 @@ projects:                                     # optional — capstone projects
             </table>
 
             <h3 id="draft-courses">Draft courses</h3>
-            <p>Add <span class="fp">hidden: true</span> to the <span class="fp">course</span> block to exclude a course from the landing page. It still builds and is accessible by URL &mdash; it just won't appear in the course picker.</p>
+            <p>Add <span class="fp">hidden: true</span> to the <span class="fp">course</span> block to exclude a course from the landing page. It still builds and is accessible by URL &mdash; it just won't appear on the download page's course list.</p>
             <div class="yaml-example">course:
   name: "Work in Progress"
   slug: wip
@@ -1504,8 +1504,8 @@ variants:
         <div class="guide-section" id="spaced-repetition">
             <div class="section-label">6. Spaced repetition</div>
             <p class="section-lead">
-                The platform uses the SM-2 algorithm (the same algorithm behind Anki) to schedule reviews.
-                Every exercise variant and flashcard is tracked independently with its own ease factor and review interval.
+                The platform uses FSRS-4.5 (the modern successor to the SM-2 algorithm behind Anki) to schedule reviews.
+                Every exercise variant and flashcard is tracked independently with its own stability, difficulty, and review date; records from the old SM-2 scheduler migrate automatically.
             </p>
 
             <h3 id="srs-rating">Self-rating</h3>
