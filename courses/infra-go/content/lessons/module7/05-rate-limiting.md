@@ -15,6 +15,8 @@ for _, item := range items {
 
 ### Token Bucket (More Flexible)
 
+<attempt type="worked">
+
 ```go
 // Allow bursts but maintain average rate
 type RateLimiter struct {
@@ -49,4 +51,26 @@ func (rl *RateLimiter) Wait(ctx context.Context) error {
 }
 ```
 
+</attempt>
+
+<attempt type="gaps">
+
+<gaps prompt="Throttle a burst of requests to a steady 10 per second — from memory.">
+```go
+limiter := time.«NewTicker»(100 * time.Millisecond) // 1 tick per 100ms = 10/sec
+defer «limiter.Stop()»
+
+for _, req := range requests {
+    «<-limiter.C»   // pace: one launch per tick
+    go send(req)
+}
+```
+</gaps>
+
+</attempt>
+
+<attempt type="scratch">
+
 <div class="inline-exercises" data-concept="Rate Limiting"></div>
+
+</attempt>

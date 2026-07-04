@@ -2,6 +2,8 @@
 
 Check N health endpoints in parallel, collect results:
 
+<attempt type="worked">
+
 ```go
 type HealthResult struct {
     URL     string
@@ -45,4 +47,31 @@ func checkAll(urls []string) []HealthResult {
 - We know exactly how many results to expect (`len(urls)`)
 - Each goroutine sends exactly one result
 
+</attempt>
+
+<attempt type="gaps">
+
+<gaps prompt="N goroutines, N sends, N receives — no WaitGroup needed. From memory.">
+```go
+results := make(chan HealthResult, len(urls))   // sized so senders never block
+
+for _, url := range urls {
+    go func(u string) {
+        results <- check(u)
+    }(«url»)
+}
+
+var all []HealthResult
+for «range urls» {
+    all = append(all, «<-results»)
+}
+```
+</gaps>
+
+</attempt>
+
+<attempt type="scratch">
+
 <div class="inline-exercises" data-concept="Concurrent Patterns"></div>
+
+</attempt>

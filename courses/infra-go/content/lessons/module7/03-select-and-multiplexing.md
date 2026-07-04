@@ -2,6 +2,29 @@
 
 `select` waits on multiple channel operations. The first one ready wins.
 
+<attempt type="pretest">
+
+<predict prompt="What does this print?">
+```go
+ch := make(chan int)
+select {
+case v := <-ch:
+    fmt.Println("got", v)
+default:
+    fmt.Println("nothing ready")
+}
+fmt.Println("done")
+```
+```
+nothing ready
+done
+```
+</predict>
+
+Wrong is fine — the variations below run exactly this, with and without the last case.
+
+</attempt>
+
 ### Basic Select
 
 ```go
@@ -26,6 +49,8 @@ case <-time.After(5 * time.Second):
 
 ### Non-Blocking Operations
 
+<attempt type="worked">
+
 ```go
 // Try to send, but don't block
 select {
@@ -43,6 +68,8 @@ default:
     fmt.Println("nothing ready")
 }
 ```
+
+</attempt>
 
 <variations runner="go">
 template: |
@@ -86,4 +113,28 @@ for {
 
 This is what every long-running Go service looks like: a select loop handling multiple event sources.
 
+<attempt type="gaps">
+
+<gaps prompt="The long-running service loop, from memory — three event sources, one of them the way out.">
+```go
+for {
+    select {
+    case job := <-jobs:
+        process(job)
+    case <-«ticker.C»:
+        reportMetrics()
+    case <-«ctx.Done()»:
+        fmt.Println("shutting down")
+        «return»
+    }
+}
+```
+</gaps>
+
+</attempt>
+
+<attempt type="scratch">
+
 <div class="inline-exercises" data-concept="Select"></div>
+
+</attempt>
