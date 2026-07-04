@@ -28,8 +28,20 @@ const STATE_DIR = path.join(ROOT, '.vibe');
 const RESULTS_FILE = path.join(STATE_DIR, 'results.jsonl');
 const QUEUE_FILE = path.join(STATE_DIR, 'queue.json');
 const CONFIG_FILE = path.join(STATE_DIR, 'config.json');
+const DIST_DIR = path.join(ROOT, 'dist');
 const DEFAULT_PORT = 4711;
 const VERSION = '1.0.0';
+
+const MIME = {
+    '.html': 'text/html; charset=utf-8',
+    '.css': 'text/css; charset=utf-8',
+    '.js': 'text/javascript; charset=utf-8',
+    '.json': 'application/json',
+    '.svg': 'image/svg+xml',
+    '.png': 'image/png',
+    '.ico': 'image/x-icon',
+    '.woff2': 'font/woff2',
+};
 
 const C = {
     green: s => `\x1b[32m${s}\x1b[0m`,
@@ -234,10 +246,16 @@ function runNext() {
 
 // --- vibe watch ---
 
+// The hosted site is a first-class origin: browsers let HTTPS pages fetch
+// 127.0.0.1 (trustworthy-origin exemption), so vibe-learn.ai polls this
+// daemon directly — no backend involved.
+const HOSTED_ORIGINS = ['https://vibe-learn.ai', 'https://www.vibe-learn.ai'];
+
 function isOriginAllowed(origin, extraOrigins) {
     if (!origin) return true; // same-origin / curl
     if (origin === 'null') return true; // file:// pages
     if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return true;
+    if (HOSTED_ORIGINS.includes(origin)) return true;
     return extraOrigins.includes(origin);
 }
 
@@ -266,6 +284,11 @@ function runWatch(args) {
             'Vary': 'Origin',
         };
         if (req.method === 'OPTIONS') {
+            // Chrome Private Network Access: a public HTTPS page fetching
+            // 127.0.0.1 preflights with this header and needs the ack.
+            if (req.headers['access-control-request-private-network']) {
+                cors['Access-Control-Allow-Private-Network'] = 'true';
+            }
             res.writeHead(204, cors).end();
             return;
         }
@@ -305,17 +328,48 @@ function runWatch(args) {
                     json(400, { ok: false });
                 }
             });
+        } else if (req.method === 'GET') {
+            // Serve the built course site so `vibe watch` is the only
+            // background process needed: same origin, no CORS, one URL.
+            let rel;
+            try { rel = decodeURIComponent(url.pathname); } catch { rel = url.pathname; }
+            let file = path.normalize(path.join(DIST_DIR, rel));
+            if (!file.startsWith(DIST_DIR)) { json(403, { ok: false }); return; }
+            try {
+                if (fs.statSync(file).isDirectory()) file = path.join(file, 'index.html');
+            } catch {}
+            fs.readFile(file, (err, data) => {
+                if (err) { json(404, { ok: false, hint: 'run `npm run build` first' }); return; }
+                res.writeHead(200, { ...cors, 'Content-Type': MIME[path.extname(file)] || 'application/octet-stream' });
+                res.end(data);
+            });
         } else {
             json(404, { ok: false });
         }
     });
 
+    server.on('error', (err) => {
+        if (err.code === 'EADDRINUSE') {
+            console.error(`Port ${port} is already in use — another \`vibe watch\` is probably running.`);
+            console.error(`Stop it (Ctrl+C in its terminal) and rerun, or use --port <other>.`);
+            process.exit(1);
+        }
+        throw err;
+    });
+
     server.listen(port, '127.0.0.1', () => {
-        console.log(C.bold(`vibe watch`) + C.dim(` · http://127.0.0.1:${port}`));
-        console.log(C.dim(`  serving results from ${path.relative(process.cwd(), RESULTS_FILE)}`));
-        console.log(C.dim(`  origins: localhost, 127.0.0.1, file://` +
-            (extraOrigins.length ? ', ' + extraOrigins.join(', ') : '')));
-        console.log(C.dim('  the course page will pick up `vibe check` results automatically'));
+        console.log(C.bold(`vibe watch`) + C.dim(` · serving dist/ + results on one port`));
+        let courses = [];
+        try {
+            courses = fs.readdirSync(DIST_DIR).filter(f =>
+                fs.existsSync(path.join(DIST_DIR, f, 'index.html')));
+        } catch {}
+        if (courses.length) {
+            courses.forEach(c => console.log(`  → http://127.0.0.1:${port}/${c}/`));
+        } else {
+            console.log(C.dim(`  no built courses found — run \`npm run build\` first`));
+        }
+        console.log(C.dim('  `vibe check` results reach the open course page automatically'));
     });
 }
 
