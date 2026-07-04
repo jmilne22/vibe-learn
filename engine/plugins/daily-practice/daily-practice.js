@@ -9,6 +9,7 @@
     'use strict';
 
     var SE = window.SessionEngine;
+    var isApp = !!window.vibeApp;
 
     var MODULE_NAMES = (window.CourseConfigHelper && window.CourseConfigHelper.moduleNames) || {};
     var MODULES_WITHOUT_VARIANTS = new Set((window.CourseConfigHelper && window.CourseConfigHelper.modulesWithoutExercises) || [7, 8, 11, 13]);
@@ -812,9 +813,12 @@
                 value + '</strong></div>';
         }
 
-        var daemonText = window.VibeBridge && window.VibeBridge.isOnline()
-            ? 'vibe watch connected · 127.0.0.1:' + window.VibeBridge.port + ' · save a file to run its tests'
-            : 'daemon offline — run <code>npm run vibe watch</code>; this card falls back to self-rating';
+        var daemonOnline = window.VibeBridge && window.VibeBridge.isOnline();
+        var daemonText = daemonOnline
+            ? 'local runner ready · save a file to run its tests'
+            : (isApp
+                ? 'local runner unavailable — restart the desktop app; this card falls back to self-rating'
+                : 'daemon offline — run <code>npm run vibe watch</code>; this card falls back to self-rating');
 
         // Successive relearning: re-surface the section this concept came
         // from, so the lesson itself gets relearned, not just the exercise.
@@ -944,7 +948,7 @@
         }
 
         var cardHtml =
-            '<div class="exercise vibe-card" data-exercise-key="' + SE.escapeHtml(item.key) + '" data-base-key="' + SE.escapeHtml(baseKey) + '">' +
+            '<div class="exercise vibe-card" data-exercise-key="' + SE.escapeHtml(item.key) + '" data-base-key="' + SE.escapeHtml(baseKey) + '" data-variant-key="' + SE.escapeHtml(workspace) + '">' +
                 '<div class="vibe-card-meta">' +
                     '<span class="vibe-card-tag">Module ' + item.moduleNum + (item.moduleName ? ' · ' + SE.escapeHtml(item.moduleName) : '') + '</span>' +
                     (function() {
@@ -963,7 +967,7 @@
                         '<span class="vibe-watch-status" id="vibe-watch-status">' +
                         (window.VibeBridge && window.VibeBridge.isOnline()
                             ? 'watching for results…'
-                            : 'daemon offline — run: node vibe.js watch') +
+                            : (isApp ? 'local runner unavailable — restart app' : 'daemon offline — run: node vibe.js watch')) +
                         '</span>' +
                     '</div>' +
                     '<pre><span class="vibe-prompt">$</span> npm run vibe next\n<span class="vibe-dim">→ ' + SE.escapeHtml(workspace) + ' · ' + SE.escapeHtml(wsDir) + '/\n→ edit exercise.go in your editor</span>\n\n<span class="vibe-prompt">$</span> npm run vibe check ' + SE.escapeHtml(wsDir) + '</pre>' +
@@ -1029,7 +1033,7 @@
     function renderVibeResult(result, quality) {
         var card = document.querySelector('#dp-exercise-container .vibe-card');
         if (!card) return false;
-        if (card.dataset.baseKey !== result.key) return false;
+        if (card.dataset.variantKey !== (result.variantKey || result.key)) return false;
 
         var pane = document.getElementById('vibe-results');
         if (!pane) return false;
@@ -1071,7 +1075,7 @@
             setTimeout(function() {
                 // Only advance if this card is still the one on screen
                 var current = document.querySelector('#dp-exercise-container .vibe-card');
-                if (current && current.dataset.baseKey === result.key) SE.nextExercise(session);
+                if (current && current.dataset.variantKey === (result.variantKey || result.key)) SE.nextExercise(session);
             }, 1800);
         }
         return true;
@@ -1096,12 +1100,18 @@
 
     window.addEventListener('vibeStatusChanged', function(e) {
         var status = document.getElementById('vibe-watch-status');
-        if (status && !e.detail.online) status.textContent = 'daemon offline — run: npm run vibe watch';
+        if (status) {
+            status.textContent = e.detail.online
+                ? 'watching for results…'
+                : (isApp ? 'local runner unavailable — restart app' : 'daemon offline — run: npm run vibe watch');
+        }
         var daemon = document.getElementById('rail-daemon');
         if (daemon) {
             daemon.innerHTML = e.detail.online
-                ? 'vibe watch connected · 127.0.0.1:' + window.VibeBridge.port + ' · save a file to run its tests'
-                : 'daemon offline — run <code>npm run vibe watch</code>; this card falls back to self-rating';
+                ? 'local runner ready · save a file to run its tests'
+                : (isApp
+                    ? 'local runner unavailable — restart the desktop app; this card falls back to self-rating'
+                    : 'daemon offline — run <code>npm run vibe watch</code>; this card falls back to self-rating');
         }
     });
 

@@ -139,7 +139,11 @@
             var dot = document.getElementById('rail-daemon-dot');
             var text = document.getElementById('rail-daemon-text');
             if (dot) dot.className = 'sdot ' + (online ? 'online' : 'offline');
-            if (text) text.textContent = online ? 'connected · vibe watch' : 'run: node vibe.js watch';
+            if (text) {
+                text.textContent = isApp
+                    ? (online ? 'exercise runner ready' : 'runner unavailable · restart app')
+                    : (online ? 'connected · vibe watch' : 'run: node vibe.js watch');
+            }
         }
 
         window.addEventListener('vibeStatusChanged', function(e) { render(e.detail.online); });

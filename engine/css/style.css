@@ -9045,6 +9045,13 @@ body.rail-collapsed .app-main { border-left: 0; border-radius: 0 0 14px 14px; }
     padding-top: 0;
 }
 
+/* The desktop window is the workspace, so let dashboard regions use the
+   available pane width. Individual copy blocks keep their own readable
+   line-length caps. */
+body.is-app .app-main .dashboard-shell {
+    max-width: none;
+}
+
 .app-main .workbook-shell { min-height: 0; }
 
 .app-main .workbook-container {
@@ -9052,6 +9059,33 @@ body.rail-collapsed .app-main { border-left: 0; border-radius: 0 0 14px 14px; }
     padding-top: 0;
     padding-left: 0;
     padding-right: 0;
+}
+
+/* In the desktop app, lessons are workspaces rather than centered web
+   articles. Let exercise surfaces and the context rail consume the pane;
+   prose still keeps the 76ch measure defined on paragraphs and lists. */
+body.is-app .app-main .workbook-container:has(.lesson-layout) {
+    width: 100%;
+    max-width: none;
+}
+
+body.is-app .app-main .lesson-layout {
+    grid-template-columns: minmax(0, 1fr) clamp(300px, 20vw, 420px);
+    gap: clamp(32px, 3vw, 56px);
+}
+
+body.is-app .app-main .workbook-content {
+    max-width: none;
+}
+
+@media (max-width: 1200px) {
+    body.is-app .app-main .lesson-layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    body.is-app .app-main .lesson-rail {
+        position: static;
+    }
 }
 
 .app-main .container { margin: 0; }

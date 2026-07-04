@@ -14,6 +14,8 @@
 (function() {
     'use strict';
 
+    var isApp = !!window.vibeApp;
+
     function esc(s) {
         return String(s == null ? '' : s).replace(/[&<>"]/g, function(c) {
             return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c];
@@ -110,7 +112,7 @@
         var workbenchPanel =
             '<div class="rail-panel rail-workbench">' +
                 '<div class="rail-kicker"><span class="workbench-status-dot" id="rail-workbench-dot"></span>Workbench</div>' +
-                '<p class="rail-body" id="rail-workbench-text">looking for vibe watch…</p>' +
+                '<p class="rail-body" id="rail-workbench-text">checking local runner…</p>' +
             '</div>';
 
         var rail = document.createElement('aside');
@@ -129,9 +131,13 @@
         var text = document.getElementById('rail-workbench-text');
         if (!dot || !text) return;
         dot.className = 'workbench-status-dot ' + (online ? 'online' : 'offline');
-        text.innerHTML = online
-            ? 'connected — save a file in <code>practice/</code> and its tests grade the exercises below'
-            : 'offline — run <code>node vibe.js watch</code> to grade exercises from real test runs';
+        if (online) {
+            text.innerHTML = 'local runner ready — save a file in <code>practice/</code> and its tests grade the exercises below';
+        } else if (isApp) {
+            text.textContent = 'local runner unavailable — restart the desktop app';
+        } else {
+            text.innerHTML = 'offline — run <code>node vibe.js watch</code> to grade exercises from real test runs';
+        }
     }
 
     function initWorkbenchStatus() {
