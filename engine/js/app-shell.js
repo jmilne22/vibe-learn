@@ -130,6 +130,7 @@
 
     function initDaemonStatus() {
         function render(online) {
+            var runnerReady = online && (!isApp || !window.VibeBridge || window.VibeBridge.isWatching());
             var pill = document.getElementById('win-daemon');
             var label = document.getElementById('win-daemon-label');
             var port = window.VibeBridge ? window.VibeBridge.port : 4711;
@@ -141,7 +142,7 @@
             if (dot) dot.className = 'sdot ' + (online ? 'online' : 'offline');
             if (text) {
                 text.textContent = isApp
-                    ? (online ? 'exercise runner ready' : 'runner unavailable · restart app')
+                    ? (runnerReady ? 'exercise runner ready' : 'runner unavailable · restart app')
                     : (online ? 'connected · vibe watch' : 'run: node vibe.js watch');
             }
         }

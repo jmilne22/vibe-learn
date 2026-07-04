@@ -813,7 +813,8 @@
                 value + '</strong></div>';
         }
 
-        var daemonOnline = window.VibeBridge && window.VibeBridge.isOnline();
+        var daemonOnline = window.VibeBridge && window.VibeBridge.isOnline() &&
+            (!isApp || window.VibeBridge.isWatching());
         var daemonText = daemonOnline
             ? 'local runner ready · save a file to run its tests'
             : (isApp
@@ -925,6 +926,12 @@
         var wsDir = variant.practiceDir;
         var wsParts = wsDir.match(/module(\d+)\/(.+)$/);
         var workspace = wsParts ? 'm' + wsParts[1] + '_' + wsParts[2] : baseKey;
+        var displayDir = wsDir;
+        if (window.vibeApp && window.vibeApp.workspaceDir) {
+            var relDir = wsDir.replace(/^practice[\\/]/, '');
+            var pathSep = window.vibeApp.workspaceDir.indexOf('\\') !== -1 ? '\\' : '/';
+            displayDir = window.vibeApp.workspaceDir.replace(/[\\/]$/, '') + pathSep + relDir.replace(/[\\/]/g, pathSep);
+        }
 
         var srsEntry = window.SRS && window.SRS.getAll()[baseKey];
         var recall = window.SRS && window.SRS.getRetrievability ? window.SRS.getRetrievability(baseKey) : null;
@@ -970,7 +977,9 @@
                             : (isApp ? 'local runner unavailable — restart app' : 'daemon offline — run: node vibe.js watch')) +
                         '</span>' +
                     '</div>' +
-                    '<pre><span class="vibe-prompt">$</span> npm run vibe next\n<span class="vibe-dim">→ ' + SE.escapeHtml(workspace) + ' · ' + SE.escapeHtml(wsDir) + '/\n→ edit exercise.go in your editor</span>\n\n<span class="vibe-prompt">$</span> npm run vibe check ' + SE.escapeHtml(wsDir) + '</pre>' +
+                    (isApp
+                        ? '<pre><span class="vibe-dim">' + SE.escapeHtml(displayDir) + '/exercise.go\n→ edit in your editor and save to run tests automatically</span></pre>'
+                        : '<pre><span class="vibe-prompt">$</span> npm run vibe next\n<span class="vibe-dim">→ ' + SE.escapeHtml(workspace) + ' · ' + SE.escapeHtml(wsDir) + '/\n→ edit exercise.go in your editor</span>\n\n<span class="vibe-prompt">$</span> npm run vibe check ' + SE.escapeHtml(wsDir) + '</pre>') +
                 '</div>' +
                 '<div class="vibe-results" id="vibe-results"><span class="vibe-dim">no run received yet — results appear here after <code>vibe check</code></span></div>' +
                 '<div class="vibe-card-footer">' +
@@ -1099,15 +1108,16 @@
     });
 
     window.addEventListener('vibeStatusChanged', function(e) {
+        var runnerReady = e.detail.online && (!isApp || e.detail.watching);
         var status = document.getElementById('vibe-watch-status');
         if (status) {
-            status.textContent = e.detail.online
+            status.textContent = runnerReady
                 ? 'watching for results…'
                 : (isApp ? 'local runner unavailable — restart app' : 'daemon offline — run: npm run vibe watch');
         }
         var daemon = document.getElementById('rail-daemon');
         if (daemon) {
-            daemon.innerHTML = e.detail.online
+            daemon.innerHTML = runnerReady
                 ? 'local runner ready · save a file to run its tests'
                 : (isApp
                     ? 'local runner unavailable — restart the desktop app; this card falls back to self-rating'

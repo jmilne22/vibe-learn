@@ -130,8 +130,9 @@
         var dot = document.getElementById('rail-workbench-dot');
         var text = document.getElementById('rail-workbench-text');
         if (!dot || !text) return;
-        dot.className = 'workbench-status-dot ' + (online ? 'online' : 'offline');
-        if (online) {
+        var runnerReady = online && (!isApp || !window.VibeBridge || window.VibeBridge.isWatching());
+        dot.className = 'workbench-status-dot ' + (runnerReady ? 'online' : 'offline');
+        if (runnerReady) {
             text.innerHTML = 'local runner ready — save a file in <code>practice/</code> and its tests grade the exercises below';
         } else if (isApp) {
             text.textContent = 'local runner unavailable — restart the desktop app';

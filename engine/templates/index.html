@@ -199,21 +199,22 @@ npm run practice        # generate the Go exercise workspaces in practice/</pre>
         }
 
         function render(online) {
+            var runnerReady = online && (!isApp || !window.VibeBridge || window.VibeBridge.isWatching());
             var dot = document.getElementById('workbench-dot');
             var hint = document.getElementById('workbench-hint');
             var panel = document.getElementById('workbench-setup');
-            if (dot) dot.className = 'workbench-status-dot ' + (online ? 'online' : 'offline');
+            if (dot) dot.className = 'workbench-status-dot ' + (runnerReady ? 'online' : 'offline');
             if (hint) {
                 hint.textContent = isApp
-                    ? (online
+                    ? (runnerReady
                         ? 'Local runner active — saved exercise files are checked automatically.'
                         : 'Local runner unavailable — restart the desktop app to restore automatic checks.')
                     : (online
                         ? 'Connected — vibe watch is running on this machine.'
                         : 'Not connected — start `node vibe.js watch` to enable test-graded exercises.');
             }
-            if (panel && online) panel.removeAttribute('open');
-            renderRunnerIdle(online);
+            if (panel && runnerReady) panel.removeAttribute('open');
+            renderRunnerIdle(runnerReady);
         }
 
         window.addEventListener('vibeResult', function(e) {

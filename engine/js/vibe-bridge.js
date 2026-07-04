@@ -23,18 +23,27 @@
 
     var isApp = !!window.vibeApp;
     var PORT = 4711;
+    if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) && location.port) {
+        PORT = parseInt(location.port, 10) || PORT;
+    }
     try {
         var stored = localStorage.getItem('vibe-learn:vibe-port');
-        if (stored) PORT = parseInt(stored, 10) || PORT;
+        if (stored && !/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
+            PORT = parseInt(stored, 10) || PORT;
+        }
     } catch (e) {}
 
-    var BASE = 'http://127.0.0.1:' + PORT;
+    var BASE = /^(localhost|127\.0\.0\.1)$/.test(location.hostname)
+        ? location.origin
+        : 'http://127.0.0.1:' + PORT;
     var POLL_MS = 3000;
     var LAST_SEEN_KEY = window.CourseConfigHelper
         ? window.CourseConfigHelper.storageKey('vibe-last-seen')
         : 'course-vibe-last-seen';
 
     var online = false;
+    var watching = false;
+    var workspaceDir = null;
     var workspaces = null;   // array of variantKeys, null until fetched
     var pollTimer = null;
     var currentItem = null;  // { key, variantKey, title }
@@ -63,31 +72,39 @@
         });
     }
 
-    function setOnline(value) {
-        if (online === value) return;
+    function setOnline(value, health) {
+        var nextWatching = !!(value && health && health.watching);
+        var nextWorkspace = health && health.workspaceDir ? health.workspaceDir : workspaceDir;
+        if (online === value && watching === nextWatching && workspaceDir === nextWorkspace) return;
         online = value;
+        watching = nextWatching;
+        workspaceDir = nextWorkspace;
         // Reconnected mid-session: tell the daemon what's on screen
         if (online && currentItem) announce(currentItem);
-        window.dispatchEvent(new CustomEvent('vibeStatusChanged', { detail: { online: online } }));
+        window.dispatchEvent(new CustomEvent('vibeStatusChanged', {
+            detail: { online: online, watching: watching, workspaceDir: workspaceDir }
+        }));
     }
 
     /**
      * Probe the daemon; resolves to true/false and refreshes the workspace list.
      */
     function probe() {
-        return fetchJson('/health').then(function() {
+        return fetchJson('/health').then(function(health) {
             return fetchJson('/exercises').then(function(data) {
                 workspaces = data.exercises || [];
-                setOnline(true);
+                setOnline(true, health);
                 return true;
             });
         }).catch(function() {
-            setOnline(false);
+            setOnline(false, null);
             return false;
         });
     }
 
     function isOnline() { return online; }
+    function isWatching() { return watching; }
+    function getWorkspaceDir() { return workspaceDir; }
 
     /**
      * Does a local go-test workspace exist for this exercise?
@@ -293,7 +310,9 @@
         // Only poll on pages that actually show exercises
         if (document.querySelector('#warmups-container, #challenges-container, .inline-exercises, .exercise[data-exercise-key]')) {
             renderStatusPill('probing');
-            probe().then(function(ok) { renderStatusPill(ok ? 'online' : 'offline'); });
+            probe().then(function(ok) {
+                renderStatusPill(ok && (!isApp || isWatching()) ? 'online' : 'offline');
+            });
             startPolling();
         }
     }
@@ -307,6 +326,8 @@
     window.VibeBridge = {
         probe: probe,
         isOnline: isOnline,
+        isWatching: isWatching,
+        getWorkspaceDir: getWorkspaceDir,
         hasWorkspace: hasWorkspace,
         resolveWorkspace: resolveWorkspace,
         announce: announce,

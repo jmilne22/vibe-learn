@@ -13,7 +13,8 @@
 //   3. `vibe check` runs the real Go toolchain and appends a result record
 //      to .vibe/results.jsonl, which the page picks up within a poll tick.
 //
-// No dependencies; state lives in .vibe/ (gitignored).
+// No dependencies. Paths can be overridden by the desktop app so packaged
+// assets stay read-only and learner workspaces/state live outside the app.
 
 'use strict';
 
@@ -23,12 +24,16 @@ const http = require('http');
 const { spawnSync } = require('child_process');
 
 const ROOT = __dirname;
-const PRACTICE_DIR = path.join(ROOT, 'practice');
-const STATE_DIR = path.join(ROOT, '.vibe');
+const PRACTICE_DIR = path.resolve(process.env.VIBE_WORKSPACE_DIR || path.join(ROOT, 'practice'));
+const STATE_DIR = path.resolve(process.env.VIBE_STATE_DIR || path.join(ROOT, '.vibe'));
 const RESULTS_FILE = path.join(STATE_DIR, 'results.jsonl');
 const QUEUE_FILE = path.join(STATE_DIR, 'queue.json');
 const CONFIG_FILE = path.join(STATE_DIR, 'config.json');
-const DIST_DIR = path.join(ROOT, 'dist');
+const DIST_DIR = path.resolve(process.env.VIBE_ASSETS_DIR || path.join(ROOT, 'dist'));
+const GO_BINARY = process.env.VIBE_GO_BINARY || 'go';
+const GO_RACE = process.env.VIBE_GO_RACE !== '0';
+const PROFILE = process.env.VIBE_PROFILE || 'source';
+const INSTANCE_ID = process.env.VIBE_INSTANCE_ID || `${PROFILE}:${PRACTICE_DIR}`;
 const DEFAULT_PORT = 4711;
 const VERSION = '1.0.0';
 
@@ -71,6 +76,16 @@ function loadResults() {
     }
 }
 
+function resolveExerciseTarget(argDir) {
+    if (!argDir) return process.cwd();
+    const normalized = String(argDir).replace(/\\/g, '/');
+    if (normalized === 'practice') return PRACTICE_DIR;
+    if (normalized.startsWith('practice/')) {
+        return path.join(PRACTICE_DIR, normalized.slice('practice/'.length));
+    }
+    return path.resolve(argDir);
+}
+
 // practice/module6/challenge_1_v2 -> { module: 6, exerciseId: 'challenge_1',
 // variantId: 'v2', key: 'm6_challenge_1', variantKey: 'm6_challenge_1_v2' }
 function parseExerciseDir(dir) {
@@ -88,6 +103,7 @@ function parseExerciseDir(dir) {
         variantId,
         key: `m${modNum}_${exerciseId}`,
         variantKey: `m${modNum}_${exerciseId}${variantId ? '_' + variantId : ''}`,
+        rel,
         dir: path.join('practice', rel),
         pkg: './' + rel.replace(/\\/g, '/'),
     };
@@ -114,7 +130,7 @@ function listWorkspaces() {
 // --- vibe check ---
 
 function runCheck(argDir) {
-    const target = argDir ? path.resolve(argDir) : process.cwd();
+    const target = resolveExerciseTarget(argDir);
     const info = parseExerciseDir(target);
     if (!info) {
         console.error('Not inside a practice exercise. Run from practice/module<N>/<exercise>/,');
@@ -122,15 +138,23 @@ function runCheck(argDir) {
         process.exit(2);
     }
 
-    console.log(C.dim(`→ go vet ${info.pkg} && go test -race ${info.pkg}`));
+    console.log(C.dim(`→ go vet ${info.pkg} && go test${GO_RACE ? ' -race' : ''} ${info.pkg}`));
 
-    const vet = spawnSync('go', ['vet', info.pkg], { cwd: PRACTICE_DIR, encoding: 'utf8' });
+    const goEnv = {
+        ...process.env,
+        GOFLAGS: process.env.GOFLAGS || (fs.existsSync(path.join(PRACTICE_DIR, 'vendor')) ? '-mod=vendor' : ''),
+        GOTOOLCHAIN: process.env.GOTOOLCHAIN || 'local',
+    };
+    const vet = spawnSync(GO_BINARY, ['vet', info.pkg], { cwd: PRACTICE_DIR, encoding: 'utf8', env: goEnv });
     const vetOk = vet.status === 0;
     const vetOutput = ((vet.stderr || '') + (vet.stdout || '')).trim();
 
     const started = Date.now();
-    const test = spawnSync('go', ['test', '-race', '-count=1', '-json', info.pkg],
-        { cwd: PRACTICE_DIR, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 });
+    const testArgs = ['test'];
+    if (GO_RACE) testArgs.push('-race');
+    testArgs.push('-count=1', '-json', info.pkg);
+    const test = spawnSync(GO_BINARY, testArgs,
+        { cwd: PRACTICE_DIR, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024, env: goEnv });
     const elapsedMs = Date.now() - started;
 
     // Parse `go test -json` event stream into per-test outcomes
@@ -176,6 +200,7 @@ function runCheck(argDir) {
         buildOutput: buildFailed ? (test.stderr || rawOutput.join('')).trim().slice(0, 2000) : undefined,
         tests: testList,
         elapsedMs,
+        race: GO_RACE,
         attempt: prior + 1,
         at: Date.now(),
     };
@@ -230,18 +255,18 @@ function runNext() {
         target = workspaces.find(w => !passed.has(w.variantKey)) || workspaces[0];
     }
 
-    const absDir = path.join(ROOT, target.dir);
+    const absDir = path.join(PRACTICE_DIR, target.rel);
     const readme = path.join(absDir, 'README.md');
     console.log(C.bold(`→ ${target.variantKey}`) + (queued && queued.title ? C.dim(` · ${queued.title}`) : ''));
-    console.log(C.dim(`  scaffolded at ${target.dir}/`));
+    console.log(C.dim(`  workspace: ${absDir}`));
     if (fs.existsSync(readme)) {
         const head = fs.readFileSync(readme, 'utf8').split('\n').slice(0, 6).join('\n');
         console.log('');
         console.log(head.trim());
     }
     console.log('');
-    console.log(`  cd ${target.dir} && \${EDITOR:-hx} exercise.go`);
-    console.log(`  node ${path.relative(process.cwd(), path.join(ROOT, 'vibe.js')) || 'vibe.js'} check ${target.dir}`);
+    console.log(`  cd ${JSON.stringify(absDir)} && \${EDITOR:-hx} exercise.go`);
+    console.log(`  node ${path.relative(process.cwd(), __filename) || 'vibe.js'} check ${JSON.stringify(absDir)}`);
 }
 
 // --- vibe watch ---
@@ -287,6 +312,7 @@ function runWatch(args) {
     const config = loadConfig();
     let port = config.port || DEFAULT_PORT;
     const extraOrigins = Array.isArray(config.origins) ? config.origins.slice() : [];
+    let watcherActive = false;
 
     for (let i = 0; i < args.length; i++) {
         if (args[i] === '--port' && args[i + 1]) port = parseInt(args[++i], 10);
@@ -323,7 +349,16 @@ function runWatch(args) {
         };
 
         if (req.method === 'GET' && url.pathname === '/health') {
-            json(200, { ok: true, version: VERSION, workspaces: listWorkspaces().length });
+            json(200, {
+                ok: true,
+                version: VERSION,
+                profile: PROFILE,
+                instanceId: INSTANCE_ID,
+                workspaceDir: PRACTICE_DIR,
+                assetsDir: DIST_DIR,
+                workspaces: listWorkspaces().length,
+                watching: watcherActive,
+            });
         } else if (req.method === 'GET' && url.pathname === '/api/courses') {
             // Built courses, for the titlebar course switcher (and the
             // desktop app's startup navigation).
@@ -361,14 +396,22 @@ function runWatch(args) {
             // background process needed: same origin, no CORS, one URL.
             let rel;
             try { rel = decodeURIComponent(url.pathname); } catch { rel = url.pathname; }
-            let file = path.normalize(path.join(DIST_DIR, rel));
-            if (!file.startsWith(DIST_DIR)) { json(403, { ok: false }); return; }
+            let file = path.resolve(DIST_DIR, '.' + rel);
+            if (file !== DIST_DIR && !file.startsWith(DIST_DIR + path.sep)) {
+                json(403, { ok: false });
+                return;
+            }
             try {
                 if (fs.statSync(file).isDirectory()) file = path.join(file, 'index.html');
             } catch {}
             fs.readFile(file, (err, data) => {
                 if (err) { json(404, { ok: false, hint: 'run `npm run build` first' }); return; }
-                res.writeHead(200, { ...cors, 'Content-Type': MIME[path.extname(file)] || 'application/octet-stream' });
+                res.writeHead(200, {
+                    ...cors,
+                    'Content-Type': MIME[path.extname(file)] || 'application/octet-stream',
+                    'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' http://127.0.0.1:*; object-src 'none'; base-uri 'self'; frame-ancestors 'none'",
+                    'X-Content-Type-Options': 'nosniff',
+                });
                 res.end(data);
             });
         } else {
@@ -397,8 +440,8 @@ function runWatch(args) {
         } else {
             console.log(C.dim(`  no built courses found — run \`npm run build\` first`));
         }
-        const watching = startFileWatcher();
-        console.log(watching
+        watcherActive = startFileWatcher();
+        console.log(watcherActive
             ? C.dim('  watching practice/ — saving a .go file runs its tests automatically')
             : C.dim('  practice/ not found — run `npm run practice`, then restart to enable auto-check'));
         console.log(C.dim('  results reach the open course page within a few seconds'));
@@ -419,7 +462,7 @@ function startFileWatcher() {
     const runNext = () => {
         if (child || queue.length === 0) return;
         const dir = queue.shift();
-        console.log(C.dim(`\n— ${path.relative(ROOT, dir)} saved — checking…`));
+        console.log(C.dim(`\n— ${path.relative(PRACTICE_DIR, dir)} saved — checking…`));
         child = spawn(process.execPath, [__filename, 'check', dir], { stdio: 'inherit' });
         child.on('exit', () => { child = null; runNext(); });
     };

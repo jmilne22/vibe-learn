@@ -1355,7 +1355,8 @@ pre::-webkit-scrollbar-thumb:hover {
     padding: 0;
 }
 
-.workspace-copy-btn {
+.workspace-copy-btn,
+.workspace-open-btn {
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.72rem;
     padding: 2px 8px;
@@ -1366,7 +1367,8 @@ pre::-webkit-scrollbar-thumb:hover {
     cursor: pointer;
 }
 
-.workspace-copy-btn:hover {
+.workspace-copy-btn:hover,
+.workspace-open-btn:hover {
     background: rgba(246, 173, 85, 0.12);
 }
 

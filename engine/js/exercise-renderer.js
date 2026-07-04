@@ -133,11 +133,18 @@
     function renderWorkspacePath(variant) {
         var dir = variant.practiceDir;
         if (!dir) return '';
-        var cmd = 'cd ' + dir;
+        var displayDir = dir;
+        if (window.vibeApp && window.vibeApp.workspaceDir) {
+            var rel = dir.replace(/^practice[\\/]/, '');
+            var sep = window.vibeApp.workspaceDir.indexOf('\\') !== -1 ? '\\' : '/';
+            displayDir = window.vibeApp.workspaceDir.replace(/[\\/]$/, '') + sep + rel.replace(/[\\/]/g, sep);
+        }
+        var cmd = 'cd ' + JSON.stringify(displayDir);
         return `<div class="workspace-path">
             <span class="workspace-path-label">Work locally</span>
             <code>${escapeHtml(cmd)}</code>
             <button type="button" class="workspace-copy-btn" data-copy="${escapeHtml(cmd)}">Copy</button>
+            ${window.vibeApp ? `<button type="button" class="workspace-open-btn" data-workspace="${escapeHtml(dir)}">Open folder</button>` : ''}
             <span class="workspace-path-hint">edit exercise.go, then <code>go test</code></span>
         </div>
         <div class="vibe-results vibe-results-pane"><span class="vibe-dim">graded by the local test runner — save exercise.go and the result lands here</span></div>`;
@@ -146,6 +153,11 @@
     // One delegated listener: cards are re-rendered on shuffle and
     // easier/harder swaps, so per-card listeners would be lost.
     document.addEventListener('click', function (e) {
+        var openBtn = e.target && e.target.closest ? e.target.closest('.workspace-open-btn') : null;
+        if (openBtn && window.vibeApp) {
+            window.vibeApp.openWorkspace(openBtn.getAttribute('data-workspace') || '');
+            return;
+        }
         var btn = e.target && e.target.closest ? e.target.closest('.workspace-copy-btn') : null;
         if (!btn) return;
         var text = btn.getAttribute('data-copy') || '';
