@@ -20,6 +20,13 @@ variants:
           hints:
             - Return <code>(0, fmt.Errorf("division by zero"))</code> when b == 0
             - Return <code>(a / b, nil)</code> for the success case
+          driverGo: |-
+            q, err := divide(84, 4)
+            fmt.Println(q, err)
+            q, err = divide(10, 3)
+            fmt.Println(q, err)
+            _, err = divide(7, 0)
+            fmt.Println("division by zero error:", err != nil)
           solution: |-
             func divide(a, b int) (int, error) {
                 if b == 0 {
@@ -54,6 +61,14 @@ variants:
           hints:
             - Use <code>strings.SplitN(s, ":", 2)</code> — returns at most 2 parts
             - If len(parts) != 2, return an error. Then parse parts[1] with strconv.Atoi.
+          driverGo: |-
+            host, port, err := parseHostPort("localhost:8080")
+            fmt.Println(host, port, err)
+            host, port, err = parseHostPort("metrics-server:9090")
+            fmt.Println(host, port, err)
+            _, _, errNoColon := parseHostPort("just-a-host")
+            _, _, errBadPort := parseHostPort("api:eighty")
+            fmt.Println("missing colon error:", errNoColon != nil, "| bad port error:", errBadPort != nil)
           solution: |-
             func parseHostPort(s string) (string, int, error) {
                 parts := strings.SplitN(s, ":", 2)
@@ -99,6 +114,10 @@ variants:
           hints:
             - <code>os.Stat</code> returns <code>(FileInfo, error)</code>
             - Use <code>errors.Is(err, os.ErrNotExist)</code> to specifically detect missing files
+          driverGo: |-
+            fmt.Println("current dir exists:", configExists("."))
+            fmt.Println("missing file exists:", configExists("definitely-missing-config.yaml"))
+            fmt.Println("missing dir exists:", configExists("no/such/dir/config.yaml"))
           solution: |-
             func configExists(path string) bool {
                 _, err := os.Stat(path)
@@ -180,6 +199,13 @@ variants:
           hints:
             - Implement <code>func (e *PortError) Error() string</code>
             - "Return <code>&PortError{Port: port, Reason: \"...\"}</code> for failures"
+          driverGo: |-
+            err := validatePort(-1)
+            fmt.Println("negative port error:", err != nil)
+            _, isPortErr := err.(*PortError)
+            fmt.Println("is *PortError:", isPortErr)
+            fmt.Println("high port error:", validatePort(70000) != nil)
+            fmt.Println("valid port error:", validatePort(8080) != nil)
           solution: |-
             type PortError struct {
                 Port   int

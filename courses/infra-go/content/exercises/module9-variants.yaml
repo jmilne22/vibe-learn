@@ -18,6 +18,16 @@ variants:
           hints:
             - Use <code>bufio.NewScanner(conn)</code> to read lines, <code>fmt.Fprintln(conn, line)</code> to write back
             - Remember <code>defer conn.Close()</code>
+          driverGo: |-
+            client, server := net.Pipe()
+            go handleConn(server)
+            in := bufio.NewReader(client)
+            fmt.Fprintln(client, "deploy checkout-api")
+            echo, _ := in.ReadString('\n')
+            fmt.Print(echo)
+            fmt.Fprintln(client, "QUIT")
+            bye, _ := in.ReadString('\n')
+            fmt.Print(bye)
           solution: |-
             func handleConn(conn net.Conn) {
                 defer conn.Close()
@@ -91,6 +101,10 @@ variants:
             - >-
               Split on <code>"."</code>, then for each label: append <code>byte(len(label))</code> then
               <code>[]byte(label)</code>. End with <code>0</code>.
+          driverGo: |-
+            fmt.Println(encodeDomain("example.com"))
+            fmt.Println(encodeDomain("api.internal.cluster"))
+            fmt.Println(encodeDomain("localhost"))
           solution: |-
             func encodeDomain(domain string) []byte {
                 var buf []byte
@@ -110,6 +124,11 @@ variants:
           hints:
             - Use <code>binary.BigEndian.Uint16(data[0:2])</code> for each 2-byte field
             - Fields are at offsets 0, 2, 4, 6, 8, 10
+          driverGo: |-
+            query := []byte{0x12, 0x34, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
+            fmt.Printf("%+v\n", parseHeader(query))
+            response := []byte{0x12, 0x34, 0x81, 0x80, 0x00, 0x01, 0x00, 0x02, 0x00, 0x00, 0x00, 0x01}
+            fmt.Printf("%+v\n", parseHeader(response))
           solution: |-
             type DNSHeader struct {
                 ID, Flags, QDCount, ANCount, NSCount, ARCount uint16

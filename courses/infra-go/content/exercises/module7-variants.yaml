@@ -19,6 +19,13 @@ variants:
             - >-
               Use <code>select</code> with <code>case val := <-ch</code> and <code>case
               <-time.After(500*time.Millisecond)</code>
+          driverGo: |-
+            ch := make(chan string, 1)
+            ch <- "pod-ready"
+            val, err := readWithTimeout(ch)
+            fmt.Println(val, err)
+            _, err = readWithTimeout(make(chan string))
+            fmt.Println("timeout error:", err != nil)
           solution: |-
             func readWithTimeout(ch <-chan string) (string, error) {
                 select {
@@ -35,6 +42,11 @@ variants:
             blocking. Returns true if sent, false if channel is full.
           hints:
             - Use <code>select</code> with <code>case ch <- val</code> and <code>default</code>
+          driverGo: |-
+            ch := make(chan string, 1)
+            fmt.Println("first send:", trySend(ch, "deploy-started"))
+            fmt.Println("second send:", trySend(ch, "deploy-finished"))
+            fmt.Println("buffered:", <-ch)
           solution: |-
             func trySend(ch chan<- string, val string) bool {
                 select {
@@ -77,6 +89,12 @@ variants:
             processed.
           hints:
             - "Check <code>select { case <-ctx.Done(): return count; default: }</code> before processing"
+          driverGo: |-
+            n := processUntilCancelled(context.Background(), []string{"pod-a", "pod-b"})
+            fmt.Println("processed:", n)
+            ctx, cancel := context.WithCancel(context.Background())
+            cancel()
+            fmt.Println("after cancel:", processUntilCancelled(ctx, []string{"pod-c", "pod-d"}))
           solution: |-
             func processUntilCancelled(ctx context.Context, items []string) int {
                 count := 0

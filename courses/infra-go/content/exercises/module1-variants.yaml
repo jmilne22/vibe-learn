@@ -445,6 +445,11 @@ variants:
           hints:
             - "You need to find the position of the first <code>=</code>, not split on all of them. Which <code>strings</code> function finds the index of a substring?"
             - "Once you have the position, use slice expressions to grab everything before it (the key) and everything after it (the value, quotes included)."
+          driverGo: |-
+            key, val := parseLabel(`method="GET"`)
+            fmt.Printf("key=%s value=%s\n", key, val)
+            key, val = parseLabel(`selector="env=prod"`)
+            fmt.Printf("key=%s value=%s\n", key, val)
           solution: |-
             func parseLabel(s string) (string, string) {
                 idx := strings.Index(s, "=")
@@ -462,6 +467,11 @@ variants:
           hints:
             - "First determine whether the separator exists at all. If it doesn't, you need to return a default namespace."
             - "Limit your split to at most 2 parts, then check the result length to determine which format you got."
+          driverGo: |-
+            ns, name := splitResource("prod/web-frontend")
+            fmt.Printf("namespace=%s resource=%s\n", ns, name)
+            ns, name = splitResource("standalone-job")
+            fmt.Printf("namespace=%s resource=%s\n", ns, name)
           solution: |-
             func splitResource(s string) (string, string) {
                 parts := strings.SplitN(s, "/", 2)

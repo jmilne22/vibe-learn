@@ -18,6 +18,18 @@ variants:
           hints:
             - "Split each entry on <code>\": \"</code> or use <code>strings.SplitN(entry, \":\", 2)</code> to get the level"
             - Increment <code>counts[level]++</code>
+          driverGo: |-
+            entries := []string{
+                "ERROR: connection timeout",
+                "INFO: pod started",
+                "ERROR: disk full",
+                "WARN: high memory",
+                "INFO: readiness probe ok",
+            }
+            counts := countLogLevels(entries)
+            fmt.Println(counts)
+            fmt.Println("errors:", counts["ERROR"])
+            fmt.Println(countLogLevels(nil))
           solution: |-
             func countLogLevels(entries []string) map[string]int {
                 counts := make(map[string]int)
@@ -38,6 +50,14 @@ variants:
           hints:
             - For each element, compute <code>complement = target - latency</code>. Check if complement is in the map.
             - Store <code>seen[latency] = index</code> as you iterate
+          driverGo: |-
+            latencies := []int{120, 250, 80, 400, 175}
+            i, j := twoSum(latencies, 330)
+            fmt.Println("target 330:", i, j)
+            i, j = twoSum(latencies, 295)
+            fmt.Println("target 295:", i, j)
+            i, j = twoSum(latencies, 1000)
+            fmt.Println("target 1000:", i, j)
           solution: |-
             func twoSum(latencies []int, target int) (int, int) {
                 seen := make(map[int]int)
@@ -60,6 +80,12 @@ variants:
           hints:
             - Use two index variables, i and j. Compare <code>a[i]</code> and <code>b[j]</code>, append the smaller one.
             - "After the main loop, append remaining elements: <code>result = append(result, a[i:]...)</code>"
+          driverGo: |-
+            a := []int{1700000000, 1700000060, 1700000120}
+            b := []int{1700000030, 1700000090, 1700000150}
+            fmt.Println(mergeSorted(a, b))
+            fmt.Println(mergeSorted(nil, b))
+            fmt.Println(mergeSorted(a, []int{}))
           solution: |-
             func mergeSorted(a, b []int) []int {
                 result := make([]int, 0, len(a)+len(b))
@@ -90,6 +116,11 @@ variants:
               Compute the initial window sum, then slide: add <code>samples[i]</code>, subtract
               <code>samples[i-k]</code>
             - Divide the running sum by <code>float64(k)</code> for each window position
+          driverGo: |-
+            cpu := []float64{10, 20, 30, 40, 50, 90}
+            fmt.Println(movingAverage(cpu, 3))
+            fmt.Println(movingAverage(cpu, 1))
+            fmt.Println("window too big:", movingAverage(cpu, 7) == nil)
           solution: |-
             func movingAverage(samples []float64, k int) []float64 {
                 if len(samples) < k {
@@ -117,6 +148,13 @@ variants:
           hints:
             - Use <code>lo, hi := 0, len(versions)-1</code>. Compare <code>versions[mid]</code> with target.
             - Use <code>mid = lo + (hi-lo)/2</code> to avoid integer overflow
+          driverGo: |-
+            versions := []string{"v1.0", "v1.1", "v1.2", "v2.0", "v2.1"}
+            fmt.Println(findVersion(versions, "v2.0"))
+            fmt.Println(findVersion(versions, "v1.0"))
+            fmt.Println(findVersion(versions, "v2.1"))
+            fmt.Println(findVersion(versions, "v3.0"))
+            fmt.Println(findVersion(nil, "v1.0"))
           solution: |-
             func findVersion(versions []string, target string) int {
                 lo, hi := 0, len(versions)-1
@@ -143,6 +181,12 @@ variants:
           hints:
             - Use a <code>[]byte</code> slice as a stack. Push opening brackets, pop on closing brackets.
             - "Check that the popped bracket matches: map <code>')' → '('</code>, etc."
+          driverGo: |-
+            fmt.Println(isValid("{[()]}"))
+            fmt.Println(isValid("([)]"))
+            fmt.Println(isValid("kubectl get pods (all namespaces) [ready]"))
+            fmt.Println(isValid("{unclosed ["))
+            fmt.Println(isValid(""))
           solution: |-
             func isValid(s string) bool {
                 stack := []byte{}

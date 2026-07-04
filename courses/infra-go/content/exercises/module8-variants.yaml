@@ -18,6 +18,13 @@ variants:
             - >-
               Use <code>r.Method</code> and <code>r.URL.Path</code>, then <code>fmt.Fprintf(w, "%s %s", r.Method,
               r.URL.Path)</code>
+          driverGo: |-
+            rec := httptest.NewRecorder()
+            echoHandler(rec, httptest.NewRequest("GET", "/pods/checkout-api", nil))
+            fmt.Println(rec.Code, rec.Body.String())
+            rec = httptest.NewRecorder()
+            echoHandler(rec, httptest.NewRequest("DELETE", "/deployments/billing", nil))
+            fmt.Println(rec.Code, rec.Body.String())
           solution: |-
             func echoHandler(w http.ResponseWriter, r *http.Request) {
                 fmt.Fprintf(w, "%s %s", r.Method, r.URL.Path)
@@ -31,6 +38,13 @@ variants:
             - >-
               Use <code>http.Error(w, "not found: "+r.URL.Path, http.StatusNotFound)</code> — it sets both the status
               code and body
+          driverGo: |-
+            rec := httptest.NewRecorder()
+            notFoundHandler(rec, httptest.NewRequest("GET", "/deployments/legacy", nil))
+            fmt.Println(rec.Code, strings.TrimSpace(rec.Body.String()))
+            rec = httptest.NewRecorder()
+            notFoundHandler(rec, httptest.NewRequest("POST", "/api/v2/rollouts", nil))
+            fmt.Println(rec.Code, strings.TrimSpace(rec.Body.String()))
           solution: |-
             func notFoundHandler(w http.ResponseWriter, r *http.Request) {
                 http.Error(w, "not found: "+r.URL.Path, http.StatusNotFound)
@@ -47,6 +61,14 @@ variants:
           hints:
             - Set <code>Content-Type</code> to <code>application/json</code> before calling <code>WriteHeader</code>
             - Use <code>json.NewEncoder(w).Encode(map[string]any{...})</code> to write the JSON body
+          driverGo: |-
+            rec := httptest.NewRecorder()
+            writeServiceStatus(rec, "checkout-api", true, 3600)
+            fmt.Println(rec.Code, rec.Header().Get("Content-Type"))
+            fmt.Println(strings.TrimSpace(rec.Body.String()))
+            rec = httptest.NewRecorder()
+            writeServiceStatus(rec, "billing", false, 42)
+            fmt.Println(rec.Code, strings.TrimSpace(rec.Body.String()))
           solution: |-
             func writeServiceStatus(w http.ResponseWriter, service string, healthy bool, uptimeSec int) {
                 status := "healthy"
@@ -72,6 +94,15 @@ variants:
           hints:
             - Decode with <code>json.NewDecoder(r.Body).Decode(&req)</code>. Check error first, then validate fields.
             - Use <code>http.Error(w, msg, http.StatusBadRequest)</code> for each validation failure
+          driverGo: |-
+            for _, body := range []string{`{"name":"checkout-api","replicas":3}`, `{not json`, `{"name":"","replicas":3}`, `{"name":"billing","replicas":0}`} {
+                rec := httptest.NewRecorder()
+                validateDeployment(rec, httptest.NewRequest("POST", "/validate", strings.NewReader(body)))
+                fmt.Println(rec.Code)
+                if rec.Code == http.StatusOK {
+                    fmt.Println(strings.TrimSpace(rec.Body.String()))
+                }
+            }
           solution: |-
             func validateDeployment(w http.ResponseWriter, r *http.Request) {
                 var req struct {
@@ -104,6 +135,12 @@ variants:
           hints:
             - Set the response header BEFORE calling <code>next.ServeHTTP(w, r)</code>
             - Return <code>http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { ... })</code>
+          driverGo: |-
+            h := requestIDMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { fmt.Fprint(w, "pods ok") }))
+            rec := httptest.NewRecorder()
+            h.ServeHTTP(rec, httptest.NewRequest("GET", "/pods", nil))
+            fmt.Println("body:", rec.Body.String())
+            fmt.Println("has request id:", strings.HasPrefix(rec.Header().Get("X-Request-ID"), "req-"))
           solution: |-
             func requestIDMiddleware(next http.Handler) http.Handler {
                 return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -121,6 +158,18 @@ variants:
               The outer function captures the config: <code>func apiKeyAuth(keys map[string]bool) func(http.Handler)
               http.Handler</code>
             - Check <code>r.Header.Get("X-API-Key")</code> — empty means 401, not in map means 403
+          driverGo: |-
+            h := apiKeyAuth(map[string]bool{"key-prod-1": true})(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { fmt.Fprint(w, "metrics ok") }))
+            for _, key := range []string{"", "key-staging-9", "key-prod-1"} {
+                req := httptest.NewRequest("GET", "/metrics", nil)
+                req.Header.Set("X-API-Key", key)
+                rec := httptest.NewRecorder()
+                h.ServeHTTP(rec, req)
+                fmt.Println(rec.Code)
+                if rec.Code == http.StatusOK {
+                    fmt.Println(rec.Body.String())
+                }
+            }
           solution: |-
             func apiKeyAuth(validKeys map[string]bool) func(http.Handler) http.Handler {
                 return func(next http.Handler) http.Handler {

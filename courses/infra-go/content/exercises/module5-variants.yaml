@@ -120,6 +120,11 @@ variants:
           hints:
             - "Trim trailing slash from baseURL: <code>strings.TrimRight(baseURL, \"/\")</code>"
             - "Initialize httpClient in the constructor: <code>&http.Client{Timeout: 15 * time.Second}</code>"
+          driverGo: |-
+            c := NewAPIClient("https://registry.internal/", "tok-deploy-42")
+            fmt.Println("baseURL:", c.baseURL)
+            fmt.Println("token:", c.token)
+            fmt.Println("timeout:", c.httpClient.Timeout)
           solution: |-
             type APIClient struct {
                 baseURL    string
@@ -142,6 +147,13 @@ variants:
           hints:
             - Check <code>resp.StatusCode >= 200 && resp.StatusCode < 300</code>
             - Read body with <code>io.ReadAll</code> for the error message
+          driverGo: |-
+            ok := &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(`{"pods":3}`))}
+            fmt.Println("200 error:", checkResponse(ok) != nil)
+            created := &http.Response{StatusCode: 201, Body: io.NopCloser(strings.NewReader(""))}
+            fmt.Println("201 error:", checkResponse(created) != nil)
+            down := &http.Response{StatusCode: 503, Body: io.NopCloser(strings.NewReader("service unavailable"))}
+            fmt.Println("503 error:", checkResponse(down) != nil)
           solution: |-
             func checkResponse(resp *http.Response) error {
                 if resp.StatusCode >= 200 && resp.StatusCode < 300 {
