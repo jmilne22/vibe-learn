@@ -8803,6 +8803,7 @@ kbd {
     bottom: 16px;
     left: 16px;
     z-index: 60;
+    transition: left var(--transition-slow, 0.3s ease);
     display: flex;
     align-items: center;
     gap: 8px;
