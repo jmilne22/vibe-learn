@@ -2,6 +2,33 @@
 
 Errors are values you return. **Panic** is the other failure path — it unwinds the stack, runs deferred functions, and terminates the goroutine if nothing catches it. You will see it. You should almost never reach for it.
 
+<attempt type="pretest">
+
+<predict prompt="What does this print?">
+```go
+func safeDivide(a, b int) (result int, err error) {
+    defer func() {
+        if r := recover(); r != nil {
+            err = fmt.Errorf("panic: %v", r)
+        }
+    }()
+    return a / b, nil
+}
+
+func main() {
+    n, err := safeDivide(10, 0)
+    fmt.Println(n, err)
+}
+```
+```
+0 panic: runtime error: integer divide by zero
+```
+</predict>
+
+Wrong is fine — the Recover section below walks through exactly this function.
+
+</attempt>
+
 ### What Causes a Panic
 
 Most panics are bugs, not deliberate calls:
@@ -40,6 +67,8 @@ If a caller might want to handle the failure, return an error. Don't panic.
 
 `recover` only does anything inside a deferred function, and it stops a panic from propagating:
 
+<attempt type="worked">
+
 ```go
 func safeDivide(a, b int) (result int, err error) {
     defer func() {
@@ -52,6 +81,25 @@ func safeDivide(a, b int) (result int, err error) {
 ```
 
 Two things to notice: the recover lives in a `defer`, and the named return value `err` is what carries the failure back. Outside of `defer`, `recover()` always returns nil.
+
+</attempt>
+
+<attempt type="gaps">
+
+<gaps prompt="Convert a third-party panic into an ordinary error.">
+```go
+func safeParse(line string) (cfg Config, err error) {
+    «defer» func() {
+        if r := «recover()»; r != nil {
+            «err» = fmt.Errorf("panic parsing %q: %v", line, r)
+        }
+    }()
+    return thirdparty.Parse(line), nil
+}
+```
+</gaps>
+
+</attempt>
 
 The legitimate uses of recover are narrow too:
 

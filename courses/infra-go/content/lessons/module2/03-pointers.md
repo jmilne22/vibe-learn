@@ -2,6 +2,28 @@
 
 In Python, everything is a reference behind the scenes. In Go, you choose explicitly. A **pointer** holds a memory address instead of a value directly.
 
+<attempt type="pretest">
+
+<predict prompt="What does this print?">
+```go
+type Pod struct{ Status string }
+
+func main() {
+    a := &Pod{Status: "Running"}
+    b := a
+    b.Status = "Pending"
+    fmt.Println(a.Status)
+}
+```
+```
+Pending
+```
+</predict>
+
+Wrong is fine — the Pointer Aliasing section below derives exactly this.
+
+</attempt>
+
 ### The Two Operators
 
 ```go
@@ -61,23 +83,7 @@ The "by value" version compiles and runs without error — but the assignment la
 
 ### Pointer Aliasing
 
-<predict prompt="What does this print?">
-```go
-type Pod struct{ Status string }
-
-func main() {
-    a := &Pod{Status: "Running"}
-    b := a
-    b.Status = "Pending"
-    fmt.Println(a.Status)
-}
-```
-```
-Pending
-```
-</predict>
-
-`b := a` doesn't copy the struct — it copies the *pointer*. Both `a` and `b` now hold the same address, so writing through `b` is the same as writing through `a`. To get a real, independent copy of the struct, dereference and assign: `b := *a` produces a fresh `Pod` whose modifications don't affect `a`.
+That pretest at the top of the page was aliasing in action: `b := a` doesn't copy the struct — it copies the *pointer*. Both `a` and `b` now hold the same address, so writing through `b` is the same as writing through `a`. To get a real, independent copy of the struct, dereference and assign: `b := *a` produces a fresh `Pod` whose modifications don't affect `a`.
 
 This is why pointers are powerful and dangerous in equal measure. Every function call that takes `*Pod` is potentially a function that can change your `Pod` out from under you — including changes you didn't ask for, on a separate goroutine you didn't know was running.
 
@@ -151,6 +157,8 @@ panic: runtime error: invalid memory address or nil pointer dereference
 ```
 </predict>
 
+<attempt type="worked">
+
 `p == nil` is fine — comparing to nil is always safe. But `p.Name` follows the pointer to read the struct's field, and there's no struct to read. This is the most common crash in Go infrastructure code: an API call returns nil, you forget to check, and the next field access panics.
 
 ```go
@@ -179,6 +187,26 @@ if pod == nil {
 }
 fmt.Println(pod.Status)  // safe — we checked
 ```
+
+</attempt>
+
+<attempt type="gaps">
+
+<gaps prompt="The two operators plus the guard against the most common crash in Go.">
+```go
+status := "Running"
+p := «&status»            // p now holds where status lives
+«*p» = "Pending"          // write through it
+fmt.Println(status)       // Pending
+
+var q *Pod                // declared, never assigned
+if q «==» nil {
+    fmt.Println("no pod") // this prints — and q.Name would panic
+}
+```
+</gaps>
+
+</attempt>
 
 ### Pointers and Constructors
 
@@ -227,4 +255,8 @@ cases:
 
 In the "by value" case, the local `s` gets the result of `append`, but the caller's `items` is never updated. In the "by pointer" case, `&items` passes the address of the slice header; `*s = append(...)` writes through that address, so the caller sees the new slice. The idiom most Go code uses is to skip the pointer and return the new slice instead — `items = addItem(items, "c")` — but `*[]T` is the right tool when the function genuinely needs to grow the caller's slice in place.
 
+<attempt type="scratch">
+
 <div class="inline-exercises" data-concept="Pointers"></div>
+
+</attempt>

@@ -4,7 +4,28 @@ In Module 1, you learned the **count → sort-keys → format** pattern: count w
 
 The fix: bundle each key-value pair into a struct, put the structs in a slice, and sort with `sort.Slice` using any field you want.
 
+<attempt type="pretest">
+
+<predict prompt="What does this print?">
+```go
+names := []string{"web-1", "api-1", "db-1"}
+memoryMB := []int{512, 256, 2048}
+
+sort.Strings(names)
+fmt.Println(names[0], memoryMB[0])
+```
+```
+api-1 512
+```
+</predict>
+
+Wrong is fine — the broken pairing you just witnessed is the problem this whole section solves.
+
+</attempt>
+
 ### The Upgrade: Count → Struct → Sort → Format
+
+<attempt type="worked">
 
 ```go
 // Module 1 version: sorted alphabetically (keys only)
@@ -29,6 +50,8 @@ sort.Slice(entries, func(i, j int) bool {
 ```
 
 The struct lets `sort.Slice` compare by `.count` while keeping `.label` attached. Without the struct, the key and value drift apart when you sort.
+
+</attempt>
 
 ### Zipping Parallel Slices
 
@@ -59,5 +82,26 @@ for _, p := range pods[:3] {
 ```
 
 Without the struct, sorting `memoryMB` would rearrange the values but leave `names` untouched — the pairing breaks. This is exactly the "draw the rest of the owl" problem from Module 1's sorting section, and now you have the tool to solve it.
+
+<attempt type="gaps">
+
+<gaps prompt="Same zip, from memory — bundle, then sort biggest-first with names attached.">
+```go
+type pod struct {
+    name string
+    mem  int
+}
+pods := make([]pod, «len(names)»)
+for i := range names {
+    pods[i] = «pod{names[i], memoryMB[i]}»
+}
+
+sort.Slice(pods, func(i, j int) bool {
+    return pods[i].mem «>» pods[j].mem   // biggest first
+})
+```
+</gaps>
+
+</attempt>
 
 ---

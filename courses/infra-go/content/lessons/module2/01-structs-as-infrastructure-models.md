@@ -2,6 +2,30 @@
 
 A struct is a typed collection of fields. In infra code, nearly everything is a struct — a pod has a name, namespace, and resource limits; a service has ports and selectors; a config entry has a key, value, and source.
 
+<attempt type="pretest">
+
+<predict prompt="What does this print?">
+```go
+type Pod struct {
+    Name      string
+    Namespace string
+    MemoryMB  int
+}
+
+func main() {
+    p := Pod{Name: "web-1"}
+    fmt.Printf("%q %d\n", p.Namespace, p.MemoryMB)
+}
+```
+```
+"" 0
+```
+</predict>
+
+Wrong is fine — the Zero Values section below is about exactly this.
+
+</attempt>
+
 ### Defining Structs
 
 ```go
@@ -70,6 +94,8 @@ class Pod:
 
 Real infra models are nested. A pod has resource limits. A deployment has a pod template.
 
+<attempt type="worked">
+
 ```go
 type Resources struct {
     MemoryMB int
@@ -93,4 +119,32 @@ pod := Pod{
 fmt.Println(pod.Resources.MemoryMB) // 512
 ```
 
+</attempt>
+
+<attempt type="gaps">
+
+<gaps prompt="Model a ConfigMap the same way — nested type, named-field literal, dotted access.">
+```go
+type ConfigMap struct {
+    Name string
+    Data map[string]string
+    Res  «Resources»
+}
+
+cm := ConfigMap{
+    «Name»: "app-config",
+    Data: map[string]string{"LOG_LEVEL": "debug"},
+    Res:  Resources{MemoryMB: 64, CPUM: 50},
+}
+
+fmt.Println(cm.Res.«MemoryMB») // 64
+```
+</gaps>
+
+</attempt>
+
+<attempt type="scratch">
+
 <div class="inline-exercises" data-concept="Structs"></div>
+
+</attempt>

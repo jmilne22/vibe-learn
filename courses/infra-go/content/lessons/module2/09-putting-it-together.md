@@ -74,6 +74,8 @@ The type switch is the bridge — it pulls the concrete type out of the interfac
 
 Inside each bucket, sort unhealthy first (so the report leads with what's broken), then by name. Across buckets, sort by kind so output is deterministic.
 
+<attempt type="worked">
+
 ```go
 func report(rs []Resource) []string {
     grouped := groupByKind(rs)
@@ -109,6 +111,31 @@ func report(rs []Resource) []string {
 ```
 
 Three patterns from Module 1 carried straight through: sorted-keys for deterministic output, `sort.Slice` with a comparator, formatted lines with `fmt.Sprintf`. The new pieces — `Resource` interface, embedded `Metadata`, type switch — let the same code work over any future resource type. Add `ConfigMap`, give it `IsHealthy` and a `Metadata`, and `report` doesn't change.
+
+</attempt>
+
+<attempt type="gaps">
+
+<gaps prompt="Step 2, from memory — typed buckets out of a heterogeneous slice.">
+```go
+func groupByKind(rs []Resource) map[string][]Resource {
+    grouped := «make(map[string][]Resource)»
+    for _, r := range rs {
+        kind := "Unknown"
+        switch «r.(type)» {
+        case Pod:
+            kind = "Pod"
+        case Service:
+            kind = "Service"
+        }
+        grouped[kind] = «append(grouped[kind], r)»
+    }
+    return grouped
+}
+```
+</gaps>
+
+</attempt>
 
 ### What just happened
 

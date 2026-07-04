@@ -4,7 +4,7 @@
 
 When you have an interface value and need the concrete type underneath.
 
-### Comma-Ok Pattern
+<attempt type="pretest">
 
 <predict prompt="What happens when this runs?">
 ```go
@@ -26,7 +26,13 @@ panic: interface conversion: main.Service is not main.Pod: missing method
 ```
 </predict>
 
-A bare type assertion panics if the underlying type doesn't match. This is fine in tests where you control the input; in production code you want the comma-ok form so you can handle the mismatch:
+Wrong is fine — the comma-ok pattern below exists precisely because of this.
+
+</attempt>
+
+### Comma-Ok Pattern
+
+That pretest showed it: a bare type assertion panics if the underlying type doesn't match. This is fine in tests where you control the input; in production code you want the comma-ok form so you can handle the mismatch:
 
 ```go
 var c HealthChecker = Pod{Name: "web-1", Status: "Running"}
@@ -44,6 +50,8 @@ pod := c.(Pod) // dangerous in production code
 ### Type Switch
 
 When an interface could hold multiple concrete types:
+
+<attempt type="worked">
 
 ```go
 type Resource interface {
@@ -64,6 +72,37 @@ func describe(r Resource) string {
 
 **When to use type switches vs redesign:** If you find yourself writing type switches in many places, you probably need a better interface. Type switches are appropriate at boundaries — serialization, logging, CLI output — not in core logic.
 
+</attempt>
+
+<attempt type="gaps">
+
+<gaps prompt="One boundary function, and the safe single-type check — from memory.">
+```go
+func describe(r Resource) string {
+    switch v := «r.(type)» {
+    case Pod:
+        return "Pod " + v.FullName()
+    case Service:
+        return fmt.Sprintf("Service %s (port %d)", v.FullName(), v.Port)
+    «default»:
+        return "Unknown: " + v.FullName()
+    }
+}
+
+// Expecting exactly one type? Never bare-assert in production code:
+pod, ok := «c.(Pod)»
+if «!ok» {
+    return fmt.Errorf("expected a Pod, got %T", c)
+}
+```
+</gaps>
+
+</attempt>
+
 ---
 
+<attempt type="scratch">
+
 <div class="inline-exercises" data-concept="Type Assertions"></div>
+
+</attempt>

@@ -14,6 +14,8 @@ config/
 
 ### Basic Test
 
+<attempt type="worked">
+
 ```go
 // config_test.go
 package config
@@ -38,6 +40,8 @@ func TestParsePort_Invalid(t *testing.T) {
 }
 ```
 
+</attempt>
+
 ### t.Error vs t.Fatal
 
 | Method | Behavior |
@@ -49,6 +53,24 @@ func TestParsePort_Invalid(t *testing.T) {
 
 **Rule:** Use `t.Fatal` when continuing would panic or be meaningless (e.g., a nil pointer). Use `t.Error` when you want to collect multiple failures.
 
+<attempt type="gaps">
+
+<gaps prompt="One happy-path test — pick the right failure method for each check.">
+```go
+func TestParseMemory(t «*testing.T») {
+    mb, err := ParseMemory("512Mi")
+    if err != nil {
+        t.«Fatalf»("unexpected error: %v", err)  // stop — mb is garbage
+    }
+    if mb != 512 {
+        t.«Errorf»("got %d, want 512", mb)       // report, keep checking
+    }
+}
+```
+</gaps>
+
+</attempt>
+
 ### Running Tests
 
 ```bash
@@ -59,4 +81,8 @@ go test -count=1 ./...     # bypass test cache
 go test -race ./...        # detect data races
 ```
 
+<attempt type="scratch">
+
 <div class="inline-exercises" data-concept="Writing Tests"></div>
+
+</attempt>

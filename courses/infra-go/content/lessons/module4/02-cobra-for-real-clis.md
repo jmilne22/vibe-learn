@@ -52,6 +52,8 @@ func init() {
 
 ### Subcommands
 
+<attempt type="worked">
+
 ```go
 // cmd/lint.go
 package cmd
@@ -82,6 +84,34 @@ func init() {
     rootCmd.AddCommand(lintCmd)
 }
 ```
+
+</attempt>
+
+<attempt type="gaps">
+
+<gaps prompt="Wire up `mytool validate` — argument validation, an error-returning run, registration.">
+```go
+var validateCmd = &cobra.Command{
+    Use:   "validate [files...]",
+    Short: "Validate config files against the schema",
+    Args:  cobra.«MinimumNArgs(1)»,
+    «RunE»: func(cmd *cobra.Command, args []string) error {
+        for _, file := range args {
+            if err := validateFile(file); err != nil {
+                return fmt.Errorf("validating %s: %w", file, err)
+            }
+        }
+        return nil
+    },
+}
+
+func init() {
+    rootCmd.«AddCommand»(validateCmd)
+}
+```
+</gaps>
+
+</attempt>
 
 ### Key Concepts
 

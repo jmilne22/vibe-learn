@@ -14,6 +14,8 @@ Fine for throwaway scripts. Not fine for real tools.
 
 Standard library, no dependencies:
 
+<attempt type="worked">
+
 ```go
 import "flag"
 
@@ -36,3 +38,22 @@ func main() {
 **When flag is enough:** Single-command tools with a few options. `go test` itself uses the flag package.
 
 **When you need more:** Subcommands (`mytool lint`, `mytool validate`), nested flags, shell completion. That's Cobra.
+
+</attempt>
+
+<attempt type="gaps">
+
+<gaps prompt="A real tool's main — three things have to happen before the values are usable.">
+```go
+func main() {
+    config := flag.«String»("config", "config.yaml", "path to config file")
+    verbose := flag.Bool("verbose", false, "enable verbose output")
+    «flag.Parse()»
+
+    fmt.Printf("config=%s verbose=%t\n", «*config», *verbose)
+    fmt.Println("files:", flag.«Args()»)  // remaining positional args
+}
+```
+</gaps>
+
+</attempt>
