@@ -318,9 +318,11 @@ function updateStats() {
     if (window.Streaks) {
         const sc = document.getElementById('streak-current');
         const sl = document.getElementById('streak-longest');
+        const sli = document.getElementById('streak-longest-inline');
         const st = document.getElementById('streak-today');
         if (sc) sc.textContent = Streaks.getCurrent();
         if (sl) sl.textContent = Streaks.getLongest();
+        if (sli) sli.textContent = Streaks.getLongest();
         if (st) st.textContent = Streaks.getTodayCount();
         const heatmap = document.getElementById('activity-heatmap');
         if (heatmap) Streaks.renderHeatmap(heatmap);
@@ -360,6 +362,11 @@ function updateStats() {
 
     renderReadinessBadges(progress, exerciseProgress);
     renderStaleReturnBanner(progress, exerciseProgress);
+
+    // Session-first surfaces (no-ops on pages without the new markup)
+    renderSessionPlan(progress);
+    renderMemoryPanel();
+    renderMasteryMap(progress);
 }
 
 function findModulePage(moduleId) {
@@ -417,6 +424,232 @@ function updateTodayPanel(progress, dueCount, weakCount, percent) {
             ? 'Review is waiting. Clear it first, then continue the next module.'
             : 'No due review is blocking you. Continue the path or start a timed study block.';
     }
+}
+
+// --- Session-first dashboard (today's session, memory panel, mastery map) ---
+
+var SESSION_PLAN_KEY = 'vibe-learn:session-plan';
+
+function escapeHtmlDash(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+        return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c];
+    });
+}
+
+function recallColor(recall) {
+    if (recall >= 0.85) return 'var(--green-bright)';
+    if (recall >= 0.7) return 'var(--orange)';
+    return 'var(--red)';
+}
+
+function buildSessionPlanData(progress) {
+    var cfg = window.CourseConfig || {};
+    var dueCount = window.SRS ? window.SRS.getDueCount() : 0;
+    var summary = window.SRS && window.SRS.getMemorySummary ? window.SRS.getMemorySummary() : { count: 0, avgRecall: null };
+
+    // Learn target: the module being studied, or the first not-completed one
+    var learn = null;
+    var lastModule = localStorage.getItem(LAST_MODULE_KEY);
+    var numericModules = (cfg.modules || []).filter(function (m) { return /^\d+$/.test(String(m.id)); });
+    var learnModule = null;
+    if (lastModule && /^\d+$/.test(lastModule) && !(progress[lastModule] && progress[lastModule].completed)) {
+        learnModule = numericModules.find(function (m) { return String(m.id) === String(lastModule); }) || null;
+    }
+    if (!learnModule) {
+        learnModule = numericModules.find(function (m) {
+            return m.id > 0 && !(progress[m.id] && progress[m.id].completed);
+        }) || null;
+    }
+    if (learnModule) {
+        learn = {
+            moduleId: learnModule.id,
+            label: 'Module ' + learnModule.id + ' · ' + learnModule.title,
+            href: findModulePage(learnModule.id)
+        };
+    }
+
+    // Build target: first project milestone not manually completed
+    var build = null;
+    var projects = cfg.projects || [];
+    for (var i = 0; i < projects.length; i++) {
+        var p = projects[i];
+        if (progress[p.id] && progress[p.id].completed) continue;
+        build = { label: p.title, href: (p.file || p.id) + '.html', afterModule: p.afterModule };
+        break;
+    }
+
+    var reviewMin = Math.round(dueCount * 1.25);
+    var minutes = (learn ? 3 + 9 : 0) + reviewMin + (build ? 3 : 0);
+    minutes = Math.max(10, Math.round(minutes / 5) * 5);
+
+    return { dueCount: dueCount, tracked: summary.count, learn: learn, build: build, minutes: minutes, reviewMin: reviewMin };
+}
+
+function renderSessionPlan(progress) {
+    var segments = document.getElementById('session-segments');
+    if (!segments) return;
+
+    var plan = buildSessionPlanData(progress);
+
+    var kicker = document.getElementById('session-plan-kicker');
+    if (kicker) {
+        var d = new Date();
+        var days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        kicker.textContent = 'Today · ' + days[d.getDay()] + ' ' + months[d.getMonth()] + ' ' + d.getDate();
+    }
+
+    var title = document.getElementById('session-plan-title');
+    if (title) title.textContent = 'One session. ' + plan.minutes + ' minutes.';
+
+    var rows = '';
+    function row(color, name, desc, est) {
+        return '<div class="session-segment"><span class="segment-dot" style="background:' + color + '"></span>' +
+            '<span class="segment-name">' + name + '</span>' +
+            '<span class="segment-desc">' + desc + '</span>' +
+            '<span class="segment-est">' + est + '</span></div>';
+    }
+
+    if (plan.learn) {
+        rows += row('var(--purple)', 'Pretest', escapeHtmlDash(plan.learn.label) + ' — commit to answers before you read', '~3 min');
+        rows += row('var(--cyan)', 'Learn', '<a href="' + plan.learn.href + '">' + escapeHtmlDash(plan.learn.label) + '</a> — worked example → fill the gaps → from scratch', '~9 min');
+    }
+    if (plan.dueCount > 0) {
+        var fading = window.SRS && window.SRS.getFadingConcepts ? window.SRS.getFadingConcepts(4) : [];
+        var conceptNames = fading.map(function (f) { return escapeHtmlDash(String(f.concept).toLowerCase()); }).join(' · ');
+        rows += row('var(--orange)', 'Review', plan.dueCount + ' due item' + (plan.dueCount === 1 ? '' : 's') + ', interleaved' + (conceptNames ? ' — ' + conceptNames : ''), '~' + Math.max(plan.reviewMin, 1) + ' min');
+    }
+    if (plan.build) {
+        rows += row('var(--green-bright)', 'Build', '<a href="' + escapeHtmlDash(plan.build.href) + '">' + escapeHtmlDash(plan.build.label) + '</a> — wire in what you just practiced', '~3 min');
+    }
+    if (!rows) {
+        rows = '<div class="session-segment"><span class="segment-dot" style="background:var(--purple)"></span>' +
+            '<span class="segment-name">Start</span><span class="segment-desc">Begin with the first module — the memory model takes over from there</span><span class="segment-est">~10 min</span></div>';
+    }
+    segments.innerHTML = rows;
+
+    // Start CTA: reviews first when anything is due, otherwise the lesson
+    var start = document.getElementById('start-today-session');
+    var alt = document.getElementById('session-cta-alt');
+    if (start) {
+        if (plan.dueCount > 0) {
+            start.href = 'daily-practice.html?autostart&mode=review&count=' + Math.min(plan.dueCount, 14);
+        } else if (plan.tracked > 0) {
+            start.href = 'daily-practice.html?autostart&mode=mixed&count=8';
+        } else if (plan.learn) {
+            start.href = plan.learn.href;
+        } else {
+            start.href = 'module0.html';
+        }
+    }
+    if (alt) {
+        if (plan.dueCount > 0 && plan.learn) {
+            alt.innerHTML = 'or go straight to <a href="' + plan.learn.href + '">the lesson</a>';
+        } else if (plan.dueCount === 0 && plan.tracked > 0) {
+            alt.textContent = 'nothing due — this session mixes weak and recent items';
+        } else {
+            alt.textContent = '';
+        }
+    }
+
+    // Hand the plan to the session page so "Session Complete" links onward
+    try {
+        sessionStorage.setItem(SESSION_PLAN_KEY, JSON.stringify({
+            learn: plan.learn, build: plan.build, savedAt: Date.now()
+        }));
+    } catch (e) {}
+}
+
+function renderMemoryPanel() {
+    var recallEl = document.getElementById('memory-recall');
+    if (!recallEl || !window.SRS || !window.SRS.getMemorySummary) return;
+
+    var summary = window.SRS.getMemorySummary();
+    recallEl.textContent = summary.avgRecall === null ? '–' : Math.round(summary.avgRecall * 100) + '%';
+    var countEl = document.getElementById('memory-count');
+    if (countEl) countEl.textContent = summary.count;
+
+    var list = document.getElementById('fading-list');
+    if (list) {
+        var fading = window.SRS.getFadingConcepts ? window.SRS.getFadingConcepts(4) : [];
+        if (fading.length === 0) {
+            list.innerHTML = '<div class="fading-empty">Nothing tracked yet — rate a few exercises first.</div>';
+        } else {
+            list.innerHTML = fading.map(function (f) {
+                var pct = Math.round(f.recall * 100);
+                return '<div class="fading-row">' +
+                    '<span class="fading-name">' + escapeHtmlDash(f.concept) + '</span>' +
+                    '<span class="fading-track"><span class="fading-fill" style="width:' + pct + '%;background:' + recallColor(f.recall) + '"></span></span>' +
+                    '<span class="fading-pct" style="color:' + recallColor(f.recall) + '">' + pct + '%</span>' +
+                    '</div>';
+            }).join('');
+        }
+    }
+
+    var foot = document.getElementById('memory-footnote');
+    if (foot && window.SRS.getDueCount) {
+        var due = window.SRS.getDueCount();
+        foot.textContent = due > 0
+            ? 'Today’s ' + due + ' review' + (due === 1 ? '' : 's') + ' target exactly these. Skip a day and the queue grows; nothing is ever “lost”, it just comes back sooner.'
+            : (summary.count > 0
+                ? 'Nothing due right now — the model schedules each item just before you’d forget it.'
+                : 'Complete and rate exercises and the memory model starts scheduling reviews for you.');
+    }
+}
+
+function renderMasteryMap(progress) {
+    var rowsEl = document.getElementById('mastery-rows');
+    if (!rowsEl) return;
+    var cfg = window.CourseConfig || {};
+    var tracks = cfg.tracks || [];
+    if (tracks.length === 0) { rowsEl.innerHTML = ''; return; }
+
+    var moduleRecall = window.SRS && window.SRS.getModuleRecall ? window.SRS.getModuleRecall() : {};
+    var modulesById = {};
+    (cfg.modules || []).forEach(function (m) { modulesById[m.id] = m; });
+    var projectsAfter = {};
+    (cfg.projects || []).forEach(function (p) {
+        if (p.afterModule !== undefined) projectsAfter[p.afterModule] = p;
+    });
+    var lastModule = localStorage.getItem(LAST_MODULE_KEY);
+
+    var html = '';
+    tracks.forEach(function (track) {
+        var chips = '';
+        (track.modules || []).forEach(function (modId) {
+            var mod = modulesById[modId];
+            if (!mod || modId === 0) return;
+            var rec = moduleRecall[modId];
+            var isCurrent = String(modId) === String(lastModule) && !(progress[modId] && progress[modId].completed);
+            var title = escapeHtmlDash(mod.title);
+            var href = findModulePage(modId);
+
+            var cls, label;
+            if (rec && rec.count >= 3) {
+                var pct = Math.round(rec.recall * 100);
+                cls = rec.recall >= 0.85 ? 'strong' : (rec.recall >= 0.7 ? 'fading' : 'weak');
+                label = 'M' + modId + ' · ' + pct + '%';
+            } else if (isCurrent || (progress[modId] && progress[modId].lastStudied)) {
+                cls = 'learning';
+                label = 'M' + modId + (isCurrent ? ' · now' : ' · learning');
+            } else {
+                cls = 'ahead';
+                label = 'M' + modId;
+            }
+            chips += '<a class="mastery-chip ' + cls + '" href="' + href + '" title="' + title + '">' + label + '</a>';
+
+            var proj = projectsAfter[modId];
+            if (proj) {
+                var done = progress[proj.id] && progress[proj.id].completed;
+                chips += '<a class="mastery-chip milestone' + (done ? ' strong' : '') + '" href="' + escapeHtmlDash((proj.file || proj.id) + '.html') + '" title="' + escapeHtmlDash(proj.title) + '">' +
+                    escapeHtmlDash(String(proj.id).toUpperCase()) + (done ? ' ✓' : '') + '</a>';
+            }
+        });
+        if (!chips) return;
+        html += '<div class="mastery-row"><span class="mastery-track-name">' + escapeHtmlDash(track.title) + '</span>' +
+            '<div class="mastery-chips">' + chips + '</div></div>';
+    });
+    rowsEl.innerHTML = html;
 }
 
 function recordModuleVisit(moduleId) {

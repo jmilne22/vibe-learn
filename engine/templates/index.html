@@ -17,78 +17,68 @@
     <main class="dashboard-shell">
         <div class="dashboard-topbar">
             <a href="../index.html" class="dashboard-back-link">&larr; All courses</a>
-            <nav class="dashboard-nav" aria-label="Practice tools">
-                <a href="module0.html" class="nav-pill">Quick reference</a>
-{{PLUGIN_NAV_PILLS}}
+            <nav class="dashboard-nav" aria-label="Course navigation">
+                <a href="module0.html" class="nav-pill">Reference</a>
+                <a href="#learning-path" class="nav-pill">Browse path</a>
             </nav>
         </div>
 
-        <header class="dashboard-hero">
-            <div>
-                <div class="module-tag">Course home</div>
-                <h1>{{COURSE_NAME}}</h1>
-                <p>{{COURSE_DESCRIPTION}}</p>
-            </div>
-            <div class="dashboard-hero-status" aria-label="Course progress">
-                <span><strong id="progress-percent">0%</strong> complete</span>
-                <span><strong id="streak-current">0</strong> day streak</span>
-            </div>
-        </header>
-
-        <section class="today-grid" aria-label="Today">
-            <article class="today-panel">
-                <div class="section-kicker">Today</div>
-                <h2 id="today-primary-title">Start where the course begins</h2>
-                <p id="today-primary-meta">Build momentum with the first lesson, then let reviews guide the day.</p>
-                <a href="#" id="resume-btn" class="resume-btn">Continue learning</a>
+        <section class="session-hero" aria-label="Today's session">
+            <article class="session-plan">
+                <div class="section-kicker" id="session-plan-kicker">Today · {{COURSE_NAME}}</div>
+                <h1 id="session-plan-title">One session. 25 minutes.</h1>
+                <p id="session-plan-meta">Built from your memory model — nothing to choose, nothing to skip past. It adapts as you answer.</p>
+                <div class="session-segments" id="session-segments"></div>
+                <div class="session-cta-row">
+                    <a href="#" id="start-today-session" class="resume-btn resume-btn--lg">Start session</a>
+                    <span class="session-cta-alt" id="session-cta-alt"></span>
+                </div>
             </article>
 
-            <div class="today-metrics">
-                <div class="metric-tile">
-                    <span class="metric-label">Due review</span>
-                    <strong id="due-count">0</strong>
-                    <span id="today-due-label">Nothing due</span>
+            <aside class="memory-panel" aria-label="Memory state">
+                <div class="section-kicker">Your memory today</div>
+                <div class="memory-headline">
+                    <strong id="memory-recall">–</strong>
+                    <span>predicted recall across <span id="memory-count">0</span> learned items</span>
                 </div>
-                <div class="metric-tile">
-                    <span class="metric-label">Exercises done</span>
-                    <strong id="exercises-count">0</strong>
-                    <span id="today-exercise-label">No reps yet</span>
+                <div class="memory-fading">
+                    <div class="memory-fading-label">Fading fastest</div>
+                    <div id="fading-list"></div>
                 </div>
-                <div class="metric-tile">
-                    <span class="metric-label">Modules</span>
-                    <strong><span id="completed-count">0</span>/<span id="total-modules-count">{{MODULE_COUNT}}</span></strong>
-                    <span id="module-progress-label">Not started</span>
-                </div>
-            </div>
+                <p class="memory-footnote" id="memory-footnote">Complete and rate exercises and the memory model starts scheduling reviews for you.</p>
+                <div class="memory-streak"><span id="streak-current">0</span>d streak · best <span id="streak-longest-inline">0</span>d · sessions follow memory, streaks follow sessions</div>
+            </aside>
         </section>
 
-        <section class="progress-overview" aria-label="Progress overview">
-            <div class="overview-main">
-                <div class="section-kicker">Path progress</div>
-                <h2 id="course-progress-heading">Your course spine is ready.</h2>
-                <p id="course-progress-copy">Complete modules, rate practice honestly, and the path will surface what to review next.</p>
-            </div>
-            <div class="overall-progress">
-                <div class="overall-progress-label">
-                    <span>Overall completion</span>
-                    <strong id="overall-progress-value">0%</strong>
+        <section class="mastery-map" aria-labelledby="mastery-map-title">
+            <div class="path-header">
+                <div>
+                    <div class="section-kicker">The path</div>
+                    <h2 id="mastery-map-title">Mastery, not completion</h2>
                 </div>
-                <div class="overall-progress-track" aria-hidden="true">
-                    <span id="overall-progress-fill"></span>
+                <div class="mastery-legend">
+                    <span><i class="legend-swatch legend-strong"></i>strong</span>
+                    <span><i class="legend-swatch legend-fading"></i>fading</span>
+                    <span><i class="legend-swatch legend-learning"></i>learning</span>
+                    <span><i class="legend-swatch legend-ahead"></i>ahead</span>
+                    <span><i class="legend-swatch legend-milestone"></i>milestone</span>
                 </div>
-                <div class="progress-segments" id="progress-segments" aria-hidden="true"></div>
             </div>
+            <div id="mastery-rows" class="mastery-rows"></div>
+            <p class="mastery-footnote">Fading modules pull their items into today's review automatically — nothing is ever "lost", it just comes back sooner.</p>
         </section>
 
         <div id="stale-return-banner" class="stale-return-banner hidden"></div>
 
-        <section class="learning-path" aria-labelledby="learning-path-title">
+        <section class="learning-path" id="learning-path" aria-labelledby="learning-path-title">
             <div class="path-header">
                 <div>
                     <div class="section-kicker">Learning path</div>
-                    <h2 id="learning-path-title">Modules and milestones</h2>
+                    <h2 id="learning-path-title">Browse modules and milestones</h2>
                 </div>
-                <p>Follow the path in order, then use practice tools when review comes due.</p>
+                <nav class="dashboard-nav" aria-label="Practice tools">
+{{PLUGIN_NAV_PILLS}}
+                </nav>
             </div>
             <div class="module-list">
 {{MODULE_LIST}}
@@ -162,6 +152,7 @@
 
     <script src="course-data.js"></script>
     <script src="course-config.js"></script>
+    <script src="concept-index.js"></script>
     <script src="icons.js"></script>
     <script src="theme.js"></script>
     <script src="timer.js"></script>

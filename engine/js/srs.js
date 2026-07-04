@@ -1,24 +1,32 @@
 /**
  * Spaced Repetition Engine for Go Course
  *
- * Simplified SM-2 algorithm for scheduling exercise reviews.
- * Tracks ease factor, interval, and repetition count per exercise.
+ * FSRS-4.5 scheduler (stability / difficulty / retrievability) for exercise
+ * reviews. Entries written by the previous SM-2 scheduler are migrated
+ * lazily: stability is seeded from the SM-2 interval and difficulty from
+ * the ease factor, so no history is lost.
  *
  * localStorage key: 'go-course-srs'
- * Schema: { "m2_warmup_1": { easeFactor, interval, repetitions, nextReview, lastQuality, reviewCount } }
+ * Schema: { "m2_warmup_1": { stability, difficulty, lastReview, nextReview,
+ *           easeFactor, interval, repetitions, lastQuality, reviewCount } }
+ * (easeFactor/interval/repetitions are still maintained for backwards
+ * compatibility with older consumers and exported backups.)
  *
- * Quality scale (0-5):
- *   5 = self-rated "got it", no hints
- *   4 = self-rated "got it", used hints
- *   3 = self-rated "struggled" (SM-2 minimum correct)
- *   1 = self-rated "needed solution" (reset)
- *   0 = not engaged
+ * Quality scale (0-5), mapped to FSRS grades:
+ *   5 = "got it", no hints          -> Easy
+ *   4 = "got it", used hints        -> Good
+ *   3 = "struggled"                 -> Hard
+ *   1 = "needed solution"           -> Again
+ *   0 = not engaged                 -> Again
  *
  * @typedef {Object} SRSEntry
- * @property {number} easeFactor - SM-2 ease factor (minimum 1.3, default 2.5)
+ * @property {number} stability - FSRS stability (days until recall drops to 90%)
+ * @property {number} difficulty - FSRS difficulty (1-10)
+ * @property {string} lastReview - ISO 8601 date of the most recent review
+ * @property {string} nextReview - ISO 8601 date of next scheduled review
+ * @property {number} easeFactor - Legacy SM-2 ease factor (kept in sync)
  * @property {number} interval - Days until next review
  * @property {number} repetitions - Consecutive correct responses
- * @property {string} nextReview - ISO 8601 date of next scheduled review
  * @property {number} lastQuality - Most recent quality score (0-5)
  * @property {number} reviewCount - Total number of reviews recorded
  * @property {string} [label] - Human-readable exercise label for display
@@ -44,37 +52,141 @@
         }
     }
 
-    // SM-2 algorithm: compute next review parameters
-    function calculateNext(item, quality) {
-        let { easeFactor, interval, repetitions } = item;
+    // --- FSRS-4.5 core ---
+    //
+    // Retrievability: R(t, S) = (1 + FACTOR * t / S) ^ DECAY
+    // With DECAY = -0.5 and FACTOR = 19/81, R(S, S) = 0.9 — i.e. an item's
+    // stability is exactly the interval at which predicted recall is 90%.
 
-        if (quality >= 3) {
-            // Correct response
-            if (repetitions === 0) {
-                interval = 1;
-            } else if (repetitions === 1) {
-                interval = 6;
+    var DECAY = -0.5;
+    var FACTOR = 19 / 81;
+    var REQUEST_RETENTION = 0.9;
+    var MAX_INTERVAL = 365;
+    var DAY_MS = 24 * 60 * 60 * 1000;
+
+    // FSRS-4.5 default weights
+    var W = [0.4, 0.6, 2.4, 5.8, 4.93, 0.94, 0.86, 0.01, 1.49, 0.14,
+             0.94, 2.18, 0.05, 0.34, 1.26, 0.29, 2.61];
+
+    function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
+
+    // Quality (0-5) -> FSRS grade: 1 Again, 2 Hard, 3 Good, 4 Easy
+    function qualityToGrade(quality) {
+        if (quality >= 5) return 4;
+        if (quality >= 4) return 3;
+        if (quality >= 3) return 2;
+        return 1;
+    }
+
+    function retrievability(elapsedDays, stability) {
+        if (!stability || stability <= 0) return 0;
+        return Math.pow(1 + FACTOR * elapsedDays / stability, DECAY);
+    }
+
+    function intervalForRetention(stability, retention) {
+        var days = stability / FACTOR * (Math.pow(retention, 1 / DECAY) - 1);
+        return clamp(Math.round(days), 1, MAX_INTERVAL);
+    }
+
+    function initStability(grade) {
+        return Math.max(W[grade - 1], 0.1);
+    }
+
+    function initDifficulty(grade) {
+        return clamp(W[4] - (grade - 3) * W[5], 1, 10);
+    }
+
+    function nextDifficulty(d, grade) {
+        var next = d - W[6] * (grade - 3);
+        // Mean reversion toward the initial difficulty of a "Good" answer
+        return clamp(W[7] * initDifficulty(3) + (1 - W[7]) * next, 1, 10);
+    }
+
+    function nextRecallStability(d, s, r, grade) {
+        var hardPenalty = grade === 2 ? W[15] : 1;
+        var easyBonus = grade === 4 ? W[16] : 1;
+        return s * (1 + Math.exp(W[8]) * (11 - d) * Math.pow(s, -W[9]) *
+            (Math.exp((1 - r) * W[10]) - 1) * hardPenalty * easyBonus);
+    }
+
+    function nextForgetStability(d, s, r) {
+        var sf = W[11] * Math.pow(d, -W[12]) *
+            (Math.pow(s + 1, W[13]) - 1) * Math.exp((1 - r) * W[14]);
+        return Math.min(sf, s); // forgetting never increases stability
+    }
+
+    /**
+     * Migrate an SM-2 era entry in place: seed stability from the interval
+     * and difficulty from the ease factor. Idempotent.
+     */
+    function migrateEntry(item) {
+        if (typeof item.stability === 'number' && typeof item.difficulty === 'number') return item;
+        // SM-2 intervals also targeted ~90% recall, so interval ≈ stability
+        item.stability = Math.max(item.interval || 0, 0.5);
+        // ease 1.3 (hardest) -> ~9, ease 2.5+ (default) -> ~4.5
+        var ease = item.easeFactor || 2.5;
+        item.difficulty = clamp(4.5 + (2.5 - ease) * 3.75, 1, 10);
+        if (!item.lastReview) {
+            if (item.nextReview && item.interval) {
+                item.lastReview = new Date(new Date(item.nextReview).getTime() - item.interval * DAY_MS).toISOString();
             } else {
-                interval = Math.round(interval * easeFactor);
+                item.lastReview = new Date().toISOString();
             }
-            repetitions++;
-        } else {
-            // Incorrect — reset
-            repetitions = 0;
-            interval = 1;
         }
+        return item;
+    }
 
-        // Update ease factor (never below 1.3)
-        easeFactor = easeFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
+    function elapsedDays(item, now) {
+        if (!item.lastReview) return 0;
+        return Math.max(0, ((now || Date.now()) - new Date(item.lastReview).getTime()) / DAY_MS);
+    }
+
+    /**
+     * Current predicted recall probability for an entry (0..1).
+     */
+    function entryRetrievability(item, now) {
+        migrateEntry(item);
+        if (!item.reviewCount && !item.repetitions && !item.stability) return 0;
+        return retrievability(elapsedDays(item, now), item.stability);
+    }
+
+    // FSRS scheduling: compute next review parameters
+    function calculateNext(item, quality) {
+        migrateEntry(item);
+        var grade = qualityToGrade(quality);
+        var now = new Date();
+        var isNew = !(item.reviewCount > 0 || item.repetitions > 0 || item.interval > 0);
+
+        var stability, difficulty;
+        if (isNew) {
+            stability = initStability(grade);
+            difficulty = initDifficulty(grade);
+        } else {
+            var r = retrievability(elapsedDays(item, now.getTime()), item.stability);
+            difficulty = nextDifficulty(item.difficulty, grade);
+            stability = grade === 1
+                ? nextForgetStability(item.difficulty, item.stability, r)
+                : nextRecallStability(item.difficulty, item.stability, r, grade);
+        }
+        stability = Math.max(stability, 0.1);
+
+        var interval = grade === 1 ? 1 : intervalForRetention(stability, REQUEST_RETENTION);
+        var repetitions = grade === 1 ? 0 : (item.repetitions || 0) + 1;
+
+        // Keep legacy ease factor in sync (used by older consumers/backups)
+        var easeFactor = (item.easeFactor || 2.5) +
+            (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
         if (easeFactor < 1.3) easeFactor = 1.3;
 
-        const nextReview = new Date();
-        nextReview.setDate(nextReview.getDate() + interval);
+        var nextReview = new Date(now.getTime() + interval * DAY_MS);
 
         return {
+            stability: Math.round(stability * 100) / 100,
+            difficulty: Math.round(difficulty * 100) / 100,
+            lastReview: now.toISOString(),
             easeFactor: Math.round(easeFactor * 100) / 100,
-            interval,
-            repetitions,
+            interval: interval,
+            repetitions: repetitions,
             nextReview: nextReview.toISOString(),
             lastQuality: quality
         };
@@ -308,6 +420,103 @@
         return concepts;
     }
 
+    // --- Predicted Recall API (FSRS) ---
+
+    function isTrackableKey(key) {
+        return !/_(?:v|tp)\w+$/.test(key);
+    }
+
+    /**
+     * Predicted recall probability for one exercise right now (0..1).
+     * @param {string} key
+     * @returns {number|null} null if the exercise is untracked
+     */
+    function getRetrievability(key) {
+        var srsData = loadSRS();
+        var item = srsData[key];
+        if (!item) return null;
+        return entryRetrievability(item);
+    }
+
+    /**
+     * Aggregate memory state: average predicted recall across tracked items.
+     * @returns {{count: number, avgRecall: number|null}}
+     */
+    function getMemorySummary() {
+        var srsData = loadSRS();
+        var now = Date.now();
+        var sum = 0, count = 0;
+        for (var key in srsData) {
+            if (!isTrackableKey(key)) continue;
+            sum += entryRetrievability(srsData[key], now);
+            count++;
+        }
+        return { count: count, avgRecall: count > 0 ? sum / count : null };
+    }
+
+    /**
+     * Average predicted recall per module.
+     * @returns {Object<string, {recall: number, count: number}>}
+     */
+    function getModuleRecall() {
+        var srsData = loadSRS();
+        var now = Date.now();
+        var byModule = {};
+        for (var key in srsData) {
+            if (!isTrackableKey(key)) continue;
+            if (key.indexOf('fc_') === 0) continue;
+            var modNum = extractModuleNum(key);
+            if (modNum === null) continue;
+            var r = entryRetrievability(srsData[key], now);
+            if (!byModule[modNum]) byModule[modNum] = { sum: 0, count: 0 };
+            byModule[modNum].sum += r;
+            byModule[modNum].count++;
+        }
+        var out = {};
+        for (var m in byModule) {
+            out[m] = { recall: byModule[m].sum / byModule[m].count, count: byModule[m].count };
+        }
+        return out;
+    }
+
+    /**
+     * Concepts with the lowest average predicted recall, ascending.
+     * @param {number} [limit=4]
+     * @returns {Array<{concept: string, moduleNum: number|string, recall: number, count: number}>}
+     */
+    function getFadingConcepts(limit) {
+        limit = limit || 4;
+        var srsData = loadSRS();
+        var conceptIndex = window.ConceptIndex || {};
+        var now = Date.now();
+        var map = {}; // "mod|concept" -> { sum, count }
+
+        for (var key in srsData) {
+            if (!isTrackableKey(key)) continue;
+            if (key.indexOf('fc_') === 0) continue;
+            var modNum = extractModuleNum(key);
+            if (modNum === null) continue;
+            var concept = conceptIndex[stripVariantSuffix(key)];
+            if (!concept) continue;
+            var groupKey = modNum + '|' + concept;
+            if (!map[groupKey]) map[groupKey] = { moduleNum: modNum, concept: concept, sum: 0, count: 0 };
+            map[groupKey].sum += entryRetrievability(srsData[key], now);
+            map[groupKey].count++;
+        }
+
+        var list = [];
+        for (var g in map) {
+            list.push({
+                concept: map[g].concept,
+                moduleNum: map[g].moduleNum,
+                recall: map[g].sum / map[g].count,
+                count: map[g].count
+            });
+        }
+        list.sort(function(a, b) { return a.recall - b.recall; });
+        return list.slice(0, limit);
+    }
+
     // Public API
     window.SRS = {
         recordReview,
@@ -318,6 +527,11 @@
         getAll,
         getConceptStrengths,
         strengthLabel,
-        strengthColor
+        strengthColor,
+        // FSRS predicted-recall API
+        getRetrievability,
+        getMemorySummary,
+        getModuleRecall,
+        getFadingConcepts
     };
 })();

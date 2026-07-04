@@ -7,7 +7,11 @@
     "build": "node build.js",
     "build:go": "node build.js go",
     "new-course": "node create-course.js",
-    "practice": "node generate-practice.js"
+    "practice": "node generate-practice.js",
+    "vibe": "node vibe.js"
+  },
+  "bin": {
+    "vibe": "./vibe.js"
   },
   "dependencies": {
     "highlight.js": "^11.11.1",

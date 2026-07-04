@@ -19,9 +19,27 @@
 
     // --- Initialization ---
 
+    function renderContinueLinks() {
+        var el = document.getElementById('dp-continue');
+        if (!el) return;
+        var plan = null;
+        try { plan = JSON.parse(sessionStorage.getItem('vibe-learn:session-plan') || 'null'); } catch (e) {}
+        if (!plan) return;
+        var html = '';
+        if (plan.learn) {
+            html += '<a class="session-continue-link" href="' + plan.learn.href + '"><span class="segment-dot" style="background:var(--cyan)"></span>Learn — ' + SE.escapeHtml(plan.learn.label) + '</a>';
+        }
+        if (plan.build) {
+            html += '<a class="session-continue-link" href="' + plan.build.href + '"><span class="segment-dot" style="background:var(--green-bright)"></span>Build — ' + SE.escapeHtml(plan.build.label) + '</a>';
+        }
+        if (html) el.innerHTML = '<div class="session-continue-label">Next in today’s session</div>' + html;
+    }
+
     function init() {
         updateStats();
         setupConfigButtons();
+        renderContinueLinks();
+        if (window.VibeBridge) window.VibeBridge.startPolling();
 
         var bestMode = SE.preselectBestMode(isRenderableExercise);
         sessionConfig.mode = bestMode;
@@ -292,11 +310,38 @@
         return true;
     }
 
+    /**
+     * Interleave items across modules (round-robin) so consecutive cards
+     * come from different concepts — no pattern-matching off the previous
+     * card. Preserves the due-first ordering within each module.
+     */
+    function interleaveByModule(items) {
+        var byModule = {};
+        var order = [];
+        items.forEach(function(item) {
+            var m = String(item.moduleNum);
+            if (!byModule[m]) { byModule[m] = []; order.push(m); }
+            byModule[m].push(item);
+        });
+        if (order.length <= 1) return items;
+
+        var out = [];
+        var idx = 0;
+        while (out.length < items.length) {
+            var m = order[idx % order.length];
+            if (byModule[m].length > 0) out.push(byModule[m].shift());
+            idx++;
+            // All buckets for this pass empty? (guard against spin)
+            if (idx > items.length * order.length) break;
+        }
+        return out;
+    }
+
     function buildQueue(mode, count) {
         var candidates = SE.buildPaddedSRSQueue(mode, count, matchesFilters);
         if (candidates.length === 0) return [];
 
-        return candidates.map(function(item) {
+        return interleaveByModule(candidates.map(function(item) {
             var match = item.key.match(/^(?:fc_)?m(\d+)_/);
             var moduleNum = match ? parseInt(match[1]) : null;
             return {
@@ -305,7 +350,7 @@
                 moduleName: MODULE_NAMES[moduleNum] || ('Module ' + moduleNum),
                 srsData: item
             };
-        });
+        }));
     }
 
     function buildDiscoverQueue(count) {
@@ -383,6 +428,21 @@
         var container = document.getElementById('dp-exercise-container');
         if (!container) return;
 
+        renderInterleaveStrip(sess);
+
+        // Local-first: this exercise has a go-test workspace and the vibe
+        // daemon is up — the terminal is the workbench, no code input here.
+        if (window.VibeBridge && window.VibeBridge.isOnline() && window.VibeBridge.hasWorkspace(item.key.replace(/_(?:v|tp)\w+$/, ''))) {
+            var vd = item.variant
+                ? { variant: item.variant, challenge: item.challenge, type: item.type }
+                : findVariantData(item);
+            if (vd) {
+                renderVibeCard(container, item, vd);
+                return;
+            }
+        }
+        setVibeMode(false);
+
         // Discover items carry their variant data directly
         if (item.variant) {
             var html = window.ExerciseRenderer ? window.ExerciseRenderer.renderExerciseCard({
@@ -430,119 +490,215 @@
         }
     }
 
-    function renderFromKey(item) {
-        var key = item.key;
-
+    /**
+     * Resolve an SRS key to variant data. Matches, in order: exact
+     * "group_variant" key, group-prefix (variant removed — pick a random
+     * survivor), bare group id (SRS keys are variant-stripped — pick a
+     * random variant). May rewrite item.key to the resolved variant key.
+     *
+     * @returns {{variant, challenge, type}|null}
+     */
+    function findVariantData(item) {
         var registry = window.moduleDataRegistry;
         if (!registry || !registry[item.moduleNum]) {
             loadModuleData(item.moduleNum);
             return null;
         }
-
-        var moduleData = registry[item.moduleNum];
-        var variants = moduleData.variants;
+        var variants = registry[item.moduleNum].variants;
         if (!variants) return null;
 
-        var keyParts = key.replace('m' + item.moduleNum + '_', '');
+        var keyParts = item.key.replace('m' + item.moduleNum + '_', '');
+        var groupsByType = [
+            { groups: variants.warmups || [], type: 'warmup' },
+            { groups: variants.challenges || [], type: 'challenge' }
+        ];
 
-        if (variants.warmups) {
-            for (var wi = 0; wi < variants.warmups.length; wi++) {
-                var warmup = variants.warmups[wi];
-                for (var wvi = 0; wvi < warmup.variants.length; wvi++) {
-                    var wv = warmup.variants[wvi];
-                    if (keyParts === warmup.id + '_' + wv.id) {
-                        return window.ExerciseRenderer ? window.ExerciseRenderer.renderExerciseCard({
-                            num: 1, variant: wv, challenge: null, type: 'warmup',
-                            exerciseKey: key, moduleLabel: 'M' + item.moduleNum,
-                            expanded: true
-                        }) : null;
+        var strategies = [
+            function(group, v) { return keyParts === group.id + '_' + v.id; },
+            function(group) { return keyParts.indexOf(group.id + '_') === 0; },
+            function(group) { return keyParts === group.id; }
+        ];
+
+        for (var s = 0; s < strategies.length; s++) {
+            for (var t = 0; t < groupsByType.length; t++) {
+                var entry = groupsByType[t];
+                for (var g = 0; g < entry.groups.length; g++) {
+                    var group = entry.groups[g];
+                    if (!group.variants || group.variants.length === 0) continue;
+                    if (s === 0) {
+                        for (var v = 0; v < group.variants.length; v++) {
+                            if (strategies[0](group, group.variants[v])) {
+                                return { variant: group.variants[v], challenge: entry.type === 'challenge' ? group : null, type: entry.type };
+                            }
+                        }
+                    } else if (strategies[s](group)) {
+                        var pick = group.variants[Math.floor(Math.random() * group.variants.length)];
+                        item.key = 'm' + item.moduleNum + '_' + group.id + '_' + pick.id;
+                        return { variant: pick, challenge: entry.type === 'challenge' ? group : null, type: entry.type };
                     }
                 }
             }
         }
-
-        if (variants.challenges) {
-            for (var ci = 0; ci < variants.challenges.length; ci++) {
-                var challenge = variants.challenges[ci];
-                for (var cvi = 0; cvi < challenge.variants.length; cvi++) {
-                    var cv = challenge.variants[cvi];
-                    if (keyParts === challenge.id + '_' + cv.id) {
-                        return window.ExerciseRenderer ? window.ExerciseRenderer.renderExerciseCard({
-                            num: 1, variant: cv, challenge: challenge, type: 'challenge',
-                            exerciseKey: key, moduleLabel: 'M' + item.moduleNum,
-                            expanded: true
-                        }) : null;
-                    }
-                }
-            }
-        }
-
-        // Fallback: variant was removed but warmup/challenge group still exists.
-        // Match by group ID prefix and pick a random surviving variant.
-        if (variants.warmups) {
-            for (var swi = 0; swi < variants.warmups.length; swi++) {
-                var sw = variants.warmups[swi];
-                if (keyParts.indexOf(sw.id + '_') === 0 && sw.variants && sw.variants.length > 0) {
-                    var srv = sw.variants[Math.floor(Math.random() * sw.variants.length)];
-                    item.key = 'm' + item.moduleNum + '_' + sw.id + '_' + srv.id;
-                    return window.ExerciseRenderer ? window.ExerciseRenderer.renderExerciseCard({
-                        num: 1, variant: srv, challenge: null, type: 'warmup',
-                        exerciseKey: item.key, moduleLabel: 'M' + item.moduleNum,
-                        expanded: true
-                    }) : null;
-                }
-            }
-        }
-
-        if (variants.challenges) {
-            for (var sci = 0; sci < variants.challenges.length; sci++) {
-                var sc = variants.challenges[sci];
-                if (keyParts.indexOf(sc.id + '_') === 0 && sc.variants && sc.variants.length > 0) {
-                    var scv = sc.variants[Math.floor(Math.random() * sc.variants.length)];
-                    item.key = 'm' + item.moduleNum + '_' + sc.id + '_' + scv.id;
-                    return window.ExerciseRenderer ? window.ExerciseRenderer.renderExerciseCard({
-                        num: 1, variant: scv, challenge: sc, type: 'challenge',
-                        exerciseKey: item.key, moduleLabel: 'M' + item.moduleNum,
-                        expanded: true
-                    }) : null;
-                }
-            }
-        }
-
-        // Fallback: SRS keys have variant suffixes stripped (e.g. "warmup_1" not "warmup_1_v3").
-        // Match by exercise ID alone and pick a random variant.
-        if (variants.warmups) {
-            for (var fwi = 0; fwi < variants.warmups.length; fwi++) {
-                var fw = variants.warmups[fwi];
-                if (keyParts === fw.id && fw.variants && fw.variants.length > 0) {
-                    var rwv = fw.variants[Math.floor(Math.random() * fw.variants.length)];
-                    item.key = 'm' + item.moduleNum + '_' + fw.id + '_' + rwv.id;
-                    return window.ExerciseRenderer ? window.ExerciseRenderer.renderExerciseCard({
-                        num: 1, variant: rwv, challenge: null, type: 'warmup',
-                        exerciseKey: item.key, moduleLabel: 'M' + item.moduleNum,
-                        expanded: true
-                    }) : null;
-                }
-            }
-        }
-
-        if (variants.challenges) {
-            for (var fci = 0; fci < variants.challenges.length; fci++) {
-                var fc = variants.challenges[fci];
-                if (keyParts === fc.id && fc.variants && fc.variants.length > 0) {
-                    var rcv = fc.variants[Math.floor(Math.random() * fc.variants.length)];
-                    item.key = 'm' + item.moduleNum + '_' + fc.id + '_' + rcv.id;
-                    return window.ExerciseRenderer ? window.ExerciseRenderer.renderExerciseCard({
-                        num: 1, variant: rcv, challenge: fc, type: 'challenge',
-                        exerciseKey: item.key, moduleLabel: 'M' + item.moduleNum,
-                        expanded: true
-                    }) : null;
-                }
-            }
-        }
-
         return null;
     }
+
+    function renderFromKey(item) {
+        var data = findVariantData(item);
+        if (!data || !window.ExerciseRenderer) return null;
+        return window.ExerciseRenderer.renderExerciseCard({
+            num: 1,
+            variant: data.variant,
+            challenge: data.challenge,
+            type: data.type,
+            exerciseKey: item.key,
+            moduleLabel: 'M' + item.moduleNum,
+            expanded: true
+        });
+    }
+
+    // --- Interleave Strip ---
+
+    function renderInterleaveStrip(sess) {
+        var strip = document.getElementById('dp-interleave');
+        if (!strip) return;
+        if (sess.queue.length < 2) { strip.innerHTML = ''; return; }
+
+        var html = '<span class="interleave-label">Review · interleaved</span>';
+        var start = Math.max(0, sess.index - 1);
+        var end = Math.min(sess.queue.length, start + 4);
+        for (var i = start; i < end; i++) {
+            var q = sess.queue[i];
+            var concept = (window.ConceptIndex && window.ConceptIndex[q.key.replace(/_(?:v|tp)\w+$/, '')]) || q.moduleName || '';
+            var cls = i === sess.index ? 'interleave-chip current' : (i < sess.index ? 'interleave-chip done' : 'interleave-chip');
+            html += '<span class="' + cls + '">M' + q.moduleNum + ' · ' + SE.escapeHtml(String(concept).toLowerCase()) +
+                (i < sess.index ? ' ✓' : (i === sess.index ? ' · now' : '')) + '</span>';
+        }
+        strip.innerHTML = html;
+    }
+
+    // --- Local-First (vibe) Cards ---
+
+    function setVibeMode(on) {
+        var sessionEl = document.getElementById('dp-session');
+        if (sessionEl) sessionEl.classList.toggle('vibe-active', !!on);
+        var guide = document.getElementById('dp-rating-guide');
+        if (guide) guide.style.display = on ? 'none' : '';
+    }
+
+    function renderVibeCard(container, item, vd) {
+        setVibeMode(true);
+
+        var variant = vd.variant;
+        var baseKey = item.key.replace(/_(?:v|tp)\w+$/, '');
+        var workspace = window.VibeBridge.resolveWorkspace(item.key) ||
+                        window.VibeBridge.resolveWorkspace(baseKey) || baseKey;
+        var wsMatch = workspace.match(/^m(\d+)_(.+)$/);
+        var wsDir = wsMatch ? 'practice/module' + wsMatch[1] + '/' + wsMatch[2] : 'practice/';
+
+        var srsEntry = window.SRS && window.SRS.getAll()[baseKey];
+        var recall = window.SRS && window.SRS.getRetrievability ? window.SRS.getRetrievability(baseKey) : null;
+
+        var hintsHtml = '';
+        if (variant.hints && variant.hints.length) {
+            hintsHtml = '<div class="vibe-hints">';
+            variant.hints.forEach(function(hint, i) {
+                var text = typeof hint === 'object' ? (hint.text || hint.title || '') : hint;
+                hintsHtml += '<button type="button" class="vibe-hint-btn" data-hint-index="' + i + '">Hint (' + (i + 1) + '/' + variant.hints.length + ')</button>' +
+                    '<div class="vibe-hint-body" hidden>' + text + '</div>';
+            });
+            hintsHtml += '</div>';
+        }
+
+        container.innerHTML =
+            '<div class="exercise vibe-card" data-exercise-key="' + SE.escapeHtml(item.key) + '" data-base-key="' + SE.escapeHtml(baseKey) + '">' +
+                '<div class="vibe-card-meta">' +
+                    '<span class="vibe-card-tag">Module ' + item.moduleNum + (item.moduleName ? ' · ' + SE.escapeHtml(item.moduleName) : '') + '</span>' +
+                    (recall !== null ? '<span class="vibe-card-recall">predicted recall <strong>' + Math.round(recall * 100) + '%</strong></span>' : '') +
+                '</div>' +
+                '<h4>' + SE.escapeHtml(variant.title || baseKey) + '</h4>' +
+                (variant.description ? '<div class="exercise-description">' + variant.description + '</div>' : '') +
+                '<div class="vibe-terminal">' +
+                    '<div class="vibe-terminal-head">' +
+                        '<span>in your terminal — not here</span>' +
+                        '<span class="vibe-watch-status" id="vibe-watch-status">watching for results…</span>' +
+                    '</div>' +
+                    '<pre><span class="vibe-prompt">$</span> npm run vibe next\n<span class="vibe-dim">→ ' + SE.escapeHtml(workspace) + ' · ' + SE.escapeHtml(wsDir) + '/\n→ edit exercise.go in your editor</span>\n\n<span class="vibe-prompt">$</span> npm run vibe check ' + SE.escapeHtml(wsDir) + '</pre>' +
+                '</div>' +
+                '<div class="vibe-results" id="vibe-results"><span class="vibe-dim">no run received yet — results appear here after <code>vibe check</code></span></div>' +
+                '<div class="vibe-card-footer">' +
+                    hintsHtml +
+                    '<span class="vibe-footer-note">graded by the test run, not self-rating · passes advance automatically</span>' +
+                '</div>' +
+            '</div>';
+
+        container.querySelectorAll('.vibe-hint-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var body = btn.nextElementSibling;
+                if (body) { body.hidden = false; btn.style.display = 'none'; }
+                if (window.ExerciseProgress) window.ExerciseProgress.update(item.key, { hintsUsed: true });
+            });
+        });
+
+        // Tell the daemon what's on screen so `vibe next` targets it
+        window.VibeBridge.announce({
+            key: baseKey,
+            variantKey: workspace,
+            title: variant.title || ''
+        });
+    }
+
+    function renderVibeResult(result, quality) {
+        var card = document.querySelector('#dp-exercise-container .vibe-card');
+        if (!card) return false;
+        if (card.dataset.baseKey !== result.key) return false;
+
+        var pane = document.getElementById('vibe-results');
+        if (!pane) return false;
+
+        var html = '';
+        if (result.buildFailed) {
+            html += '<div class="vibe-line fail">✗ build failed</div>' +
+                '<div class="vibe-line dim">' + SE.escapeHtml((result.buildOutput || '').split('\n').slice(0, 6).join('\n')) + '</div>';
+        } else {
+            (result.tests || []).forEach(function(t) {
+                html += '<div class="vibe-line ' + (t.pass ? 'pass' : 'fail') + '">' + (t.pass ? '✓' : '✗') + ' ' + SE.escapeHtml(t.name) + '</div>';
+                if (!t.pass && t.output) {
+                    var tail = t.output.split('\n').filter(function(l) { return /---|FAIL|got|want|expected/.test(l); }).slice(0, 3).join('\n');
+                    if (tail) html += '<div class="vibe-line dim">' + SE.escapeHtml(tail) + '</div>';
+                }
+            });
+        }
+        if (result.vetOk === false && result.vetOutput) {
+            html += '<div class="vibe-line dim">go vet: ' + SE.escapeHtml(result.vetOutput.split('\n')[0]) + '</div>';
+        }
+
+        var entry = window.SRS && window.SRS.getAll()[result.key];
+        var when = new Date(result.at).toLocaleTimeString();
+        html += '<div class="vibe-line meta">received from vibe check · ' + when + ' · attempt ' + result.attempt +
+            (entry && entry.interval ? ' · next review in ' + entry.interval + 'd' : '') + '</div>';
+
+        pane.innerHTML = html;
+        var status = document.getElementById('vibe-watch-status');
+        if (status) status.textContent = result.pass ? 'passed ✓' : 'watching for results…';
+
+        if (result.pass && session) {
+            setTimeout(function() {
+                // Only advance if this card is still the one on screen
+                var current = document.querySelector('#dp-exercise-container .vibe-card');
+                if (current && current.dataset.baseKey === result.key) SE.nextExercise(session);
+            }, 1800);
+        }
+        return true;
+    }
+
+    window.addEventListener('vibeResult', function(e) {
+        renderVibeResult(e.detail.result, e.detail.quality);
+    });
+
+    window.addEventListener('vibeStatusChanged', function(e) {
+        var status = document.getElementById('vibe-watch-status');
+        if (status && !e.detail.online) status.textContent = 'daemon offline — run: npm run vibe watch';
+    });
 
     // --- Module Data Loading ---
 
