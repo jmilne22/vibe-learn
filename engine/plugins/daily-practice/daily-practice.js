@@ -900,6 +900,16 @@
         if (sessionEl) sessionEl.classList.toggle('vibe-active', !!on);
         var guide = document.getElementById('dp-rating-guide');
         if (guide) guide.style.display = on ? 'none' : '';
+        setNextLocked(!!on);
+    }
+
+    // Watch mode: on workspace-backed cards "next" stays locked until the
+    // tests go green — the run is the rating. Skip stays available.
+    function setNextLocked(locked) {
+        var btn = document.getElementById('dp-next');
+        if (!btn) return;
+        btn.disabled = locked;
+        btn.innerHTML = locked ? '🔒 Next — unlocks on green' : 'Next →';
     }
 
     function renderVibeCard(container, item, vd) {
@@ -943,6 +953,7 @@
                             '★★★'.slice(0, d) + '☆☆☆'.slice(0, 3 - d) + '</span>';
                     })() +
                     (recall !== null ? '<span class="vibe-card-recall">predicted recall <strong>' + Math.round(recall * 100) + '%</strong></span>' : '') +
+                    '<span class="run-status fail" id="vibe-run-status">● not passing</span>' +
                 '</div>' +
                 '<h4>' + SE.escapeHtml(variant.title || baseKey) + '</h4>' +
                 (variant.description ? '<div class="exercise-description">' + variant.description + '</div>' : '') +
@@ -961,6 +972,7 @@
                 '<div class="vibe-card-footer">' +
                     hintsHtml +
                     solutionHtml +
+                    '<span class="kc"><kbd>h</kbd>hint</span>' +
                     '<span class="vibe-footer-note">graded by the test run · passes advance automatically</span>' +
                 '</div>' +
             '</div>';
@@ -1048,6 +1060,13 @@
         var status = document.getElementById('vibe-watch-status');
         if (status) status.textContent = result.pass ? 'passed ✓' : 'watching for results…';
 
+        var runStatus = document.getElementById('vibe-run-status');
+        if (runStatus) {
+            runStatus.className = 'run-status ' + (result.pass ? 'pass' : 'fail');
+            runStatus.textContent = result.pass ? '● passing' : '● not passing';
+        }
+        if (result.pass) setNextLocked(false);
+
         if (result.pass && session) {
             setTimeout(function() {
                 // Only advance if this card is still the one on screen
@@ -1057,6 +1076,14 @@
         }
         return true;
     }
+
+    // Watch-mode keyboard: `h` reveals the next hint on the current card
+    document.addEventListener('keydown', function(e) {
+        if (e.key !== 'h' || e.metaKey || e.ctrlKey || e.altKey) return;
+        if (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+        var btn = document.querySelector('#dp-exercise-container .vibe-hints .vibe-hint-btn');
+        if (btn && btn.offsetParent !== null) btn.click();
+    });
 
     window.addEventListener('vibeResult', function(e) {
         renderVibeResult(e.detail.result, e.detail.quality);

@@ -259,6 +259,30 @@ function isOriginAllowed(origin, extraOrigins) {
     return extraOrigins.includes(origin);
 }
 
+// Built courses in dist/: slug + display name (parsed from course-data.js).
+function listBuiltCourses() {
+    let slugs = [];
+    try {
+        slugs = fs.readdirSync(DIST_DIR).filter(f =>
+            fs.existsSync(path.join(DIST_DIR, f, 'index.html')) &&
+            fs.existsSync(path.join(DIST_DIR, f, 'course-data.js')));
+    } catch {}
+    return slugs.map(slug => {
+        let name = slug, shortName = null;
+        try {
+            const raw = fs.readFileSync(path.join(DIST_DIR, slug, 'course-data.js'), 'utf8');
+            const start = raw.indexOf('{');
+            const end = raw.lastIndexOf('}');
+            const config = JSON.parse(raw.slice(start, end + 1));
+            if (config.course) {
+                name = config.course.name || slug;
+                shortName = config.course.shortName || null;
+            }
+        } catch {}
+        return { slug, name, shortName };
+    });
+}
+
 function runWatch(args) {
     const config = loadConfig();
     let port = config.port || DEFAULT_PORT;
@@ -300,6 +324,10 @@ function runWatch(args) {
 
         if (req.method === 'GET' && url.pathname === '/health') {
             json(200, { ok: true, version: VERSION, workspaces: listWorkspaces().length });
+        } else if (req.method === 'GET' && url.pathname === '/api/courses') {
+            // Built courses, for the titlebar course switcher (and the
+            // desktop app's startup navigation).
+            json(200, { courses: listBuiltCourses() });
         } else if (req.method === 'GET' && url.pathname === '/exercises') {
             json(200, { exercises: listWorkspaces().map(w => w.variantKey) });
         } else if (req.method === 'GET' && url.pathname === '/results') {

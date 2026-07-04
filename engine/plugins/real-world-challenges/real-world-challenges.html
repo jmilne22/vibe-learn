@@ -4,9 +4,9 @@
     <title>Real-World Challenges — {{COURSE_NAME}}</title>
 {{> head}}
 </head>
-<body data-page="real-world-challenges">
+<body data-page="real-world-challenges" data-rail="real-world-challenges">
+{{> app-shell-top}}
     <div class="container">
-{{> dashboard-nav}}
 
         <div class="module-header">
             <div class="module-tag">Real-world challenges</div>
@@ -71,6 +71,7 @@
             <a href="index.html" class="nav-btn prev-btn">&larr; Dashboard</a>
         </div>
     </div>
+{{> app-shell-bottom}}
 
     <script src="course-data.js"></script>
     <script src="course-config.js"></script>
@@ -82,5 +83,7 @@
     <script src="progress.js"></script>
     <script src="session-engine.js"></script>
     <script src="real-world-challenges.js"></script>
+    <script src="vibe-bridge.js"></script>
+    <script src="app-shell.js"></script>
 </body>
 </html>

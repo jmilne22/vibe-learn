@@ -4,14 +4,14 @@
     <title>Daily Practice | {{COURSE_NAME}}</title>
 {{> head}}
 </head>
-<body data-module="practice">
+<body data-module="practice" data-rail="daily-practice">
+{{> app-shell-top}}
     <div class="container">
-{{> dashboard-nav}}
 
         <div class="module-header dp-header">
-            <div class="module-tag">Daily practice</div>
+            <div class="module-tag">Practice · watch mode</div>
             <h1>Review queue</h1>
-            <p class="module-desc">A focused set of exercises weighted by what is due, weak, or still undiscovered.</p>
+            <p class="module-desc">One exercise at a time, weighted by what is due, weak, or still undiscovered. With <code>vibe watch</code> running, save the file and its tests rerun automatically — next unlocks on green.</p>
         </div>
 
         <!-- Stats -->
@@ -97,6 +97,7 @@
             <a href="module1.html" style="color: var(--green-bright); display: inline-block; margin-top: 1rem;">Start with Module 1 &rarr;</a>
         </div>
     </div>
+{{> app-shell-bottom}}
 
     <script src="course-data.js"></script>
     <script src="course-config.js"></script>
@@ -111,6 +112,7 @@
     <script src="data/predict-index.js"></script>
     <script src="data/section-summaries.js"></script>
     <script src="vibe-bridge.js"></script>
+    <script src="app-shell.js"></script>
     <script src="exercise-renderer.js"></script>
     <script src="algorithm-data.js"></script>
     <script src="session-engine.js"></script>

@@ -137,10 +137,44 @@
             html += '</div>';
         }
 
+        html += buildCurriculumHtml(currentPage, sections);
+
+        html += `</div>`; // close sidebar-content
+
+        sidebar.innerHTML = html;
+        document.body.appendChild(sidebar);
+
+        // Scroll sidebar so the active item is visible
+        scrollActiveIntoView(sidebar);
+
+        // Create toggle button (inside sidebar when open)
+        const toggle = document.createElement('button');
+        toggle.className = 'sidebar-toggle';
+        toggle.setAttribute('aria-controls', 'course-sidebar');
+        toggle.setAttribute('aria-expanded', sidebar.classList.contains('open') ? 'true' : 'false');
+        toggle.setAttribute('aria-label', 'Toggle navigation');
+        toggle.innerHTML = Icons.menu;
+        toggle.addEventListener('click', toggleSidebar);
+        document.body.appendChild(toggle);
+    }
+
+    function scrollActiveIntoView(root) {
+        var activeEl = root.querySelector('.sidebar-link.active, .sidebar-chapter-title.active, .sidebar-section-link.active');
+        if (activeEl) {
+            // Use requestAnimationFrame to ensure layout is computed
+            requestAnimationFrame(function() {
+                activeEl.scrollIntoView({ block: 'center' });
+            });
+        }
+    }
+
+    // The curriculum tree (chapters → sections → in-page headings), shared by
+    // the legacy fixed sidebar and the app-shell rail.
+    function buildCurriculumHtml(currentPage, sections) {
         // All pages - group split modules into chapters, keep single modules flat
-        // Skip feature items (DP, FC, WC) — already rendered above
+        // Skip feature items (DP, FC, WC) — rendered as their own links
         var contentPages = pages.filter(page => page.type !== 'feature');
-        html += '<div class="sidebar-group sidebar-curriculum-group">' +
+        var html = '<div class="sidebar-group sidebar-curriculum-group">' +
             '<div class="sidebar-group-label">Curriculum</div>';
         if (contentPages.length === 0) {
             html += '<div class="sidebar-empty">No lessons generated yet.</div>';
@@ -239,30 +273,33 @@
             }
         }
         html += '</div>';
+        return html;
+    }
 
-        html += `</div>`; // close sidebar-content
+    // App-shell rail mode: the curriculum mounts inside the window's rail
+    // (below the nav links, above the daemon footer) instead of a fixed
+    // overlay. No backdrop, no toggle, no body padding.
+    function createRailCurriculum(railHost) {
+        const currentPage = getCurrentPage();
+        const sections = getPageSections();
 
-        sidebar.innerHTML = html;
-        document.body.appendChild(sidebar);
+        const block = document.createElement('div');
+        block.className = 'sidebar sidebar--rail';
+        block.setAttribute('aria-label', 'Curriculum');
+        block.innerHTML = buildCurriculumHtml(currentPage, sections);
 
-        // Scroll sidebar so the active item is visible
-        var activeEl = sidebar.querySelector('.sidebar-link.active, .sidebar-chapter-title.active, .sidebar-section-link.active');
+        const foot = railHost.querySelector('.app-foot');
+        if (foot) railHost.insertBefore(block, foot);
+        else railHost.appendChild(block);
+
+        // Scroll the rail itself (never the page) so the active item shows
+        var activeEl = block.querySelector('.sidebar-link.active, .sidebar-chapter-title.active, .sidebar-section-link.active');
         if (activeEl) {
-            // Use requestAnimationFrame to ensure layout is computed
             requestAnimationFrame(function() {
-                activeEl.scrollIntoView({ block: 'center' });
+                var target = activeEl.offsetTop - railHost.clientHeight / 2;
+                if (target > 0) railHost.scrollTop = target;
             });
         }
-
-        // Create toggle button (inside sidebar when open)
-        const toggle = document.createElement('button');
-        toggle.className = 'sidebar-toggle';
-        toggle.setAttribute('aria-controls', 'course-sidebar');
-        toggle.setAttribute('aria-expanded', sidebar.classList.contains('open') ? 'true' : 'false');
-        toggle.setAttribute('aria-label', 'Toggle navigation');
-        toggle.innerHTML = Icons.menu;
-        toggle.addEventListener('click', toggleSidebar);
-        document.body.appendChild(toggle);
     }
 
     // Toggle sidebar (mobile only — desktop sidebar is always visible via CSS)
@@ -328,6 +365,16 @@
         // Don't add sidebar to index page
         const currentPage = getCurrentPage();
         if (currentPage === 'index.html' || currentPage === '') {
+            setupScrollProgress();
+            return;
+        }
+        // App-shell pages get the curriculum inside the rail instead of a
+        // fixed overlay sidebar.
+        const railHost = document.querySelector('.app-side');
+        if (railHost) {
+            createRailCurriculum(railHost);
+            setupScrollTracking();
+            setupScrollProgress();
             return;
         }
         // Add class to body to indicate sidebar is available (for CSS padding)

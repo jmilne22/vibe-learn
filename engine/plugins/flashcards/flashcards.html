@@ -5,9 +5,9 @@
 {{> head}}
     <!-- All flashcard styles are in style.css -->
 </head>
-<body data-page="flashcards">
+<body data-page="flashcards" data-rail="flashcards">
+{{> app-shell-top}}
     <div class="container">
-{{> dashboard-nav}}
 
         <div class="module-header">
             <div class="module-tag">Flashcards</div>
@@ -94,6 +94,7 @@
             <a href="daily-practice.html" class="nav-btn next-btn">Daily Practice &rarr;</a>
         </div>
     </div>
+{{> app-shell-bottom}}
 
     <script src="course-data.js"></script>
     <script src="course-config.js"></script>
@@ -105,5 +106,7 @@
     <script src="theme.js"></script>
     <script src="timer.js"></script>
     <script src="sidebar.js"></script>
+    <script src="vibe-bridge.js"></script>
+    <script src="app-shell.js"></script>
 </body>
 </html>
