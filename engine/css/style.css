@@ -8732,3 +8732,25 @@ kbd {
     .lesson-layout { grid-template-columns: 1fr; }
     .lesson-rail { position: static; }
 }
+
+/* Wide screens: pages with a lesson rail get a wider, recentered container
+   so the article keeps a comfortable measure instead of being squeezed. */
+@media (min-width: 1400px) {
+    .workbook-container:has(.lesson-layout),
+    .has-sidebar .workbook-container:has(.lesson-layout) {
+        max-width: 1240px;
+    }
+
+    .lesson-layout {
+        grid-template-columns: minmax(0, 1fr) 300px;
+        gap: 40px;
+    }
+}
+
+@media (min-width: 1500px) {
+    /* Same visual center as the 900px rule (50vw - 270px), adjusted for
+       the 1240px width: 50vw + 180 - 620. */
+    .has-sidebar .workbook-container:has(.lesson-layout) {
+        margin-left: calc(50vw - 440px);
+    }
+}
