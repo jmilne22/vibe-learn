@@ -62,6 +62,9 @@ module.exports = {
             enabled: hasCommand('dpkg') && hasCommand('fakeroot'),
             config: {
                 options: {
+                    // xz (the default) spends ~2 CI minutes on the bundled
+                    // toolchain; zstd is a fraction of that at similar size.
+                    compression: 'zstd',
                     name: 'vibe-learn',
                     productName: 'Vibe Learn',
                     genericName: 'Learning Environment',
@@ -77,6 +80,9 @@ module.exports = {
             enabled: hasCommand('rpmbuild'),
             config: {
                 options: {
+                    // xz level for the rpm payload; 1 halves the slowest
+                    // maker's time for a modest size increase.
+                    compressionLevel: 1,
                     name: 'vibe-learn',
                     productName: 'Vibe Learn',
                     genericName: 'Learning Environment',

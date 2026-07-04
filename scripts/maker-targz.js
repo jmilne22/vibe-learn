@@ -1,8 +1,18 @@
 'use strict';
 
 const { MakerBase } = require('@electron-forge/maker-base');
-const { spawn } = require('child_process');
+const { spawn, spawnSync } = require('child_process');
 const path = require('path');
+
+// Parallel gzip when available (preinstalled on GitHub ubuntu runners) —
+// compressing the ~500MB app is otherwise single-threaded tail time.
+function hasPigz() {
+    try {
+        return spawnSync('pigz', ['--version'], { stdio: 'ignore' }).status === 0;
+    } catch {
+        return false;
+    }
+}
 
 // Portable Linux artifact for distros without deb/rpm packaging tools
 // (Void, Arch, NixOS, ...). Needs only system tar: unpack and run
@@ -21,10 +31,11 @@ class MakerTarGz extends MakerBase {
             `${packageJSON.name}-${targetPlatform}-${targetArch}-${packageJSON.version}.tar.gz`
         );
         await this.ensureFile(artifact);
+        const compress = hasPigz() ? ['-I', 'pigz'] : ['-z'];
         await new Promise((resolve, reject) => {
             const tar = spawn(
                 'tar',
-                ['-czf', artifact, '-C', path.dirname(dir), path.basename(dir)],
+                [...compress, '-cf', artifact, '-C', path.dirname(dir), path.basename(dir)],
                 { stdio: 'inherit' }
             );
             tar.on('error', reject);

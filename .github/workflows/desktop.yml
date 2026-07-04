@@ -2,6 +2,9 @@ name: Build desktop installers
 
 on:
   pull_request:
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
   push:
     branches: [main]
     tags: ['v*']
@@ -50,6 +53,18 @@ jobs:
       - name: Install Linux packaging tools
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y dpkg fakeroot rpm
+
+      # generate-practice compiles a Go probe per exercise variant — the
+      # single biggest CI phase (~90s) on a cold cache, near-instant warm.
+      - name: Cache Go build cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            build/.go-cache
+            ~/go/pkg/mod
+          key: go-probes-${{ runner.os }}-${{ hashFiles('generate-practice.js', 'courses/*/content/exercises/*.yaml') }}
+          restore-keys: |
+            go-probes-${{ runner.os }}-
 
       - run: npm ci
       - run: npm run make:desktop
