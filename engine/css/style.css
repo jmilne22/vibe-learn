@@ -8803,6 +8803,7 @@ kbd {
     bottom: 16px;
     left: 16px;
     z-index: 60;
+    transition: left var(--transition-slow, 0.3s ease);
     display: flex;
     align-items: center;
     gap: 8px;
@@ -8832,3 +8833,18 @@ kbd {
 .vibe-status-pill.probing .pill-dot { background: var(--bg-muted); animation: pill-pulse 1.2s ease-in-out infinite; }
 
 @keyframes pill-pulse { 50% { opacity: 0.4; } }
+
+/* Keep the pill clear of the open sidebar (304px + gutter) */
+body.sidebar-open .vibe-status-pill {
+    left: 320px;
+}
+
+@media (max-width: 900px) {
+    /* Narrow screens: the sidebar overlays content; hide the pill under it
+       instead of letting it clip through */
+    body.sidebar-open .vibe-status-pill {
+        left: 16px;
+        z-index: 1;
+        visibility: hidden;
+    }
+}
