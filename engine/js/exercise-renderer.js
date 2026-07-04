@@ -133,12 +133,7 @@
     function renderWorkspacePath(variant) {
         var dir = variant.practiceDir;
         if (!dir) return '';
-        var displayDir = dir;
-        if (window.vibeApp && window.vibeApp.workspaceDir) {
-            var rel = dir.replace(/^practice[\\/]/, '');
-            var sep = window.vibeApp.workspaceDir.indexOf('\\') !== -1 ? '\\' : '/';
-            displayDir = window.vibeApp.workspaceDir.replace(/[\\/]$/, '') + sep + rel.replace(/[\\/]/g, sep);
-        }
+        var displayDir = window.VibeBridge ? window.VibeBridge.displayPath(dir) : dir;
         var cmd = 'cd ' + JSON.stringify(displayDir);
         return `<div class="workspace-path">
             <span class="workspace-path-label">Work locally</span>

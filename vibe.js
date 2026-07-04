@@ -431,13 +431,9 @@ function runWatch(args) {
 
     server.listen(port, '127.0.0.1', () => {
         console.log(C.bold(`vibe watch`) + C.dim(` · serving dist/ + results on one port`));
-        let courses = [];
-        try {
-            courses = fs.readdirSync(DIST_DIR).filter(f =>
-                fs.existsSync(path.join(DIST_DIR, f, 'index.html')));
-        } catch {}
+        const courses = listBuiltCourses();
         if (courses.length) {
-            courses.forEach(c => console.log(`  → http://127.0.0.1:${port}/${c}/`));
+            courses.forEach(c => console.log(`  → http://127.0.0.1:${port}/${c.slug}/`));
         } else {
             console.log(C.dim(`  no built courses found — run \`npm run build\` first`));
         }

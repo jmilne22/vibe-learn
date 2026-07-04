@@ -934,14 +934,8 @@
         var wsDir = variant.practiceDir;
         var wsParts = wsDir.match(/module(\d+)\/(.+)$/);
         var workspace = wsParts ? 'm' + wsParts[1] + '_' + wsParts[2] : baseKey;
-        var displayDir = wsDir;
-        if (window.vibeApp && window.vibeApp.workspaceDir) {
-            var relDir = wsDir.replace(/^practice[\\/]/, '');
-            var pathSep = window.vibeApp.workspaceDir.indexOf('\\') !== -1 ? '\\' : '/';
-            displayDir = window.vibeApp.workspaceDir.replace(/[\\/]$/, '') + pathSep + relDir.replace(/[\\/]/g, pathSep);
-        }
+        var displayDir = window.VibeBridge ? window.VibeBridge.displayPath(wsDir) : wsDir;
 
-        var srsEntry = window.SRS && window.SRS.getAll()[baseKey];
         var recall = window.SRS && window.SRS.getRetrievability ? window.SRS.getRetrievability(baseKey) : null;
 
         var hintsHtml = '';
