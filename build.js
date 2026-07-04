@@ -405,6 +405,122 @@ function processVariationsBlocks(md, pageId) {
 // pretest cards. Reset at the start of each course build.
 let predictIndexCollector = [];
 
+// Per-course collector of section summaries for successive relearning
+// (the session runner re-surfaces a section's summary with its due
+// exercises). Reset at the start of each course build.
+let sectionSummaryCollector = [];
+
+// ---------------------------------------------------------------------------
+// <attempt> blocks — design-1d numbered attempt cards.
+//
+//   <attempt type="pretest|worked|gaps|scratch" title="optional override">
+//   ...markdown...
+//   </attempt>
+//
+// Emits an HTML wrapper with blank lines around the inner markdown so
+// marked keeps parsing the contents.
+
+const ATTEMPT_TYPES = {
+    pretest: { num: 1, label: 'Before you read — commit to an answer' },
+    worked:  { num: 2, label: 'Worked example — read every step' },
+    gaps:    { num: 3, label: 'Fill the gaps' },
+    scratch: { num: 4, label: 'From scratch — this feeds your review queue' },
+};
+
+function processAttemptBlocks(md, pageId) {
+    return md.replace(/<attempt(\s+[^>]*)?>([\s\S]*?)<\/attempt>/g, (match, attrs, inner) => {
+        let type = 'worked';
+        let title = null;
+        if (attrs) {
+            const tm = attrs.match(/type="([^"]+)"/);
+            if (tm) type = tm[1];
+            const lm = attrs.match(/title="([^"]+)"/);
+            if (lm) title = lm[1];
+        }
+        const meta = ATTEMPT_TYPES[type];
+        if (!meta) {
+            console.warn(`  Warning: <attempt> block on page "${pageId}" has unknown type "${type}". Skipping.`);
+            return match;
+        }
+        const label = title || meta.label;
+        return [
+            '',
+            `<div class="attempt-card attempt-${type}">`,
+            `<div class="attempt-step attempt-step-${type}">${meta.num} · ${label}</div>`,
+            '',
+            inner.trim(),
+            '',
+            '</div>',
+            ''
+        ].join('\n');
+    });
+}
+
+// ---------------------------------------------------------------------------
+// <gaps> blocks — completion problems (faded scaffolding, design-1d step 3).
+//
+//   <gaps prompt="Same pattern, min/max scan">
+//   ```go
+//   min, max := «prices[0]», «prices[0]»   // not 0 — why?
+//   ```
+//   </gaps>
+//
+// «...» marks a blank; the guillemet content is the answer. Rendered as
+// inline inputs checked client-side by gaps.js (string comparison — this is
+// cloze completion, not a code runner).
+
+function processGapsBlocks(md, pageId) {
+    let counter = 0;
+    return md.replace(/<gaps(\s+[^>]*)?>([\s\S]*?)<\/gaps>/g, (match, attrs, inner) => {
+        let prompt = '';
+        if (attrs) {
+            const pm = attrs.match(/prompt="([^"]+)"/);
+            if (pm) prompt = pm[1];
+        }
+        const fence = inner.match(/```(\w*)\n([\s\S]*?)\n```/);
+        if (!fence) {
+            console.warn(`  Warning: <gaps> block on page "${pageId}" has no code fence. Skipping.`);
+            return match;
+        }
+        const code = fence[2];
+        const id = `${pageId}-gaps-${counter++}`;
+
+        const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const escAttr = (s) => esc(s).replace(/"/g, '&quot;');
+
+        let gapCount = 0;
+        const codeHtml = code.split('\n').map(line => {
+            let out = '';
+            let rest = line;
+            let m;
+            while ((m = rest.match(/«([^»]+)»/)) !== null) {
+                out += esc(rest.slice(0, m.index));
+                const answer = m[1];
+                const size = Math.max(4, Math.min(answer.length + 2, 30));
+                out += `<span class="gap-slot"><input class="gap-input" data-answer="${escAttr(answer)}" size="${size}" spellcheck="false" autocomplete="off" autocapitalize="off"></span>`;
+                gapCount++;
+                rest = rest.slice(m.index + m[0].length);
+            }
+            return out + esc(rest);
+        }).join('\n');
+
+        if (gapCount === 0) {
+            console.warn(`  Warning: <gaps> block on page "${pageId}" has no «blanks». Skipping.`);
+            return match;
+        }
+
+        return [
+            '',
+            `<div class="gaps-block" data-gaps-id="${id}">`,
+            (prompt ? `<div class="gaps-prompt">${esc(prompt)}</div>` : ''),
+            `<pre class="gaps-code"><code>${codeHtml}</code></pre>`,
+            `<div class="gaps-actions"><button type="button" class="gaps-check-btn">Check</button><button type="button" class="gaps-reveal-btn" hidden>Reveal answers</button><span class="gaps-status"></span></div>`,
+            '</div>',
+            ''
+        ].join('\n');
+    });
+}
+
 function processPredictBlocks(md, pageId) {
     let counter = 0;
     return md.replace(/<predict(\s+[^>]*)?>([\s\S]*?)<\/predict>/g, (match, attrs, inner) => {
@@ -620,6 +736,7 @@ function buildCourse(slug) {
     // 1. Load & validate course manifest (YAML preferred, JSON fallback)
     console.log('Loading course manifest...');
     predictIndexCollector = [];
+    sectionSummaryCollector = [];
     const courseJson = loadCourseManifest(COURSE_DIR);
     const { course, tracks, modules, projects, annotationTypes } = courseJson;
 
@@ -787,12 +904,25 @@ function buildCourse(slug) {
                 const sectionLabel = `${mod.id}.${sectionNum}`;
                 const mdContent = fs.readFileSync(path.join(mdDir, file), 'utf8');
                 const sectionPageId = `${course.slug}-module${mod.id}-${sectionNum}`;
-                const preprocessed = processPredictBlocks(processVariationsBlocks(mdContent, sectionPageId), sectionPageId);
+                const preprocessed = processAttemptBlocks(processGapsBlocks(processPredictBlocks(processVariationsBlocks(mdContent, sectionPageId), sectionPageId), sectionPageId), sectionPageId);
                 const htmlContent = processCallouts(processCodeBlocks(marked.parse(preprocessed)));
                 const extracted = extractSectionTitle(htmlContent);
                 const outFile = `module${mod.id}-${sectionNum}.html`;
                 const slug = file.replace(/^\d+-/, '').replace(/\.md$/, '');
                 sections.push({ file: outFile, slug, title: extracted.title, html: extracted.html, sectionNum, sectionLabel });
+
+                // Successive relearning: record this section's concepts and a
+                // one-paragraph summary so due exercises can re-surface it.
+                const sectionConcepts = [...extracted.html.matchAll(/class="inline-exercises"[^>]*data-concept="([^"]+)"/g)].map(m => m[1]);
+                const firstPara = extracted.html.match(/<p>([\s\S]*?)<\/p>/);
+                sectionSummaryCollector.push({
+                    moduleId: mod.id,
+                    sectionNum,
+                    file: outFile,
+                    title: extracted.title,
+                    concepts: sectionConcepts,
+                    summary: firstPara ? firstPara[1] : ''
+                });
                 sidebarPages.push({
                     file: outFile,
                     label: `${sectionLabel} ${extracted.title}`,
@@ -939,7 +1069,7 @@ function buildCourse(slug) {
         } else if (fs.existsSync(mdFile)) {
             const mdContent = fs.readFileSync(mdFile, 'utf8');
             const modulePageId = `${course.slug}-module${mod.id}`;
-            const preprocessed = processPredictBlocks(processVariationsBlocks(mdContent, modulePageId), modulePageId);
+            const preprocessed = processAttemptBlocks(processGapsBlocks(processPredictBlocks(processVariationsBlocks(mdContent, modulePageId), modulePageId), modulePageId), modulePageId);
             let htmlContent = processCallouts(processCodeBlocks(marked.parse(preprocessed)));
 
             if (mod.hasExercises) {
@@ -1012,7 +1142,7 @@ function buildCourse(slug) {
 
         const mdContent = fs.readFileSync(mdFile, 'utf8');
         const projectPageId = `${course.slug}-${proj.file}`;
-        const preprocessed = processPredictBlocks(processVariationsBlocks(mdContent, projectPageId), projectPageId);
+        const preprocessed = processAttemptBlocks(processGapsBlocks(processPredictBlocks(processVariationsBlocks(mdContent, projectPageId), projectPageId), projectPageId), projectPageId);
         const htmlContent = processCallouts(processCodeBlocks(marked.parse(preprocessed)));
         const currentFile = proj.file + '.html';
 
@@ -1409,6 +1539,12 @@ function buildCourse(slug) {
         `// Auto-generated by build.js — do not edit\nwindow.PredictIndex = ${JSON.stringify(predictIndexCollector)};\n`
     );
     console.log(`  data/predict-index.js (${predictIndexCollector.length} predict blocks)`);
+
+    fs.writeFileSync(
+        path.join(COURSE_DIST, 'data', 'section-summaries.js'),
+        `// Auto-generated by build.js — do not edit\nwindow.SectionSummaries = ${JSON.stringify(sectionSummaryCollector)};\n`
+    );
+    console.log(`  data/section-summaries.js (${sectionSummaryCollector.length} sections)`);
 
     // 12. Copy engine JS files
     console.log('Copying engine JS files...');

@@ -8577,3 +8577,158 @@ body.sidebar-open .sidebar-toggle {
 @media (max-width: 1000px) {
     .vibe-layout { grid-template-columns: 1fr; }
 }
+
+/* === Design 1d: lesson attempt cards, gaps blocks, lesson rail ========== */
+
+.attempt-card {
+    border: 1px solid var(--border-subtle);
+    border-radius: 16px;
+    background: var(--bg-surface);
+    padding: 20px 24px;
+    margin: 20px 0;
+}
+
+.attempt-pretest { border-left: 3px solid var(--purple); }
+.attempt-worked  { border-left: 3px solid var(--cyan); }
+.attempt-gaps    { border-left: 3px solid var(--orange); }
+.attempt-scratch { border-left: 3px solid var(--green-bright); }
+
+.attempt-step {
+    font-family: var(--font-mono, 'JetBrains Mono', monospace);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+}
+
+.attempt-step-pretest { color: var(--purple); }
+.attempt-step-worked  { color: var(--cyan); }
+.attempt-step-gaps    { color: var(--orange); }
+.attempt-step-scratch { color: var(--green-bright); }
+
+.attempt-card > :last-child { margin-bottom: 0; }
+
+/* Gaps (completion) blocks */
+.gaps-prompt {
+    font-size: 0.94rem;
+    margin-bottom: 10px;
+}
+
+.gaps-code {
+    background: var(--bg-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-family: var(--font-mono, 'JetBrains Mono', monospace);
+    font-size: 0.84rem;
+    line-height: 1.9;
+    overflow-x: auto;
+}
+
+.gap-input {
+    background: color-mix(in srgb, var(--orange) 14%, transparent);
+    border: 1px dashed color-mix(in srgb, var(--orange) 60%, transparent);
+    border-radius: 4px;
+    padding: 0 6px;
+    color: var(--orange);
+    font-family: inherit;
+    font-size: inherit;
+}
+
+.gap-input:focus { outline: 1px solid var(--orange); }
+.gap-input.gap-right {
+    background: color-mix(in srgb, var(--green-bright) 12%, transparent);
+    border-color: color-mix(in srgb, var(--green-bright) 55%, transparent);
+    border-style: solid;
+    color: var(--green-bright);
+}
+.gap-input.gap-wrong {
+    background: color-mix(in srgb, var(--red) 12%, transparent);
+    border-color: color-mix(in srgb, var(--red) 55%, transparent);
+    color: var(--red);
+}
+
+.gaps-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.gaps-check-btn {
+    min-height: 36px;
+    padding: 0.45rem 0.9rem;
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 0.86rem;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.gaps-check-btn:disabled { opacity: 0.5; cursor: default; }
+
+.gaps-reveal-btn {
+    min-height: 36px;
+    padding: 0.45rem 0.9rem;
+    border: 1px solid var(--border-default);
+    border-radius: 8px;
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    cursor: pointer;
+}
+
+.gaps-status {
+    color: var(--text-tertiary);
+    font-size: 0.82rem;
+}
+
+/* Lesson layout with right rail */
+.lesson-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 280px;
+    gap: 32px;
+    align-items: start;
+}
+
+.lesson-rail {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    position: sticky;
+    top: 24px;
+}
+
+.lesson-rail:empty { display: none; }
+
+.rail-row-sub {
+    font-size: 0.76rem;
+    color: var(--text-tertiary);
+    margin-top: -6px;
+}
+
+.rail-row-sub strong { color: var(--text-tertiary); }
+
+.rail-refresher summary {
+    cursor: pointer;
+    font-size: 0.86rem;
+    color: var(--text-primary);
+}
+
+.rail-refresher a { display: inline-block; margin-top: 6px; color: var(--text-secondary); }
+
+kbd {
+    font-family: var(--font-mono, 'JetBrains Mono', monospace);
+    background: var(--bg-elevated);
+    padding: 0.05em 0.4em;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
+@media (max-width: 1200px) {
+    .lesson-layout { grid-template-columns: 1fr; }
+    .lesson-rail { position: static; }
+}

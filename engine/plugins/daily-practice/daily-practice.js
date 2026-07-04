@@ -812,6 +812,29 @@
             ? 'vibe watch connected · 127.0.0.1:' + window.VibeBridge.port + ' · save a file to run its tests'
             : 'daemon offline — run <code>npm run vibe watch</code>; this card falls back to self-rating';
 
+        // Successive relearning: re-surface the section this concept came
+        // from, so the lesson itself gets relearned, not just the exercise.
+        var refresherPanel = '';
+        if (concept && window.SectionSummaries) {
+            var section = null;
+            for (var si = 0; si < window.SectionSummaries.length; si++) {
+                if (window.SectionSummaries[si].concepts.indexOf(concept) !== -1) {
+                    section = window.SectionSummaries[si];
+                    break;
+                }
+            }
+            if (section) {
+                refresherPanel =
+                    '<div class="rail-panel rail-refresher">' +
+                        '<div class="rail-kicker">Refresher · §' + section.moduleId + '.' + section.sectionNum + '</div>' +
+                        '<details><summary>' + SE.escapeHtml(section.title) + '</summary>' +
+                        '<p class="rail-body">' + section.summary + '</p>' +
+                        '<a class="rail-body" href="' + SE.escapeHtml(section.file) + '" target="_blank" rel="noopener">reread the section ↗</a>' +
+                        '</details>' +
+                    '</div>';
+            }
+        }
+
         return '<div class="vibe-rail">' +
             '<div class="rail-panel">' +
                 '<div class="rail-kicker">Scheduler · this item</div>' +
@@ -826,6 +849,7 @@
                 '<div class="rail-kicker">Why this item now</div>' +
                 '<p class="rail-body">' + why + '</p>' +
             '</div>' +
+            refresherPanel +
             '<div class="rail-panel">' +
                 '<div class="rail-kicker">Workbench</div>' +
                 '<p class="rail-body" id="rail-daemon">' + daemonText + '</p>' +
