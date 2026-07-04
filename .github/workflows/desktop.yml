@@ -1,0 +1,98 @@
+name: Build desktop installers
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+jobs:
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check tag matches package.json version
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          pkg="$(node -p "require('./package.json').version")"
+          tag="${GITHUB_REF_NAME#v}"
+          if [ "$pkg" != "$tag" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match package.json version $pkg" >&2
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.x'
+          cache: false
+
+      - name: Install Linux packaging tools
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y dpkg fakeroot rpm
+
+      - run: npm ci
+      - run: npm run make:desktop
+
+      - name: Upload installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: vibe-learn-${{ runner.os }}-${{ runner.arch }}
+          path: out/make/**/*
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Publish GitHub release with installers
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          mapfile -d '' files < <(find artifacts -type f \( \
+            -name '*.exe' -o -name '*.dmg' -o -name '*.zip' -o \
+            -name '*.deb' -o -name '*.rpm' -o -name '*.tar.gz' -o \
+            -name '*.nupkg' -o -name 'RELEASES' \) -print0)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No installer files found in downloaded artifacts" >&2
+            exit 1
+          fi
+          printf 'Publishing %s\n' "${files[@]}"
+          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" "${files[@]}" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" \
+              --title "Vibe Learn $GITHUB_REF_NAME" \
+              --generate-notes \
+              "${files[@]}"
+          fi

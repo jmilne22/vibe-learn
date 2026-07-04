@@ -1,5 +1,7 @@
 practice/
 dist/
+build/
+out/
 node_modules/
 .variations-cache/
 *-backup-*.json

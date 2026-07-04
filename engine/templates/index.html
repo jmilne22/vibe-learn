@@ -68,7 +68,7 @@
         <details class="workbench-setup" id="workbench-setup">
             <summary><span class="workbench-status-dot" id="workbench-dot"></span>Local workbench — how exercises run on your machine</summary>
             <div class="workbench-body">
-                <p>Exercises run in <strong>your</strong> editor and terminal, verified by real <code>go test -race</code>. This page only schedules and watches. One-time setup:</p>
+                <p>Exercises run in <strong>your</strong> editor and terminal, verified by real <code>go vet</code> + <code>go test</code>. This page only schedules and watches. One-time setup:</p>
                 <pre>git clone https://github.com/jmilne22/vibe-learn && cd vibe-learn
 npm install
 npm run practice        # generate the Go exercise workspaces in practice/</pre>
@@ -199,21 +199,22 @@ npm run practice        # generate the Go exercise workspaces in practice/</pre>
         }
 
         function render(online) {
+            var runnerReady = window.VibeBridge ? window.VibeBridge.isRunnerReady() : online;
             var dot = document.getElementById('workbench-dot');
             var hint = document.getElementById('workbench-hint');
             var panel = document.getElementById('workbench-setup');
-            if (dot) dot.className = 'workbench-status-dot ' + (online ? 'online' : 'offline');
+            if (dot) dot.className = 'workbench-status-dot ' + (runnerReady ? 'online' : 'offline');
             if (hint) {
                 hint.textContent = isApp
-                    ? (online
+                    ? (runnerReady
                         ? 'Local runner active — saved exercise files are checked automatically.'
                         : 'Local runner unavailable — restart the desktop app to restore automatic checks.')
                     : (online
                         ? 'Connected — vibe watch is running on this machine.'
                         : 'Not connected — start `node vibe.js watch` to enable test-graded exercises.');
             }
-            if (panel && online) panel.removeAttribute('open');
-            renderRunnerIdle(online);
+            if (panel && runnerReady) panel.removeAttribute('open');
+            renderRunnerIdle(runnerReady);
         }
 
         window.addEventListener('vibeResult', function(e) {

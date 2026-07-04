@@ -1,8 +1,11 @@
 {
-  "name": "course-engine",
+  "name": "vibe-learn",
+  "productName": "Vibe Learn",
   "version": "1.0.0",
   "private": true,
   "description": "Reusable course engine — fork, replace content, build, deploy.",
+  "author": "James Milne",
+  "license": "MIT",
   "main": "desktop/main.js",
   "scripts": {
     "build": "node build.js",
@@ -10,7 +13,14 @@
     "new-course": "node create-course.js",
     "practice": "node generate-practice.js",
     "vibe": "node vibe.js",
-    "app": "electron ."
+    "test": "npm run test:desktop",
+    "test:desktop": "node desktop/workspace.test.js",
+    "prepare:desktop:dev": "node scripts/prepare-desktop.js --skip-go",
+    "prepare:desktop": "node scripts/prepare-desktop.js",
+    "app": "npm run app:dev",
+    "app:dev": "npm run prepare:desktop:dev && electron .",
+    "package:desktop": "npm run prepare:desktop && electron-forge package",
+    "make:desktop": "npm run prepare:desktop && electron-forge make"
   },
   "bin": {
     "vibe": "./vibe.js"
@@ -22,6 +32,13 @@
     "marked-highlight": "^2.2.3"
   },
   "devDependencies": {
+    "@electron-forge/cli": "^7.11.2",
+    "@electron-forge/maker-base": "^7.11.2",
+    "@electron-forge/maker-deb": "^7.11.2",
+    "@electron-forge/maker-dmg": "^7.11.2",
+    "@electron-forge/maker-rpm": "^7.11.2",
+    "@electron-forge/maker-squirrel": "^7.11.2",
+    "@electron-forge/maker-zip": "^7.11.2",
     "electron": "^43.0.0"
   }
 }

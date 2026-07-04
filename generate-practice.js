@@ -3,6 +3,9 @@
 //
 //   node generate-practice.js [courseSlug] [--verify] [--force]
 //
+// Set VIBE_PRACTICE_DIR and VIBE_MANIFEST_FILE to generate a clean workspace
+// seed outside the repository (used by desktop packaging).
+//
 // Reads courses/<slug>/content/exercises/module{N}-variants.yaml and, for every
 // challenge variant that has a `testGo:` field, writes:
 //
@@ -29,8 +32,10 @@ const { spawnSync } = require('child_process');
 const yaml = require('js-yaml');
 
 const ROOT = __dirname;
-const PRACTICE_DIR = path.join(ROOT, 'practice');
+const PRACTICE_DIR = path.resolve(process.env.VIBE_PRACTICE_DIR || path.join(ROOT, 'practice'));
 const VERIFY_DIR = path.join(PRACTICE_DIR, '.verify');
+const MANIFEST_FILE = path.resolve(process.env.VIBE_MANIFEST_FILE || path.join(ROOT, 'practice-manifest.json'));
+const GO_BINARY = process.env.VIBE_GO_BINARY || 'go';
 const GO_VERSION = '1.26';
 const YAML_DEP = 'gopkg.in/yaml.v3 v3.0.1';
 
@@ -381,7 +386,7 @@ function runProbe(body, context) {
   fs.writeFileSync(path.join(AUTOGEN_DIR, 'main.go'), src);
   const opts = { cwd: PRACTICE_DIR, encoding: 'utf8', input: '', timeout: 30000 };
   const bin = path.join(AUTOGEN_DIR, 'probe.bin');
-  const build = spawnSync('go', ['build', '-o', bin, './autogen-tmp'], opts);
+  const build = spawnSync(GO_BINARY, ['build', '-o', bin, './autogen-tmp'], opts);
   if (build.status !== 0) {
     return { error: (build.stderr || 'probe build failed').trim().split('\n').slice(0, 3).join(' | ') };
   }
@@ -734,8 +739,19 @@ function ensureGoMod() {
   if (!fs.existsSync(goModPath) || !fs.readFileSync(goModPath, 'utf8').includes('gopkg.in/yaml.v3')) {
     fs.writeFileSync(goModPath, wantGoMod);
   }
+  // Anchor the yaml dependency from a real package: the stubs alone don't
+  // import it (learner solutions do), and `go mod vendor` only ships source
+  // for packages the module imports. Without this the packaged app's
+  // vendored seed lacks yaml and -mod=vendor makes those exercises
+  // unsolvable offline.
+  const depsDir = path.join(PRACTICE_DIR, 'internal', 'deps');
+  mkdirp(depsDir);
+  fs.writeFileSync(path.join(depsDir, 'deps.go'),
+    '// Package deps anchors module dependencies that learner solutions\n' +
+    '// import, so `go mod vendor` ships their source with the desktop app.\n' +
+    'package deps\n\nimport _ "gopkg.in/yaml.v3"\n');
   if (!fs.existsSync(path.join(PRACTICE_DIR, 'go.sum'))) {
-    const dl = spawnSync('go', ['mod', 'download', 'all'], { cwd: PRACTICE_DIR, encoding: 'utf8' });
+    const dl = spawnSync(GO_BINARY, ['mod', 'download', 'all'], { cwd: PRACTICE_DIR, encoding: 'utf8' });
     if (dl.status !== 0) {
       console.warn(
         'warning: `go mod download` failed (offline?). Run `go mod download all` in practice/ before using yaml-based exercises.\n' +
@@ -747,7 +763,7 @@ function ensureGoMod() {
 
 function runGo(args, cwd, label) {
   console.log(`\n$ go ${args.join(' ')}   (${path.relative(ROOT, cwd)})`);
-  const res = spawnSync('go', args, { cwd, encoding: 'utf8', stdio: 'inherit' });
+  const res = spawnSync(GO_BINARY, args, { cwd, encoding: 'utf8', stdio: 'inherit' });
   if (res.status !== 0) {
     console.error(`\nFAIL: ${label}`);
     return false;
@@ -787,10 +803,10 @@ function main() {
       `practice/module${e.modNum}/${e.challenge.id}_${e.variant.id}`;
   }
   fs.writeFileSync(
-    path.join(ROOT, 'practice-manifest.json'),
+    MANIFEST_FILE,
     JSON.stringify(manifest, null, 1) + '\n'
   );
-  console.log(`practice-manifest.json: ${entries.length} workspaces (commit this file)`);
+  console.log(`${path.relative(ROOT, MANIFEST_FILE)}: ${entries.length} workspaces`);
   const perModule = {};
   for (const e of entries) {
     perModule[e.modNum] = (perModule[e.modNum] || 0) + 1;

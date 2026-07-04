@@ -28,13 +28,22 @@
         if (stored) PORT = parseInt(stored, 10) || PORT;
     } catch (e) {}
 
-    var BASE = 'http://127.0.0.1:' + PORT;
+    // Same-origin first when the page is served by the daemon/app itself;
+    // the classic daemon address stays as a fallback so dist/ served by any
+    // generic static server on localhost still reaches `vibe watch`.
+    var BASES = [];
+    if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) BASES.push(location.origin);
+    var daemonBase = 'http://127.0.0.1:' + PORT;
+    if (BASES.indexOf(daemonBase) === -1) BASES.push(daemonBase);
+    var BASE = BASES[0];
     var POLL_MS = 3000;
     var LAST_SEEN_KEY = window.CourseConfigHelper
         ? window.CourseConfigHelper.storageKey('vibe-last-seen')
         : 'course-vibe-last-seen';
 
     var online = false;
+    var watching = false;
+    var workspaceDir = null;
     var workspaces = null;   // array of variantKeys, null until fetched
     var pollTimer = null;
     var currentItem = null;  // { key, variantKey, title }
@@ -63,31 +72,50 @@
         });
     }
 
-    function setOnline(value) {
-        if (online === value) return;
+    function setOnline(value, health) {
+        var nextWatching = !!(value && health && health.watching);
+        var nextWorkspace = health && health.workspaceDir ? health.workspaceDir : workspaceDir;
+        if (online === value && watching === nextWatching && workspaceDir === nextWorkspace) return;
         online = value;
+        watching = nextWatching;
+        workspaceDir = nextWorkspace;
         // Reconnected mid-session: tell the daemon what's on screen
         if (online && currentItem) announce(currentItem);
-        window.dispatchEvent(new CustomEvent('vibeStatusChanged', { detail: { online: online } }));
+        window.dispatchEvent(new CustomEvent('vibeStatusChanged', {
+            detail: { online: online, watching: watching, runnerReady: isRunnerReady(), workspaceDir: workspaceDir }
+        }));
     }
 
     /**
-     * Probe the daemon; resolves to true/false and refreshes the workspace list.
+     * Probe the daemon; resolves to true/false and refreshes the workspace
+     * list. Tries each candidate base and sticks with the one that answers.
      */
     function probe() {
-        return fetchJson('/health').then(function() {
+        return probeAt(0);
+    }
+
+    function probeAt(index) {
+        BASE = BASES[index];
+        return fetchJson('/health').then(function(health) {
             return fetchJson('/exercises').then(function(data) {
                 workspaces = data.exercises || [];
-                setOnline(true);
+                setOnline(true, health);
                 return true;
             });
         }).catch(function() {
-            setOnline(false);
+            if (index + 1 < BASES.length) return probeAt(index + 1);
+            BASE = BASES[0];
+            setOnline(false, null);
             return false;
         });
     }
 
     function isOnline() { return online; }
+    function isWatching() { return watching; }
+    // The daemon answering is not enough inside the app: grading also needs
+    // its file watcher. This is the single definition of "runner ready".
+    function isRunnerReady() { return online && (!isApp || watching); }
+    function getWorkspaceDir() { return workspaceDir; }
 
     /**
      * Does a local go-test workspace exist for this exercise?
@@ -226,7 +254,13 @@
     window.addEventListener('vibeResult', function(e) {
         var result = e.detail.result;
         var paneKey = result.variantKey || result.key;
-        document.querySelectorAll('[data-vibe-key="' + paneKey + '"] .vibe-results-pane').forEach(function(pane) {
+        var panes = document.querySelectorAll('[data-vibe-key="' + paneKey + '"] .vibe-results-pane');
+        // A run for a sibling variant of the same challenge (e.g. scaffolded
+        // by `vibe next`) still fills the displayed card's pane.
+        if (!panes.length && result.key) {
+            panes = document.querySelectorAll('[data-vibe-base="' + result.key + '"] .vibe-results-pane');
+        }
+        panes.forEach(function(pane) {
             var html = '';
             if (result.buildFailed) {
                 html += '<div class="vibe-line fail">✗ build failed</div>' +
@@ -285,7 +319,7 @@
 
     window.addEventListener('vibeStatusChanged', function(e) {
         if (document.getElementById('vibe-status-pill')) {
-            renderStatusPill(e.detail.online ? 'online' : 'offline');
+            renderStatusPill(e.detail.runnerReady ? 'online' : 'offline');
         }
     });
 
@@ -293,7 +327,9 @@
         // Only poll on pages that actually show exercises
         if (document.querySelector('#warmups-container, #challenges-container, .inline-exercises, .exercise[data-exercise-key]')) {
             renderStatusPill('probing');
-            probe().then(function(ok) { renderStatusPill(ok ? 'online' : 'offline'); });
+            probe().then(function() {
+                renderStatusPill(isRunnerReady() ? 'online' : 'offline');
+            });
             startPolling();
         }
     }
@@ -307,6 +343,9 @@
     window.VibeBridge = {
         probe: probe,
         isOnline: isOnline,
+        isWatching: isWatching,
+        isRunnerReady: isRunnerReady,
+        getWorkspaceDir: getWorkspaceDir,
         hasWorkspace: hasWorkspace,
         resolveWorkspace: resolveWorkspace,
         announce: announce,

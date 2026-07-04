@@ -9,7 +9,9 @@ to static HTML by `node build.js`. No framework, no backend.
 - `node build.js <slug>` — build a single course
 - `npm run new-course -- <slug>` — scaffold an empty course
 - `npm run practice` — generate local Go test workspaces in `practice/`
-- `npm run app` — desktop app: frameless Electron window (`desktop/`) that spawns/reuses the daemon and opens the last-used course; the site's titlebar is the real window chrome
+- `npm run app` — prepare clean desktop assets and start the isolated development app. It uses port 4712 plus separate app data and `Documents/Vibe Learn Dev/`; it never uses the repo's ignored `practice/`.
+- `npm run package:desktop` — build a self-contained platform app with bundled course assets, clean exercise seed, vendored Go modules, and the local Go toolchain.
+- `npm run make:desktop` — create the current OS installer via Electron Forge.
 - `node vibe.js watch` — local daemon (127.0.0.1:4711) that serves `dist/` and relays `vibe check` results to course pages
 - `node vibe.js check <dir>` — run go vet + `go test -race` on one practice exercise; result is recorded and graded objectively
 - `node vibe.js next` — print the exercise the course page queued up
