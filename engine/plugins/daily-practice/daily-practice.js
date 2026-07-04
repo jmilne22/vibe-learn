@@ -605,6 +605,19 @@
         }
         setVibeMode(false);
 
+        function mountWithRail(html) {
+            var baseKey = item.key.replace(/_(?:v|tp)\w+$/, '');
+            container.innerHTML = '<div class="vibe-layout">' + html + schedulerRailHtml(item, baseKey) + '</div>';
+            wireRail(baseKey, null);
+            if (window.initExerciseProgress) window.initExerciseProgress();
+            container.querySelectorAll('.exercise').forEach(function(ex) {
+                if (window.ExerciseRenderer) {
+                    window.ExerciseRenderer.initPersonalNotes(ex);
+                }
+            });
+            resetCompletionState(container);
+        }
+
         // Discover items carry their variant data directly
         if (item.variant) {
             var html = window.ExerciseRenderer ? window.ExerciseRenderer.renderExerciseCard({
@@ -617,14 +630,7 @@
                 expanded: true
             }) : null;
             if (html) {
-                container.innerHTML = html;
-                if (window.initExerciseProgress) window.initExerciseProgress();
-                container.querySelectorAll('.exercise').forEach(function(ex) {
-                    if (window.ExerciseRenderer) {
-                        window.ExerciseRenderer.initPersonalNotes(ex);
-                    }
-                });
-                resetCompletionState(container);
+                mountWithRail(html);
                 return;
             }
         }
@@ -632,14 +638,7 @@
         // Standard path: render from key lookup
         var exerciseHtml = renderFromKey(item);
         if (exerciseHtml) {
-            container.innerHTML = exerciseHtml;
-            if (window.initExerciseProgress) window.initExerciseProgress();
-            container.querySelectorAll('.exercise').forEach(function(ex) {
-                if (window.ExerciseRenderer) {
-                    window.ExerciseRenderer.initPersonalNotes(ex);
-                }
-            });
-            resetCompletionState(container);
+            mountWithRail(exerciseHtml);
         } else {
             container.innerHTML =
                 '<div class="exercise" style="text-align: center; padding: 2rem;">' +
@@ -744,6 +743,100 @@
         strip.innerHTML = html;
     }
 
+    // --- Scheduler Rail (design 2a: legible scheduling) ---
+
+    var railPre = null; // { key, stability } captured when the card renders
+    var solutionTimer = null;
+    var SOLUTION_LOCK_S = 90;
+
+    function fmtDaysAgo(iso) {
+        var d = (Date.now() - new Date(iso).getTime()) / 86400000;
+        if (d < 1) return 'today';
+        return Math.round(d) + 'd ago';
+    }
+
+    function schedulerRailHtml(item, baseKey) {
+        if (!window.SRS) return '';
+        var entry = window.SRS.getAll()[baseKey];
+        var recall = window.SRS.getRetrievability ? window.SRS.getRetrievability(baseKey) : null;
+        railPre = { key: baseKey, stability: entry ? entry.stability : null };
+
+        var concept = window.ConceptIndex && window.ConceptIndex[baseKey];
+        var why;
+        if (entry && entry.reviewCount) {
+            why = (concept ? '<strong>' + SE.escapeHtml(concept) + '</strong> — ' : '') +
+                'last seen ' + (entry.lastReview ? fmtDaysAgo(entry.lastReview) : 'a while ago') +
+                ' · ' + entry.reviewCount + ' review' + (entry.reviewCount === 1 ? '' : 's') +
+                ', current streak ' + (entry.repetitions || 0) +
+                '. It sits between unrelated concepts so you can’t pattern-match off the previous card.';
+        } else {
+            why = (concept ? '<strong>' + SE.escapeHtml(concept) + '</strong> — ' : '') +
+                'first time through. Today’s result seeds its schedule.';
+        }
+
+        function row(label, value, id, color) {
+            return '<div class="rail-row"><span>' + label + '</span><strong' +
+                (id ? ' id="' + id + '"' : '') + (color ? ' style="color:' + color + '"' : '') + '>' +
+                value + '</strong></div>';
+        }
+
+        var daemonText = window.VibeBridge && window.VibeBridge.isOnline()
+            ? 'vibe watch connected · 127.0.0.1:' + window.VibeBridge.port + ' · save a file to run its tests'
+            : 'daemon offline — run <code>npm run vibe watch</code>; this card falls back to self-rating';
+
+        return '<div class="vibe-rail">' +
+            '<div class="rail-panel">' +
+                '<div class="rail-kicker">Scheduler · this item</div>' +
+                row('Predicted recall', recall === null ? '—' : Math.round(recall * 100) + '%', null, 'var(--orange)') +
+                row('Outcome', 'waiting…', 'rail-outcome') +
+                row('Stability', entry && entry.stability ? entry.stability + 'd' : '—', 'rail-stability') +
+                row('Next review', entry && entry.interval ? 'was ' + entry.interval + 'd' : '—', 'rail-next') +
+                '<p class="rail-footnote">Graded by the test run, not self-rating. One optional dial:</p>' +
+                '<button type="button" class="vibe-hint-btn rail-harder" id="rail-harder" hidden>felt harder than it looks</button>' +
+            '</div>' +
+            '<div class="rail-panel">' +
+                '<div class="rail-kicker">Why this item now</div>' +
+                '<p class="rail-body">' + why + '</p>' +
+            '</div>' +
+            '<div class="rail-panel">' +
+                '<div class="rail-kicker">Workbench</div>' +
+                '<p class="rail-body" id="rail-daemon">' + daemonText + '</p>' +
+            '</div>' +
+        '</div>';
+    }
+
+    function wireRail(baseKey, label) {
+        var harder = document.getElementById('rail-harder');
+        if (harder) {
+            harder.addEventListener('click', function() {
+                if (window.SRS) window.SRS.recordReview(baseKey, 3, label);
+                updateRail(baseKey, 'adjusted — harder', 'var(--orange)');
+                harder.disabled = true;
+                harder.textContent = 'noted — stability nudged down';
+            });
+        }
+    }
+
+    function updateRail(baseKey, outcomeText, outcomeColor, showDial) {
+        if (!railPre || railPre.key !== baseKey || !window.SRS) return;
+        var entry = window.SRS.getAll()[baseKey];
+        var outcome = document.getElementById('rail-outcome');
+        if (outcome) { outcome.textContent = outcomeText; outcome.style.color = outcomeColor || ''; }
+        if (!entry) return;
+        var stab = document.getElementById('rail-stability');
+        if (stab) {
+            stab.textContent = railPre.stability
+                ? railPre.stability + 'd → ' + entry.stability + 'd'
+                : entry.stability + 'd';
+        }
+        var next = document.getElementById('rail-next');
+        if (next && entry.interval) {
+            next.textContent = entry.interval === 1 ? 'tomorrow' : 'in ' + entry.interval + 'd';
+        }
+        var harder = document.getElementById('rail-harder');
+        if (harder && showDial) harder.hidden = false;
+    }
+
     // --- Local-First (vibe) Cards ---
 
     function setVibeMode(on) {
@@ -777,7 +870,14 @@
             hintsHtml += '</div>';
         }
 
-        container.innerHTML =
+        var solutionHtml = '';
+        if (variant.solution) {
+            solutionHtml =
+                '<button type="button" class="vibe-hint-btn vibe-solution-btn" id="vibe-solution-btn" disabled>Solution · 1:30</button>' +
+                '<div class="vibe-solution-body" id="vibe-solution-body" hidden><pre>' + SE.escapeHtml(variant.solution) + '</pre></div>';
+        }
+
+        var cardHtml =
             '<div class="exercise vibe-card" data-exercise-key="' + SE.escapeHtml(item.key) + '" data-base-key="' + SE.escapeHtml(baseKey) + '">' +
                 '<div class="vibe-card-meta">' +
                     '<span class="vibe-card-tag">Module ' + item.moduleNum + (item.moduleName ? ' · ' + SE.escapeHtml(item.moduleName) : '') + '</span>' +
@@ -795,17 +895,48 @@
                 '<div class="vibe-results" id="vibe-results"><span class="vibe-dim">no run received yet — results appear here after <code>vibe check</code></span></div>' +
                 '<div class="vibe-card-footer">' +
                     hintsHtml +
-                    '<span class="vibe-footer-note">graded by the test run, not self-rating · passes advance automatically</span>' +
+                    solutionHtml +
+                    '<span class="vibe-footer-note">graded by the test run · passes advance automatically</span>' +
                 '</div>' +
             '</div>';
 
-        container.querySelectorAll('.vibe-hint-btn').forEach(function(btn) {
+        container.innerHTML = '<div class="vibe-layout">' + cardHtml + schedulerRailHtml(item, baseKey) + '</div>';
+        wireRail(baseKey, variant.title || null);
+
+        container.querySelectorAll('.vibe-hints .vibe-hint-btn').forEach(function(btn) {
             btn.addEventListener('click', function() {
                 var body = btn.nextElementSibling;
                 if (body) { body.hidden = false; btn.style.display = 'none'; }
                 if (window.ExerciseProgress) window.ExerciseProgress.update(item.key, { hintsUsed: true });
+                if (window.VibeBridge) window.VibeBridge.markAssist(baseKey, 'hint');
             });
         });
+
+        // Timer-locked solution: unlocks after the thinking window
+        var solBtn = document.getElementById('vibe-solution-btn');
+        if (solBtn) {
+            if (solutionTimer) clearInterval(solutionTimer);
+            var unlockAt = Date.now() + SOLUTION_LOCK_S * 1000;
+            solutionTimer = setInterval(function() {
+                if (!document.getElementById('vibe-solution-btn')) { clearInterval(solutionTimer); return; }
+                var left = Math.ceil((unlockAt - Date.now()) / 1000);
+                if (left <= 0) {
+                    clearInterval(solutionTimer);
+                    solBtn.disabled = false;
+                    solBtn.textContent = 'Show solution';
+                } else {
+                    solBtn.textContent = 'Solution · ' + Math.floor(left / 60) + ':' + (left % 60 < 10 ? '0' : '') + (left % 60);
+                }
+            }, 1000);
+            solBtn.addEventListener('click', function() {
+                if (solBtn.disabled) return;
+                var body = document.getElementById('vibe-solution-body');
+                if (body) body.hidden = false;
+                solBtn.style.display = 'none';
+                if (window.ExerciseProgress) window.ExerciseProgress.update(item.key, { solutionViewed: true });
+                if (window.VibeBridge) window.VibeBridge.markAssist(baseKey, 'solution');
+            });
+        }
 
         // Tell the daemon what's on screen so `vibe next` targets it
         window.VibeBridge.announce({
@@ -861,11 +992,22 @@
 
     window.addEventListener('vibeResult', function(e) {
         renderVibeResult(e.detail.result, e.detail.quality);
+        var r = e.detail.result;
+        updateRail(r.key,
+            r.pass ? 'vibe check passed' : 'vibe check failed',
+            r.pass ? 'var(--green-bright)' : 'var(--red)',
+            r.pass);
     });
 
     window.addEventListener('vibeStatusChanged', function(e) {
         var status = document.getElementById('vibe-watch-status');
         if (status && !e.detail.online) status.textContent = 'daemon offline — run: npm run vibe watch';
+        var daemon = document.getElementById('rail-daemon');
+        if (daemon) {
+            daemon.innerHTML = e.detail.online
+                ? 'vibe watch connected · 127.0.0.1:' + window.VibeBridge.port + ' · save a file to run its tests'
+                : 'daemon offline — run <code>npm run vibe watch</code>; this card falls back to self-rating';
+        }
     });
 
     // --- Module Data Loading ---
@@ -898,6 +1040,9 @@
         if (!session) return;
         var key = e.detail.key;
         var srsKey = key.replace(/_(?:v|tp)\w+$/, '');
+        var ratingLabels = { 1: ['got it', 'var(--green-bright)'], 2: ['struggled', 'var(--orange)'], 3: ['needed solution', 'var(--purple)'] };
+        var rl = ratingLabels[e.detail.rating];
+        if (rl) updateRail(srsKey, rl[0], rl[1], true);
         var srsData = window.SRS && window.SRS.getAll();
         var entry = srsData && srsData[srsKey];
         if (!entry || !entry.interval) return;

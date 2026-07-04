@@ -127,10 +127,27 @@
         }, 2500).then(function() { return true; }).catch(function() { return false; });
     }
 
-    // Objective grading: the test run replaces self-rating
+    // Session-scoped assist/failure tracking so grading reflects *this*
+    // sitting, not all-time attempt counts.
+    var assists = {};      // baseKey -> 'hint' | 'solution'
+    var sessionFails = {}; // baseKey -> count of failed runs seen this session
+
+    function markAssist(key, kind) {
+        if (kind === 'solution' || !assists[key]) assists[key] = kind;
+    }
+
+    // Objective grading: the test run replaces self-rating.
+    // Clean pass -> Easy; pass after hints -> Good; pass after failures or
+    // the solution -> Hard; fail -> Again.
     function qualityFromResult(result) {
-        if (!result.pass) return 1;                 // Again
-        return result.attempt <= 1 ? 5 : 3;         // Easy first try, Hard after fails
+        if (!result.pass) {
+            sessionFails[result.key] = (sessionFails[result.key] || 0) + 1;
+            return 1;
+        }
+        if (assists[result.key] === 'solution') return 3;
+        if (sessionFails[result.key] > 0) return 3;
+        if (assists[result.key] === 'hint') return 4;
+        return 5;
     }
 
     function handleResult(result) {
@@ -301,6 +318,7 @@
         hasWorkspace: hasWorkspace,
         resolveWorkspace: resolveWorkspace,
         announce: announce,
+        markAssist: markAssist,
         startPolling: startPolling,
         stopPolling: stopPolling,
         enhanceExerciseCards: enhanceExerciseCards,
