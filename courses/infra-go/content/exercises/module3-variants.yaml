@@ -608,6 +608,10 @@ variants:
             <code>ErrAlreadyExists</code>. Write <code>Add(pod Pod) error</code> (returns ErrAlreadyExists if name is
             taken) and <code>Get(name string) (Pod, error)</code> (returns ErrNotFound if missing).
           functionSignature: type PodStore struct { pods map[string]Pod }
+          setupGo: |-
+            type Pod struct {
+                Name string
+            }
           difficulty: 1
           testCases:
             - input: s := NewPodStore(); s.Add(Pod{Name:"web"}); s.Get("web")

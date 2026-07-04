@@ -225,6 +225,60 @@ function stubFromSignature(sig, context) {
 const AUTOGEN_DIR = path.join(PRACTICE_DIR, 'autogen-tmp');
 const CASE_SENTINEL = '--vibe-case--';
 
+// Probe results are pure functions of the variant content, so cache them:
+// re-running `npm run practice` only compiles solutions that changed.
+const AUTOGEN_CACHE_FILE = path.join(ROOT, '.autogen-cache.json');
+const AUTOGEN_VERSION = 4; // bump to invalidate all cached probes
+let autogenCache = {};
+let autogenCacheDirty = false;
+
+function loadAutogenCache() {
+  try { autogenCache = JSON.parse(fs.readFileSync(AUTOGEN_CACHE_FILE, 'utf8')); }
+  catch { autogenCache = {}; }
+}
+
+function saveAutogenCache() {
+  if (!autogenCacheDirty) return;
+  fs.writeFileSync(AUTOGEN_CACHE_FILE, JSON.stringify(autogenCache));
+}
+
+function autogenKey(kind, variant, group) {
+  const crypto = require('crypto');
+  const material = JSON.stringify([
+    AUTOGEN_VERSION, kind,
+    variant.solution || '',
+    variant.stubGo || '',
+    variant.functionSignature || '',
+    variant.setupGo || (group && group.setupGo) || '',
+    (variant.testCases || []).map((tc) => tc.input),
+  ]);
+  return crypto.createHash('sha256').update(material).digest('hex');
+}
+
+// Wrap an autogen function with the cache. Cached fields are re-applied to
+// the variant object; errors are cached too (failed probes are the slow ones).
+function cachedAutoGen(kind, variant, group, context, fn) {
+  const key = autogenKey(kind, variant, group);
+  const hit = autogenCache[key];
+  if (hit) {
+    if (hit.error) return { error: hit.error };
+    variant.testGo = hit.testGo;
+    if (hit.stubGo) variant.stubGo = hit.stubGo;
+    if (hit.verifySolution) variant._verifySolution = hit.verifySolution;
+    if (hit.expectedOutput) variant._expectedOutput = hit.expectedOutput;
+    return {};
+  }
+  const res = fn();
+  autogenCacheDirty = true;
+  autogenCache[key] = res.error ? { error: res.error } : {
+    testGo: variant.testGo,
+    stubGo: variant.stubGo,
+    verifySolution: variant._verifySolution,
+    expectedOutput: variant._expectedOutput,
+  };
+  return res;
+}
+
 function goStr(s) {
   return JSON.stringify(String(s));
 }
@@ -239,7 +293,7 @@ function braceDelta(line) {
   return d;
 }
 
-// Top-level decl blocks with names: [{ kind: 'func'|'type', name, text }]
+// Top-level decl blocks with names: [{ kind: 'func'|'type'|'var'|'const', name, text }]
 function declBlocks(src) {
   const lines = String(src).split('\n');
   const blocks = [];
@@ -247,6 +301,7 @@ function declBlocks(src) {
   while (i < lines.length) {
     const line = lines[i];
     const m = line.match(/^(func|type)\s+(?:\([^)]*\)\s*)?(\w+)/);
+    const vm = line.match(/^(var|const)\b\s*(\(|(\w+))/);
     if (m) {
       const block = [line];
       let depth = braceDelta(line);
@@ -257,6 +312,18 @@ function declBlocks(src) {
         i++;
       }
       blocks.push({ kind: m[1], name: m[2], text: block.join('\n') });
+    } else if (vm) {
+      const block = [line];
+      i++;
+      if (vm[2] === '(') {
+        // var ( ... ) block: consume until the closing paren line
+        while (i < lines.length && lines[i].trim() !== ')') {
+          block.push(lines[i]);
+          i++;
+        }
+        if (i < lines.length) { block.push(lines[i]); i++; }
+      }
+      blocks.push({ kind: vm[1], name: vm[3] || '', text: block.join('\n') });
     } else {
       i++;
     }
@@ -385,6 +452,54 @@ function autoGenWarmup(variant, context) {
   return {};
 }
 
+// Split a testCases input on top-level semicolons (outside strings and
+// brackets): "s := New(); s.Add(x); s.Get(k)" -> statements + final
+// expression to print. Returns { stmts: [], expr } — stmts empty for a
+// plain expression input.
+function splitCaseInput(input) {
+  const parts = [];
+  let cur = '';
+  let depth = 0;
+  let str = null; // ", ', or `
+  for (let i = 0; i < input.length; i++) {
+    const c = input[i];
+    if (str) {
+      cur += c;
+      if (c === '\\' && str !== '`') { cur += input[++i] || ''; continue; }
+      if (c === str) str = null;
+      continue;
+    }
+    if (c === '"' || c === "'" || c === '`') { str = c; cur += c; continue; }
+    if (c === '(' || c === '[' || c === '{') depth++;
+    if (c === ')' || c === ']' || c === '}') depth--;
+    if (c === ';' && depth === 0) { parts.push(cur.trim()); cur = ''; continue; }
+    cur += c;
+  }
+  if (cur.trim()) parts.push(cur.trim());
+  // Strip trailing // comments (annotations in testCase inputs, not code)
+  const clean = parts.map((p) => {
+    let s = null;
+    for (let i = 0; i < p.length; i++) {
+      const c = p[i];
+      if (s) {
+        if (c === '\\' && s !== '`') { i++; continue; }
+        if (c === s) s = null;
+        continue;
+      }
+      if (c === '"' || c === "'" || c === '`') { s = c; continue; }
+      if (c === '/' && p[i + 1] === '/') return p.slice(0, i).trim();
+    }
+    return p;
+  });
+  return { stmts: clean.slice(0, -1), expr: clean[clean.length - 1] || '' };
+}
+
+function caseBlock(input, indent) {
+  const { stmts, expr } = splitCaseInput(input);
+  const lines = stmts.concat([`fmt.Println(${expr})`]);
+  return lines.map((l) => indent + l).join('\n');
+}
+
 function autoGenChallenge(group, variant, context) {
   const sig = String(variant.functionSignature || '').trim();
   if (!sig) return { error: 'no functionSignature' };
@@ -398,8 +513,9 @@ function autoGenChallenge(group, variant, context) {
   const setup = String(variant.setupGo || group.setupGo || '').trim();
   const solutionSrc = (setup ? setup + '\n\n' : '') + variant.solution;
 
+  // Each case in its own block: cases reuse variable names (s := New()...)
   const mainCalls = cases
-    .map((c) => `    fmt.Println(${goStr(CASE_SENTINEL)})\n    fmt.Println(${c})`)
+    .map((c) => `    fmt.Println(${goStr(CASE_SENTINEL)})\n    {\n` + caseBlock(c, '        ') + '\n    }')
     .join('\n');
   const probe = runProbe(solutionSrc + '\n\nfunc main() {\n' + mainCalls + '\n}\n', context);
   if (probe.error) return { error: probe.error };
@@ -409,7 +525,7 @@ function autoGenChallenge(group, variant, context) {
   if (parts.length !== cases.length) return { error: 'could not split case outputs' };
 
   const switchCases = cases
-    .map((c, i) => `    case ${i}:\n        fmt.Println(${c})`)
+    .map((c, i) => `    case ${i}:\n` + caseBlock(c, '        '))
     .join('\n');
   variant.testGo =
     'var vibeCaseInputs = []string{\n' + cases.map((c) => '    ' + goStr(c) + ',').join('\n') + '\n}\n\n' +
@@ -469,6 +585,7 @@ function stripHTML(s) {
 }
 
 function collectVariants(courseDir) {
+  loadAutogenCache();
   const exercisesDir = path.join(courseDir, 'content', 'exercises');
   const found = [];
   const moduleNums = fs.existsSync(exercisesDir)
@@ -492,9 +609,10 @@ function collectVariants(courseDir) {
         for (const variant of challenge.variants || []) {
           const context = `module${modNum}/${challenge.id}_${variant.id}`;
           if (!variant.testGo) {
-            const res = kind === 'warmup'
-              ? autoGenWarmup(variant, context)
-              : autoGenChallenge(challenge, variant, context);
+            const res = cachedAutoGen(kind, variant, challenge, context, () =>
+              kind === 'warmup'
+                ? autoGenWarmup(variant, context)
+                : autoGenChallenge(challenge, variant, context));
             process.stdout.write(res.error ? 'x' : '.');
             if (res.error) {
               skipped.push({ context, reason: res.error });
@@ -510,6 +628,7 @@ function collectVariants(courseDir) {
     process.stdout.write('\n');
   }
   fs.rmSync(AUTOGEN_DIR, { recursive: true, force: true });
+  saveAutogenCache();
   return { found, skipped };
 }
 
