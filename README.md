@@ -249,7 +249,7 @@ The sample course (`courses/sample/`) demonstrates every feature. The build auto
 Two workflows ship with the repo:
 
 - [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) — builds `dist/` and deploys it to GitHub Pages: the download page plus the courses as a browser preview. For a fork, enable **Settings → Pages → GitHub Actions**.
-- [`.github/workflows/desktop.yml`](.github/workflows/desktop.yml) — builds the desktop installers natively on Windows, macOS, and Linux. Pushes and PRs upload them as workflow artifacts; pushing a `v*` tag publishes a GitHub release with the installers attached (see [`docs/desktop-packaging.md`](docs/desktop-packaging.md)).
+- [`.github/workflows/desktop.yml`](.github/workflows/desktop.yml) — builds the desktop installers natively on Windows, macOS, and Linux. PRs validate packaging only; pushes to main upload installer artifacts, and pushing a `v*` tag publishes a GitHub release with the installers attached (see [`docs/desktop-packaging.md`](docs/desktop-packaging.md)).
 
 ## Themes
 

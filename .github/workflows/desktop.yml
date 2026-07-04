@@ -67,9 +67,15 @@ jobs:
             go-probes-${{ runner.os }}-
 
       - run: npm ci
-      - run: npm run make:desktop
+
+      # PRs validate packaging (prepare, prune, asar) without paying for
+      # installer compression; main and tag pushes build the real thing.
+      - name: Package (PR) or make installers (main/tag)
+        shell: bash
+        run: npm run ${{ github.event_name == 'pull_request' && 'package:desktop' || 'make:desktop' }}
 
       - name: Upload installers
+        if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: vibe-learn-${{ runner.os }}-${{ runner.arch }}

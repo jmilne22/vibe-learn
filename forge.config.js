@@ -80,9 +80,10 @@ module.exports = {
             enabled: hasCommand('rpmbuild'),
             config: {
                 options: {
-                    // xz level for the rpm payload; 1 halves the slowest
-                    // maker's time for a modest size increase.
-                    compressionLevel: 1,
+                    // rpm payload define: xz level 1 on all cores
+                    // (w1T0.xzdio) — single-threaded xz was the slowest
+                    // maker at ~130s.
+                    compressionLevel: '1T0',
                     name: 'vibe-learn',
                     productName: 'Vibe Learn',
                     genericName: 'Learning Environment',
