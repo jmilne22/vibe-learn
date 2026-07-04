@@ -95,13 +95,23 @@ fs.copyFileSync(path.join(ROOT, 'vibe.js'), path.join(RUNTIME_DIR, 'vibe.js'));
 
 if (!SKIP_GO) {
     const goRoot = output(GO_BINARY, ['env', 'GOROOT']);
+    const goHostOS = output(GO_BINARY, ['env', 'GOHOSTOS']);
+    const goHostArch = output(GO_BINARY, ['env', 'GOHOSTARCH']);
     console.log(`\nBundling Go toolchain from ${goRoot}`);
     fs.cpSync(goRoot, TOOLCHAIN_DIR, {
         recursive: true,
         filter(source) {
             const rel = path.relative(goRoot, source);
-            // These trees are not needed to compile or test course exercises.
-            return !/^(doc|test)([\\/]|$)/.test(rel);
+            if (!rel) return true;
+            const parts = rel.split(/[\\/]/);
+            // Not needed to compile or test course exercises. testdata and
+            // foreign-arch .syso fixtures also break rpmbuild's brp-strip,
+            // which refuses non-native object files.
+            if (/^(api|doc|misc|test)$/.test(parts[0])) return false;
+            if (parts.includes('testdata')) return false;
+            if (parts[0] === 'bin' && parts[parts.length - 1].startsWith('gofmt')) return false;
+            if (rel.endsWith('.syso') && !rel.includes(`${goHostOS}_${goHostArch}`)) return false;
+            return true;
         },
     });
 }
