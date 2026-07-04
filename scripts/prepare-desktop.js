@@ -14,6 +14,8 @@ const TOOLCHAIN_DIR = path.join(BUILD_ROOT, 'go');
 const GO_BUILD_CACHE = path.join(ROOT, 'build', '.go-cache');
 const SKIP_GO = process.argv.includes('--skip-go');
 const GO_BINARY = process.env.VIBE_GO_BINARY || 'go';
+const SHIPPED_COURSES = (process.env.VIBE_DESKTOP_COURSES || 'infra-go')
+    .split(',').map((s) => s.trim()).filter(Boolean);
 
 function run(command, args, options = {}) {
     console.log(`\n$ ${command} ${args.join(' ')}`);
@@ -51,6 +53,24 @@ fs.rmSync(BUILD_ROOT, { recursive: true, force: true });
 fs.mkdirSync(BUILD_ROOT, { recursive: true });
 fs.mkdirSync(GO_BUILD_CACHE, { recursive: true });
 fs.cpSync(path.join(ROOT, 'dist'), COURSE_DIST, { recursive: true });
+
+// The root index.html is the web download page, and courses outside the ship
+// list must not reach the packaged course switcher. Shared assets (style.css,
+// theme.js, guide/settings pages, themes/) stay: course pages link to them.
+fs.rmSync(path.join(COURSE_DIST, 'index.html'), { force: true });
+for (const entry of fs.readdirSync(COURSE_DIST, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const isCourse = fs.existsSync(path.join(COURSE_DIST, entry.name, 'course-data.js'));
+    if (isCourse && !SHIPPED_COURSES.includes(entry.name)) {
+        fs.rmSync(path.join(COURSE_DIST, entry.name), { recursive: true, force: true });
+    }
+}
+for (const slug of SHIPPED_COURSES) {
+    if (!fs.existsSync(path.join(COURSE_DIST, slug, 'index.html'))) {
+        console.error(`Shipped course "${slug}" is missing from dist/. Check courses/ or VIBE_DESKTOP_COURSES.`);
+        process.exit(1);
+    }
+}
 
 run(process.execPath, ['generate-practice.js', 'infra-go', '--force'], {
     env: {

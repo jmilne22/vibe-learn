@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="vibe-learn — build interactive courses on anything with AI. Generate content with Claude Code, Cursor, Copilot, or Augment. One build command gives you a course site with spaced repetition, exercises, flashcards, and analytics.">
-    <title>vibe-learn</title>
+    <meta name="description" content="Vibe Learn — a desktop learning environment. Courses built around your goals, exercises graded by real tests with a bundled Go toolchain, spaced repetition, and progress tracking. Generate course content with Claude Code, Cursor, Copilot, or Augment.">
+    <title>Vibe Learn — download the desktop app</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -384,6 +384,79 @@
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             gap: 1.25rem;
+        }
+        .download-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 1.25rem;
+        }
+        .download-card {
+            background: var(--land-surface);
+            border: 1px solid var(--land-border);
+            border-radius: 12px;
+            padding: 1.5rem 1.75rem;
+            text-decoration: none;
+            color: inherit;
+            transition: transform 0.25s cubic-bezier(0.23, 1, 0.32, 1),
+                        box-shadow 0.25s ease,
+                        border-color 0.25s ease;
+        }
+        .download-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.2);
+            border-color: var(--land-border-hover);
+        }
+        [data-theme="light"] .download-card:hover {
+            box-shadow: 0 12px 36px rgba(30, 20, 60, 0.08);
+        }
+        .download-card.dl-current {
+            border-color: var(--land-accent);
+        }
+        .download-card.dl-current .dl-os::after {
+            content: 'your OS';
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.62rem;
+            font-weight: 500;
+            color: var(--land-accent);
+            border: 1px solid var(--land-border-hover);
+            border-radius: 999px;
+            padding: 0.15rem 0.55rem;
+            margin-left: 0.6rem;
+            vertical-align: middle;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+        .dl-os {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 0.4rem;
+        }
+        .dl-formats {
+            font-size: 0.85rem;
+            color: var(--land-text-dim);
+            line-height: 1.5;
+        }
+        .dl-formats span {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            color: var(--land-text);
+        }
+        .download-note {
+            margin-top: 1.1rem;
+            font-size: 0.85rem;
+            color: var(--land-text-dim);
+            line-height: 1.6;
+        }
+        .download-note a {
+            color: var(--land-accent);
+            text-decoration: none;
+        }
+        .download-note a:hover {
+            text-decoration: underline;
+        }
+        .download-note code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
         }
         .course-card {
             position: relative;
@@ -1285,16 +1358,16 @@
 
         <!-- Hero -->
         <header class="hero">
-            <div class="hero-eyebrow">Open-source course engine</div>
-            <h1>Interactive courses built around your goals</h1>
+            <div class="hero-eyebrow">Open-source learning environment</div>
+            <h1>Courses that run on your desktop, built around your goals</h1>
             <p class="hero-sub">
-                Build a course that meets the learner where they are: practical lessons, exercises,
-                flashcards, spaced repetition, and progress tracking. Describe the audience and outcome,
-                let an AI coding tool generate the content, then ship a static course site.
+                A self-contained desktop app: lessons, exercise workspaces, spaced repetition, and a
+                bundled Go toolchain that grades your code with real tests &mdash; offline, no accounts.
+                Describe the audience and outcome, let an AI coding tool generate the content.
             </p>
             <div class="hero-actions">
-                <a href="guide.html" class="btn-primary">Read the guide</a>
-                <a href="infra-go/index.html" class="btn-ghost">Open live course</a>
+                <a href="#download" class="btn-primary">Download the app</a>
+                <a href="infra-go/index.html" class="btn-ghost">Preview in browser</a>
                 <a href="https://github.com/jmilne22/vibe-learn" class="btn-ghost">GitHub</a>
             </div>
 
@@ -1313,11 +1386,37 @@
             </div>
         </header>
 
+        <!-- Download -->
+        <div class="section-label reveal" id="download">Get the desktop app</div>
+        <div class="download-grid reveal">
+            <a href="https://github.com/jmilne22/vibe-learn/releases/latest" class="download-card" data-os="windows">
+                <div class="dl-os">Windows</div>
+                <div class="dl-formats">Installer <span>.exe</span></div>
+            </a>
+            <a href="https://github.com/jmilne22/vibe-learn/releases/latest" class="download-card" data-os="mac">
+                <div class="dl-os">macOS</div>
+                <div class="dl-formats">Disk image <span>.dmg</span> &middot; archive <span>.zip</span></div>
+            </a>
+            <a href="https://github.com/jmilne22/vibe-learn/releases/latest" class="download-card" data-os="linux">
+                <div class="dl-os">Linux</div>
+                <div class="dl-formats"><span>.deb</span> &middot; <span>.rpm</span> &middot; portable <span>.tar.gz</span> for any distro</div>
+            </a>
+        </div>
+        <p class="download-note reveal">
+            Every build bundles the course, clean exercise workspaces, vendored modules, and the Go
+            toolchain &mdash; nothing to install, works offline.
+            <a href="https://github.com/jmilne22/vibe-learn/releases">All releases &rarr;</a>
+        </p>
+
         <!-- Courses -->
-        <div class="section-label reveal">Available courses</div>
+        <div class="section-label reveal">Preview the courses in your browser</div>
         <div class="course-grid reveal">
 {{COURSE_CARDS}}
         </div>
+        <p class="download-note reveal">
+            The browser preview covers lessons and flashcards. Test-graded exercises need the
+            desktop app (or a local checkout running <code>vibe watch</code>).
+        </p>
 
         <!-- How It Works -->
         <div class="section-label reveal">How it works</div>
@@ -1416,6 +1515,17 @@
 
     <script src="theme.js"></script>
     <script>
+    // Highlight the download card matching the visitor's OS
+    (function() {
+        var ua = navigator.userAgent;
+        var os = /Windows/i.test(ua) ? 'windows'
+            : /Mac|iPhone|iPad/i.test(ua) ? 'mac'
+            : /Linux|X11/i.test(ua) ? 'linux' : null;
+        if (!os) return;
+        var card = document.querySelector('.download-card[data-os="' + os + '"]');
+        if (card) card.classList.add('dl-current');
+    })();
+
     // Scroll reveal animation
     (function() {
         var reveals = document.querySelectorAll('.reveal');

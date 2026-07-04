@@ -62,9 +62,21 @@ function readPort() {
     return PROFILE === 'course' ? 4711 : 4712;
 }
 
+function hasBuiltCourse(dir) {
+    try {
+        return fs.readdirSync(dir).some((f) =>
+            fs.existsSync(path.join(dir, f, 'index.html')) &&
+            fs.existsSync(path.join(dir, f, 'course-data.js')));
+    } catch {
+        return false;
+    }
+}
+
 function validateRuntime() {
+    if (!hasBuiltCourse(ASSETS_DIR)) {
+        throw new Error(`built course assets missing: ${ASSETS_DIR}`);
+    }
     const required = [
-        [path.join(ASSETS_DIR, 'index.html'), 'built course assets'],
         [SEED_DIR, 'practice seed'],
         [RUNNER_SCRIPT, 'runner script'],
     ];

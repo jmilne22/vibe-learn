@@ -16,6 +16,10 @@ in separate locations.
 The ignored repository `practice/` directory is used only by the browser/CLI
 workflow. Desktop preparation always regenerates a clean seed from course YAML.
 
+Packaged apps ship only the courses in `VIBE_DESKTOP_COURSES` (default
+`infra-go`); other built courses and the web landing page — a download page
+for the app itself — are pruned from the packaged assets.
+
 Workspace updates are hash-based. Missing or untouched generated files are
 updated; any file changed by the learner is preserved.
 
