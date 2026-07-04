@@ -690,7 +690,9 @@
         updateSessionTimer();
 
         const lastModule = localStorage.getItem(_sk2('last-module'));
-        const target = lastModule ? `module${lastModule}.html` : 'module0.html';
+        const target = window.CourseConfigHelper
+            ? window.CourseConfigHelper.pageForModule(lastModule || 0)
+            : (lastModule ? `module${lastModule}.html` : 'module0.html');
         window.open(target, '_blank');
     }
 

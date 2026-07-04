@@ -408,7 +408,7 @@ function updateTodayPanel(progress, dueCount, weakCount, percent) {
             title.textContent = 'Start the course path';
             meta.textContent = 'Begin with the reference module, then move into the first hands-on bootcamp.';
             action.textContent = 'Start Module 00';
-            action.setAttribute('data-href', 'module0.html');
+            action.setAttribute('data-href', findModulePage(0));
         }
     }
 
@@ -565,7 +565,7 @@ function renderSessionPlan(progress) {
         if (plan.dueCount > 0 || plan.tracked > 0 || plan.learn || plan.build) {
             start.href = 'daily-practice.html?today=1';
         } else {
-            start.href = 'module0.html';
+            start.href = findModulePage(0);
         }
     }
     if (alt) {
@@ -716,7 +716,7 @@ function resumeLastModule(e) {
     if (lastModule) {
         window.location.href = findModulePage(lastModule);
     } else {
-        window.location.href = 'module0.html';
+        window.location.href = findModulePage(0);
     }
 }
 
