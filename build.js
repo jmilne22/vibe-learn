@@ -1257,10 +1257,15 @@ function buildCourse(slug) {
 
     const moduleCount = modules.filter(m => m.id > 0).length;
 
+    // First page of module 0 — split modules start at module0-1.html
+    const mod0 = modules.find(m => m.id === 0);
+    const referenceHref = mod0 && mod0.isSplit ? 'module0-1.html' : 'module0.html';
+
     let indexPage = indexTemplate
         .replace(/\{\{COURSE_NAME\}\}/g, course.name)
         .replace(/\{\{COURSE_DESCRIPTION\}\}/g, course.description)
         .replace(/\{\{MODULE_COUNT\}\}/g, String(moduleCount))
+        .replace('{{REFERENCE_HREF}}', referenceHref)
         .replace('{{THEME_LINKS}}', themeLinksHtml)
         .replace('{{MODULE_LIST}}', buildModuleListHtml())
         .replace('{{PLUGIN_NAV_PILLS}}', buildPluginNavPills());

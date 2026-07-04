@@ -47,6 +47,19 @@
         moduleHasExercises: function(id) {
             var mod = this.modules.find(function(m) { return m.id === id; });
             return mod ? !!mod.hasExercises : false;
+        },
+
+        /**
+         * First page of a module — split modules start at moduleN-1.html,
+         * single-file modules at moduleN.html. Always use this instead of
+         * hardcoding 'moduleN.html'.
+         */
+        pageForModule: function(id) {
+            var page = this.sidebarPages.find(function(p) {
+                return (p.type === 'module' && String(p.id) === String(id)) ||
+                       (p.type === 'section' && String(p.moduleId) === String(id) && p.sectionIndex === 0);
+            });
+            return page ? page.file : ('module' + id + '.html');
         }
     };
 

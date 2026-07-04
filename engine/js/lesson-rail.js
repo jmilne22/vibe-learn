@@ -129,7 +129,7 @@
             if (e.key !== 'r' || e.metaKey || e.ctrlKey || e.altKey) return;
             var t = e.target;
             if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
-            window.location.href = 'module0.html';
+            window.location.href = window.CourseConfigHelper ? window.CourseConfigHelper.pageForModule(0) : 'module0.html';
         });
     }
 
