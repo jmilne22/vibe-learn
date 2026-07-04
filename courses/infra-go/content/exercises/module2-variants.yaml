@@ -676,6 +676,13 @@ variants:
             Write a function that takes a slice of Pod structs (Name, Namespace, Status, MemoryMB) and returns a
             <code>map[string][]Pod</code> grouping pods by namespace.
           functionSignature: func groupByNamespace(pods []Pod) map[string][]Pod
+          setupGo: |-
+            type Pod struct {
+                Name      string
+                Namespace string
+                Status    string
+                MemoryMB  int
+            }
           difficulty: 1
           testCases:
             - input: >-
@@ -707,6 +714,13 @@ variants:
             Write a function that takes a slice of Pods and returns a summary string: total count, running count, total
             memory, and average memory. Format: <code>"Pods: 5 (3 running), Memory: 2560MB (avg 512MB)"</code>.
           functionSignature: func podSummary(pods []Pod) string
+          setupGo: |-
+            type Pod struct {
+                Name      string
+                Namespace string
+                Status    string
+                MemoryMB  int
+            }
           difficulty: 2
           testCases:
             - input: podSummary([]Pod{{"a","ns","Running",512},{"b","ns","Pending",256},{"c","ns","Running",1024}})
@@ -748,6 +762,14 @@ variants:
             MemoryMB and max total CPUM. Return the names of all pods that would be scheduled, stopping when adding the
             next pod would exceed either limit.
           functionSignature: func scheduleWithinQuota(pods []Pod, maxMemMB, maxCPUM int) []string
+          setupGo: |-
+            type Pod struct {
+                Name      string
+                Namespace string
+                Status    string
+                MemoryMB  int
+                CPUM      int
+            }
           difficulty: 3
           testCases:
             - input: >-
