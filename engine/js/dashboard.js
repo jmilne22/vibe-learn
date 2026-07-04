@@ -589,11 +589,23 @@ function renderMemoryPanel() {
     var summary = window.SRS.getMemorySummary();
     recallEl.textContent = summary.avgRecall === null ? '–' : Math.round(summary.avgRecall * 100) + '%';
     var countEl = document.getElementById('memory-count');
-    if (countEl) countEl.textContent = summary.count;
+    if (countEl) {
+        countEl.textContent = summary.count;
+        var countLabel = countEl.parentNode;
+        if (countLabel) {
+            countLabel.innerHTML = 'predicted recall across <span id="memory-count">' + summary.count +
+                '</span> learned item' + (summary.count === 1 ? '' : 's');
+        }
+    }
 
     var list = document.getElementById('fading-list');
     if (list) {
         var fading = window.SRS.getFadingConcepts ? window.SRS.getFadingConcepts(4) : [];
+        var label = list.parentNode && list.parentNode.querySelector('.memory-fading-label');
+        if (label) {
+            // Don't cry wolf: only call it "fading" when something actually is
+            label.textContent = (fading.length > 0 && fading[0].recall < 0.85) ? 'Fading fastest' : 'Tracked concepts';
+        }
         if (fading.length === 0) {
             list.innerHTML = '<div class="fading-empty">Nothing tracked yet — rate a few exercises first.</div>';
         } else {
