@@ -479,6 +479,50 @@
         return out;
     }
 
+    var GATE_THRESHOLD = 0.7;
+    var GATE_MIN_ITEMS = 3;
+
+    /**
+     * Modules whose average predicted recall has fallen below the mastery
+     * gate (default 70%, needs >= 3 tracked items to count).
+     * @param {number} [threshold=0.7]
+     * @returns {Array<{moduleNum: string, recall: number, count: number}>} ascending by recall
+     */
+    function getFadingModules(threshold) {
+        threshold = threshold || GATE_THRESHOLD;
+        var byModule = getModuleRecall();
+        var out = [];
+        for (var m in byModule) {
+            if (byModule[m].count >= GATE_MIN_ITEMS && byModule[m].recall < threshold) {
+                out.push({ moduleNum: m, recall: byModule[m].recall, count: byModule[m].count });
+            }
+        }
+        out.sort(function(a, b) { return a.recall - b.recall; });
+        return out;
+    }
+
+    /**
+     * A module's tracked exercises with the lowest predicted recall.
+     * @param {number|string} moduleNum
+     * @param {number} [count=4]
+     * @returns {Array<SRSEntry & {key: string, recall: number}>}
+     */
+    function getLowestRecall(moduleNum, count) {
+        count = count || 4;
+        var srsData = loadSRS();
+        var now = Date.now();
+        var items = [];
+        for (var key in srsData) {
+            if (!isTrackableKey(key)) continue;
+            if (key.indexOf('fc_') === 0) continue;
+            if (String(extractModuleNum(key)) !== String(moduleNum)) continue;
+            var item = srsData[key];
+            items.push(Object.assign({ key: key, recall: entryRetrievability(item, now) }, item));
+        }
+        items.sort(function(a, b) { return a.recall - b.recall; });
+        return items.slice(0, count);
+    }
+
     /**
      * Concepts with the lowest average predicted recall, ascending.
      * @param {number} [limit=4]
@@ -532,6 +576,8 @@
         getRetrievability,
         getMemorySummary,
         getModuleRecall,
-        getFadingConcepts
+        getFadingConcepts,
+        getFadingModules,
+        getLowestRecall
     };
 })();

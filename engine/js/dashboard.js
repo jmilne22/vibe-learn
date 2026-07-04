@@ -478,11 +478,28 @@ function buildSessionPlanData(progress) {
         break;
     }
 
-    var reviewMin = Math.round(dueCount * 1.25);
-    var minutes = (learn ? 3 + 9 : 0) + reviewMin + (build ? 3 : 0);
+    // Mastery gate: a prerequisite module fading below 70% pulls its items
+    // into today's review before new material unlocks.
+    var gate = null;
+    if (learn && window.SRS && window.SRS.getFadingModules) {
+        var fadingModules = window.SRS.getFadingModules().filter(function (f) {
+            return parseInt(f.moduleNum, 10) < learn.moduleId;
+        });
+        if (fadingModules.length > 0) {
+            gate = {
+                modules: fadingModules.map(function (f) {
+                    return { moduleNum: parseInt(f.moduleNum, 10), recall: f.recall };
+                }),
+                blockedModuleId: learn.moduleId
+            };
+        }
+    }
+
+    var reviewMin = Math.round(dueCount * 1.25) + (gate ? 5 : 0);
+    var minutes = (learn && !gate ? 3 + 9 : 0) + reviewMin + (build ? 3 : 0);
     minutes = Math.max(10, Math.round(minutes / 5) * 5);
 
-    return { dueCount: dueCount, tracked: summary.count, learn: learn, build: build, minutes: minutes, reviewMin: reviewMin };
+    return { dueCount: dueCount, tracked: summary.count, learn: learn, build: build, gate: gate, minutes: minutes, reviewMin: reviewMin };
 }
 
 function renderSessionPlan(progress) {
@@ -510,14 +527,21 @@ function renderSessionPlan(progress) {
             '<span class="segment-est">' + est + '</span></div>';
     }
 
-    if (plan.learn) {
+    if (plan.gate) {
+        var worst = plan.gate.modules[0];
+        rows += row('var(--red)', 'Gate',
+            'Module ' + worst.moduleNum + ' recall is at <strong>' + Math.round(worst.recall * 100) + '%</strong> — ' +
+            'its items lead today’s review; Module ' + plan.gate.blockedModuleId + ' unlocks at 70%', 'first');
+    } else if (plan.learn) {
         rows += row('var(--purple)', 'Pretest', escapeHtmlDash(plan.learn.label) + ' — commit to answers before you read', '~3 min');
         rows += row('var(--cyan)', 'Learn', '<a href="' + plan.learn.href + '">' + escapeHtmlDash(plan.learn.label) + '</a> — worked example → fill the gaps → from scratch', '~9 min');
     }
-    if (plan.dueCount > 0) {
+    if (plan.dueCount > 0 || plan.gate) {
         var fading = window.SRS && window.SRS.getFadingConcepts ? window.SRS.getFadingConcepts(4) : [];
         var conceptNames = fading.map(function (f) { return escapeHtmlDash(String(f.concept).toLowerCase()); }).join(' · ');
-        rows += row('var(--orange)', 'Review', plan.dueCount + ' due item' + (plan.dueCount === 1 ? '' : 's') + ', interleaved' + (conceptNames ? ' — ' + conceptNames : ''), '~' + Math.max(plan.reviewMin, 1) + ' min');
+        rows += row('var(--orange)', 'Review',
+            (plan.dueCount > 0 ? plan.dueCount + ' due item' + (plan.dueCount === 1 ? '' : 's') : 'fading items') +
+            ', interleaved' + (conceptNames ? ' — ' + conceptNames : ''), '~' + Math.max(plan.reviewMin, 1) + ' min');
     }
     if (plan.build) {
         rows += row('var(--green-bright)', 'Build', '<a href="' + escapeHtmlDash(plan.build.href) + '">' + escapeHtmlDash(plan.build.label) + '</a> — wire in what you just practiced', '~3 min');
@@ -553,7 +577,7 @@ function renderSessionPlan(progress) {
     // Hand the plan to the session page so "Session Complete" links onward
     try {
         sessionStorage.setItem(SESSION_PLAN_KEY, JSON.stringify({
-            learn: plan.learn, build: plan.build, savedAt: Date.now()
+            learn: plan.learn, build: plan.build, gate: plan.gate, savedAt: Date.now()
         }));
     } catch (e) {}
 }

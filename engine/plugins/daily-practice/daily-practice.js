@@ -26,7 +26,11 @@
         try { plan = JSON.parse(sessionStorage.getItem('vibe-learn:session-plan') || 'null'); } catch (e) {}
         if (!plan) return;
         var html = '';
-        if (plan.learn) {
+        if (plan.gate && plan.gate.modules && plan.gate.modules.length) {
+            var worst = plan.gate.modules[0];
+            html += '<span class="session-continue-link" style="color:var(--text-tertiary)"><span class="segment-dot" style="background:var(--red)"></span>' +
+                'New material locked — Module ' + worst.moduleNum + ' recall ' + Math.round(worst.recall * 100) + '%, unlocks at 70%</span>';
+        } else if (plan.learn) {
             html += '<a class="session-continue-link" href="' + plan.learn.href + '"><span class="segment-dot" style="background:var(--cyan)"></span>Learn — ' + SE.escapeHtml(plan.learn.label) + '</a>';
         }
         if (plan.build) {
@@ -276,13 +280,37 @@
 
     function doStartTodaySession() {
         var plan = loadSessionPlan();
+        var gated = !!(plan && plan.gate && plan.gate.modules && plan.gate.modules.length);
 
         var reviews = buildQueue('review', 8);
-        if (reviews.length === 0) reviews = buildQueue('mixed', 8);
+        if (reviews.length === 0 && !gated) reviews = buildQueue('mixed', 8);
         reviews.forEach(function(r) { r.phase = 'review'; });
 
-        var queue = buildPretestItems(plan);
-        if (plan && plan.learn) queue.push({ phase: 'learn', target: plan.learn });
+        // Mastery gate: pull the fading prerequisite module's weakest items
+        // to the front of the review segment, even if not strictly due.
+        if (gated && window.SRS && window.SRS.getLowestRecall) {
+            var inQueue = {};
+            reviews.forEach(function(r) { inQueue[r.key] = true; });
+            var gateItems = [];
+            plan.gate.modules.forEach(function(g) {
+                window.SRS.getLowestRecall(g.moduleNum, 4).forEach(function(entry) {
+                    if (inQueue[entry.key] || !matchesFilters(entry.key)) return;
+                    inQueue[entry.key] = true;
+                    gateItems.push({
+                        key: entry.key,
+                        phase: 'review',
+                        moduleNum: g.moduleNum,
+                        moduleName: MODULE_NAMES[g.moduleNum] || ('Module ' + g.moduleNum),
+                        srsData: entry
+                    });
+                });
+            });
+            reviews = interleaveByModule(gateItems.concat(reviews));
+        }
+
+        // New material stays locked while a prerequisite is below the gate
+        var queue = gated ? [] : buildPretestItems(plan);
+        if (plan && plan.learn && !gated) queue.push({ phase: 'learn', target: plan.learn });
         queue = queue.concat(reviews);
         if (plan && plan.build) queue.push({ phase: 'build', target: plan.build });
 
@@ -297,7 +325,7 @@
 
         var pretests = queue.filter(function(q) { return q.phase === 'pretest'; }).length;
         var totalMin = pretests * 1 +
-            (plan && plan.learn ? 9 : 0) +
+            (plan && plan.learn && !gated ? 9 : 0) +
             Math.ceil(reviews.length * 1.25) +
             (plan && plan.build ? 3 : 0);
 
