@@ -4,11 +4,7 @@ Maps are the default tool for counts, lookups, grouping, deduplication, and inde
 
 > *"Clear is better than clever."* — Go Proverb
 
-A map is a lookup table — think of it like a dictionary. You look up a word (the key) and get back a definition (the value). If the word isn't in the dictionary, you get back a zero value, not an error. That's why you'll need the comma-ok pattern below: to tell "this key maps to zero" apart from "this key doesn't exist."
-
-Maps are your most-used data structure after slices. Counting, grouping, lookup tables, caches.
-
-### Create & Access
+<attempt type="pretest">
 
 <predict prompt="What does this print?">
 ```go
@@ -22,7 +18,17 @@ fmt.Println(scores["Dave"])
 ```
 </predict>
 
-`scores["Dave"]` doesn't error and doesn't return nil — it returns the zero value of the value type. For `int` that's `0`. So you can't tell "Dave scored 0" apart from "Dave isn't in the map" without the comma-ok pattern below.
+Commit to both lines before reading on.
+
+</attempt>
+
+A map is a lookup table — think of it like a dictionary. You look up a word (the key) and get back a definition (the value). If the word isn't in the dictionary, you get back a zero value, not an error. That's why you'll need the comma-ok pattern below: to tell "this key maps to zero" apart from "this key doesn't exist."
+
+Maps are your most-used data structure after slices. Counting, grouping, lookup tables, caches.
+
+### Create & Access
+
+That pretest is the core surprise: `scores["Dave"]` doesn't error and doesn't return nil — it returns the zero value of the value type. For `int` that's `0`. So you can't tell "Dave scored 0" apart from "Dave isn't in the map" without the comma-ok pattern below.
 
 ```go
 // Literal
@@ -181,9 +187,9 @@ for _, k := range keys {
 
 This is verbose compared to Python's `for k in sorted(d)`, but there's no shortcut. You'll use this pattern whenever test output needs to be deterministic.
 
-<div class="inline-exercises" data-concept="Map Patterns"></div>
-
 ### Checkpoint: Slices + Maps Together
+
+<attempt type="worked">
 
 Before moving on, here's a taste of how slices and maps combine. Given a list of pod statuses, produce a summary: how many pods in each state, sorted alphabetically.
 
@@ -214,3 +220,34 @@ for _, k := range keys {
 ```
 
 Three patterns you already know — counting, sorted key iteration, formatted output — combined into something useful. The full "Putting It Together" at the end of this module builds on this same idea, just with string parsing added.
+
+</attempt>
+
+<attempt type="gaps">
+
+<gaps prompt="Same checkpoint, from memory — count, sort, print.">
+```go
+counts := «make(map[string]int)»
+for _, s := range statuses {
+    «counts[s]++»
+}
+
+keys := make([]string, 0, len(counts))
+for «k» := range counts {
+    keys = append(keys, k)
+}
+«sort.Strings(keys)»   // map iteration is random — sort for stable output
+
+for _, k := range keys {
+    fmt.Printf("  %-10s %d\n", k, «counts[k]»)
+}
+```
+</gaps>
+
+</attempt>
+
+<attempt type="scratch">
+
+<div class="inline-exercises" data-concept="Map Patterns"></div>
+
+</attempt>

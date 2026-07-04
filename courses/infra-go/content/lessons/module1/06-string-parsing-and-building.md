@@ -4,6 +4,22 @@ Infrastructure data spends a lot of time as strings: log lines, metric labels, c
 
 > *"A little copying is better than a little dependency."* — Go Proverb
 
+<attempt type="pretest">
+
+<predict prompt="What does this print?">
+```go
+parts := strings.SplitN("justakey", "=", 2)
+fmt.Printf("%d %q\n", len(parts), parts)
+```
+```
+1 ["justakey"]
+```
+</predict>
+
+Commit to an answer — the no-separator case is where naive parsers panic.
+
+</attempt>
+
 Infrastructure is strings all the way down. Log lines, metric formats, config files, YAML keys.
 
 ### Splitting & Joining
@@ -74,6 +90,8 @@ These are your guards before parsing. Check what a string looks like before you 
 
 ### Parsing Key-Value Pairs
 
+<attempt type="worked">
+
 You'll do this constantly — config files, labels, environment variables. The quickest way: `SplitN` with a limit of 2:
 
 ```go
@@ -86,6 +104,23 @@ if len(parts) == 2 {
 ```
 
 > **`strings.Index` vs `strings.SplitN`:** Both can split on the first occurrence. `SplitN(s, "=", 2)` gives you a `[]string` directly. `strings.Index` gives you the position so you can use slice expressions (`s[:i]`, `s[i+1:]`). Use whichever feels cleaner for the situation.
+
+</attempt>
+
+<attempt type="gaps">
+
+<gaps prompt="Parse an env line safely — limit the split, guard the length, trim both sides.">
+```go
+parts := strings.SplitN(line, "=", «2»)   // value may contain '='
+if len(parts) != «2» {
+    continue // malformed line
+}
+key := strings.«TrimSpace»(parts[0])
+value := strings.TrimSpace(parts[«1»])
+```
+</gaps>
+
+</attempt>
 
 ### Building Strings
 
@@ -120,4 +155,8 @@ s := strings.TrimPrefix(s, "https://")   // remove prefix if present
 s := strings.TrimSuffix(s, ".yaml")      // remove suffix if present
 ```
 
+<attempt type="scratch">
+
 <div class="inline-exercises" data-concept="String Parsing"></div>
+
+</attempt>

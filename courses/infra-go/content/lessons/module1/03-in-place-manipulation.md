@@ -6,6 +6,25 @@
 
 Sometimes you can't afford a copy. Modify a slice without creating a new one.
 
+<attempt type="pretest">
+
+<predict prompt="What does this print?">
+```go
+items := []string{"a", "b", "c", "d", "e"}
+i := 1
+items[i] = items[len(items)-1]
+items = items[:len(items)-1]
+fmt.Println(items)
+```
+```
+[a e c d]
+```
+</predict>
+
+Wrong is fine — this trick is exactly what this section derives.
+
+</attempt>
+
 ### Swap Two Elements
 
 Go's simultaneous assignment makes swapping trivial — no temp variable needed:
@@ -65,24 +84,21 @@ items = append(items[:i], items[i+1:]...)
 
 ### Remove at Index (Fast, Order Doesn't Matter)
 
-If you don't care about order, there's an O(1) trick: copy the last element into the gap, then shrink:
+If you don't care about order, there's an O(1) trick — the one from the pretest. Copy the last element into the gap, then shrink:
 
-<predict prompt="What does this print?">
 ```go
 items := []string{"a", "b", "c", "d", "e"}
 i := 1
-items[i] = items[len(items)-1]
-items = items[:len(items)-1]
-fmt.Println(items)
+items[i] = items[len(items)-1] // last element fills the gap
+items = items[:len(items)-1]   // shrink by one
+// After: [a e c d]
 ```
-```
-[a e c d]
-```
-</predict>
 
 Two operations regardless of slice size. The "removed" element `b` is gone, but `e` jumped from the end into its slot — order is no longer preserved. Use this when order doesn't matter (e.g., removing a terminated pod from a running list).
 
 ### Filter In Place
+
+<attempt type="worked">
 
 Say you have 10,000 items and need to keep only the ones that match a condition. You could create a new slice and copy matches into it — that works, but doubles memory usage. When memory is already tight, that matters.
 
@@ -129,6 +145,25 @@ fruits = fruits[:n]
 
 The difference: with a single slice you iterate it directly (`for _, w`). With parallel slices you need the index (`for i, ok`) so you can reach into the other slice.
 
+</attempt>
+
+<attempt type="gaps">
+
+<gaps prompt="Same pattern — drop terminated pods in place. Where does the write index move?">
+```go
+n := «0» // write position
+for _, pod := range pods {
+    if pod.Status != "Terminated" {
+        pods[«n»] = pod
+        «n++»
+    }
+}
+pods = «pods[:n]» // shrink to the kept elements
+```
+</gaps>
+
+</attempt>
+
 *Python comparison*
 
 ```python
@@ -136,4 +171,8 @@ The difference: with a single slice you iterate it directly (`for _, w`). With p
 # Go: no filter builtin. The write-index loop above IS the Go way.
 ```
 
+<attempt type="scratch">
+
 <div class="inline-exercises" data-concept="In-Place Manipulation"></div>
+
+</attempt>

@@ -2,9 +2,7 @@
 
 Now that slice basics and in-place writes are on the table, this section covers the two `range` behaviors that cause quiet bugs.
 
-### Range Values Are Copies
-
-The value variable in `for _, v := range nums` is a copy of the element. Changing `v` changes only the copy.
+<attempt type="pretest">
 
 <predict prompt="What does this print?">
 ```go
@@ -19,7 +17,13 @@ fmt.Println(nums)
 ```
 </predict>
 
-If you need to modify the slice, range over indexes and write through the slice:
+Commit before reading on — the answer is the whole point of this section.
+
+</attempt>
+
+### Range Values Are Copies
+
+The value variable in `for _, v := range nums` is a copy of the element. Changing `v` changes only the copy. If you need to modify the slice, range over indexes and write through the slice:
 
 ```go
 nums := []int{1, 2, 3}
@@ -56,6 +60,8 @@ The append worked. The loop still ran only three times because `range` locked th
 
 ### The Habit
 
+<attempt type="worked">
+
 ```go
 // Reading elements
 for _, v := range items {
@@ -76,6 +82,24 @@ for _, item := range items {
 
 The last pattern appends to a different slice, not the slice being ranged over. That is the normal safe shape.
 
+</attempt>
+
+<attempt type="gaps">
+
+<gaps prompt="Normalize every pod name in place — which range form mutates?">
+```go
+for «i» := range pods {
+    pods[«i»] = strings.TrimSpace(pods[«i»])
+}
+```
+</gaps>
+
+</attempt>
+
+<attempt type="scratch">
+
 <div class="inline-exercises" data-concept="Range Gotchas"></div>
+
+</attempt>
 
 ---
