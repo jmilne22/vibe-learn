@@ -8439,10 +8439,8 @@ body.sidebar-open .sidebar-toggle {
     .session-plan h1 { font-size: 1.8rem; }
 }
 
-/* Global local-first enhancement on module-page cards */
-.vibe-panel { margin: 12px 0; }
-.vibe-graded .self-rating,
-.vibe-graded .self-rating-label { display: none; }
+/* Objective (workspace-backed) cards: results pane spacing */
+.exercise .vibe-results-pane { margin: 12px 0; }
 
 /* === Today's session runner (unified pretest → learn → review → build) === */
 

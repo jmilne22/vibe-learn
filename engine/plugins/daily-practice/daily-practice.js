@@ -625,16 +625,15 @@
         if (item.phase === 'learn') { renderLearnCard(container, item); return; }
         if (item.phase === 'build') { renderBuildCard(container, item); return; }
 
-        // Local-first: this exercise has a go-test workspace and the vibe
-        // daemon is up — the terminal is the workbench, no code input here.
-        if (window.VibeBridge && window.VibeBridge.isOnline() && window.VibeBridge.hasWorkspace(item.key.replace(/_(?:v|tp)\w+$/, ''))) {
-            var vd = item.variant
-                ? { variant: item.variant, challenge: item.challenge, type: item.type }
-                : findVariantData(item);
-            if (vd) {
-                renderVibeCard(container, item, vd);
-                return;
-            }
+        // Local-first: this exercise has a go-test workspace — the terminal
+        // is the workbench, connected or not. Objective grading is the only
+        // grading for these; the daemon being down just means "no run yet".
+        var vd = item.variant
+            ? { variant: item.variant, challenge: item.challenge, type: item.type }
+            : findVariantData(item);
+        if (vd && vd.variant && vd.variant.practiceDir) {
+            renderVibeCard(container, item, vd);
+            return;
         }
         setVibeMode(false);
 
@@ -908,10 +907,10 @@
 
         var variant = vd.variant;
         var baseKey = item.key.replace(/_(?:v|tp)\w+$/, '');
-        var workspace = window.VibeBridge.resolveWorkspace(item.key) ||
-                        window.VibeBridge.resolveWorkspace(baseKey) || baseKey;
-        var wsMatch = workspace.match(/^m(\d+)_(.+)$/);
-        var wsDir = wsMatch ? 'practice/module' + wsMatch[1] + '/' + wsMatch[2] : 'practice/';
+        // practiceDir is build-time truth: 'practice/moduleN/<group>_<vid>'
+        var wsDir = variant.practiceDir;
+        var wsParts = wsDir.match(/module(\d+)\/(.+)$/);
+        var workspace = wsParts ? 'm' + wsParts[1] + '_' + wsParts[2] : baseKey;
 
         var srsEntry = window.SRS && window.SRS.getAll()[baseKey];
         var recall = window.SRS && window.SRS.getRetrievability ? window.SRS.getRetrievability(baseKey) : null;
@@ -950,7 +949,11 @@
                 '<div class="vibe-terminal">' +
                     '<div class="vibe-terminal-head">' +
                         '<span>in your terminal — not here</span>' +
-                        '<span class="vibe-watch-status" id="vibe-watch-status">watching for results…</span>' +
+                        '<span class="vibe-watch-status" id="vibe-watch-status">' +
+                        (window.VibeBridge && window.VibeBridge.isOnline()
+                            ? 'watching for results…'
+                            : 'daemon offline — run: node vibe.js watch') +
+                        '</span>' +
                     '</div>' +
                     '<pre><span class="vibe-prompt">$</span> npm run vibe next\n<span class="vibe-dim">→ ' + SE.escapeHtml(workspace) + ' · ' + SE.escapeHtml(wsDir) + '/\n→ edit exercise.go in your editor</span>\n\n<span class="vibe-prompt">$</span> npm run vibe check ' + SE.escapeHtml(wsDir) + '</pre>' +
                 '</div>' +
@@ -1000,12 +1003,15 @@
             });
         }
 
-        // Tell the daemon what's on screen so `vibe next` targets it
-        window.VibeBridge.announce({
-            key: baseKey,
-            variantKey: workspace,
-            title: variant.title || ''
-        });
+        // Tell the daemon what's on screen so `vibe next` targets it (the
+        // bridge caches it and re-announces if the daemon connects later)
+        if (window.VibeBridge) {
+            window.VibeBridge.announce({
+                key: baseKey,
+                variantKey: workspace,
+                title: variant.title || ''
+            });
+        }
     }
 
     function renderVibeResult(result, quality) {

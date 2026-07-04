@@ -154,6 +154,9 @@
                     showRatingUI(exerciseEl, key);
                 } else if (text.includes('Hint')) {
                     updateExerciseProgress(key, { hintsUsed: true });
+                    if (exerciseEl.dataset.objective && window.VibeBridge) {
+                        window.VibeBridge.markAssist(key.replace(/_(?:v|tp)\w+$/, ''), 'hint');
+                    }
                 }
             });
         });
@@ -179,6 +182,14 @@
     }
 
     function showRatingUI(exerciseEl, key) {
+        // Objective cards are graded by the test run — never offer
+        // self-rating. Peeking at the solution still counts as an assist.
+        if (exerciseEl.dataset.objective) {
+            if (window.VibeBridge) {
+                window.VibeBridge.markAssist(key.replace(/_(?:v|tp)\w+$/, ''), 'solution');
+            }
+            return;
+        }
         // Don't add duplicate rating UI
         if (exerciseEl.querySelector('.self-rating')) return;
 
