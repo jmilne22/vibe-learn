@@ -107,15 +107,15 @@
             }
         }
 
-        var refPanel =
-            '<div class="rail-panel">' +
-                '<div class="rail-kicker">Reference</div>' +
-                '<p class="rail-body">The full quick-reference lives one keystroke away (<kbd>r</kbd>) — prose moved out of the attempt path.</p>' +
+        var workbenchPanel =
+            '<div class="rail-panel rail-workbench">' +
+                '<div class="rail-kicker"><span class="workbench-status-dot" id="rail-workbench-dot"></span>Workbench</div>' +
+                '<p class="rail-body" id="rail-workbench-text">looking for vibe watch…</p>' +
             '</div>';
 
         var rail = document.createElement('aside');
         rail.className = 'lesson-rail';
-        rail.innerHTML = memPanel + prereqPanel + refPanel;
+        rail.innerHTML = memPanel + prereqPanel + workbenchPanel;
 
         var wrap = document.createElement('div');
         wrap.className = 'lesson-layout';
@@ -124,18 +124,34 @@
         wrap.appendChild(rail);
     }
 
-    function initRefKey() {
-        document.addEventListener('keydown', function(e) {
-            if (e.key !== 'r' || e.metaKey || e.ctrlKey || e.altKey) return;
-            var t = e.target;
-            if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
-            window.location.href = window.CourseConfigHelper ? window.CourseConfigHelper.pageForModule(0) : 'module0.html';
+    function renderWorkbenchStatus(online) {
+        var dot = document.getElementById('rail-workbench-dot');
+        var text = document.getElementById('rail-workbench-text');
+        if (!dot || !text) return;
+        dot.className = 'workbench-status-dot ' + (online ? 'online' : 'offline');
+        text.innerHTML = online
+            ? 'connected — save a file in <code>practice/</code> and its tests grade the exercises below'
+            : 'offline — run <code>node vibe.js watch</code> to grade exercises from real test runs';
+    }
+
+    function initWorkbenchStatus() {
+        window.addEventListener('vibeStatusChanged', function(e) {
+            renderWorkbenchStatus(e.detail.online);
         });
+        if (window.VibeBridge) {
+            if (window.VibeBridge.isOnline()) renderWorkbenchStatus(true);
+            else window.VibeBridge.probe().then(renderWorkbenchStatus);
+        } else {
+            renderWorkbenchStatus(false);
+        }
     }
 
     function init() {
         buildRail();
-        initRefKey();
+        initWorkbenchStatus();
+        // The rail's workbench panel supersedes the floating pill here
+        var pill = document.getElementById('vibe-status-pill');
+        if (pill && document.querySelector('.rail-workbench')) pill.remove();
     }
 
     if (document.readyState === 'loading') {

@@ -65,6 +65,8 @@
     function setOnline(value) {
         if (online === value) return;
         online = value;
+        // Reconnected mid-session: tell the daemon what's on screen
+        if (online && currentItem) announce(currentItem);
         window.dispatchEvent(new CustomEvent('vibeStatusChanged', { detail: { online: online } }));
     }
 
@@ -207,58 +209,15 @@
         currentItem = null;
     }
 
-    // --- Global card enhancement (module pages, exercises pages) ---
+    // --- Result panes (module pages, exercises pages) ---
     //
-    // Any rendered exercise card whose exercise has a local go-test
-    // workspace gets a "save to run" panel and objective grading; its
-    // self-rating buttons are hidden. Cards without a workspace are
-    // untouched.
+    // The renderer marks workspace-backed cards data-objective and emits a
+    // .vibe-results-pane; this bridge only fills panes when results land.
+    // Self-rating never applies to those cards, connected or not.
 
     function escapeHtml(s) {
         return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
             return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c];
-        });
-    }
-
-    function workspaceDirOf(variantKey) {
-        var m = variantKey.match(/^m(\d+)_(.+)$/);
-        return m ? 'practice/module' + m[1] + '/' + m[2] : 'practice/';
-    }
-
-    function enhanceExerciseCards(root) {
-        if (!online) return;
-        (root || document).querySelectorAll('.exercise[data-exercise-key]').forEach(function(card) {
-            if (card.dataset.vibeEnhanced) return;
-            // Session pages render their own local-first cards
-            if (card.classList.contains('vibe-card')) return;
-            var key = card.dataset.exerciseKey;
-            var baseKey = key.replace(/_(?:v|tp)\w+$/, '');
-            var ws = resolveWorkspace(key) || resolveWorkspace(baseKey);
-            if (!ws) return;
-
-            card.dataset.vibeEnhanced = '1';
-            card.dataset.vibeKey = baseKey;
-            card.classList.add('vibe-graded');
-
-            var panel = document.createElement('div');
-            panel.className = 'vibe-panel';
-            panel.innerHTML =
-                '<div class="vibe-terminal">' +
-                    '<div class="vibe-terminal-head">' +
-                        '<span>in your editor — not here</span>' +
-                        '<span class="vibe-watch-status">watching for saves…</span>' +
-                    '</div>' +
-                    '<pre><span class="vibe-dim">edit &amp; save — tests run automatically</span>\n' +
-                    escapeHtml(workspaceDirOf(ws)) + '/exercise.go</pre>' +
-                '</div>' +
-                '<div class="vibe-results vibe-results-pane"><span class="vibe-dim">no run yet — saving the file runs its tests</span></div>';
-
-            var rating = card.querySelector('.self-rating');
-            if (rating && rating.parentNode) {
-                rating.parentNode.insertBefore(panel, rating);
-            } else {
-                card.appendChild(panel);
-            }
         });
     }
 
@@ -290,21 +249,17 @@
         });
     });
 
-    window.addEventListener('vibeStatusChanged', function(e) {
-        if (e.detail.online) setTimeout(function() { enhanceExerciseCards(); }, 50);
-    });
-
-    // Exercise cards render asynchronously on module pages
-    window.addEventListener('moduleDataLoaded', function() {
-        setTimeout(function() { enhanceExerciseCards(); }, 200);
-    });
-
     // --- Connection pill ---
     // Fixed indicator on exercise pages: green when `vibe watch` is
     // connected (tests run on save), amber with the command when not.
 
     function renderStatusPill(state) {
         var pill = document.getElementById('vibe-status-pill');
+        // Lesson pages show workbench status in the rail instead
+        if (document.querySelector('.rail-workbench')) {
+            if (pill) pill.remove();
+            return;
+        }
         if (!pill) {
             pill = document.createElement('div');
             pill.id = 'vibe-status-pill';
@@ -354,7 +309,6 @@
         markAssist: markAssist,
         startPolling: startPolling,
         stopPolling: stopPolling,
-        enhanceExerciseCards: enhanceExerciseCards,
         port: PORT
     };
 })();

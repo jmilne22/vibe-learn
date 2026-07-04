@@ -139,7 +139,8 @@
             <code>${escapeHtml(cmd)}</code>
             <button type="button" class="workspace-copy-btn" data-copy="${escapeHtml(cmd)}">Copy</button>
             <span class="workspace-path-hint">edit exercise.go, then <code>go test</code></span>
-        </div>`;
+        </div>
+        <div class="vibe-results vibe-results-pane"><span class="vibe-dim">graded by the test run — save exercise.go with <code>vibe watch</code> running and the result lands here</span></div>`;
     }
 
     // One delegated listener: cards are re-rendered on shuffle and
@@ -349,7 +350,14 @@
             ${moduleBadge}
         </div>`;
 
-        let html = `<div class="exercise exercise-work-item${completedClass}"${drill ? '' : ` data-exercise-key="${exerciseKey}"`}${challengeAttr}>`;
+        // Workspace-backed exercises are graded by the test run — mark the
+        // card objective so no self-rating UI is ever offered for it.
+        const baseKey = exerciseKey ? String(exerciseKey).replace(/_(?:v|tp)\w+$/, '') : '';
+        const objectiveAttrs = variant.practiceDir && !drill
+            ? ` data-objective="1" data-vibe-key="${escapeHtml(baseKey)}"`
+            : '';
+
+        let html = `<div class="exercise exercise-work-item${completedClass}"${drill ? '' : ` data-exercise-key="${exerciseKey}"`}${challengeAttr}${objectiveAttrs}>`;
 
         if (drill) {
             // Drill cards: flat layout, no accordion
