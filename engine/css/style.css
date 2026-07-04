@@ -8698,6 +8698,8 @@ body.sidebar-open .sidebar-toggle {
     gap: 12px;
     position: sticky;
     top: 24px;
+    /* Clear the fixed theme picker / Focus toggle in the top-right corner */
+    padding-top: 96px;
 }
 
 .lesson-rail:empty { display: none; }
