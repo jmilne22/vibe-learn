@@ -329,6 +329,11 @@
             Math.ceil(reviews.length * 1.25) +
             (plan && plan.build ? 3 : 0);
 
+        try {
+            var sck = window.CourseConfigHelper ? window.CourseConfigHelper.storageKey('session-count') : 'course-session-count';
+            localStorage.setItem(sck, String((parseInt(localStorage.getItem(sck) || '0', 10) || 0) + 1));
+        } catch (e) {}
+
         todayMode = true;
         startWithQueue(queue, {
             itemLabel: 'Step',
@@ -933,6 +938,11 @@
             '<div class="exercise vibe-card" data-exercise-key="' + SE.escapeHtml(item.key) + '" data-base-key="' + SE.escapeHtml(baseKey) + '">' +
                 '<div class="vibe-card-meta">' +
                     '<span class="vibe-card-tag">Module ' + item.moduleNum + (item.moduleName ? ' · ' + SE.escapeHtml(item.moduleName) : '') + '</span>' +
+                    (function() {
+                        var d = Math.max(1, Math.min(3, variant.difficulty || 2));
+                        return '<span class="vibe-card-stars" title="difficulty ' + d + '/3">' +
+                            '★★★'.slice(0, d) + '☆☆☆'.slice(0, 3 - d) + '</span>';
+                    })() +
                     (recall !== null ? '<span class="vibe-card-recall">predicted recall <strong>' + Math.round(recall * 100) + '%</strong></span>' : '') +
                 '</div>' +
                 '<h4>' + SE.escapeHtml(variant.title || baseKey) + '</h4>' +

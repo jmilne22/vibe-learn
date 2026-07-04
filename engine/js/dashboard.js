@@ -513,7 +513,13 @@ function renderSessionPlan(progress) {
         var d = new Date();
         var days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
         var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        kicker.textContent = 'Today · ' + days[d.getDay()] + ' ' + months[d.getMonth()] + ' ' + d.getDate();
+        var sessionCount = 0;
+        try {
+            var sck = window.CourseConfigHelper ? window.CourseConfigHelper.storageKey('session-count') : 'course-session-count';
+            sessionCount = parseInt(localStorage.getItem(sck) || '0', 10) || 0;
+        } catch (e) {}
+        kicker.textContent = 'Today · ' + days[d.getDay()] + ' ' + months[d.getMonth()] + ' ' + d.getDate() +
+            ' · Session ' + (sessionCount + 1);
     }
 
     var title = document.getElementById('session-plan-title');
@@ -663,6 +669,9 @@ function renderMasteryMap(progress) {
                 var pct = Math.round(rec.recall * 100);
                 cls = rec.recall >= 0.85 ? 'strong' : (rec.recall >= 0.7 ? 'fading' : 'weak');
                 label = 'M' + modId + ' · ' + pct + '%';
+                // Tracked module: clicking the cell drills just that module
+                href = 'daily-practice.html?autostart&mode=mixed&modules=' + modId + '&count=8';
+                title += ' — drill this module';
             } else if (isCurrent || (progress[modId] && progress[modId].lastStudied)) {
                 cls = 'learning';
                 label = 'M' + modId + (isCurrent ? ' · now' : ' · learning');
