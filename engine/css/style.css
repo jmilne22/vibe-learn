@@ -8443,3 +8443,53 @@ body.sidebar-open .sidebar-toggle {
 .vibe-panel { margin: 12px 0; }
 .vibe-graded .self-rating,
 .vibe-graded .self-rating-label { display: none; }
+
+/* === Today's session runner (unified pretest → learn → review → build) === */
+
+.dp-today .session-progress-bar { display: none; }
+
+.dp-segments {
+    display: flex;
+    gap: 3px;
+    height: 8px;
+    margin: 10px 0 4px;
+}
+
+.dp-segments:empty { display: none; }
+
+.dp-seg {
+    flex: 1;
+    border-radius: 4px;
+    opacity: 0.9;
+}
+
+.dp-seg.current {
+    outline: 2px solid var(--text-primary);
+    outline-offset: 1px;
+}
+
+.session-countdown-inline {
+    font-family: var(--font-mono, 'JetBrains Mono', monospace);
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+}
+
+.session-countdown-inline:empty { display: none; }
+
+.phase-card h4 { margin: 0.25rem 0 0.6rem; }
+
+.phase-note {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.55;
+    margin: 0 0 1rem;
+}
+
+.pretest-card { border-left: 3px solid var(--purple); }
+.learn-card   { border-left: 3px solid var(--cyan); }
+.build-card   { border-left: 3px solid var(--green-bright); }
+
+.phase-open-link {
+    display: inline-block;
+    text-decoration: none;
+}

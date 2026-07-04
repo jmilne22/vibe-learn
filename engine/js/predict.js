@@ -190,6 +190,9 @@
         document.querySelectorAll('.predict-block').forEach(initBlock);
     }
 
+    // Session runner renders predict blocks dynamically as pretest cards
+    window.Predict = { initBlock: initBlock, loadAll: loadAll };
+
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {

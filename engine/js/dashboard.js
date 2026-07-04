@@ -528,25 +528,23 @@ function renderSessionPlan(progress) {
     }
     segments.innerHTML = rows;
 
-    // Start CTA: reviews first when anything is due, otherwise the lesson
+    // Start CTA: the unified session runner (pretest → learn → review → build)
     var start = document.getElementById('start-today-session');
     var alt = document.getElementById('session-cta-alt');
     if (start) {
-        if (plan.dueCount > 0) {
-            start.href = 'daily-practice.html?autostart&mode=review&count=' + Math.min(plan.dueCount, 14);
-        } else if (plan.tracked > 0) {
-            start.href = 'daily-practice.html?autostart&mode=mixed&count=8';
-        } else if (plan.learn) {
-            start.href = plan.learn.href;
+        if (plan.dueCount > 0 || plan.tracked > 0 || plan.learn || plan.build) {
+            start.href = 'daily-practice.html?today=1';
         } else {
             start.href = 'module0.html';
         }
     }
     if (alt) {
-        if (plan.dueCount > 0 && plan.learn) {
-            alt.innerHTML = 'or go straight to <a href="' + plan.learn.href + '">the lesson</a>';
-        } else if (plan.dueCount === 0 && plan.tracked > 0) {
-            alt.textContent = 'nothing due — this session mixes weak and recent items';
+        if (plan.dueCount > 0) {
+            alt.innerHTML = 'or <a href="daily-practice.html?autostart&mode=review&count=' +
+                Math.min(plan.dueCount, 14) + '">just the ' + plan.dueCount + ' review' +
+                (plan.dueCount === 1 ? '' : 's') + '</a> (~' + Math.max(plan.reviewMin, 1) + ' min)';
+        } else if (plan.tracked > 0) {
+            alt.textContent = 'nothing due — the review segment mixes weak and recent items';
         } else {
             alt.textContent = '';
         }

@@ -74,11 +74,13 @@
         <div id="dp-session" class="focus-content" hidden>
             <div class="session-header">
                 <span class="session-header-progress" id="dp-session-label">Exercise <strong>1</strong> of <strong>10</strong></span>
+                <span class="session-countdown-inline" id="dp-countdown"></span>
                 <span class="session-category" id="dp-session-module"></span>
             </div>
             <div class="session-progress-bar">
                 <div class="session-progress-fill" id="dp-session-bar" style="width: 0%"></div>
             </div>
+            <div class="dp-segments" id="dp-segments"></div>
             <div class="interleave-strip" id="dp-interleave"></div>
 {{> rating-guide}}
             <div id="dp-exercise-container"></div>
@@ -105,6 +107,8 @@
     <script src="srs.js"></script>
     <script src="progress.js"></script>
     <script src="streaks.js"></script>
+    <script src="predict.js"></script>
+    <script src="data/predict-index.js"></script>
     <script src="vibe-bridge.js"></script>
     <script src="exercise-renderer.js"></script>
     <script src="algorithm-data.js"></script>
