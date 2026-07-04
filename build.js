@@ -190,7 +190,7 @@ const themeFiles = fs.readdirSync(
 
 // Inline script checks localStorage for theme, honors prefers-color-scheme,
 // and dynamically loads themes/light.css only when needed. No render-blocking link.
-const themeInitScript = `    <script>(function(){var d=document.documentElement;var lights={'light':1,'gruvbox-light':1,'solarized-light':1,'everforest-light':1,'terminal-light':1};try{var t=localStorage.getItem('vibe-learn-theme');if(t&&t!=='dark'&&t!=='light'){t=lights[t]?'light':'dark';localStorage.setItem('vibe-learn-theme',t)}if(!t){t=window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'}d.setAttribute('data-theme',t);if(t==='light'){var l=document.createElement('link');l.rel='stylesheet';l.id='theme-css';l.href='themes/light.css?v=light-code-1';document.head.appendChild(l)}}catch(e){}var p=location.pathname.split('/').pop()||'index.html';if(p!=='index.html')d.classList.add('has-sidebar')})()</script>`;
+const themeInitScript = `    <script>(function(){var d=document.documentElement;var lights={'light':1,'gruvbox-light':1,'solarized-light':1,'everforest-light':1,'terminal-light':1};try{var t=localStorage.getItem('vibe-learn-theme');if(t&&t!=='dark'&&t!=='light'){t=lights[t]?'light':'dark';localStorage.setItem('vibe-learn-theme',t)}if(!t){t=window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'}d.setAttribute('data-theme',t);if(t==='light'){var l=document.createElement('link');l.rel='stylesheet';l.id='theme-css';l.href='themes/light.css?v=light-code-1';document.head.appendChild(l)}}catch(e){}})()</script>`;
 
 const themeLinksHtml = themeInitScript;
 
@@ -840,16 +840,29 @@ function buildCourse(slug) {
         const idx = sidebarPages.findIndex(p => p.file === currentFile);
         let html = '        <div class="nav-buttons">\n';
 
+        // Two-line blocks: a mono reference line ("‹ Section 1.2") over the
+        // page title, per the desktop redesign.
+        function navRef(p) {
+            if (p.type === 'section') return 'Section ' + p.num;
+            if (p.type === 'exercises') return 'Module ' + p.moduleId + ' exercises';
+            if (p.type === 'project' || p.isProject) return 'Project ' + p.num;
+            if (p.type === 'feature') return p.label;
+            return 'Module ' + p.num;
+        }
+
+        function navBtn(p, dir) {
+            const ref = dir === 'prev' ? '&lsaquo; ' + navRef(p) : navRef(p) + ' &rsaquo;';
+            return `            <a href="${p.file}" class="nav-btn ${dir}-btn"><span class="nb-label">${ref}</span><span class="nb-title">${p.title || p.label}</span></a>\n`;
+        }
+
         if (idx > 0) {
-            const prev = sidebarPages[idx - 1];
-            html += `            <a href="${prev.file}" class="nav-btn prev-btn">&larr; ${prev.label}</a>\n`;
+            html += navBtn(sidebarPages[idx - 1], 'prev');
         } else {
-            html += `            <a href="index.html" class="nav-btn prev-btn">&larr; Dashboard</a>\n`;
+            html += `            <a href="index.html" class="nav-btn prev-btn"><span class="nb-label">&lsaquo; Today</span><span class="nb-title">Dashboard</span></a>\n`;
         }
 
         if (idx >= 0 && idx < sidebarPages.length - 1) {
-            const next = sidebarPages[idx + 1];
-            html += `            <a href="${next.file}" class="nav-btn next-btn">${next.label} &rarr;</a>\n`;
+            html += navBtn(sidebarPages[idx + 1], 'next');
         }
 
         html += '        </div>';
@@ -859,7 +872,7 @@ function buildCourse(slug) {
     function buildExerciseScripts(moduleId) {
         const mod = modules.find(m => m.id === moduleId);
         if (!mod || !mod.hasExercises) return '';
-        return `    <script src="icons.js"></script>\n    <script src="exercise-core.js?v=light-code-1"></script>\n    <script src="concept-index.js"></script>\n    <script src="course.js"></script>\n    <script src="exercise-renderer.js"></script>\n    <script src="module-loader.js"></script>\n    <script src="scaffold-drill.js"></script>\n    <script src="vibe-bridge.js"></script>`;
+        return `    <script src="icons.js"></script>\n    <script src="exercise-core.js?v=light-code-1"></script>\n    <script src="concept-index.js"></script>\n    <script src="course.js"></script>\n    <script src="exercise-renderer.js"></script>\n    <script src="module-loader.js"></script>\n    <script src="scaffold-drill.js"></script>`;
     }
 
     // 7. Generate module HTML pages
@@ -868,6 +881,50 @@ function buildCourse(slug) {
     const fireIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;"><path d="M8 1C8 1 3 6 3 9.5a5 5 0 0010 0C13 6 8 1 8 1z"/><path d="M8 14c-1.5 0-2.5-1-2.5-2.5S8 8 8 8s2.5 1 2.5 3.5S9.5 14 8 14z" fill="currentColor"/></svg>';
     const starIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;"><path d="M8 1.5l2 4 4.5.5-3.3 3 1 4.5L8 11l-4.2 2.5 1-4.5L1.5 6l4.5-.5z" fill="currentColor" stroke="currentColor"/></svg>';
     const courseNameShort = course.name.split(/\s+/)[0].substring(0, 20);
+
+    // App shell — titlebar course switcher label and the persistent rail.
+    // Every course page renders inside the desktop-style window chrome
+    // (partials/app-shell-top.html) with these links down the left side.
+    const courseSwitchLabel = course.shortName || courseNameShort;
+
+    const RAIL_PLUGIN_META = {
+        'daily-practice': { icon: '▦', label: 'Practice' },
+        'flashcards': { icon: '◲', label: 'Flashcards' },
+        'analytics': { icon: '◔', label: 'Analytics' },
+        'algorithms': { icon: '∷', label: 'Algorithms' },
+        'real-world-challenges': { icon: '⚒', label: 'Challenges' }
+    };
+
+    function buildRailLinks() {
+        const mod0 = modules.find(m => m.id === 0);
+        const refHref = mod0 ? (mod0.isSplit ? 'module0-1.html' : 'module0.html') : null;
+        const link = (key, icon, label, href) =>
+            `            <a class="app-navi" data-rail="${key}" href="${href}"><span class="ic" aria-hidden="true">${icon}</span>${label}</a>\n`;
+        let html = '';
+        html += link('today', '▸', 'Today', 'index.html');
+        html += link('path', '≡', 'The path', 'index.html#learning-path');
+        html += link('memory', '◈', 'Memory', 'index.html#memory');
+        [...activePlugins]
+            .sort((a, b) => (a.sidebarOrder || 99) - (b.sidebarOrder || 99))
+            .forEach(p => {
+                const meta = RAIL_PLUGIN_META[p.name] || { icon: '▪', label: p.label };
+                html += link(p.name, meta.icon, meta.label, p.name + '.html');
+            });
+        html += '            <div class="app-sec">Course</div>\n';
+        if (refHref) html += link('reference', '§', 'Reference', refHref);
+        html += link('settings', '⟳', 'Sync', '../settings.html');
+        return html.trimEnd();
+    }
+
+    // Inject the app-shell partials and fill their placeholders. Runs after
+    // a template's own placeholders so the shell's {{RAIL_LINKS}} and
+    // {{COURSE_NAME_SHORT}} (inside the partial) are still intact.
+    function applyAppShell(page) {
+        page = processPartials(page, allPartials, {});
+        return page
+            .replace(/\{\{RAIL_LINKS\}\}/g, buildRailLinks())
+            .replace(/\{\{COURSE_NAME_SHORT\}\}/g, courseSwitchLabel);
+    }
 
     function injectExerciseAnchors(htmlContent) {
         const jumpBox = `<div class="exercise-jump-box"><div class="exercise-jump-label">Jump to section:</div><div class="exercise-jump-links"><a href="#warmups">${fireIcon} Warmups</a><a href="#challenges">${starIcon} Challenges</a></div></div>`;
@@ -1012,7 +1069,7 @@ function buildCourse(slug) {
             .replace('{{NAV_BUTTONS}}', buildNavButtons(currentFile))
             .replace('{{SCRIPTS}}', buildExerciseScripts(moduleId));
 
-        return page;
+        return applyAppShell(page);
     }
 
     // --- Pass 2: Generate HTML files (sidebarPages is now fully populated) ---
@@ -1164,6 +1221,7 @@ function buildCourse(slug) {
             .replace('{{NAV_LINKS}}', () => buildNavLinks(currentFile))
             .replace('{{NAV_BUTTONS}}', () => buildNavButtons(currentFile));
 
+        page = applyAppShell(page);
         fs.writeFileSync(path.join(COURSE_DIST, currentFile), page);
         console.log(`  ${currentFile}`);
     });
@@ -1270,6 +1328,7 @@ function buildCourse(slug) {
         .replace('{{MODULE_LIST}}', buildModuleListHtml())
         .replace('{{PLUGIN_NAV_PILLS}}', buildPluginNavPills());
 
+    indexPage = applyAppShell(indexPage);
     fs.writeFileSync(path.join(COURSE_DIST, 'index.html'), indexPage);
     console.log('  index.html');
 
@@ -1327,7 +1386,9 @@ function buildCourse(slug) {
             templateContent = templateContent
                 .replace(/\{\{COURSE_NAME\}\}/g, course.name)
                 .replace(/\{\{THEME_LINKS\}\}/g, themeLinksHtml)
-                .replace(/\{\{MODULE_FILTER_BUTTONS\}\}/g, buildModuleFilterButtons());
+                .replace(/\{\{MODULE_FILTER_BUTTONS\}\}/g, buildModuleFilterButtons())
+                .replace(/\{\{RAIL_LINKS\}\}/g, buildRailLinks())
+                .replace(/\{\{COURSE_NAME_SHORT\}\}/g, courseSwitchLabel);
 
             fs.writeFileSync(path.join(COURSE_DIST, plugin.name + '.html'), templateContent);
             console.log(`    ${plugin.name}.html`);

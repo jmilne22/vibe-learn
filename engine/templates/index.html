@@ -13,16 +13,9 @@
 {{THEME_LINKS}}
     <script>try { sessionStorage.setItem('vibe-learn:sync:back-to', location.pathname); } catch (e) {}</script>
 </head>
-<body>
-    <main class="dashboard-shell">
-        <div class="dashboard-topbar">
-            <a href="../index.html" class="dashboard-back-link">&larr; All courses</a>
-            <nav class="dashboard-nav" aria-label="Course navigation">
-                <a href="{{REFERENCE_HREF}}" class="nav-pill">Reference</a>
-                <a href="#learning-path" class="nav-pill">Browse path</a>
-            </nav>
-        </div>
-
+<body data-rail="today">
+{{> app-shell-top}}
+    <div class="dashboard-shell">
         <section class="session-hero" aria-label="Today's session">
             <article class="session-plan">
                 <div class="section-kicker" id="session-plan-kicker">Today · {{COURSE_NAME}}</div>
@@ -33,9 +26,13 @@
                     <a href="#" id="start-today-session" class="resume-btn resume-btn--lg">Start session</a>
                     <span class="session-cta-alt" id="session-cta-alt"></span>
                 </div>
+                <div class="today-runner" id="today-runner">
+                    <div class="today-runner-h">test runner — watching practice/</div>
+                    <pre id="today-runner-out"><span class="tr-p">›</span> <span class="tr-dim">checking local runner…</span></pre>
+                </div>
             </article>
 
-            <aside class="memory-panel" aria-label="Memory state">
+            <aside class="memory-panel" id="memory" aria-label="Memory state">
                 <div class="section-kicker">Your memory today</div>
                 <div class="memory-headline">
                     <strong id="memory-recall">–</strong>
@@ -75,7 +72,7 @@
                 <pre>git clone https://github.com/jmilne22/vibe-learn && cd vibe-learn
 npm install
 npm run practice        # generate the Go exercise workspaces in practice/</pre>
-                <p>Then, whenever you study (including on the hosted site — the page talks to your local daemon directly):</p>
+                <p>In the desktop app, the local runner starts automatically. When studying in a browser (including on the hosted site), start it yourself:</p>
                 <pre>node vibe.js watch      # leave running: watches practice/, relays results here</pre>
                 <p>The loop: a card names its exercise → <code>node vibe.js next</code> points you at the file → edit in your editor → <strong>save</strong> → tests run automatically → the card updates and grades itself within a few seconds. No code is ever typed into the browser.</p>
                 <p class="workbench-hint" id="workbench-hint"></p>
@@ -90,9 +87,6 @@ npm run practice        # generate the Go exercise workspaces in practice/</pre>
                     <div class="section-kicker">Learning path</div>
                     <h2 id="learning-path-title">Browse modules and milestones</h2>
                 </div>
-                <nav class="dashboard-nav" aria-label="Practice tools">
-{{PLUGIN_NAV_PILLS}}
-                </nav>
             </div>
             <div class="module-list">
 {{MODULE_LIST}}
@@ -162,7 +156,8 @@ npm run practice        # generate the Go exercise workspaces in practice/</pre>
                 <button class="clear-progress clear-progress--danger" id="nuke-btn">Nuke everything</button>
             </div>
         </details>
-    </main>
+    </div>
+{{> app-shell-bottom}}
 
     <script src="course-data.js"></script>
     <script src="course-config.js"></script>
@@ -175,25 +170,76 @@ npm run practice        # generate the Go exercise workspaces in practice/</pre>
     <script src="data-backup.js"></script>
     <script src="progress.js"></script>
     <script src="vibe-bridge.js"></script>
+    <script src="app-shell.js"></script>
     <script src="dashboard.js"></script>
     <script>
-    // Workbench panel reflects daemon state: green dot when connected,
-    // open with a hint when not.
+    // Workbench panel + Today runner strip reflect daemon state: green dot
+    // and live test output when connected, setup hint when not.
     (function() {
+        function esc(s) {
+            return String(s == null ? '' : s).replace(/[&<>"]/g, function(c) {
+                return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c];
+            });
+        }
+
+        var runnerHasResult = false;
+        var isApp = !!window.vibeApp;
+
+        function renderRunnerIdle(online) {
+            if (runnerHasResult) return;
+            var out = document.getElementById('today-runner-out');
+            if (!out) return;
+            if (online) {
+                out.innerHTML = '<span class="tr-p">›</span> watching <span class="tr-file">practice/</span> — save a file to run its tests';
+            } else if (isApp) {
+                out.innerHTML = '<span class="tr-p">›</span> <span class="tr-dim">local runner unavailable — restart the desktop app</span>';
+            } else {
+                out.innerHTML = '<span class="tr-p">›</span> <span class="tr-dim">workbench offline — run</span> node vibe.js watch <span class="tr-dim">to grade exercises on save</span>';
+            }
+        }
+
         function render(online) {
             var dot = document.getElementById('workbench-dot');
             var hint = document.getElementById('workbench-hint');
             var panel = document.getElementById('workbench-setup');
             if (dot) dot.className = 'workbench-status-dot ' + (online ? 'online' : 'offline');
-            if (hint) hint.textContent = online
-                ? 'Connected — vibe watch is running on this machine.'
-                : 'Not connected — start `node vibe.js watch` to enable test-graded exercises.';
+            if (hint) {
+                hint.textContent = isApp
+                    ? (online
+                        ? 'Local runner active — saved exercise files are checked automatically.'
+                        : 'Local runner unavailable — restart the desktop app to restore automatic checks.')
+                    : (online
+                        ? 'Connected — vibe watch is running on this machine.'
+                        : 'Not connected — start `node vibe.js watch` to enable test-graded exercises.');
+            }
             if (panel && online) panel.removeAttribute('open');
+            renderRunnerIdle(online);
         }
+
+        window.addEventListener('vibeResult', function(e) {
+            var out = document.getElementById('today-runner-out');
+            if (!out) return;
+            runnerHasResult = true;
+            var r = e.detail.result;
+            var html = '<span class="tr-p">›</span> <span class="tr-file">' + esc(r.key) + '</span> — test run received\n';
+            if (r.pass) {
+                html += '<span class="tr-pass">✓ PASS</span>  ok  ' + esc(r.key) + '  <span class="tr-dim">attempt ' + esc(r.attempt) + '</span>';
+                var entry = window.SRS && window.SRS.getAll()[r.key];
+                if (entry && entry.interval) {
+                    html += '\n  <span class="tr-dim">card graded · next review in ' + esc(entry.interval) + 'd</span>';
+                }
+            } else {
+                html += '<span class="tr-fail">✗ FAIL</span>  ' + esc(r.key) + '  <span class="tr-dim">attempt ' + esc(r.attempt) + ' — save again to re-run</span>';
+            }
+            out.innerHTML = html;
+        });
+
         window.addEventListener('vibeStatusChanged', function(e) { render(e.detail.online); });
         if (window.VibeBridge) {
             window.VibeBridge.probe().then(render);
             window.VibeBridge.startPolling();
+        } else {
+            render(false);
         }
     })();
     </script>

@@ -1,0 +1,22 @@
+<div class="appwrap">
+<div class="win">
+    <header class="win-tb">
+        <a class="win-switch" href="../index.html" title="Switch course — back to all courses">
+            <span class="cd" aria-hidden="true"></span><span class="win-course">{{COURSE_NAME_SHORT}}</span><span class="cv" aria-hidden="true">▾</span>
+        </a>
+        <span class="win-grow"></span>
+        <span class="win-daemon" id="win-daemon" data-state="probing" title="The vibe daemon grades exercises from real go test runs">
+            <span class="tn-live" aria-hidden="true"></span><span id="win-daemon-label">daemon</span>
+        </span>
+        <span class="win-ctrls">
+            <button type="button" class="win-ctrl" data-win="rail" title="Toggle rail" aria-label="Toggle navigation rail">–</button>
+            <button type="button" class="win-ctrl" data-win="full" title="Toggle fullscreen" aria-label="Toggle fullscreen">▢</button>
+            <a class="win-ctrl" href="../index.html" title="Close course" aria-label="Close course — all courses">✕</a>
+        </span>
+    </header>
+    <div class="app-body">
+        <nav class="app-side" id="app-side" aria-label="Course sections">
+{{RAIL_LINKS}}
+            <div class="app-foot"><span class="sdot offline" id="rail-daemon-dot" aria-hidden="true"></span><span id="rail-daemon-text">checking local runner…</span></div>
+        </nav>
+        <main class="app-main">

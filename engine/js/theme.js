@@ -181,7 +181,15 @@
         if (actions.childNodes.length > 0) {
             wrapper.appendChild(actions);
         }
-        document.body.appendChild(wrapper);
+        // App-shell pages: the picker lives in the window titlebar, not as a
+        // floating overlay.
+        const titlebar = document.querySelector('.win-tb');
+        if (titlebar) {
+            wrapper.classList.add('theme-picker--tb');
+            titlebar.insertBefore(wrapper, titlebar.querySelector('.win-ctrls'));
+        } else {
+            document.body.appendChild(wrapper);
+        }
         if (!isLandingPage) {
             createFocusToggleFallback();
         }

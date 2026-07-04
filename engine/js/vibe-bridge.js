@@ -21,6 +21,7 @@
 (function() {
     'use strict';
 
+    var isApp = !!window.vibeApp;
     var PORT = 4711;
     try {
         var stored = localStorage.getItem('vibe-learn:vibe-port');
@@ -224,7 +225,8 @@
     // Fill result panes on any page when a run lands
     window.addEventListener('vibeResult', function(e) {
         var result = e.detail.result;
-        document.querySelectorAll('[data-vibe-key="' + result.key + '"] .vibe-results-pane').forEach(function(pane) {
+        var paneKey = result.variantKey || result.key;
+        document.querySelectorAll('[data-vibe-key="' + paneKey + '"] .vibe-results-pane').forEach(function(pane) {
             var html = '';
             if (result.buildFailed) {
                 html += '<div class="vibe-line fail">✗ build failed</div>' +
@@ -272,10 +274,12 @@
             pill.innerHTML = '<span class="pill-dot"></span>workbench connected — save a file to run its tests';
         } else if (state === 'offline') {
             pill.className = 'vibe-status-pill offline';
-            pill.innerHTML = '<span class="pill-dot"></span>workbench offline — run <code>node vibe.js watch</code>';
+            pill.innerHTML = isApp
+                ? '<span class="pill-dot"></span>local runner unavailable — restart the desktop app'
+                : '<span class="pill-dot"></span>workbench offline — run <code>node vibe.js watch</code>';
         } else {
             pill.className = 'vibe-status-pill probing';
-            pill.innerHTML = '<span class="pill-dot"></span>looking for vibe watch…';
+            pill.innerHTML = '<span class="pill-dot"></span>checking local runner…';
         }
     }
 

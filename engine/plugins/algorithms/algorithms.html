@@ -4,9 +4,9 @@
     <title>Algorithm Practice | {{COURSE_NAME}}</title>
 {{> head}}
 </head>
-<body data-module="algorithms">
+<body data-module="algorithms" data-rail="algorithms">
+{{> app-shell-top}}
     <div class="container">
-{{> dashboard-nav}}
 
         <div class="module-header algo-header">
             <div class="module-tag">Algorithm practice</div>
@@ -158,6 +158,7 @@
             </details>
         </div>
     </div>
+{{> app-shell-bottom}}
 
     <script src="course-data.js"></script>
     <script src="course-config.js"></script>
@@ -173,5 +174,7 @@
     <script src="algorithm-data.js"></script>
     <script src="session-engine.js"></script>
     <script src="algorithms.js"></script>
+    <script src="vibe-bridge.js"></script>
+    <script src="app-shell.js"></script>
 </body>
 </html>

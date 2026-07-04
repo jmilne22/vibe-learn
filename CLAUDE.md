@@ -9,7 +9,8 @@ to static HTML by `node build.js`. No framework, no backend.
 - `node build.js <slug>` — build a single course
 - `npm run new-course -- <slug>` — scaffold an empty course
 - `npm run practice` — generate local Go test workspaces in `practice/`
-- `node vibe.js watch` — local daemon (127.0.0.1:4711) that relays `vibe check` results to course pages
+- `npm run app` — desktop app: frameless Electron window (`desktop/`) that spawns/reuses the daemon and opens the last-used course; the site's titlebar is the real window chrome
+- `node vibe.js watch` — local daemon (127.0.0.1:4711) that serves `dist/` and relays `vibe check` results to course pages
 - `node vibe.js check <dir>` — run go vet + `go test -race` on one practice exercise; result is recorded and graded objectively
 - `node vibe.js next` — print the exercise the course page queued up
 

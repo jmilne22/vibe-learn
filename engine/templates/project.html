@@ -11,14 +11,10 @@
     <link rel="stylesheet" href="style.css">
 {{THEME_LINKS}}
 </head>
-<body>
+<body data-rail="path">
     <div class="scroll-progress" aria-hidden="true"></div>
-    <main class="workbook-shell">
+{{> app-shell-top}}
     <div class="container workbook-container">
-        <nav class="workbook-top-nav" aria-label="Page navigation">
-{{NAV_LINKS}}
-        </nav>
-
         <header class="module-header lesson-header">
             <div class="module-tag">Project milestone</div>
             <h1>{{TITLE}}</h1>
@@ -31,7 +27,7 @@
 
 {{NAV_BUTTONS}}
     </div>
-    </main>
+{{> app-shell-bottom}}
 
     <script src="course-data.js"></script>
     <script src="course-config.js"></script>
@@ -40,5 +36,7 @@
     <script src="timer.js"></script>
     <script src="sidebar.js"></script>
     <script src="copy-code.js"></script>
+    <script src="vibe-bridge.js"></script>
+    <script src="app-shell.js"></script>
 </body>
 </html>

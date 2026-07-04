@@ -3,12 +3,14 @@
   "version": "1.0.0",
   "private": true,
   "description": "Reusable course engine — fork, replace content, build, deploy.",
+  "main": "desktop/main.js",
   "scripts": {
     "build": "node build.js",
     "build:go": "node build.js go",
     "new-course": "node create-course.js",
     "practice": "node generate-practice.js",
-    "vibe": "node vibe.js"
+    "vibe": "node vibe.js",
+    "app": "electron ."
   },
   "bin": {
     "vibe": "./vibe.js"
@@ -18,5 +20,8 @@
     "js-yaml": "^4.1.0",
     "marked": "^15.0.0",
     "marked-highlight": "^2.2.3"
+  },
+  "devDependencies": {
+    "electron": "^43.0.0"
   }
 }
