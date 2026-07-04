@@ -38,6 +38,8 @@ spec:
 
 ### Working with Unstructured Data
 
+<attempt type="worked">
+
 For quick prototyping, use the dynamic client:
 
 ```go
@@ -69,6 +71,27 @@ func listCronTabs(dynClient dynamic.Interface) error {
     return nil
 }
 ```
+
+</attempt>
+
+<attempt type="gaps">
+
+<gaps prompt="List every Backup custom resource (kind Backup, group infra.example.com, version v1) — remember what Resource wants.">
+```go
+gvr := schema.GroupVersionResource{
+    Group:    «"infra.example.com"»,
+    Version:  «"v1"»,
+    Resource: «"backups"»,
+}
+list, err := dynClient.Resource(gvr).Namespace("default").List(
+    context.Background(), metav1.ListOptions{},
+)
+```
+</gaps>
+
+`Resource` is the lowercase *plural* — the same string as the CRD's `names.plural`, and the same word you'd type in a kubectl URL path.
+
+</attempt>
 
 ### Typed Clients (Production)
 

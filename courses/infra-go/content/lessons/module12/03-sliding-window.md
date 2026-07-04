@@ -2,6 +2,33 @@
 
 Sliding windows process subarrays or substrings efficiently.
 
+<attempt type="pretest">
+
+<predict prompt="What does this print?">
+```go
+sum := 0
+cpu := []int{3, 1, 4, 1, 5}
+k := 3
+for i := 0; i < k; i++ {
+    sum += cpu[i]
+}
+fmt.Println(sum)
+for i := k; i < len(cpu); i++ {
+    sum += cpu[i] - cpu[i-k]
+    fmt.Println(sum)
+}
+```
+```
+8
+6
+10
+```
+</predict>
+
+Wrong is fine — the fixed-window section below derives exactly this add-one-drop-one trick.
+
+</attempt>
+
 ### Fixed Window: Moving Average
 
 ```go
@@ -49,6 +76,8 @@ func longestHealthyStreak(statuses []string) int {
 
 ### Variable Window: At Most K Errors
 
+<attempt type="worked">
+
 ```go
 // Longest subarray with at most k errors
 func longestWithKErrors(statuses []string, k int) int {
@@ -75,4 +104,37 @@ func longestWithKErrors(statuses []string, k int) int {
 
 **The pattern:** Expand right to grow the window. If the window breaks a constraint, shrink from left until it's valid again.
 
+</attempt>
+
+<attempt type="gaps">
+
+<gaps prompt="Longest run of deploys with at most k failed ones — grow the right edge every step; shrink the left edge only while over budget.">
+```go
+maxLen, failures, left := 0, 0, 0
+for right := 0; right < len(deploys); right++ {
+    if deploys[right] == "failed" {
+        «failures++»
+    }
+    for «failures > k» {
+        if deploys[left] == "failed" {
+            failures--
+        }
+        «left++»
+    }
+    if right-left+1 > maxLen {
+        maxLen = right - left + 1
+    }
+}
+return maxLen
+```
+</gaps>
+
+Two pointers, one invariant: between them the window never holds more failures than the budget allows.
+
+</attempt>
+
+<attempt type="scratch">
+
 <div class="inline-exercises" data-concept="Sliding Window"></div>
+
+</attempt>

@@ -2,6 +2,8 @@
 
 ### log/slog (Standard Library)
 
+<attempt type="worked">
+
 ```go
 import "log/slog"
 
@@ -16,6 +18,8 @@ slog.Info("request handled", "method", "GET", "path", "/api/pods", "status", 200
 // {"time":"2024-01-15T10:30:00Z","level":"INFO","msg":"request handled","method":"GET","path":"/api/pods","status":200}
 ```
 
+</attempt>
+
 ### Adding Context
 
 ```go
@@ -28,3 +32,17 @@ reqLogger := slog.With(
 reqLogger.Info("handling request", "method", r.Method, "path", r.URL.Path)
 reqLogger.Error("failed to fetch pod", "error", err)
 ```
+
+<attempt type="gaps">
+
+<gaps prompt="Production logging setup, from memory — JSON output, make it the default, share request fields.">
+```go
+logger := slog.New(slog.«NewJSONHandler»(os.Stdout, nil))
+slog.«SetDefault»(logger)
+
+reqLogger := slog.«With»("request_id", requestID)
+reqLogger.Info("request handled", "status", 200)
+```
+</gaps>
+
+</attempt>

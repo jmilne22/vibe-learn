@@ -2,6 +2,28 @@
 
 Channels are typed conduits for sending data between goroutines.
 
+<attempt type="pretest">
+
+<predict prompt="What does this print?">
+```go
+ch := make(chan int, 1)
+ch <- 42
+close(ch)
+
+a := <-ch
+b := <-ch
+c := <-ch
+fmt.Println(a, b, c)
+```
+```
+42 0 0
+```
+</predict>
+
+Commit to all three values before reading on.
+
+</attempt>
+
 ### Creating and Using
 
 ```go
@@ -85,6 +107,8 @@ The first two cases succeed because the buffer has room for every send. The rema
 
 ### Closing Channels
 
+<attempt type="worked">
+
 ```go
 ch := make(chan int, 5)
 for i := 0; i < 5; i++ {
@@ -101,23 +125,30 @@ for val := range ch {
 
 **Only the sender closes.** Never close from the receiver side. Closing a closed channel panics.
 
-<predict prompt="What does this print?">
+That pretest at the top is this rule's flip side: after a channel is closed, you can keep reading from it forever — every read returns the zero value of the element type (`0` for int, `""` for string, `nil` for pointers). No error, no panic, no signal. To distinguish "real value" from "channel drained and closed", use the comma-ok form: `v, ok := <-ch`. `ok` is `false` once you've drained a closed channel.
+
+</attempt>
+
+<attempt type="gaps">
+
+<gaps prompt="Producer fills, consumer drains — how does the loop know to stop?">
 ```go
-ch := make(chan int, 1)
-ch <- 42
-close(ch)
+results := make(«chan string», 3)
 
-a := <-ch
-b := <-ch
-c := <-ch
-fmt.Println(a, b, c)
-```
-```
-42 0 0
-```
-</predict>
+go func() {
+    for _, name := range pods {
+        results <- name
+    }
+    «close(results)»   // signal: no more values
+}()
 
-After a channel is closed, you can keep reading from it forever — every read returns the zero value of the element type (`0` for int, `""` for string, `nil` for pointers). No error, no panic, no signal. To distinguish "real value" from "channel drained and closed", use the comma-ok form: `v, ok := <-ch`. `ok` is `false` once you've drained a closed channel.
+for r := «range results» {
+    fmt.Println(r)
+}
+```
+</gaps>
+
+</attempt>
 
 ### Direction-Restricted Channels
 
@@ -136,4 +167,8 @@ func consumer(in <-chan string) {
 
 This prevents accidentally sending on a receive channel (or vice versa). Use in function signatures for clarity.
 
+<attempt type="scratch">
+
 <div class="inline-exercises" data-concept="Channels"></div>
+
+</attempt>

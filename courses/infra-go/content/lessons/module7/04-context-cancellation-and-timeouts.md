@@ -42,7 +42,29 @@ func processItems(ctx context.Context, items []string) error {
 }
 ```
 
+<attempt type="gaps">
+
+<gaps prompt="From memory: deadline the whole loop, notice expiry between items, report why it stopped.">
+```go
+ctx, cancel := context.«WithTimeout»(context.Background(), 30*time.Second)
+defer cancel()
+
+for _, pod := range pods {
+    select {
+    case <-«ctx.Done()»:
+        return «ctx.Err()»
+    default:
+    }
+    restart(pod)
+}
+```
+</gaps>
+
+</attempt>
+
 ### Graceful Shutdown
+
+<attempt type="worked">
 
 ```go
 import "os/signal"
@@ -69,4 +91,10 @@ func main() {
 
 This is critical for K8s — when a pod gets terminated, K8s sends SIGTERM. Your service needs to finish in-flight work before the SIGKILL arrives (default 30s later).
 
+</attempt>
+
+<attempt type="scratch">
+
 <div class="inline-exercises" data-concept="Context"></div>
+
+</attempt>

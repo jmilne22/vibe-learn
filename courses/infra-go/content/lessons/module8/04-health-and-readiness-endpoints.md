@@ -1,5 +1,7 @@
 ## Health & Readiness Endpoints
 
+<attempt type="worked">
+
 K8s probes two endpoints on your pods:
 
 ```go
@@ -22,6 +24,8 @@ func readyz(w http.ResponseWriter, r *http.Request) {
     w.Write([]byte("ready"))
 }
 ```
+
+</attempt>
 
 ### Dependency Checks
 
@@ -51,4 +55,29 @@ func readyz(w http.ResponseWriter, r *http.Request) {
 }
 ```
 
+<attempt type="gaps">
+
+<gaps prompt="Which probe does what? Wire both, and fail readiness the right way.">
+```go
+func routes(mux *http.ServeMux) {
+    mux.HandleFunc("GET «/healthz»", livenessHandler)   // fail → K8s restarts the pod
+    mux.HandleFunc("GET «/readyz»", readinessHandler)   // fail → pod pulled from the Service
+}
+
+func readinessHandler(w http.ResponseWriter, r *http.Request) {
+    if !dbReady() {
+        w.WriteHeader(http.«StatusServiceUnavailable»)
+        «return»
+    }
+    w.WriteHeader(http.StatusOK)
+}
+```
+</gaps>
+
+</attempt>
+
+<attempt type="scratch">
+
 <div class="inline-exercises" data-concept="Health Endpoints"></div>
+
+</attempt>

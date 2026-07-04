@@ -2,6 +2,8 @@
 
 Fan-out: distribute work across multiple goroutines. Fan-in: collect results into one channel.
 
+<attempt type="worked">
+
 ```go
 // Fan-out: launch N workers reading from the same input channel
 func fanOut(input <-chan string, workers int) []<-chan Result {
@@ -46,4 +48,35 @@ func fanIn(channels ...<-chan Result) <-chan Result {
 }
 ```
 
+</attempt>
+
 **Real uses:** Checking N servers in parallel, validating N config files, downloading N artifacts.
+
+<attempt type="gaps">
+
+<gaps prompt="Fan-in, from memory — the merged channel must end exactly when the last forwarder finishes.">
+```go
+func fanIn(channels ...<-chan Result) <-chan Result {
+    var wg sync.WaitGroup
+    merged := make(chan Result)
+
+    for _, ch := range channels {
+        wg.Add(1)
+        go func(c <-chan Result) {
+            defer «wg.Done()»
+            for val := range c {
+                «merged <- val»
+            }
+        }(ch)
+    }
+
+    go func() {
+        «wg.Wait()»
+        «close(merged)»
+    }()
+    return merged
+}
+```
+</gaps>
+
+</attempt>

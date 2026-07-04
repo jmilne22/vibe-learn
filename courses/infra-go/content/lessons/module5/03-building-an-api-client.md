@@ -2,6 +2,8 @@
 
 Real API clients are structs with methods per endpoint:
 
+<attempt type="worked">
+
 ```go
 type CloudClient struct {
     baseURL    string
@@ -34,6 +36,10 @@ func (c *CloudClient) do(ctx context.Context, method, path string, body io.Reade
     return c.httpClient.Do(req)
 }
 ```
+
+The shape to internalize: the struct holds the base URL, credentials, and one configured `http.Client`; a private `do` helper attaches auth and content-type headers in exactly one place; every endpoint method builds on `do`. Nothing about a specific endpoint leaks into the plumbing.
+
+</attempt>
 
 ### Methods Per Endpoint
 
@@ -95,4 +101,46 @@ func (c *CloudClient) ListAllInstances(ctx context.Context) ([]Instance, error) 
 }
 ```
 
+<attempt type="gaps">
+
+<gaps prompt="Pagination, from memory — merge each page in, detect the last page, move to the next.">
+```go
+var all []Instance
+cursor := ""
+
+for {
+    path := "/v1/instances"
+    if cursor != "" {
+        path += "?cursor=" + cursor
+    }
+
+    resp, err := c.do(ctx, "GET", path, nil)
+    if err != nil {
+        return nil, err
+    }
+
+    var page struct {
+        Instances  []Instance `json:"instances"`
+        NextCursor string     `json:"next_cursor"`
+    }
+    json.NewDecoder(resp.Body).Decode(&page)
+    resp.Body.Close()
+
+    all = append(all, «page.Instances...»)
+
+    if page.NextCursor == «""» {
+        «break»
+    }
+    «cursor = page.NextCursor»
+}
+return all, nil
+```
+</gaps>
+
+</attempt>
+
+<attempt type="scratch">
+
 <div class="inline-exercises" data-concept="API Client"></div>
+
+</attempt>

@@ -445,6 +445,11 @@ variants:
           hints:
             - "You need to find the position of the first <code>=</code>, not split on all of them. Which <code>strings</code> function finds the index of a substring?"
             - "Once you have the position, use slice expressions to grab everything before it (the key) and everything after it (the value, quotes included)."
+          driverGo: |-
+            key, val := parseLabel(`method="GET"`)
+            fmt.Printf("key=%s value=%s\n", key, val)
+            key, val = parseLabel(`selector="env=prod"`)
+            fmt.Printf("key=%s value=%s\n", key, val)
           solution: |-
             func parseLabel(s string) (string, string) {
                 idx := strings.Index(s, "=")
@@ -462,6 +467,11 @@ variants:
           hints:
             - "First determine whether the separator exists at all. If it doesn't, you need to return a default namespace."
             - "Limit your split to at most 2 parts, then check the result length to determine which format you got."
+          driverGo: |-
+            ns, name := splitResource("prod/web-frontend")
+            fmt.Printf("namespace=%s resource=%s\n", ns, name)
+            ns, name = splitResource("standalone-job")
+            fmt.Printf("namespace=%s resource=%s\n", ns, name)
           solution: |-
             func splitResource(s string) (string, string) {
                 parts := strings.SplitN(s, "/", 2)
@@ -816,6 +826,36 @@ variants:
               output: "100.0"
             - input: errorRate([]string{})
               output: "0.0"
+          testGo: |-
+            func TestErrorRate(t *testing.T) {
+                cases := []struct {
+                    name  string
+                    lines []string
+                    want  float64
+                }{
+                    {"mixed levels", []string{
+                        "INFO checkout-api request handled in 142ms",
+                        "ERROR ledger-worker connection refused: ledger-postgres:5432",
+                        "INFO metrics-relay scrape complete",
+                        "ERROR auth-svc token validation failed: expired",
+                        "WARN edge-proxy upstream timeout for /api/v1/order",
+                    }, 40.0},
+                    {"all errors", []string{
+                        "ERROR checkout-api panic: nil pointer",
+                        "ERROR ledger-worker tx aborted",
+                    }, 100.0},
+                    {"empty input", []string{}, 0.0},
+                    {"rounds to one decimal", []string{
+                        "ERROR a x", "INFO b y", "INFO c z",
+                    }, 33.3},
+                }
+                for _, tc := range cases {
+                    got := errorRate(tc.lines)
+                    if math.Abs(got-tc.want) > 0.001 {
+                        t.Errorf("%s: errorRate() = %v, want %v", tc.name, got, tc.want)
+                    }
+                }
+            }
           hints:
             - title: Think about it
               content: You need two numbers — how many errors and how many total lines. What do you do with those to get a percentage?
@@ -853,6 +893,33 @@ variants:
               output: "\"DEBUG: 3\""
             - input: logReport([]string{})
               output: "\"\""
+          testGo: |-
+            func TestLogReport(t *testing.T) {
+                cases := []struct {
+                    name  string
+                    lines []string
+                    want  string
+                }{
+                    {"mixed levels sorted", []string{
+                        "INFO checkout-api ok",
+                        "ERROR ledger-worker bad",
+                        "INFO metrics-relay ok2",
+                        "WARN edge-proxy slow",
+                        "ERROR auth-svc oom",
+                    }, "ERROR: 2\nINFO: 2\nWARN: 1"},
+                    {"single level", []string{
+                        "DEBUG checkout-api x",
+                        "DEBUG checkout-api y",
+                        "DEBUG checkout-api z",
+                    }, "DEBUG: 3"},
+                    {"empty input", []string{}, ""},
+                }
+                for _, tc := range cases {
+                    if got := logReport(tc.lines); got != tc.want {
+                        t.Errorf("%s: logReport() = %q, want %q", tc.name, got, tc.want)
+                    }
+                }
+            }
           hints:
             - title: Think about it
               content: >-
@@ -902,6 +969,29 @@ variants:
           testCases:
             - input: logFrequency([]string{"INFO checkout-api ok", "ERROR ledger-worker bad", "ERROR auth-svc bad"})
               output: "\"ERROR: 2 (66.7%)\\nINFO: 1 (33.3%)\""
+          testGo: |-
+            func TestLogFrequency(t *testing.T) {
+                cases := []struct {
+                    name  string
+                    lines []string
+                    want  string
+                }{
+                    {"counts with percentages", []string{
+                        "INFO checkout-api ok",
+                        "ERROR ledger-worker bad",
+                        "ERROR auth-svc bad",
+                    }, "ERROR: 2 (66.7%)\nINFO: 1 (33.3%)"},
+                    {"single level is 100 percent", []string{
+                        "WARN edge-proxy slow",
+                    }, "WARN: 1 (100.0%)"},
+                    {"empty input", []string{}, ""},
+                }
+                for _, tc := range cases {
+                    if got := logFrequency(tc.lines); got != tc.want {
+                        t.Errorf("%s: logFrequency() = %q, want %q", tc.name, got, tc.want)
+                    }
+                }
+            }
           hints:
             - title: Think about it
               content: >-
@@ -957,6 +1047,28 @@ variants:
               output: map[app:nginx]
             - input: parseLabels("")
               output: map[]
+          testGo: |-
+            func TestParseLabels(t *testing.T) {
+                cases := []struct {
+                    name string
+                    in   string
+                    want map[string]string
+                }{
+                    {"two labels", `method="GET",status="200"`,
+                        map[string]string{"method": "GET", "status": "200"}},
+                    {"one label", `app="nginx"`, map[string]string{"app": "nginx"}},
+                    {"empty string", "", map[string]string{}},
+                }
+                for _, tc := range cases {
+                    got := parseLabels(tc.in)
+                    if len(got) == 0 && len(tc.want) == 0 {
+                        continue
+                    }
+                    if !reflect.DeepEqual(got, tc.want) {
+                        t.Errorf("%s: parseLabels(%q) = %v, want %v", tc.name, tc.in, got, tc.want)
+                    }
+                }
+            }
           hints:
             - title: Think about it
               content: >-
@@ -1003,6 +1115,37 @@ variants:
               output: "\"up\", 1.0, nil"
             - input: parseMetric("http_requests_total 42")
               output: "\"http_requests_total\", 42.0, nil"
+          testGo: |-
+            func TestParseMetricValid(t *testing.T) {
+                cases := []struct {
+                    line     string
+                    wantName string
+                    wantVal  float64
+                }{
+                    {"up 1", "up", 1},
+                    {"http_requests_total 42", "http_requests_total", 42},
+                    {"cpu_load 0.75", "cpu_load", 0.75},
+                }
+                for _, tc := range cases {
+                    name, val, err := parseMetric(tc.line)
+                    if err != nil {
+                        t.Errorf("parseMetric(%q) returned error: %v", tc.line, err)
+                        continue
+                    }
+                    if name != tc.wantName || math.Abs(val-tc.wantVal) > 1e-9 {
+                        t.Errorf("parseMetric(%q) = (%q, %v), want (%q, %v)",
+                            tc.line, name, val, tc.wantName, tc.wantVal)
+                    }
+                }
+            }
+
+            func TestParseMetricInvalid(t *testing.T) {
+                for _, line := range []string{"up", "up 1 extra", "up abc"} {
+                    if _, _, err := parseMetric(line); err == nil {
+                        t.Errorf("parseMetric(%q) should return an error", line)
+                    }
+                }
+            }
           hints:
             - title: Think about it
               content: >-
@@ -1039,6 +1182,29 @@ variants:
           testCases:
             - input: aggregateMetrics([]string{"req 10", "req 5", "up 1"})
               output: map[req:15 up:1]
+          testGo: |-
+            func TestAggregateMetrics(t *testing.T) {
+                got := aggregateMetrics([]string{"req 10", "req 5", "up 1"})
+                want := map[string]float64{"req": 15, "up": 1}
+                if !reflect.DeepEqual(got, want) {
+                    t.Errorf("aggregateMetrics() = %v, want %v", got, want)
+                }
+            }
+
+            func TestAggregateMetricsSkipsJunk(t *testing.T) {
+                got := aggregateMetrics([]string{
+                    "# HELP req total requests",
+                    "",
+                    "req 2",
+                    "malformed",
+                    "req notanumber",
+                    "  req 3  ",
+                })
+                want := map[string]float64{"req": 5}
+                if !reflect.DeepEqual(got, want) {
+                    t.Errorf("aggregateMetrics() = %v, want %v", got, want)
+                }
+            }
           hints:
             - title: Think about it
               content: >-
@@ -1082,6 +1248,24 @@ variants:
           testCases:
             - input: sortPodNames([]string{"edge-proxy-rm3qw", "checkout-api-xq2bn", "ledger-worker-h2k9p", "auth-svc-bk7vd"})
               output: "[\"auth-svc-bk7vd\", \"checkout-api-xq2bn\", \"edge-proxy-rm3qw\", \"ledger-worker-h2k9p\"]"
+          testGo: |-
+            func TestSortPodNames(t *testing.T) {
+                names := []string{
+                    "edge-proxy-rm3qw", "checkout-api-xq2bn",
+                    "ledger-worker-h2k9p", "auth-svc-bk7vd",
+                }
+                got := sortPodNames(names)
+                want := []string{
+                    "auth-svc-bk7vd", "checkout-api-xq2bn",
+                    "edge-proxy-rm3qw", "ledger-worker-h2k9p",
+                }
+                if !reflect.DeepEqual(got, want) {
+                    t.Errorf("sortPodNames() = %v, want %v", got, want)
+                }
+                if !reflect.DeepEqual(names, want) {
+                    t.Error("input slice was not sorted in place")
+                }
+            }
           hints:
             - title: Think about it
               content: "Go's sort package has a convenience function specifically for string slices. Check the Sorting section of the lesson."
@@ -1106,6 +1290,28 @@ variants:
               output: "[\"ledger-worker-h2k9p\"]"
             - input: filterSorted([]string{"checkout-api-xq2bn","ledger-worker-h2k9p"}, "edge-proxy")
               output: "[]"
+          testGo: |-
+            func TestFilterSorted(t *testing.T) {
+                pods := []string{
+                    "edge-proxy-rm3qw", "checkout-api-xq2bn",
+                    "ledger-worker-h2k9p", "edge-proxy-9ab2c", "checkout-api-7d4f9",
+                }
+                got := filterSorted(pods, "edge-proxy")
+                want := []string{"edge-proxy-9ab2c", "edge-proxy-rm3qw"}
+                if !reflect.DeepEqual(got, want) {
+                    t.Errorf("filterSorted(edge-proxy) = %v, want %v", got, want)
+                }
+
+                got = filterSorted(pods, "ledger")
+                want = []string{"ledger-worker-h2k9p"}
+                if !reflect.DeepEqual(got, want) {
+                    t.Errorf("filterSorted(ledger) = %v, want %v", got, want)
+                }
+
+                if got := filterSorted([]string{"checkout-api-xq2bn"}, "edge"); len(got) != 0 {
+                    t.Errorf("filterSorted with no matches = %v, want empty", got)
+                }
+            }
           hints:
             - title: Think about it
               content: >-
@@ -1144,6 +1350,26 @@ variants:
               output: "\"  DB: ledger\\n  HOST: ledger-postgres\\n  PORT: 5432\""
             - input: kvReport([]string{"z=1", "a=2"})
               output: "\"  a: 2\\n  z: 1\""
+          testGo: |-
+            func TestKVReport(t *testing.T) {
+                cases := []struct {
+                    name  string
+                    lines []string
+                    want  string
+                }{
+                    {"sorted by key",
+                        []string{"PORT=5432", "HOST=ledger-postgres", "DB=ledger"},
+                        "  DB: ledger\n  HOST: ledger-postgres\n  PORT: 5432"},
+                    {"two keys", []string{"z=1", "a=2"}, "  a: 2\n  z: 1"},
+                    {"skips malformed", []string{"a=1", "nonsense", "b=2"},
+                        "  a: 1\n  b: 2"},
+                }
+                for _, tc := range cases {
+                    if got := kvReport(tc.lines); got != tc.want {
+                        t.Errorf("%s: kvReport() = %q, want %q", tc.name, got, tc.want)
+                    }
+                }
+            }
           hints:
             - title: Think about it
               content: >-
@@ -1200,6 +1426,29 @@ variants:
               output: map[LOG_LEVEL:info]
             - input: parseEnvFile("  HOST = ledger-postgres  ")
               output: map[HOST:ledger-postgres]
+          testGo: |-
+            func TestParseEnvFile(t *testing.T) {
+                cases := []struct {
+                    name    string
+                    content string
+                    want    map[string]string
+                }{
+                    {"basic pairs", "DB_HOST=ledger-postgres\nDB_PORT=5432",
+                        map[string]string{"DB_HOST": "ledger-postgres", "DB_PORT": "5432"}},
+                    {"comments and quotes", "# managed by ansible\nLOG_LEVEL=\"info\"",
+                        map[string]string{"LOG_LEVEL": "info"}},
+                    {"whitespace trimmed", "  HOST = ledger-postgres  ",
+                        map[string]string{"HOST": "ledger-postgres"}},
+                    {"empty lines skipped", "A=1\n\n\nB=2",
+                        map[string]string{"A": "1", "B": "2"}},
+                }
+                for _, tc := range cases {
+                    got := parseEnvFile(tc.content)
+                    if !reflect.DeepEqual(got, tc.want) {
+                        t.Errorf("%s: parseEnvFile() = %v, want %v", tc.name, got, tc.want)
+                    }
+                }
+            }
           hints:
             - title: Think about it
               content: >-
@@ -1250,6 +1499,27 @@ variants:
               output: map[db:map[host:ledger-postgres]]
             - input: parseINI("key=val\n[s]\nk=v")
               output: map[default:map[key:val] s:map[k:v]]
+          testGo: |-
+            func TestParseINI(t *testing.T) {
+                got := parseINI("[db]\nhost=ledger-postgres")
+                want := map[string]map[string]string{
+                    "db": {"host": "ledger-postgres"},
+                }
+                if !reflect.DeepEqual(got, want) {
+                    t.Errorf("parseINI() = %v, want %v", got, want)
+                }
+            }
+
+            func TestParseINIDefaultSection(t *testing.T) {
+                got := parseINI("key=val\n[s]\nk=v")
+                want := map[string]map[string]string{
+                    "default": {"key": "val"},
+                    "s":       {"k": "v"},
+                }
+                if !reflect.DeepEqual(got, want) {
+                    t.Errorf("parseINI() = %v, want %v", got, want)
+                }
+            }
           hints:
             - title: Think about it
               content: >-
@@ -1307,6 +1577,22 @@ variants:
               output: map[db:2 server:1]
             - input: sectionKeyCounts("debug=true\n[db]\nhost=localhost\n# ignored")
               output: map[default:1 db:1]
+          testGo: |-
+            func TestSectionKeyCounts(t *testing.T) {
+                got := sectionKeyCounts("[db]\nhost=ledger-postgres\nport=5432\n[server]\naddr=:8080")
+                want := map[string]int{"db": 2, "server": 1}
+                if !reflect.DeepEqual(got, want) {
+                    t.Errorf("sectionKeyCounts() = %v, want %v", got, want)
+                }
+            }
+
+            func TestSectionKeyCountsDefault(t *testing.T) {
+                got := sectionKeyCounts("debug=true\n[db]\nhost=localhost\n# ignored")
+                want := map[string]int{"default": 1, "db": 1}
+                if !reflect.DeepEqual(got, want) {
+                    t.Errorf("sectionKeyCounts() = %v, want %v", got, want)
+                }
+            }
           hints:
             - title: Think about it
               content: >-
@@ -1365,6 +1651,32 @@ variants:
               output: "[\"checkout-api-xq2bn\"]"
             - input: filterHealthy([]string{"checkout-api-xq2bn", "ledger-worker-h2k9p"}, []string{"Failed", "Pending"})
               output: "[]"
+          testGo: |-
+            func TestFilterHealthy(t *testing.T) {
+                pods := []string{
+                    "checkout-api-xq2bn", "ledger-worker-h2k9p",
+                    "edge-proxy-rm3qw", "auth-svc-bk7vd",
+                }
+                statuses := []string{"Running", "Failed", "Running", "Pending"}
+                got := filterHealthy(pods, statuses)
+                want := []string{"checkout-api-xq2bn", "edge-proxy-rm3qw"}
+                if !reflect.DeepEqual(got, want) {
+                    t.Errorf("filterHealthy() = %v, want %v", got, want)
+                }
+                if len(got) > 0 && &got[0] != &pods[0] {
+                    t.Error("result does not reuse the input slice — filter in place")
+                }
+            }
+
+            func TestFilterHealthyNone(t *testing.T) {
+                got := filterHealthy(
+                    []string{"checkout-api-xq2bn", "ledger-worker-h2k9p"},
+                    []string{"Failed", "Pending"},
+                )
+                if len(got) != 0 {
+                    t.Errorf("filterHealthy() = %v, want empty", got)
+                }
+            }
           hints:
             - title: Think about it
               content: >-
@@ -1408,6 +1720,30 @@ variants:
               output: "[\"x\"]"
             - input: dedup([]string{})
               output: "[]"
+          testGo: |-
+            func TestDedup(t *testing.T) {
+                ips := []string{
+                    "192.168.1.42", "10.0.0.5", "192.168.1.42", "10.0.0.7", "10.0.0.5",
+                }
+                got := dedup(ips)
+                want := []string{"192.168.1.42", "10.0.0.5", "10.0.0.7"}
+                if !reflect.DeepEqual(got, want) {
+                    t.Errorf("dedup() = %v, want %v", got, want)
+                }
+                if len(got) > 0 && &got[0] != &ips[0] {
+                    t.Error("result does not reuse the input slice — dedup in place")
+                }
+
+                if got := dedup([]string{"a", "b", "c"}); !reflect.DeepEqual(got, []string{"a", "b", "c"}) {
+                    t.Errorf("dedup(no dupes) = %v", got)
+                }
+                if got := dedup([]string{"x", "x", "x"}); !reflect.DeepEqual(got, []string{"x"}) {
+                    t.Errorf("dedup(all same) = %v", got)
+                }
+                if got := dedup([]string{}); len(got) != 0 {
+                    t.Errorf("dedup(empty) = %v, want empty", got)
+                }
+            }
           hints:
             - title: Think about it
               content: >-
@@ -1453,6 +1789,33 @@ variants:
               output: "[\"a\", \"b\", \"a\"]"
             - input: compactLogs([]string{"", "  ", ""})
               output: "[]"
+          testGo: |-
+            func TestCompactLogs(t *testing.T) {
+                lines := []string{
+                    "  INFO checkout-api startup  ", "", "INFO checkout-api startup",
+                    "ERROR ledger-worker oom", "ERROR ledger-worker oom", "  ",
+                    "WARN edge-proxy slow",
+                }
+                got := compactLogs(lines)
+                want := []string{
+                    "INFO checkout-api startup", "ERROR ledger-worker oom",
+                    "WARN edge-proxy slow",
+                }
+                if !reflect.DeepEqual(got, want) {
+                    t.Errorf("compactLogs() = %v, want %v", got, want)
+                }
+                if len(got) > 0 && &got[0] != &lines[0] {
+                    t.Error("result does not reuse the input slice — compact in place")
+                }
+
+                got = compactLogs([]string{"a", "  a  ", "b", "b", "b", "a"})
+                if !reflect.DeepEqual(got, []string{"a", "b", "a"}) {
+                    t.Errorf("compactLogs(consecutive dupes) = %v", got)
+                }
+                if got := compactLogs([]string{"", "  ", ""}); len(got) != 0 {
+                    t.Errorf("compactLogs(blank only) = %v, want empty", got)
+                }
+            }
           hints:
             - title: Think about it
               content: >-

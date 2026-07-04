@@ -2,9 +2,30 @@
 
 *A pod lookup that returns `ErrNotFound` lets the caller branch on it with `errors.Is` — "missing pod, create it" vs "transient failure, retry". A `*ValidationError` carrying `Field` and `Message` lets the caller render the failure to the user. Pick the shape based on what the caller will do.*
 
+<attempt type="pretest">
+
+<predict prompt="What does this print?">
+```go
+err1 := errors.New("not found")
+err2 := errors.New("not found")
+fmt.Println(err1 == err2)
+fmt.Println(errors.Is(err1, err1))
+```
+```
+false
+true
+```
+</predict>
+
+Wrong is fine — the first line is exactly why sentinels must be shared package-level variables, never re-created at the call site.
+
+</attempt>
+
 ### Sentinel Errors
 
 Package-level variables for well-known error conditions:
+
+<attempt type="worked">
 
 ```go
 // Define at package level
@@ -31,6 +52,8 @@ if errors.Is(err, ErrNotFound) {
 ```
 
 Convention: sentinel error names start with `Err`. You'll see this throughout the standard library: `io.EOF`, `os.ErrNotExist`, `sql.ErrNoRows`.
+
+</attempt>
 
 ### Custom Error Types
 
@@ -64,6 +87,33 @@ if errors.As(err, &valErr) {
 }
 ```
 
+<attempt type="gaps">
+
+<gaps prompt="A custom type when the caller needs structured data out of the failure.">
+```go
+type ValidationError struct {
+    Field   string
+    Message string
+}
+
+// one method makes it an error
+func (e *ValidationError) «Error() string» {
+    return fmt.Sprintf("validation failed on %s: %s", e.Field, e.Message)
+}
+
+// return it
+return «&ValidationError»{Field: "port", Message: "must be 1-65535"}
+
+// extract it
+var valErr *ValidationError
+if errors.«As»(err, &valErr) {
+    fmt.Println(valErr.Field)
+}
+```
+</gaps>
+
+</attempt>
+
 ### When to Use Which
 
 | Approach | When |
@@ -73,4 +123,8 @@ if errors.As(err, &valErr) {
 | `var ErrFoo = errors.New(...)` | Callers need to check for this specific condition |
 | `type FooError struct{...}` | Callers need structured data from the error |
 
+<attempt type="scratch">
+
 <div class="inline-exercises" data-concept="Sentinel Errors"></div>
+
+</attempt>

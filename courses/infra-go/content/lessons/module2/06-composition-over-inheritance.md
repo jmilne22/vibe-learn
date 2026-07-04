@@ -4,7 +4,38 @@
 
 Go has no inheritance. Instead, you embed one struct inside another. The embedded struct's fields and methods get "promoted" — they're accessible directly on the outer struct.
 
+<attempt type="pretest">
+
+<predict prompt="What does this print?">
+```go
+type Metadata struct{ Name string }
+
+func (m Metadata) FullName() string { return "prod/" + m.Name }
+
+type Pod struct {
+    Metadata
+    Status string
+}
+
+func main() {
+    p := Pod{Metadata: Metadata{Name: "web-1"}, Status: "Running"}
+    fmt.Println(p.Name)
+    fmt.Println(p.FullName())
+}
+```
+```
+web-1
+prod/web-1
+```
+</predict>
+
+Note that `Pod` defines neither a `Name` field nor a `FullName` method. Wrong is fine — promotion is the whole point of this section.
+
+</attempt>
+
 ### Embedding
+
+<attempt type="worked">
 
 ```go
 type Metadata struct {
@@ -44,6 +75,29 @@ fmt.Println(pod.FullName()) // "production/web-1" — promoted method
 ```
 
 This is how the real Kubernetes Go types work. `ObjectMeta` is embedded in every resource type.
+
+</attempt>
+
+<attempt type="gaps">
+
+<gaps prompt="Give ConfigMap the same name plumbing — one embed, zero forwarding methods.">
+```go
+type ConfigMap struct {
+    «Metadata»            // no field name — that's the embed
+    Data map[string]string
+}
+
+cm := ConfigMap{
+    «Metadata»: Metadata{Name: "app-config", Namespace: "prod"},
+    Data:       map[string]string{"LOG_LEVEL": "debug"},
+}
+
+fmt.Println(cm.«FullName()»)  // "prod/app-config"
+fmt.Println(cm.Namespace)     // "prod" — promoted field
+```
+</gaps>
+
+</attempt>
 
 ### Why Composition
 
@@ -116,4 +170,8 @@ fmt.Println(x.A.Name(), x.B.Name()) // explicit access works
 
 The compiler refuses to pick — you have to disambiguate by selecting `x.A.Name()` or `x.B.Name()` directly. This is why the `metav1` types embed only one anchor (`ObjectMeta`) rather than mixing in multiple sources of name/namespace.
 
+<attempt type="scratch">
+
 <div class="inline-exercises" data-concept="Composition"></div>
+
+</attempt>

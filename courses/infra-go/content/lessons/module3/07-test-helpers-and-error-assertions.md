@@ -51,6 +51,8 @@ func TestValidatePod(t *testing.T) {
 
 When you repeat the same assertion in many tests, extract a helper:
 
+<attempt type="worked">
+
 ```go
 func assertEqual(t *testing.T, got, want string) {
     t.Helper()  // marks this as a helper — errors report the CALLER's line number
@@ -61,6 +63,8 @@ func assertEqual(t *testing.T, got, want string) {
 ```
 
 `t.Helper()` is critical. Without it, test failures point to the helper function, not the test that called it.
+
+</attempt>
 
 ### Testing Error Types
 
@@ -88,6 +92,36 @@ func TestValidateConfig_ErrorType(t *testing.T) {
 }
 ```
 
+<attempt type="gaps">
+
+<gaps prompt="Combine both patterns: helpers that assert on the kind of error, not its message.">
+```go
+func assertNotFound(t *testing.T, err error) {
+    t.«Helper()»              // failures point at the caller, not this line
+    if !errors.«Is»(err, ErrNotFound) {
+        t.Errorf("expected ErrNotFound, got %v", err)
+    }
+}
+
+func assertValidationField(t *testing.T, err error, field string) {
+    t.Helper()
+    var valErr *ValidationError
+    if !errors.«As»(err, «&valErr») {
+        t.Fatalf("expected ValidationError, got %T", err)
+    }
+    if valErr.Field != field {
+        t.Errorf("field = %q, want %q", valErr.Field, field)
+    }
+}
+```
+</gaps>
+
+</attempt>
+
 ---
 
+<attempt type="scratch">
+
 <div class="inline-exercises" data-concept="Test Helpers"></div>
+
+</attempt>

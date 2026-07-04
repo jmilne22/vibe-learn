@@ -4,7 +4,25 @@ Line-oriented parsing shows up in config files, logs, command output, and simple
 
 For a `.env`-style file, the input has blank lines, comments starting with `#`, and key-value pairs like `DB_HOST=localhost`. Some values are quoted, some are not.
 
+<attempt type="pretest">
+
+<predict prompt="Which lines end up in the map?">
+```go
+content := "# db config\nHOST=localhost\n\nbroken line\nPORT=5432"
+fmt.Println(parseEnv(content))
+```
+```
+map[HOST:localhost PORT:5432]
+```
+</predict>
+
+Commit first: what happens to the comment, the blank, and the malformed line?
+
+</attempt>
+
 Use the same pattern for `.env` files, INI configs, CSVs, and other line-oriented formats:
+
+<attempt type="worked">
 
 ```go
 // Split into lines, skip blanks and comments, parse each line
@@ -37,6 +55,8 @@ func parseEnv(content string) map[string]string {
 ```
 
 Split lines, trim, skip empties and comments, parse what's left. You'll recognize this skeleton in half the infrastructure tools you read on GitHub.
+
+</attempt>
 
 ### State Tracking
 
@@ -79,4 +99,28 @@ func parseINI(content string) map[string]map[string]string {
 
 This is a simple **state machine**: the variable `currentSection` changes as you encounter `[section]` headers, and all key-value pairs go into whatever section is current. Same pattern works for parsing Dockerfiles (current stage), multi-doc YAML (current document), etc.
 
+<attempt type="gaps">
+
+<gaps prompt="The line-parsing skeleton, from memory — trim, skip, split, guard.">
+```go
+for _, line := range strings.Split(content, "\n") {
+    line = «strings.TrimSpace(line)»
+    if line == "" || strings.«HasPrefix»(line, "#") {
+        «continue»
+    }
+    parts := strings.SplitN(line, "=", «2»)
+    if len(parts) != 2 {
+        continue
+    }
+    result[strings.TrimSpace(parts[0])] = strings.TrimSpace(parts[1])
+}
+```
+</gaps>
+
+</attempt>
+
+<attempt type="scratch">
+
 <div class="inline-exercises" data-concept="Line Parsing"></div>
+
+</attempt>

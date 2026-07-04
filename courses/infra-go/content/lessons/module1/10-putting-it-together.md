@@ -2,6 +2,8 @@
 
 Time to combine everything. Given a text file where each line is `name:score`, we'll parse lines, group scores by name, and produce a sorted summary. This is the **parse → accumulate → sort → format** pattern — the same shape you'll use for any "group data and report" task.
 
+<attempt type="worked">
+
 **Step 1: Parse one line.** Split on `:` to get the name and numeric value.
 
 ```go
@@ -79,9 +81,42 @@ func scoreReport(lines []string) []string {
 
 This function uses every pattern from the module: string splitting, `continue` for skipping bad lines, maps for accumulating, the sorted-keys pattern, and formatted output. In practice, the input could be log entries, config lines, or CSV rows — the shape stays the same.
 
+</attempt>
+
+<attempt type="gaps">
+
+<gaps prompt="The whole pipeline, from memory — parse → accumulate → sort → format.">
+```go
+totals := make(map[string]int)
+for _, line := range lines {
+    parts := strings.SplitN(line, ":", 2)
+    if «len(parts) != 2» {
+        continue
+    }
+    score, err := «strconv.Atoi»(strings.TrimSpace(parts[1]))
+    if err != nil {
+        continue
+    }
+    totals[parts[0]] «+=» score
+}
+
+names := make([]string, 0, len(totals))
+for name := range totals {
+    names = append(names, name)
+}
+«sort.Strings(names)»
+```
+</gaps>
+
+</attempt>
+
 > **What's missing?** You might notice we sorted alphabetically, not by score descending. Sorting by value (to get "top N") requires bundling each key-value pair into a sortable unit — and that's exactly what structs unlock in Module 2. Once you learn structs, you'll upgrade this pattern to **accumulate → struct → sort → truncate → format**.
 
+<attempt type="scratch">
+
 <div class="inline-exercises" data-concept="Combining Patterns"></div>
+
+</attempt>
 
 ---
 

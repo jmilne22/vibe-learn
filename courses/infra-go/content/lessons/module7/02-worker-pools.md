@@ -2,6 +2,8 @@
 
 A fixed number of goroutines processing jobs from a shared queue:
 
+<attempt type="worked">
+
 ```go
 func workerPool(jobs <-chan Job, results chan<- Result, numWorkers int) {
     var wg sync.WaitGroup
@@ -38,4 +40,44 @@ for r := range results {
 
 **Why not one goroutine per job?** If you have 10,000 HTTP requests, launching 10,000 goroutines will overwhelm the target server. A pool of 20 workers is controlled and predictable.
 
+</attempt>
+
+<attempt type="gaps">
+
+<gaps prompt="The pool's lifecycle, from memory — what feeds the workers, what ends them, what ends the collector?">
+```go
+func workerPool(jobs <-chan Job, results chan<- Result, numWorkers int) {
+    var wg sync.WaitGroup
+    for i := 0; i < numWorkers; i++ {
+        wg.Add(1)
+        go func(id int) {
+            defer wg.Done()
+            for job := «range jobs» {
+                results <- processJob(id, job)
+            }
+        }(i)
+    }
+    wg.Wait()
+    close(results)
+}
+
+go workerPool(jobs, results, 5)
+
+for _, j := range allJobs {
+    jobs <- j
+}
+«close(jobs)»          // lets each worker's loop finish
+
+for r := «range results» {
+    fmt.Println(r)
+}
+```
+</gaps>
+
+</attempt>
+
+<attempt type="scratch">
+
 <div class="inline-exercises" data-concept="Worker Pools"></div>
+
+</attempt>

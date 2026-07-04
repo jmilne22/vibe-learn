@@ -18,6 +18,12 @@ variants:
             - >-
               Set <code>cmd.SysProcAttr = &syscall.SysProcAttr{Cloneflags: syscall.CLONE_NEWPID |
               syscall.CLONE_NEWUTS}</code>
+          driverGo: |-
+            cmd := newIsolatedCmd("/bin/sh", "-c", "hostname container-demo")
+            fmt.Println("path:", cmd.Path)
+            fmt.Println("args:", cmd.Args)
+            fmt.Printf("cloneflags: %#x\n", cmd.SysProcAttr.Cloneflags)
+            fmt.Println("stdio wired:", cmd.Stdin == os.Stdin && cmd.Stdout == os.Stdout && cmd.Stderr == os.Stderr)
           solution: |-
             func newIsolatedCmd(command string, args ...string) *exec.Cmd {
                 cmd := exec.Command(command, args...)
@@ -63,6 +69,13 @@ variants:
           hints:
             - Use <code>os.MkdirAll</code> for the cgroup dir, <code>os.WriteFile</code> for memory.max and cgroup.procs
             - Write the byte count as a string to memory.max, write <code>os.Getpid()</code> to cgroup.procs
+          driverGo: |-
+            dir := filepath.Join(os.TempDir(), "vibe-cgroup-demo")
+            err := setCgroupMemory(dir, 256*1024*1024)
+            fmt.Println("setCgroupMemory err:", err)
+            data, _ := os.ReadFile(filepath.Join(dir, "memory.max"))
+            fmt.Println("memory.max:", string(data))
+            os.RemoveAll(dir)
           solution: |-
             func setCgroupMemory(cgroupPath string, limitBytes int64) error {
                 if err := os.MkdirAll(cgroupPath, 0755); err != nil {
@@ -86,6 +99,14 @@ variants:
             returns it as <code>int64</code> bytes.
           hints:
             - Use <code>os.ReadFile</code>, <code>strings.TrimSpace</code>, then <code>strconv.ParseInt</code>
+          driverGo: |-
+            dir := os.TempDir()
+            os.WriteFile(filepath.Join(dir, "memory.current"), []byte(" 52428800\n"), 0o644)
+            usage, err := readMemoryUsage(dir)
+            fmt.Println("usage:", usage, "err:", err)
+            _, err = readMemoryUsage(filepath.Join(dir, "no-such-cgroup"))
+            fmt.Println("missing cgroup error:", err != nil)
+            os.Remove(filepath.Join(dir, "memory.current"))
           solution: |-
             func readMemoryUsage(cgroupPath string) (int64, error) {
                 data, err := os.ReadFile(filepath.Join(cgroupPath, "memory.current"))

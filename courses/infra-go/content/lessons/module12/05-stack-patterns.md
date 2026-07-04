@@ -26,6 +26,8 @@ func isValid(s string) bool {
 
 ### Monotonic Stack: Next Greater Element
 
+<attempt type="worked">
+
 ```go
 // For each server load, find the next time a higher load occurs
 func nextGreaterElement(loads []int) []int {
@@ -49,3 +51,30 @@ func nextGreaterElement(loads []int) []int {
 ```
 
 O(n) — each element is pushed and popped at most once.
+
+</attempt>
+
+<attempt type="gaps">
+
+<gaps prompt="Validate nesting in a config expression — push opens; a closer must match the top; a clean parse ends with nothing left over.">
+```go
+stack := []byte{}
+pairs := map[byte]byte{')': '(', ']': '[', '}': '{'}
+for i := 0; i < len(cfg); i++ {
+    ch := cfg[i]
+    if ch == '(' || ch == '[' || ch == '{' {
+        stack = «append(stack, ch)»
+    } else if match, ok := pairs[ch]; ok {
+        if len(stack) == 0 || «stack[len(stack)-1]» != match {
+            return false
+        }
+        stack = «stack[:len(stack)-1]»
+    }
+}
+return len(stack) == 0
+```
+</gaps>
+
+Push, peek, pop — all three are plain slice expressions; Go has no built-in stack type. Peek reads the last element, pop reslices it away.
+
+</attempt>

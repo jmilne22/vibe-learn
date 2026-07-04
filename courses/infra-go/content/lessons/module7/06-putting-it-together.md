@@ -2,6 +2,8 @@
 
 Production worker pool with context, rate limiting, and clean shutdown:
 
+<attempt type="worked">
+
 ```go
 func processQueue(ctx context.Context, jobs <-chan Job, workers int, ratePerSec int) <-chan Result {
     results := make(chan Result)
@@ -38,6 +40,29 @@ func processQueue(ctx context.Context, jobs <-chan Job, workers int, ratePerSec 
 ```
 
 This combines everything: bounded workers, rate limiting, context cancellation, and clean channel lifecycle.
+
+</attempt>
+
+<attempt type="gaps">
+
+<gaps prompt="The worker's inner loop, from memory — two ways out, one throttle.">
+```go
+for {
+    select {
+    case <-ctx.Done():
+        return
+    case job, «ok» := <-jobs:
+        if «!ok» {
+            return // no more work coming
+        }
+        «<-limiter.C»
+        results <- processJob(job)
+    }
+}
+```
+</gaps>
+
+</attempt>
 
 ---
 

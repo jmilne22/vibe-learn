@@ -132,6 +132,15 @@ variants:
           hints:
             - Use <code>os.Open</code> + <code>defer f.Close()</code>
             - "Loop: <code>for scanner.Scan() { count++ }</code>"
+          driverGo: |-
+            if err := os.WriteFile("driver-events.log", []byte("pod started\npod ready\nprobe ok\n"), 0o644); err != nil {
+                panic(err)
+            }
+            n, err := countLines("driver-events.log")
+            fmt.Println("lines:", n, err)
+            os.Remove("driver-events.log")
+            _, err = countLines("no-such-file.log")
+            fmt.Println("missing file error:", err != nil)
           solution: |-
             func countLines(path string) (int, error) {
                 f, err := os.Open(path)
@@ -158,6 +167,17 @@ variants:
           hints:
             - Use <code>filepath.WalkDir</code>
             - Check extension with <code>filepath.Ext(path)</code>
+          driverGo: |-
+            os.MkdirAll("driver-manifests/base", 0o755)
+            for _, name := range []string{"driver-manifests/deploy.yaml", "driver-manifests/base/svc.yml", "driver-manifests/README.md"} {
+                os.WriteFile(name, []byte("kind: placeholder"), 0o644)
+            }
+            files, err := findYAMLFiles("driver-manifests")
+            fmt.Println("count:", len(files), "err:", err)
+            for _, f := range files {
+                fmt.Println(filepath.ToSlash(f))
+            }
+            os.RemoveAll("driver-manifests")
           solution: |-
             func findYAMLFiles(root string) ([]string, error) {
                 var files []string
@@ -188,6 +208,14 @@ variants:
           hints:
             - Collect errors into <code>var errs []string</code>
             - Check kind with a map or switch statement
+          driverGo: |-
+            good := Manifest{APIVersion: "apps/v1", Kind: "Deployment"}
+            good.Metadata.Name = "checkout-api"
+            fmt.Println("valid manifest errors:", len(validateManifest(good)))
+            fmt.Println("empty manifest errors:", len(validateManifest(Manifest{})))
+            badKind := Manifest{APIVersion: "batch/v1", Kind: "CronJob"}
+            badKind.Metadata.Name = "cleanup-job"
+            fmt.Println("bad kind errors:", len(validateManifest(badKind)))
           solution: |-
             type Manifest struct {
                 APIVersion string `yaml:"apiVersion"`
@@ -220,6 +248,13 @@ variants:
           hints:
             - Use <code>fmt.Sprintf("%s:%d [%s] %s", ...)</code>
             - Join with <code>strings.Join</code> or a <code>strings.Builder</code>
+          driverGo: |-
+            results := []LintResult{
+                {File: "deploy.yaml", Line: 10, Severity: "error", Message: "missing resource limits"},
+                {File: "svc.yaml", Line: 3, Severity: "warning", Message: "no selector defined"},
+            }
+            fmt.Println(formatResults(results))
+            fmt.Println("empty input gives empty string:", formatResults(nil) == "")
           solution: |-
             type LintResult struct {
                 File     string

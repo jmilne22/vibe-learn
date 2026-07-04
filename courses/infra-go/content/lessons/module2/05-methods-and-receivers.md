@@ -4,7 +4,7 @@
 
 Methods are functions attached to a type. In Go, you define them outside the struct — they're just functions with a receiver parameter.
 
-### Value Receivers
+<attempt type="pretest">
 
 <predict prompt="What does this print?">
 ```go
@@ -25,7 +25,15 @@ func main() {
 ```
 </predict>
 
-`Inc` has a *value* receiver — every call gets its own copy of `c`, increments that copy's `n`, and throws the copy away when the method returns. The original is never touched. This is the most common method-receiver bug; the fix is a pointer receiver (next section).
+Wrong is fine — the receiver rules below explain exactly this.
+
+</attempt>
+
+### Value Receivers
+
+<attempt type="worked">
+
+That pretest's `Inc` has a *value* receiver — every call gets its own copy of `c`, increments that copy's `n`, and throws the copy away when the method returns. The original is never touched. This is the most common method-receiver bug; the fix is a pointer receiver (next section).
 
 ```go
 // Value receiver — gets a COPY of the struct
@@ -42,6 +50,8 @@ pod := Pod{Name: "web-1", Namespace: "production", Status: "Running"}
 fmt.Println(pod.FullName())  // "production/web-1"
 fmt.Println(pod.IsRunning()) // true
 ```
+
+</attempt>
 
 ### Pointer Receivers
 
@@ -63,6 +73,26 @@ pod := Pod{Name: "web-1", Status: "Pending"}
 pod.SetStatus("Running")  // modifies pod directly
 fmt.Println(pod.Status)    // "Running"
 ```
+
+<attempt type="gaps">
+
+<gaps prompt="Fix the pretest — make Inc actually count.">
+```go
+type Counter struct{ n int }
+
+func (c «*Counter») Inc() { c.n«++» }
+
+func main() {
+    c := Counter{}
+    c.Inc()
+    c.Inc()
+    c.Inc()
+    fmt.Println(c.n) // «3»
+}
+```
+</gaps>
+
+</attempt>
 
 ### When to Use Which
 
@@ -86,4 +116,8 @@ class Pod:
 # More typing, but you know exactly what can mutate.
 ```
 
+<attempt type="scratch">
+
 <div class="inline-exercises" data-concept="Methods"></div>
+
+</attempt>

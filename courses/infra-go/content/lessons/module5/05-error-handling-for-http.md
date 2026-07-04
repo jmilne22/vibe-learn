@@ -2,6 +2,8 @@
 
 ### Status Code Checking
 
+<attempt type="worked">
+
 ```go
 // err != nil only means "couldn't connect."
 // A 500 response is NOT an error — it's a successful HTTP response with a bad status.
@@ -18,6 +20,27 @@ if resp.StatusCode != http.StatusOK {
 ```
 
 This is the #1 mistake Go beginners make with HTTP. `err != nil` only catches network failures. A 404 or 500 comes back as `err == nil` with a non-200 status code.
+
+</attempt>
+
+<attempt type="gaps">
+
+<gaps prompt="The check err != nil doesn't do — from memory: clean up, compare against the right constant, surface the body.">
+```go
+resp, err := client.Do(req)
+if err != nil {
+    return fmt.Errorf("request failed: %w", err)  // network error only
+}
+defer «resp.Body.Close()»
+
+if resp.StatusCode != «http.StatusOK» {
+    body, _ := io.ReadAll(resp.Body)
+    return fmt.Errorf("API error (status %d): %s", resp.StatusCode, «string(body)»)
+}
+```
+</gaps>
+
+</attempt>
 
 ### Decoding Error Bodies
 

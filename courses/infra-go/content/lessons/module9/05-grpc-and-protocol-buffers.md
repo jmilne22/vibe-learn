@@ -53,6 +53,8 @@ This generates `pod.pb.go` (message types) and `pod_grpc.pb.go` (service interfa
 
 ### Implementing the Server
 
+<attempt type="worked">
+
 ```go
 type podServer struct {
     pb.UnimplementedPodServiceServer
@@ -88,6 +90,8 @@ func main() {
     grpcServer.Serve(lis)
 }
 ```
+
+</attempt>
 
 ### Building the Client
 
@@ -139,6 +143,29 @@ Bidirectional: Client <---stream--> Server
 - **Server streaming:** Watch for resource changes (like `kubectl get pods -w`)
 - **Client streaming:** Upload logs, send batched metrics
 - **Bidirectional:** Chat, real-time sync, terminal sessions
+
+<attempt type="gaps">
+
+<gaps prompt="Consume a server-side stream, from memory — read until the server closes it.">
+```go
+stream, err := client.WatchPods(context.Background(), &pb.ListPodsRequest{})
+if err != nil {
+    log.Fatal(err)
+}
+for {
+    pod, err := stream.«Recv»()
+    if err == «io.EOF» {
+        «break»
+    }
+    if err != nil {
+        log.Fatal(err)
+    }
+    fmt.Printf("got pod: %s\n", pod.Name)
+}
+```
+</gaps>
+
+</attempt>
 
 ---
 

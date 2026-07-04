@@ -31,6 +31,8 @@ err := fmt.Errorf("failed to connect to %s:%d", host, port)
 
 You'll write this hundreds of times. Get comfortable with it.
 
+<attempt type="worked">
+
 ```go
 pod, err := fetchPod("web-1", "production")
 if err != nil {
@@ -40,6 +42,25 @@ if err != nil {
 ```
 
 **Why not exceptions?** In infrastructure code, almost every operation can fail: network calls, file reads, config parsing, API requests. Exceptions make the failure path invisible — you don't know what can throw until it does. Go makes every failure explicit in the return type. You can't accidentally ignore an error without deliberately writing `_ =` or skipping the return value.
+
+</attempt>
+
+<attempt type="gaps">
+
+<gaps prompt="Every failure path visible in the signature — fill in the ritual.">
+```go
+func loadPods(path string) ([]Pod, «error») {
+    data, err := os.ReadFile(path)
+    if «err != nil» {
+        return nil, fmt.Errorf("reading %s: «%w»", path, err)
+    }
+    pods := parsePods(data)
+    return pods, «nil»
+}
+```
+</gaps>
+
+</attempt>
 
 *Python comparison*
 
@@ -82,4 +103,8 @@ if err != nil {
 // now use result
 ```
 
+<attempt type="scratch">
+
 <div class="inline-exercises" data-concept="Errors as Values"></div>
+
+</attempt>

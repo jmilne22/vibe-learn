@@ -1,6 +1,6 @@
 ## Common Mistakes
 
-### Closing a Channel Twice
+<attempt type="pretest">
 
 <predict prompt="What happens when this runs?">
 ```go
@@ -14,7 +14,13 @@ panic: close of closed channel
 ```
 </predict>
 
-Only close once, and only from the sender.
+Commit before reading — this is mistake #1 of four.
+
+</attempt>
+
+### Closing a Channel Twice
+
+That pretest is the first mistake. Only close once, and only from the sender.
 
 ### Writing to a Closed Channel
 
@@ -25,6 +31,8 @@ ch <- 42 // PANIC: send on closed channel
 ```
 
 ### The Loop Variable Trap
+
+<attempt type="worked">
 
 ```go
 // BAD: all goroutines share the same loop variable
@@ -44,6 +52,8 @@ for _, url := range urls {
 
 > **Note:** Go 1.22+ changed loop variable semantics, so the bad version now works correctly. But passing as a parameter is still clearer and works in all versions.
 
+</attempt>
+
 ### Race Conditions
 
 ```go
@@ -57,6 +67,26 @@ for i := 0; i < 1000; i++ {
 ```
 
 Detect with `go test -race`. Fix with channels, sync.Mutex, or sync/atomic.
+
+<attempt type="gaps">
+
+<gaps prompt="A version-proof fan-out: each goroutine must get its own copy, and every result must be drained.">
+```go
+results := make(chan string, len(hosts))
+
+for _, host := range hosts {
+    go func(h string) {
+        results <- ping(«h»)
+    }(«host»)
+}
+
+for range hosts {
+    fmt.Println(«<-results»)
+}
+```
+</gaps>
+
+</attempt>
 
 ---
 

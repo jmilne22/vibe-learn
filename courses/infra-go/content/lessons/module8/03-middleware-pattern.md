@@ -1,5 +1,7 @@
 ## Middleware Pattern
 
+<attempt type="worked">
+
 Middleware wraps a handler, adding behavior before/after the request:
 
 ```go
@@ -16,6 +18,8 @@ func loggingMiddleware(next http.Handler) http.Handler {
     })
 }
 ```
+
+</attempt>
 
 ### Auth Middleware
 
@@ -66,4 +70,26 @@ handler := recoveryMiddleware(
 http.ListenAndServe(":8080", handler)
 ```
 
+<attempt type="gaps">
+
+<gaps prompt="Auth middleware, from memory — check, short-circuit, or pass through.">
+```go
+func requireToken(next http.Handler) http.Handler {
+    return http.«HandlerFunc»(func(w http.ResponseWriter, r *http.Request) {
+        if r.Header.Get("Authorization") == "" {
+            http.Error(w, "unauthorized", http.StatusUnauthorized)
+            «return»
+        }
+        «next.ServeHTTP(w, r)»
+    })
+}
+```
+</gaps>
+
+</attempt>
+
+<attempt type="scratch">
+
 <div class="inline-exercises" data-concept="Middleware"></div>
+
+</attempt>

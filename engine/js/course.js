@@ -575,7 +575,7 @@
         showBtn.remove();
         refPane.style.display = '';
 
-        if (shouldUseSplitLayout()) {
+        if (shouldUseSplitLayout(inlineEl)) {
             // Ensure refPane is a direct child of bodyDiv (not inside a details)
             if (refPane.parentNode !== bodyDiv) {
                 bodyDiv.appendChild(refPane);
@@ -597,7 +597,12 @@
         }
     }
 
-    function shouldUseSplitLayout() {
+    function shouldUseSplitLayout(inlineEl) {
+        // Inside an attempt card / lesson-rail layout the article column is
+        // already sized; the negative-margin breakout misplaces content there.
+        if (inlineEl && inlineEl.closest && (inlineEl.closest('.attempt-card') || inlineEl.closest('.lesson-layout'))) {
+            return false;
+        }
         return window.innerWidth >= 1400;
     }
 
@@ -790,11 +795,11 @@
 
     function toggleSplitLayouts() {
         if (!hasInlineExercises) return;
-        var wantSplit = shouldUseSplitLayout();
 
         inlineContainers.forEach(function(container) {
             var el = container.element;
             if (!el._hasRefPane) return;
+            var wantSplit = shouldUseSplitLayout(el);
 
             var bodyDiv = el.querySelector('.inline-exercises-body');
             if (!bodyDiv) return;

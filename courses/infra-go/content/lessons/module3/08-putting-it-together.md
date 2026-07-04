@@ -4,6 +4,8 @@ Module 3 has six concepts in service of one goal: **make the failure paths in yo
 
 The function under test:
 
+<attempt type="worked">
+
 ```go
 type Config struct {
     Name     string
@@ -66,6 +68,27 @@ func ParseConfig(r io.Reader) (Config, error) {
 ```
 
 Notice every Module 3 idea fires here: errors-as-values for the return signature, sentinel errors (`ErrEmpty`, `ErrMissing`) for conditions callers might branch on, custom `*ParseError` for structured data, `%w` to wrap so `errors.Is(err, ErrMissing)` works through the wrap, and `io.Reader` so the function takes anything.
+
+</attempt>
+
+<attempt type="gaps">
+
+<gaps prompt="The capstone's error plumbing, from memory — three shapes, three jobs.">
+```go
+var (
+    ErrEmpty   = «errors.New»("config is empty")
+    ErrMissing = errors.New("missing required field")
+)
+
+// wrap so the sentinel still matches through errors.Is:
+return Config{}, fmt.Errorf("«%w»: name", ErrMissing)
+
+// structured error carrying position info:
+return Config{}, «&ParseError»{Line: i + 1, Msg: "missing '='"}
+```
+</gaps>
+
+</attempt>
 
 ### The Test
 

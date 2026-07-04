@@ -49,6 +49,8 @@ func createPod(w http.ResponseWriter, r *http.Request) {
 
 ### Writing JSON Responses
 
+<attempt type="worked">
+
 ```go
 func writeJSON(w http.ResponseWriter, status int, data any) {
     w.Header().Set("Content-Type", "application/json")
@@ -67,3 +69,23 @@ func listPods(w http.ResponseWriter, r *http.Request) {
 ```
 
 > **Gotcha:** Call `w.WriteHeader()` *after* setting headers, but *before* writing the body. Once you write the body, headers are already sent.
+
+</attempt>
+
+<attempt type="gaps">
+
+<gaps prompt="Decode and validate a JSON body, from memory — reject bad input before touching it.">
+```go
+var req struct {
+    Name  string `json:"name"`
+    Image string `json:"image"`
+}
+
+if err := json.«NewDecoder»(r.Body).«Decode»(&req); err != nil {
+    http.Error(w, "invalid JSON: "+err.Error(), http.«StatusBadRequest»)
+    «return»
+}
+```
+</gaps>
+
+</attempt>

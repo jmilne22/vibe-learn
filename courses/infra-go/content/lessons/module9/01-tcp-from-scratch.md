@@ -2,6 +2,8 @@
 
 ### Listening for Connections
 
+<attempt type="worked">
+
 ```go
 listener, err := net.Listen("tcp", ":9000")
 if err != nil {
@@ -20,6 +22,8 @@ for {
 ```
 
 `Accept` returns a `net.Conn` — an `io.ReadWriteCloser`. Everything you know about readers and writers applies here.
+
+</attempt>
 
 ### Connecting as a Client
 
@@ -103,4 +107,33 @@ func serveTCP(ctx context.Context, addr string) error {
 }
 ```
 
+<attempt type="gaps">
+
+<gaps prompt="The accept loop plus a safe handler, from memory — one slow client must not block the rest.">
+```go
+func serve(listener net.Listener) {
+    for {
+        conn, err := listener.«Accept»()
+        if err != nil {
+            log.Println("accept error:", err)
+            continue
+        }
+        «go» handleConn(conn)
+    }
+}
+
+func handleConn(conn net.Conn) {
+    «defer conn.Close()»
+    conn.SetDeadline(time.Now().Add(30 * «time.Second»))
+    // read loop...
+}
+```
+</gaps>
+
+</attempt>
+
+<attempt type="scratch">
+
 <div class="inline-exercises" data-concept="TCP"></div>
+
+</attempt>

@@ -2,6 +2,8 @@
 
 The Go testing idiom. Instead of writing separate functions for each case, define a table:
 
+<attempt type="worked">
+
 ```go
 func TestParsePort(t *testing.T) {
     tests := []struct {
@@ -46,6 +48,41 @@ func TestParsePort(t *testing.T) {
 - Easy to test error cases alongside happy paths
 - `go test -run TestParsePort/zero` runs just one case
 
+</attempt>
+
+<attempt type="gaps">
+
+<gaps prompt="The skeleton of every table test you'll write, from memory.">
+```go
+tests := []struct {
+    name    string
+    input   string
+    want    int
+    wantErr bool
+}{
+    {name: "valid port", input: "8080", want: 8080},
+    {name: "zero", input: "0", «wantErr: true»},
+}
+
+for _, tt := range tests {
+    t.Run(«tt.name», func(t *testing.T) {
+        got, err := ParsePort(tt.input)
+        if «tt.wantErr» {
+            if err == nil {
+                t.Errorf("expected error, got nil")
+            }
+            «return»
+        }
+        if got != tt.want {
+            t.Errorf("got %d, want %d", got, tt.want)
+        }
+    })
+}
+```
+</gaps>
+
+</attempt>
+
 *Python comparison*
 
 ```python
@@ -53,4 +90,8 @@ func TestParsePort(t *testing.T) {
 # Go: same idea, but it's just a struct slice + loop. No framework needed.
 ```
 
+<attempt type="scratch">
+
 <div class="inline-exercises" data-concept="Table-Driven Tests"></div>
+
+</attempt>

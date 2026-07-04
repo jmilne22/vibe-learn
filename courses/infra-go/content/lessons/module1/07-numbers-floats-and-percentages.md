@@ -2,7 +2,7 @@
 
 Infrastructure code mostly deals with integers (ports, counts, bytes), but reporting often needs percentages and formatted output.
 
-### Percentage Calculation
+<attempt type="pretest">
 
 <predict prompt="What does this print?">
 ```go
@@ -14,6 +14,10 @@ fmt.Println(passed / total)
 0
 ```
 </predict>
+
+</attempt>
+
+### Percentage Calculation
 
 In Go, dividing two ints gives an int — the decimal part is thrown away. `3 / 8` is `0`, not `0.375`. This is different from Python 3 where `/` always gives a float.
 
@@ -46,6 +50,8 @@ This isn't a Go bug — every language using IEEE 754 floats has it. `0.1` and `
 
 ### Rounding
 
+<attempt type="worked">
+
 `math.Round` rounds to the nearest integer. But what if you want 1 decimal place? There's no `math.Round(x, places)`. The trick: multiply to shift the decimal point, round, then divide back.
 
 To round to 1 decimal: multiply by 10 (moves the tenths digit into the ones place), round, divide by 10:
@@ -57,6 +63,20 @@ rounded := math.Round(avg*10) / 10  // 72.7
 ```
 
 To round to 2 decimals, multiply/divide by 100. To round to the nearest integer, just `math.Round(x)`.
+
+</attempt>
+
+<attempt type="gaps">
+
+<gaps prompt="Error rate as a one-decimal percentage — where do the conversions go?">
+```go
+rate := «float64(errors)» / «float64(total)» * 100
+rounded := math.Round(rate*«10») / «10»
+fmt.Printf("«%.1f%%»\n", rounded)
+```
+</gaps>
+
+</attempt>
 
 ### Parsing Numbers from Strings
 
@@ -78,4 +98,8 @@ if err != nil {
 
 The second argument to `ParseFloat` is the bit size (64 for `float64`, 32 for `float32`). Always use 64.
 
+<attempt type="scratch">
+
 <div class="inline-exercises" data-concept="Numbers & Percentages"></div>
+
+</attempt>

@@ -2,7 +2,34 @@
 
 Infrastructure is YAML and JSON all the way down. K8s manifests, Terraform configs, CI pipelines, Helm values.
 
+<attempt type="pretest">
+
+<predict prompt="What does this print?">
+```go
+type Pod struct {
+    Name     string `json:"name"`
+    Replicas int    `json:"replicas"`
+}
+
+func main() {
+    data := []byte(`{"name":"web","memory":512}`)
+    var pod Pod
+    json.Unmarshal(data, &pod)
+    fmt.Println(pod.Name, pod.Replicas)
+}
+```
+```
+web 0
+```
+</predict>
+
+Commit first: what happens to the field the JSON has but the struct doesn't, and the field the struct has but the JSON doesn't?
+
+</attempt>
+
 ### JSON with encoding/json
+
+<attempt type="worked">
 
 ```go
 import "encoding/json"
@@ -28,6 +55,8 @@ if err != nil {
 }
 fmt.Println(string(out))
 ```
+
+</attempt>
 
 ### Struct Tags
 
@@ -57,6 +86,30 @@ if err := yaml.Unmarshal(data, &config); err != nil {
 }
 ```
 
+<attempt type="gaps">
+
+<gaps prompt="Parse a manifest into a typed struct — tags map the keys, Unmarshal fills it in place.">
+```go
+type Deployment struct {
+    APIVersion string `yaml:«"apiVersion"»`
+    Kind       string `yaml:"kind"`
+    Replicas   int    `yaml:"replicas"`
+}
+
+data, err := os.ReadFile("deployment.yaml")
+if err != nil {
+    return fmt.Errorf("reading: %w", err)
+}
+
+var dep Deployment
+if err := yaml.Unmarshal(data, «&dep»); err != nil {
+    return fmt.Errorf("parsing YAML: «%w»", err)
+}
+```
+</gaps>
+
+</attempt>
+
 ### Handling Unknown Fields
 
 K8s manifests have many fields you might not care about:
@@ -77,4 +130,8 @@ decoder := json.NewDecoder(bytes.NewReader(data))
 decoder.DisallowUnknownFields()
 ```
 
+<attempt type="scratch">
+
 <div class="inline-exercises" data-concept="JSON Parsing"></div>
+
+</attempt>

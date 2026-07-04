@@ -1,6 +1,23 @@
 ## Slice Operations Under Pressure
 
-Operational tools often start by selecting, trimming, or reordering slices: log lines, pod names, metric labels, and file paths. This section focuses on the slice expressions and boundary checks behind those transformations.
+Selecting, trimming, and reordering slices: log lines, pod names, metric labels. Four attempts, escalating; the prose exists to explain what you just got wrong.
+
+<attempt type="pretest">
+
+<predict prompt="What does this print?">
+```go
+pods := []string{"web-1"}
+append(pods, "web-2")
+fmt.Println(pods)
+```
+```
+[web-1]
+```
+</predict>
+
+Wrong is fine — you'll hit exactly this in the worked example below.
+
+</attempt>
 
 > *"Make the zero value useful."* — Go Proverb
 
@@ -43,24 +60,13 @@ fruits[len(fruits)-2:] // ["date", "elderberry"]
 
 ### Append & Grow
 
-<predict prompt="What does this print?">
-```go
-pods := []string{"web-1"}
-append(pods, "web-2")
-fmt.Println(pods)
-```
-```
-[web-1]
-```
-</predict>
-
-`append` doesn't modify the original — it returns a *new* slice. If you throw away the return value, you throw away the data. The fix is one character:
+That pretest was the single most common slice bug in Go: `append` doesn't modify the original — it returns a *new* slice. If you throw away the return value, you throw away the data. The fix is one character:
 
 ```go
 pods = append(pods, "web-2")  // reassign!
 ```
 
-This is the single most common slice bug in Go. Now the correct patterns:
+Now the correct patterns:
 
 ```go
 var pods []string            // nil slice, length 0
@@ -160,6 +166,8 @@ for i, name := range names {
 
 ### Batching (Processing in Chunks)
 
+<attempt type="worked">
+
 You have 10 items and need to process them in batches of 4. That means groups: `[0:4]`, `[4:8]`, `[8:10]`. How do you loop that?
 
 Start from what you know — a C-style loop counts up by 1:
@@ -190,19 +198,20 @@ if end > len(items) {
 
 That's the whole pattern. You derive it from three ideas: (1) C-style loops can step by any amount, (2) each step is the start of a batch, and (3) the last batch might be short so you clamp the end.
 
+</attempt>
+
 ### Finding Min / Max
 
-Go has no `min()`/`max()` for slices. You build it from a loop.
+Go has no `min()`/`max()` for slices. You build it from a loop. The question is: what do you initialize min and max to? If you start with `min := 0`, you'll get 0 as the minimum for any slice of positive numbers — that's wrong. If you start with `min := 999999`, you're guessing at an upper bound — also wrong. The safe answer: initialize both to the first element, then scan the rest.
 
-The question is: what do you initialize min and max to? If you start with `min := 0`, you'll get 0 as the minimum for any slice of positive numbers — that's wrong. If you start with `min := 999999`, you're guessing at an upper bound — also wrong.
+<attempt type="gaps">
 
-The safe answer: initialize both to the first element. Now min and max are already correct for a 1-element slice, and you just need to scan the rest:
-
+<gaps prompt="Same pattern — min/max scan. Why not initialize to 0?">
 ```go
-min, max := prices[0], prices[0]
+min, max := «prices[0]», «prices[0]»   // not 0 — why?
 
-// Start from index 1 — prices[0] is already covered
-for _, p := range prices[1:] {
+// skip the element you already used
+for _, p := range «prices[1:]» {
     if p < min {
         min = p
     }
@@ -211,7 +220,14 @@ for _, p := range prices[1:] {
     }
 }
 ```
+</gaps>
 
-One pass, two comparisons per element. `prices[1:]` skips the first element since it's already accounted for. This works for any comparable type — ints, floats, strings.
+One pass, two comparisons per element. The loop starts one element in, because the initialization already covered it. This works for any comparable type — ints, floats, strings.
+
+</attempt>
+
+<attempt type="scratch">
 
 <div class="inline-exercises" data-concept="Slice Operations"></div>
+
+</attempt>

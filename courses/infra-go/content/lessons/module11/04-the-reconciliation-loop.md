@@ -88,6 +88,8 @@ func (c *Controller) reconcile(ctx context.Context, key string) error {
 
 ### Idempotency
 
+<attempt type="worked">
+
 **Reconcile must be safe to run repeatedly.** Because:
 - Events can be delivered multiple times
 - The controller can restart at any point
@@ -107,4 +109,33 @@ func reconcile(pod *corev1.Pod) {
 }
 ```
 
+</attempt>
+
+<attempt type="gaps">
+
+<gaps prompt="One work item, cradle to grave: claim it, always release it, and steer the retry backoff both ways.">
+```go
+key, quit := c.workqueue.«Get»()
+if quit {
+    return false
+}
+defer c.workqueue.«Done»(key)
+
+if err := c.reconcile(ctx, key.(string)); err != nil {
+    c.workqueue.«AddRateLimited»(key)
+    return true
+}
+c.workqueue.«Forget»(key)
+return true
+```
+</gaps>
+
+Miss the last call and every key that ever failed once keeps its backoff history forever — retries get slower and slower for no reason.
+
+</attempt>
+
+<attempt type="scratch">
+
 <div class="inline-exercises" data-concept="Reconciliation"></div>
+
+</attempt>

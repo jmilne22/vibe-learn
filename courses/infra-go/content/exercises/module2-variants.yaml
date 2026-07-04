@@ -228,6 +228,13 @@ variants:
           hints:
             - Return <code>(Service{}, fmt.Errorf(...))</code> for validation failures
             - Check <code>port < 1 || port > 65535</code> for the range validation
+          driverGo: |-
+            svc, err := NewService("checkout-api", 8080)
+            fmt.Println(svc, err)
+            _, err = NewService("", 8080)
+            fmt.Println("empty name error:", err != nil)
+            _, err = NewService("api", 99999)
+            fmt.Println("bad port error:", err != nil)
           solution: |-
             type Service struct {
                 Name     string
@@ -253,6 +260,14 @@ variants:
           hints:
             - Use <code>strings.Contains(key, " ")</code> to check for spaces
             - Empty value is valid — only key has constraints
+          driverGo: |-
+            entry, err := NewConfigEntry("log_level", "debug")
+            fmt.Println(entry, err)
+            entry, err = NewConfigEntry("feature_flag", "")
+            fmt.Println(entry, err)
+            _, errEmpty := NewConfigEntry("", "debug")
+            _, errSpace := NewConfigEntry("log level", "debug")
+            fmt.Println("empty key error:", errEmpty != nil, "| space in key error:", errSpace != nil)
           solution: |-
             type ConfigEntry struct {
                 Key    string
@@ -277,6 +292,13 @@ variants:
           hints:
             - "Node struct needs: Name, MemoryGB, CPUCores, Status, PodCount"
             - Return <code>(Node{}, error)</code> for validation failures, <code>(node, nil)</code> on success
+          driverGo: |-
+            node, err := NewNode("worker-1", 64, 16)
+            fmt.Println(node, err)
+            _, errName := NewNode("", 64, 16)
+            _, errMem := NewNode("worker-2", 0, 16)
+            _, errCPU := NewNode("worker-3", 64, -1)
+            fmt.Println("name error:", errName != nil, "| memory error:", errMem != nil, "| cpu error:", errCPU != nil)
           solution: |-
             type Node struct {
                 Name     string
@@ -528,6 +550,16 @@ variants:
           hints:
             - Both Pod and Node need <code>IsHealthy() bool</code> methods
             - The function accepts <code>[]HealthChecker</code> — any type satisfying the interface works
+          driverGo: |-
+            items := []HealthChecker{
+                Pod{Name: "web-1", Status: "Running"},
+                Pod{Name: "web-2", Status: "CrashLoopBackOff"},
+                Node{Name: "node-a", Status: "Ready"},
+                Node{Name: "node-b", Status: "NotReady"},
+            }
+            fmt.Println("healthy:", countHealthy(items))
+            fmt.Println("running pod healthy:", Pod{Name: "web-1", Status: "Running"}.IsHealthy())
+            fmt.Println("notready node healthy:", Node{Name: "node-b", Status: "NotReady"}.IsHealthy())
           solution: |-
             type HealthChecker interface {
                 IsHealthy() bool
@@ -569,6 +601,15 @@ variants:
           hints:
             - Return <code>nil</code> from Validate() when valid, <code>fmt.Errorf(...)</code> when invalid
             - In validateAll, only append non-nil errors
+          driverGo: |-
+            items := []Validator{
+                ConfigEntry{Key: "log_level", Value: "info"},
+                ConfigEntry{Key: "", Value: "debug"},
+                ConfigEntry{Key: "max conns", Value: "10"},
+            }
+            errs := validateAll(items)
+            fmt.Println("errors found:", len(errs))
+            fmt.Println("valid entry passes:", ConfigEntry{Key: "port", Value: "8080"}.Validate() == nil)
           solution: |-
             type Validator interface {
                 Validate() error
@@ -611,6 +652,10 @@ variants:
           hints:
             - Use <code>switch v := r.(type)</code> to access the concrete type
             - In each case, <code>v</code> is the concrete type — access type-specific fields
+          driverGo: |-
+            fmt.Println(describe(Pod{Name: "web-1", Namespace: "prod", Status: "Running"}))
+            fmt.Println(describe(Pod{Name: "db-0", Namespace: "data", Status: "Pending"}))
+            fmt.Println(describe(Service{Name: "checkout", Namespace: "prod", Port: 8080}))
           solution: |-
             type Resource interface {
                 FullName() string
@@ -676,6 +721,13 @@ variants:
             Write a function that takes a slice of Pod structs (Name, Namespace, Status, MemoryMB) and returns a
             <code>map[string][]Pod</code> grouping pods by namespace.
           functionSignature: func groupByNamespace(pods []Pod) map[string][]Pod
+          setupGo: |-
+            type Pod struct {
+                Name      string
+                Namespace string
+                Status    string
+                MemoryMB  int
+            }
           difficulty: 1
           testCases:
             - input: >-
@@ -707,6 +759,13 @@ variants:
             Write a function that takes a slice of Pods and returns a summary string: total count, running count, total
             memory, and average memory. Format: <code>"Pods: 5 (3 running), Memory: 2560MB (avg 512MB)"</code>.
           functionSignature: func podSummary(pods []Pod) string
+          setupGo: |-
+            type Pod struct {
+                Name      string
+                Namespace string
+                Status    string
+                MemoryMB  int
+            }
           difficulty: 2
           testCases:
             - input: podSummary([]Pod{{"a","ns","Running",512},{"b","ns","Pending",256},{"c","ns","Running",1024}})
@@ -748,6 +807,14 @@ variants:
             MemoryMB and max total CPUM. Return the names of all pods that would be scheduled, stopping when adding the
             next pod would exceed either limit.
           functionSignature: func scheduleWithinQuota(pods []Pod, maxMemMB, maxCPUM int) []string
+          setupGo: |-
+            type Pod struct {
+                Name      string
+                Namespace string
+                Status    string
+                MemoryMB  int
+                CPUM      int
+            }
           difficulty: 3
           testCases:
             - input: >-

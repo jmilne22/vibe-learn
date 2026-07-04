@@ -2,6 +2,8 @@
 
 `sync.WaitGroup` tracks a count of goroutines and blocks until all are done.
 
+<attempt type="worked">
+
 ```go
 import "sync"
 
@@ -27,6 +29,8 @@ wg.Wait() // blocks until all goroutines call Done()
 fmt.Println("all checks complete")
 ```
 
+</attempt>
+
 ### The Pattern
 
 1. `wg.Add(1)` before launching the goroutine
@@ -48,4 +52,29 @@ go func() {
 
 Every goroutine you launch must have a way to exit. Channels, context cancellation, or WaitGroups — use at least one.
 
+<attempt type="gaps">
+
+<gaps prompt="The three-call pattern, from memory — and mind where each call goes.">
+```go
+var wg sync.WaitGroup
+
+for _, url := range urls {
+    wg.«Add(1)»          // before the launch, not inside it
+    go func(u string) {
+        defer wg.«Done()»
+        check(u)
+    }(url)
+}
+
+wg.«Wait()»
+fmt.Println("all checks complete")
+```
+</gaps>
+
+</attempt>
+
+<attempt type="scratch">
+
 <div class="inline-exercises" data-concept="WaitGroups"></div>
+
+</attempt>

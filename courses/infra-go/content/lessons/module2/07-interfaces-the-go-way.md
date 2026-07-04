@@ -4,6 +4,27 @@
 
 Go interfaces are satisfied *implicitly*. If your type has the right methods, it satisfies the interface. No `implements` keyword.
 
+<attempt type="pretest">
+
+<predict prompt="What does this print?">
+```go
+type Pod struct{ Name string }
+
+func (p Pod) String() string { return "pod:" + p.Name }
+
+func main() {
+    fmt.Println(Pod{Name: "web-1"})
+}
+```
+```
+pod:web-1
+```
+</predict>
+
+Wrong is fine — `fmt` quietly checked for the first interface below and called it. Nobody declared anything. That's implicit satisfaction doing its job.
+
+</attempt>
+
 ### Small Interfaces
 
 ```go
@@ -94,6 +115,8 @@ type Writer interface {
 }
 ```
 
+<attempt type="worked">
+
 One method each. Half of the standard library and half of every infra tool you'll ever read on GitHub takes one of these. Why it matters: a function that takes `io.Reader` doesn't care whether the bytes come from a file, an HTTP response, an in-memory buffer, a network socket, or stdin — they all satisfy the interface.
 
 ```go
@@ -120,6 +143,28 @@ cfg, err := ParseConfig(r.Body)
 ```
 
 Three call sites, one function, zero plumbing. The test variant is the one you'll appreciate every day — `strings.NewReader` and `bytes.NewBuffer` exist precisely because so much of the standard library takes `io.Reader`. If you write `func ParseConfig(path string)`, you've made the function untestable without touching the filesystem.
+
+</attempt>
+
+<attempt type="gaps">
+
+<gaps prompt="Make the parser accept anything readable — file, HTTP body, or a test string.">
+```go
+func ParseConfig(r «io.Reader») (Config, error) {
+    data, err := «io.ReadAll(r)»
+    if err != nil {
+        return Config{}, fmt.Errorf("reading config: %w", err)
+    }
+    var cfg Config
+    return cfg, yaml.Unmarshal(data, &cfg)
+}
+
+// In tests — no temp files:
+cfg, err := ParseConfig(«strings.NewReader»("name: test\nport: 8080\n"))
+```
+</gaps>
+
+</attempt>
 
 The same pattern applies to output via `io.Writer`:
 
@@ -167,4 +212,8 @@ class Pod:
 # Go checks at compile time — same flexibility, earlier errors.
 ```
 
+<attempt type="scratch">
+
 <div class="inline-exercises" data-concept="Interfaces"></div>
+
+</attempt>

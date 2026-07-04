@@ -8,6 +8,14 @@ to static HTML by `node build.js`. No framework, no backend.
 - `npm run build` — build all courses
 - `node build.js <slug>` — build a single course
 - `npm run new-course -- <slug>` — scaffold an empty course
+- `npm run practice` — generate local Go test workspaces in `practice/`
+- `node vibe.js watch` — local daemon (127.0.0.1:4711) that relays `vibe check` results to course pages
+- `node vibe.js check <dir>` — run go vet + `go test -race` on one practice exercise; result is recorded and graded objectively
+- `node vibe.js next` — print the exercise the course page queued up
+
+## Learning model
+- Scheduling is FSRS (stability/difficulty/predicted recall) in `engine/js/srs.js`; legacy SM-2 entries migrate lazily. Dashboard is session-first: one computed session (pretest → learn → review → build), memory panel, mastery map.
+- Exercises with go-test workspaces render as local-first cards in daily practice when `vibe watch` is up: no code input in the browser; the test run replaces self-rating (`engine/js/vibe-bridge.js`).
 
 ## Creating a Course
 Read STARTER_PROMPT.md — it contains the complete generation prompt

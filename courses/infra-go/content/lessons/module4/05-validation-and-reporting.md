@@ -2,6 +2,8 @@
 
 ### Building a Validation Pipeline
 
+<attempt type="worked">
+
 ```go
 type LintResult struct {
     File     string
@@ -24,6 +26,8 @@ func lintFile(path string) ([]LintResult, error) {
 }
 ```
 
+</attempt>
+
 ### Formatting Output
 
 ```go
@@ -39,6 +43,29 @@ if outputJSON {
     enc.Encode(results)
 }
 ```
+
+<attempt type="gaps">
+
+<gaps prompt="From memory — each check contributes a slice, and human vs machine output go to different streams.">
+```go
+var results []LintResult
+results = append(results, checkAPIVersion(path, data)«...»)  // each check returns a slice
+
+// human-readable diagnostics
+for _, r := range results {
+    fmt.Fprintf(«os.Stderr», "%s:%d [%s] %s\n", r.File, r.Line, r.Severity, r.Message)
+}
+
+// machine-readable report
+if outputJSON {
+    enc := json.NewEncoder(«os.Stdout»)
+    enc.SetIndent("", "  ")
+    enc.«Encode(results)»
+}
+```
+</gaps>
+
+</attempt>
 
 ### Exit Codes
 
@@ -68,7 +95,11 @@ Convention: 0 = success, 1 = runtime error, 2 = validation failures. This lets C
 
 ---
 
+<attempt type="scratch">
+
 <div class="inline-exercises" data-concept="Validation"></div>
+
+</attempt>
 
 ---
 

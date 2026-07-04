@@ -12,6 +12,8 @@ if err != nil {
 
 ### Line-by-Line (For Large Files)
 
+<attempt type="worked">
+
 ```go
 file, err := os.Open("access.log")
 if err != nil {
@@ -28,6 +30,31 @@ if err := scanner.Err(); err != nil {
     return fmt.Errorf("reading log: %w", err)
 }
 ```
+
+</attempt>
+
+<attempt type="gaps">
+
+<gaps prompt="Stream a big log without loading it all — and neither of the two error checks is optional.">
+```go
+file, err := os.Open("audit.log")
+if err != nil {
+    return fmt.Errorf("opening log: %w", err)
+}
+«defer file.Close()»
+
+scanner := bufio.«NewScanner»(file)
+for scanner.«Scan()» {
+    line := scanner.Text()
+    // process line
+}
+if err := scanner.«Err()»; err != nil {
+    return fmt.Errorf("reading log: %w", err)
+}
+```
+</gaps>
+
+</attempt>
 
 ### Walking Directories
 
@@ -69,4 +96,8 @@ if filename == "-" {
 data, err := io.ReadAll(input)
 ```
 
+<attempt type="scratch">
+
 <div class="inline-exercises" data-concept="File I/O"></div>
+
+</attempt>

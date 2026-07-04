@@ -29,7 +29,6 @@ const { spawnSync } = require('child_process');
 const yaml = require('js-yaml');
 
 const ROOT = __dirname;
-const MODULES = [4, 5, 6, 7, 8, 9, 10, 11];
 const PRACTICE_DIR = path.join(ROOT, 'practice');
 const VERIFY_DIR = path.join(PRACTICE_DIR, '.verify');
 const GO_VERSION = '1.26';
@@ -61,6 +60,8 @@ const IMPORT_MAP = {
   net: 'net',
   netip: 'net/netip',
   filepath: 'path/filepath',
+  exec: 'os/exec',
+  syscall: 'syscall',
   fs: 'io/fs',
   rand: 'math/rand',
   reflect: 'reflect',
@@ -180,9 +181,9 @@ function inferImports(body, context) {
   return imports.sort();
 }
 
-function assembleFile(body, context) {
+function assembleFile(body, context, pkg) {
   const imports = inferImports(body, context);
-  let src = 'package exercise\n\n';
+  let src = `package ${pkg || 'exercise'}\n\n`;
   if (imports.length === 1) {
     src += `import "${imports[0]}"\n\n`;
   } else if (imports.length > 1) {
@@ -211,6 +212,411 @@ function stubFromSignature(sig, context) {
   return out.join('\n\n') + '\n';
 }
 
+// --- Auto-generated tests (golden output from the canonical solution) ---
+//
+// Variants without a hand-written `testGo:` get one generated here:
+//   warmups    — the learner fills in run(); the test compares its stdout
+//                against the solution's captured output ("Expected output"
+//                in the README, rustlings-style).
+//   challenges — each testCases input expression is evaluated against the
+//                solution at generate time; the test replays the same calls
+//                on the learner's code and compares printed results.
+// Solutions that don't compile standalone, print nothing, or are
+// non-deterministic are skipped (they stay browser-rated) and reported.
+
+const AUTOGEN_DIR = path.join(PRACTICE_DIR, 'autogen-tmp');
+const CASE_SENTINEL = '--vibe-case--';
+
+// Probe results are pure functions of the variant content, so cache them:
+// re-running `npm run practice` only compiles solutions that changed.
+const AUTOGEN_CACHE_FILE = path.join(ROOT, '.autogen-cache.json');
+const AUTOGEN_VERSION = 4; // bump to invalidate all cached probes
+let autogenCache = {};
+let autogenCacheDirty = false;
+
+function loadAutogenCache() {
+  try { autogenCache = JSON.parse(fs.readFileSync(AUTOGEN_CACHE_FILE, 'utf8')); }
+  catch { autogenCache = {}; }
+}
+
+function saveAutogenCache() {
+  if (!autogenCacheDirty) return;
+  fs.writeFileSync(AUTOGEN_CACHE_FILE, JSON.stringify(autogenCache));
+}
+
+function autogenKey(kind, variant, group) {
+  const crypto = require('crypto');
+  const material = JSON.stringify([
+    AUTOGEN_VERSION, kind,
+    variant.solution || '',
+    variant.stubGo || '',
+    variant.driverGo || '',
+    variant.functionSignature || '',
+    variant.setupGo || (group && group.setupGo) || '',
+    (variant.testCases || []).map((tc) => tc.input),
+  ]);
+  return crypto.createHash('sha256').update(material).digest('hex');
+}
+
+// Wrap an autogen function with the cache. Cached fields are re-applied to
+// the variant object; errors are cached too (failed probes are the slow ones).
+function cachedAutoGen(kind, variant, group, context, fn) {
+  const key = autogenKey(kind, variant, group);
+  const hit = autogenCache[key];
+  if (hit) {
+    if (hit.error) return { error: hit.error };
+    variant.testGo = hit.testGo;
+    if (hit.stubGo) variant.stubGo = hit.stubGo;
+    if (hit.verifySolution) variant._verifySolution = hit.verifySolution;
+    if (hit.expectedOutput) variant._expectedOutput = hit.expectedOutput;
+    return {};
+  }
+  const res = fn();
+  autogenCacheDirty = true;
+  autogenCache[key] = res.error ? { error: res.error } : {
+    testGo: variant.testGo,
+    stubGo: variant.stubGo,
+    verifySolution: variant._verifySolution,
+    expectedOutput: variant._expectedOutput,
+  };
+  return res;
+}
+
+function goStr(s) {
+  return JSON.stringify(String(s));
+}
+
+function braceDelta(line) {
+  const clean = stripLiterals(line);
+  let d = 0;
+  for (const c of clean) {
+    if (c === '{') d++;
+    else if (c === '}') d--;
+  }
+  return d;
+}
+
+// Top-level decl blocks with names: [{ kind: 'func'|'type'|'var'|'const', name, text }]
+function declBlocks(src) {
+  const lines = String(src).split('\n');
+  const blocks = [];
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    const m = line.match(/^(func|type)\s+(?:\([^)]*\)\s*)?(\w+)/);
+    const vm = line.match(/^(var|const)\b\s*(\(|(\w+))/);
+    if (m) {
+      const block = [line];
+      let depth = braceDelta(line);
+      i++;
+      while (i < lines.length && depth > 0) {
+        block.push(lines[i]);
+        depth += braceDelta(lines[i]);
+        i++;
+      }
+      blocks.push({ kind: m[1], name: m[2], text: block.join('\n') });
+    } else if (vm) {
+      const block = [line];
+      i++;
+      if (vm[2] === '(') {
+        // var ( ... ) block: consume until the closing paren line
+        while (i < lines.length && lines[i].trim() !== ')') {
+          block.push(lines[i]);
+          i++;
+        }
+        if (i < lines.length) { block.push(lines[i]); i++; }
+      }
+      blocks.push({ kind: vm[1], name: vm[3] || '', text: block.join('\n') });
+    } else {
+      i++;
+    }
+  }
+  return blocks;
+}
+
+// Split a solution snippet into top-level declarations (func/type blocks
+// starting at column 0) and loose statements (everything else).
+function splitTopLevel(src) {
+  const lines = String(src).split('\n');
+  const decls = [];
+  const stmts = [];
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    if (/^(func|type)\b/.test(line)) {
+      const block = [line];
+      let depth = braceDelta(line);
+      i++;
+      while (i < lines.length && depth > 0) {
+        block.push(lines[i]);
+        depth += braceDelta(lines[i]);
+        i++;
+      }
+      decls.push(block.join('\n'));
+    } else {
+      stmts.push(line);
+      i++;
+    }
+  }
+  return { decls: decls.join('\n\n').trim(), stmts: stmts.join('\n').trim() };
+}
+
+function indent(src, pad) {
+  return String(src)
+    .split('\n')
+    .map((l) => (l.trim() === '' ? '' : pad + l))
+    .join('\n');
+}
+
+// Run a package-main probe twice; return { output } or { error }.
+function runProbe(body, context) {
+  let src;
+  try {
+    src = assembleFile(body, context, 'main');
+  } catch (e) {
+    return { error: e.message };
+  }
+  fs.rmSync(AUTOGEN_DIR, { recursive: true, force: true });
+  mkdirp(AUTOGEN_DIR);
+  fs.writeFileSync(path.join(AUTOGEN_DIR, 'main.go'), src);
+  const opts = { cwd: PRACTICE_DIR, encoding: 'utf8', input: '', timeout: 30000 };
+  const bin = path.join(AUTOGEN_DIR, 'probe.bin');
+  const build = spawnSync('go', ['build', '-o', bin, './autogen-tmp'], opts);
+  if (build.status !== 0) {
+    return { error: (build.stderr || 'probe build failed').trim().split('\n').slice(0, 3).join(' | ') };
+  }
+  // Map iteration and goroutine scheduling randomize output; require six
+  // runs to agree (after order-insensitive line canonicalization).
+  const canon = (s) => String(s).trim().split('\n').map((l) => l.trimEnd()).sort().join('\n');
+  let first = null;
+  for (let i = 0; i < 6; i++) {
+    const run = spawnSync(bin, [], opts);
+    if (run.status !== 0) {
+      return { error: (run.stderr || 'probe run failed').trim().split('\n').slice(0, 2).join(' | ') };
+    }
+    if (first === null) first = run.stdout;
+    else if (canon(run.stdout) !== canon(first)) return { error: 'non-deterministic output' };
+  }
+  return { output: first };
+}
+
+// Lines may print in any order when they come from map iteration or
+// goroutines, so equality falls back to a sorted-lines comparison.
+const WARMUP_TEST_HARNESS = `func vibeCanon(s string) string {
+    lines := strings.Split(strings.TrimSpace(s), "\\n")
+    for i := range lines {
+        lines[i] = strings.TrimRight(lines[i], " \\t")
+    }
+    sort.Strings(lines)
+    return strings.Join(lines, "\\n")
+}
+
+func TestOutput(t *testing.T) {
+    oldStdout := os.Stdout
+    r, w, err := os.Pipe()
+    if err != nil {
+        t.Fatal(err)
+    }
+    os.Stdout = w
+    run()
+    w.Close()
+    os.Stdout = oldStdout
+    data, _ := io.ReadAll(r)
+    got := strings.TrimSpace(string(data))
+    want := strings.TrimSpace(expectedOutput)
+    if got != want && vibeCanon(got) != vibeCanon(want) {
+        t.Errorf("output mismatch\\n--- your output ---\\n%s\\n--- expected (see README.md) ---\\n%s", got, want)
+    }
+}`;
+
+// Replace every top-level func body with panic("implement me"), keeping
+// types/vars/consts verbatim — the stub for "write this function" warmups.
+function panicStubFromDecls(src) {
+  return declBlocks(src).map((b) => {
+    if (b.kind !== 'func') return b.text;
+    const sigEnd = b.text.indexOf('{');
+    if (sigEnd === -1) return b.text;
+    return b.text.slice(0, sigEnd).trimEnd() + ' {\n    panic("implement me")\n}';
+  }).join('\n\n');
+}
+
+function autoGenWarmup(variant, context) {
+  if (!variant.solution) return { error: 'no solution' };
+
+  // Declaration-only warmups ("write NewService...") carry a driverGo:
+  // fixed statements that call the learner's code and print results. The
+  // canonical solution produces the golden output; the stub gives the
+  // driver in run() and panic-bodies for every func the learner writes.
+  if (variant.driverGo) {
+    const driver = String(variant.driverGo).trim();
+    const { decls } = splitTopLevel(variant.solution);
+    const probeBody =
+      (decls ? decls + '\n\n' : '') + 'func main() {\n' + indent(driver, '    ') + '\n}\n';
+    const probe = runProbe(probeBody, context);
+    if (probe.error) return { error: probe.error };
+    const golden = probe.output.replace(/\s+$/, '');
+    if (!golden.trim()) return { error: 'driver prints nothing' };
+
+    if (!variant.stubGo) {
+      variant.stubGo =
+        panicStubFromDecls(variant.solution) +
+        '\n\n// Driver — already wired up; make it print the expected output.\nfunc run() {\n' +
+        indent(driver, '    ') + '\n}\n';
+    }
+    variant.testGo =
+      'const expectedOutput = ' + goStr(golden) + '\n\n' + WARMUP_TEST_HARNESS + '\n';
+    variant._verifySolution =
+      (decls ? decls + '\n\n' : '') + 'func run() {\n' + indent(driver, '    ') + '\n}\n';
+    variant._expectedOutput = golden;
+    return {};
+  }
+
+  const { decls, stmts } = splitTopLevel(variant.solution);
+  if (!stmts) return { error: 'solution has no statements to run' };
+
+  const probeBody =
+    (decls ? decls + '\n\n' : '') + 'func main() {\n' + indent(stmts, '    ') + '\n}\n';
+  const probe = runProbe(probeBody, context);
+  if (probe.error) return { error: probe.error };
+  const golden = probe.output.replace(/\s+$/, '');
+  if (!golden.trim()) return { error: 'solution prints nothing' };
+
+  variant.stubGo =
+    '// ' + String(variant.title || 'Warmup').replace(/\n/g, ' ') + '\n' +
+    '//\n' +
+    '// Task: see README.md. Make run() print exactly the "Expected output"\n' +
+    '// shown there. Add any types, helpers, and imports you need.\n' +
+    'func run() {\n    // your code here\n}\n';
+  variant.testGo =
+    'const expectedOutput = ' + goStr(golden) + '\n\n' + WARMUP_TEST_HARNESS + '\n';
+  variant._verifySolution =
+    (decls ? decls + '\n\n' : '') + 'func run() {\n' + indent(stmts, '    ') + '\n}\n';
+  variant._expectedOutput = golden;
+  return {};
+}
+
+// Split a testCases input on top-level semicolons (outside strings and
+// brackets): "s := New(); s.Add(x); s.Get(k)" -> statements + final
+// expression to print. Returns { stmts: [], expr } — stmts empty for a
+// plain expression input.
+function splitCaseInput(input) {
+  const parts = [];
+  let cur = '';
+  let depth = 0;
+  let str = null; // ", ', or `
+  for (let i = 0; i < input.length; i++) {
+    const c = input[i];
+    if (str) {
+      cur += c;
+      if (c === '\\' && str !== '`') { cur += input[++i] || ''; continue; }
+      if (c === str) str = null;
+      continue;
+    }
+    if (c === '"' || c === "'" || c === '`') { str = c; cur += c; continue; }
+    if (c === '(' || c === '[' || c === '{') depth++;
+    if (c === ')' || c === ']' || c === '}') depth--;
+    if (c === ';' && depth === 0) { parts.push(cur.trim()); cur = ''; continue; }
+    cur += c;
+  }
+  if (cur.trim()) parts.push(cur.trim());
+  // Strip trailing // comments (annotations in testCase inputs, not code)
+  const clean = parts.map((p) => {
+    let s = null;
+    for (let i = 0; i < p.length; i++) {
+      const c = p[i];
+      if (s) {
+        if (c === '\\' && s !== '`') { i++; continue; }
+        if (c === s) s = null;
+        continue;
+      }
+      if (c === '"' || c === "'" || c === '`') { s = c; continue; }
+      if (c === '/' && p[i + 1] === '/') return p.slice(0, i).trim();
+    }
+    return p;
+  });
+  return { stmts: clean.slice(0, -1), expr: clean[clean.length - 1] || '' };
+}
+
+function caseBlock(input, indent) {
+  const { stmts, expr } = splitCaseInput(input);
+  const lines = stmts.concat([`fmt.Println(${expr})`]);
+  return lines.map((l) => indent + l).join('\n');
+}
+
+function autoGenChallenge(group, variant, context) {
+  const sig = String(variant.functionSignature || '').trim();
+  if (!sig) return { error: 'no functionSignature' };
+  if (/^(func\s+)?Test[A-Z_]/.test(sig)) return { error: 'test-writing exercise' };
+  if (!variant.solution) return { error: 'no solution' };
+  const cases = (variant.testCases || [])
+    .map((tc) => String(tc.input || '').trim())
+    .filter(Boolean);
+  if (cases.length === 0) return { error: 'no testCases' };
+
+  const setup = String(variant.setupGo || group.setupGo || '').trim();
+  const solutionSrc = (setup ? setup + '\n\n' : '') + variant.solution;
+
+  // Each case in its own block: cases reuse variable names (s := New()...)
+  const mainCalls = cases
+    .map((c) => `    fmt.Println(${goStr(CASE_SENTINEL)})\n    {\n` + caseBlock(c, '        ') + '\n    }')
+    .join('\n');
+  const probe = runProbe(solutionSrc + '\n\nfunc main() {\n' + mainCalls + '\n}\n', context);
+  if (probe.error) return { error: probe.error };
+
+  const parts = probe.output.split(CASE_SENTINEL + '\n').slice(1)
+    .map((p) => p.replace(/\s+$/, ''));
+  if (parts.length !== cases.length) return { error: 'could not split case outputs' };
+
+  const switchCases = cases
+    .map((c, i) => `    case ${i}:\n` + caseBlock(c, '        '))
+    .join('\n');
+  variant.testGo =
+    'var vibeCaseInputs = []string{\n' + cases.map((c) => '    ' + goStr(c) + ',').join('\n') + '\n}\n\n' +
+    'var vibeCaseWants = []string{\n' + parts.map((p) => '    ' + goStr(p) + ',').join('\n') + '\n}\n\n' +
+    'func vibeRunCase(i int) {\n    switch i {\n' + switchCases + '\n    }\n}\n\n' +
+    `func TestCases(t *testing.T) {
+    for i := range vibeCaseWants {
+        oldStdout := os.Stdout
+        r, w, err := os.Pipe()
+        if err != nil {
+            t.Fatal(err)
+        }
+        os.Stdout = w
+        vibeRunCase(i)
+        w.Close()
+        os.Stdout = oldStdout
+        data, _ := io.ReadAll(r)
+        got := strings.TrimSpace(string(data))
+        want := strings.TrimSpace(vibeCaseWants[i])
+        if got != want {
+            t.Errorf("case %d: %s\\n  got:  %s\\n  want: %s", i+1, vibeCaseInputs[i], got, want)
+        }
+    }
+}\n`;
+  if (!variant.stubGo) {
+    // The learner implements the signature function(s); everything else the
+    // solution declares (types, helper methods) is scaffolding they need to
+    // compile against — carry it into the stub.
+    const sigNames = new Set(
+      [...sig.matchAll(/func\s+(?:\([^)]*\)\s*)?(\w+)/g)].map((m) => m[1])
+    );
+    const sigTypes = new Set(
+      [...sig.matchAll(/type\s+(\w+)/g)].map((m) => m[1])
+    );
+    const scaffolding = declBlocks(variant.solution)
+      .filter((b) => !(b.kind === 'func' && sigNames.has(b.name)))
+      .filter((b) => !(b.kind === 'type' && sigTypes.has(b.name)))
+      .map((b) => b.text)
+      .join('\n\n');
+    variant.stubGo =
+      (setup ? setup + '\n\n' : '') +
+      (scaffolding ? scaffolding + '\n\n' : '') +
+      stubFromSignature(variant.functionSignature, context);
+  }
+  variant._verifySolution = solutionSrc;
+  return {};
+}
+
 function stripHTML(s) {
   return String(s)
     .replace(/<[^>]+>/g, '')
@@ -222,21 +628,51 @@ function stripHTML(s) {
 }
 
 function collectVariants(courseDir) {
+  loadAutogenCache();
   const exercisesDir = path.join(courseDir, 'content', 'exercises');
   const found = [];
-  for (const modNum of MODULES) {
+  const moduleNums = fs.existsSync(exercisesDir)
+    ? fs.readdirSync(exercisesDir)
+        .map(f => (f.match(/^module(\d+)-variants\.yaml$/) || [])[1])
+        .filter(Boolean)
+        .map(Number)
+        .sort((a, b) => a - b)
+    : [];
+  const skipped = [];
+  for (const modNum of moduleNums) {
     const file = path.join(exercisesDir, `module${modNum}-variants.yaml`);
-    if (!fs.existsSync(file)) continue;
     const parsed = yaml.load(fs.readFileSync(file, 'utf8'));
-    const challenges = (parsed && parsed.variants && parsed.variants.challenges) || [];
-    for (const challenge of challenges) {
-      for (const variant of challenge.variants || []) {
-        if (!variant.testGo) continue;
-        found.push({ modNum, challenge, variant });
+    const kinds = [
+      { groups: (parsed && parsed.variants && parsed.variants.challenges) || [], kind: 'challenge' },
+      { groups: (parsed && parsed.variants && parsed.variants.warmups) || [], kind: 'warmup' },
+    ];
+    process.stdout.write(`module${modNum}: probing solutions `);
+    for (const { groups, kind } of kinds) {
+      for (const challenge of groups) {
+        for (const variant of challenge.variants || []) {
+          const context = `module${modNum}/${challenge.id}_${variant.id}`;
+          if (!variant.testGo) {
+            const res = cachedAutoGen(kind, variant, challenge, context, () =>
+              kind === 'warmup'
+                ? autoGenWarmup(variant, context)
+                : autoGenChallenge(challenge, variant, context));
+            process.stdout.write(res.error ? 'x' : '.');
+            if (res.error) {
+              skipped.push({ context, reason: res.error });
+              continue;
+            }
+          } else {
+            process.stdout.write('·');
+          }
+          found.push({ modNum, challenge, variant });
+        }
       }
     }
+    process.stdout.write('\n');
   }
-  return found;
+  fs.rmSync(AUTOGEN_DIR, { recursive: true, force: true });
+  saveAutogenCache();
+  return { found, skipped };
 }
 
 function writeWorkspace(entries, { force }) {
@@ -265,6 +701,9 @@ function writeWorkspace(entries, { force }) {
     if (variant.functionSignature) {
       readme += `\n\`\`\`go\n${variant.functionSignature}\n\`\`\`\n`;
     }
+    if (variant._expectedOutput) {
+      readme += `\n## Expected output\n\nMake \`run()\` print exactly this:\n\n\`\`\`\n${variant._expectedOutput}\n\`\`\`\n`;
+    }
     readme += '\nWrite your solution in `exercise.go`, then run `go test`';
     readme += [6, 7, 8, 9].includes(modNum) ? ' (and `go test -race`).\n' : '.\n';
     fs.writeFileSync(path.join(dir, 'README.md'), readme);
@@ -279,7 +718,8 @@ function writeVerifyTree(entries) {
     const dir = path.join(VERIFY_DIR, `module${modNum}`, dirName);
     const context = `verify ${`module${modNum}/${dirName}`}`;
     mkdirp(dir);
-    fs.writeFileSync(path.join(dir, 'exercise.go'), assembleFile(variant.solution, `${context} (solution)`));
+    fs.writeFileSync(path.join(dir, 'exercise.go'),
+      assembleFile(variant._verifySolution || variant.solution, `${context} (solution)`));
     fs.writeFileSync(path.join(dir, 'exercise_test.go'), assembleFile(variant.testGo, `${context} (test)`));
   }
 }
@@ -326,14 +766,17 @@ function main() {
     process.exit(1);
   }
 
-  const entries = collectVariants(courseDir);
+  ensureGoMod();
+  const { found: entries, skipped } = collectVariants(courseDir);
+  if (skipped.length > 0) {
+    console.log(`\nSkipped ${skipped.length} variant(s) (stay browser-rated):`);
+    for (const s of skipped) console.log(`  ${s.context}: ${s.reason}`);
+  }
   if (entries.length === 0) {
     console.log('No variants with testGo found — nothing to generate yet.');
-    ensureGoMod();
     return;
   }
 
-  ensureGoMod();
   const { written, kept } = writeWorkspace(entries, { force });
   const perModule = {};
   for (const e of entries) {

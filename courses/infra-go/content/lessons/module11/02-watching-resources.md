@@ -20,6 +20,8 @@ for event := range watcher.ResultChan() {
 
 ### Informers: Cached Watches
 
+<attempt type="worked">
+
 Raw watches are fragile — they disconnect, need bookmarks, and don't cache. Informers handle all of this:
 
 ```go
@@ -73,3 +75,26 @@ func watchWithInformer(clientset *kubernetes.Clientset) {
 - Automatic reconnection on watch disconnects
 - Shared across controllers (one watch per resource type)
 - `Lister().List()` is local — O(n) scan of cache, no API call
+
+</attempt>
+
+<attempt type="gaps">
+
+<gaps prompt="A quick debugging tool: stream deployment events raw, no informer.">
+```go
+watcher, err := clientset.AppsV1().Deployments("default").«Watch»(
+    context.Background(), metav1.ListOptions{},
+)
+if err != nil {
+    log.Fatal(err)
+}
+for event := range watcher.«ResultChan()» {
+    dep := event.Object.«(*appsv1.Deployment)»
+    fmt.Printf("%-8s %s\n", «event.Type», dep.Name)
+}
+```
+</gaps>
+
+Fine for a one-off tool — but the moment this needs to survive a disconnect or serve reads, reach for the informer instead.
+
+</attempt>

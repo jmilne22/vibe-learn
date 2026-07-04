@@ -25,6 +25,8 @@ Each goroutine starts with ~2-4KB stack (grows as needed). You can run thousands
 
 ### The Main Goroutine Problem
 
+<attempt type="worked">
+
 ```go
 func main() {
     go doWork()
@@ -34,4 +36,25 @@ func main() {
 
 `main()` doesn't wait for goroutines. If main returns, everything stops. You need synchronization.
 
+</attempt>
+
+<attempt type="gaps">
+
+<gaps prompt="Launch one restart per pod without blocking the loop — and give each goroutine its own copy of the name.">
+```go
+for _, pod := range pods {
+    «go» func(p string) {
+        fmt.Println("restarting", p)
+    }(«pod»)
+}
+// still need to wait before main returns — that's the next section
+```
+</gaps>
+
+</attempt>
+
+<attempt type="scratch">
+
 <div class="inline-exercises" data-concept="Goroutines"></div>
+
+</attempt>
