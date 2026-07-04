@@ -621,6 +621,10 @@
         renderTodaySegments(sess);
         renderInterleaveStrip(sess);
 
+        // Every card starts advanceable; renderVibeCard re-locks Next when
+        // the runner is ready to grade.
+        setNextLocked(false);
+
         // Phase cards (today's session runner)
         if (item.phase === 'pretest') { renderPretestCard(container, item); return; }
         if (item.phase === 'learn') { renderLearnCard(container, item); return; }
@@ -813,8 +817,7 @@
                 value + '</strong></div>';
         }
 
-        var daemonOnline = window.VibeBridge && window.VibeBridge.isOnline() &&
-            (!isApp || window.VibeBridge.isWatching());
+        var daemonOnline = !!(window.VibeBridge && window.VibeBridge.isRunnerReady());
         var daemonText = daemonOnline
             ? 'local runner ready · save a file to run its tests'
             : (isApp
@@ -905,7 +908,9 @@
         if (sessionEl) sessionEl.classList.toggle('vibe-active', !!on);
         var guide = document.getElementById('dp-rating-guide');
         if (guide) guide.style.display = on ? 'none' : '';
-        setNextLocked(!!on);
+        // Phase cards (pretest/learn/build) share vibe mode but have no test
+        // run to unlock Next — only renderVibeCard decides to lock it.
+        if (!on) setNextLocked(false);
     }
 
     // Watch mode: on workspace-backed cards "next" stays locked until the
@@ -919,6 +924,9 @@
 
     function renderVibeCard(container, item, vd) {
         setVibeMode(true);
+        // Lock Next only while the runner can actually grade this card; when
+        // it's offline the learner must be able to advance manually.
+        setNextLocked(!!(window.VibeBridge && window.VibeBridge.isRunnerReady()));
 
         var variant = vd.variant;
         var baseKey = item.key.replace(/_(?:v|tp)\w+$/, '');
@@ -972,7 +980,7 @@
                     '<div class="vibe-terminal-head">' +
                         '<span>in your terminal — not here</span>' +
                         '<span class="vibe-watch-status" id="vibe-watch-status">' +
-                        (window.VibeBridge && window.VibeBridge.isOnline()
+                        (window.VibeBridge && window.VibeBridge.isRunnerReady()
                             ? 'watching for results…'
                             : (isApp ? 'local runner unavailable — restart app' : 'daemon offline — run: node vibe.js watch')) +
                         '</span>' +
@@ -1108,7 +1116,7 @@
     });
 
     window.addEventListener('vibeStatusChanged', function(e) {
-        var runnerReady = e.detail.online && (!isApp || e.detail.watching);
+        var runnerReady = e.detail.runnerReady;
         var status = document.getElementById('vibe-watch-status');
         if (status) {
             status.textContent = runnerReady
@@ -1120,8 +1128,15 @@
             daemon.innerHTML = runnerReady
                 ? 'local runner ready · save a file to run its tests'
                 : (isApp
-                    ? 'local runner unavailable — restart the desktop app; this card falls back to self-rating'
-                    : 'daemon offline — run <code>npm run vibe watch</code>; this card falls back to self-rating');
+                    ? 'local runner unavailable — restart the desktop app; Next is unlocked meanwhile'
+                    : 'daemon offline — run <code>npm run vibe watch</code>; Next is unlocked meanwhile');
+        }
+        // Re-evaluate the watch-mode lock for the card on screen: going
+        // offline unlocks Next, reconnecting re-locks until a green run.
+        var card = document.querySelector('#dp-exercise-container .vibe-card');
+        if (card) {
+            var passed = /\bpass\b/.test((document.getElementById('vibe-run-status') || {}).className || '');
+            setNextLocked(runnerReady && !passed);
         }
     });
 

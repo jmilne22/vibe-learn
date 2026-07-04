@@ -6,9 +6,8 @@
  * Development intentionally uses a different profile, port, browser storage,
  * and workspace from the packaged course app.
  */
-const { app, BrowserWindow, ipcMain, session, shell } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, session, shell } = require('electron');
 const { spawn } = require('child_process');
-const crypto = require('crypto');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -41,15 +40,22 @@ const TOOLCHAIN_DIR = path.resolve(process.env.VIBE_TOOLCHAIN_DIR || path.join(R
 const BUNDLED_GO = path.join(TOOLCHAIN_DIR, 'bin', process.platform === 'win32' ? 'go.exe' : 'go');
 const GO_BINARY = process.env.VIBE_GO_BINARY || (fs.existsSync(BUNDLED_GO) ? BUNDLED_GO : 'go');
 
+// The shipped course slug names the learner workspace. Packaged resources
+// record it in metadata.json (written by prepare-desktop); dev falls back
+// to the default course.
+const SHIPPED_COURSE = (() => {
+    try {
+        const meta = JSON.parse(fs.readFileSync(path.join(RESOURCE_ROOT, 'metadata.json'), 'utf8'));
+        if (meta.course) return meta.course;
+    } catch {}
+    return 'infra-go';
+})();
+
 const WORKSPACE_DIR = path.resolve(process.env.VIBE_WORKSPACE_DIR ||
-    path.join(app.getPath('documents'), PROFILE_NAME, 'workspaces', 'infra-go'));
+    path.join(app.getPath('documents'), PROFILE_NAME, 'workspaces', SHIPPED_COURSE));
 const RUNNER_STATE_DIR = ensureDir(path.join(USER_DATA_DIR, 'runner'));
 const PORT = readPort();
 const BASE = `http://127.0.0.1:${PORT}`;
-const INSTANCE_ID = crypto.createHash('sha256')
-    .update(`${PROFILE}\0${WORKSPACE_DIR}`)
-    .digest('hex')
-    .slice(0, 20);
 
 let daemon = null;
 
@@ -105,9 +111,11 @@ async function daemonHealth() {
     catch { return null; }
 }
 
+// Identity is profile + workspace. `watching` is deliberately NOT part of
+// the match: a daemon whose file watcher failed (e.g. inotify limits) still
+// serves and grades; the UI surfaces the watcher state separately.
 function healthMatches(health) {
-    return !!health && health.ok && health.watching === true && health.profile === PROFILE &&
-        health.instanceId === INSTANCE_ID &&
+    return !!health && health.ok && health.profile === PROFILE &&
         path.resolve(health.workspaceDir || '') === WORKSPACE_DIR;
 }
 
@@ -115,14 +123,16 @@ async function ensureDaemon() {
     const existing = await daemonHealth();
     if (healthMatches(existing)) return;
     if (existing) {
-        throw new Error(`port ${PORT} belongs to a different vibe profile or workspace`);
+        throw new Error(
+            `Port ${PORT} is already used by another vibe runner ` +
+            `(profile "${existing.profile || 'unknown'}", workspace "${existing.workspaceDir || 'unknown'}"). ` +
+            'Stop it (e.g. a `node vibe.js watch` from a source checkout) and relaunch.');
     }
 
     const runnerEnv = {
         ...process.env,
         ELECTRON_RUN_AS_NODE: '1',
         VIBE_PROFILE: PROFILE,
-        VIBE_INSTANCE_ID: INSTANCE_ID,
         VIBE_ASSETS_DIR: ASSETS_DIR,
         VIBE_WORKSPACE_DIR: WORKSPACE_DIR,
         VIBE_STATE_DIR: RUNNER_STATE_DIR,
@@ -278,6 +288,11 @@ app.whenReady().then(async () => {
     });
 }).catch((error) => {
     console.error(error);
+    // The packaged app has no visible console — a silent exit reads as
+    // "the app doesn't open". Always tell the user why.
+    try {
+        dialog.showErrorBox('Vibe Learn could not start', String((error && error.message) || error));
+    } catch {}
     app.quit();
 });
 

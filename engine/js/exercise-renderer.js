@@ -366,7 +366,7 @@
         // card objective so no self-rating UI is ever offered for it.
         const baseKey = exerciseKey ? String(exerciseKey).replace(/_(?:v|tp)\w+$/, '') : '';
         const objectiveAttrs = variant.practiceDir && !drill
-            ? ` data-objective="1" data-vibe-key="${escapeHtml(exerciseKey)}"`
+            ? ` data-objective="1" data-vibe-key="${escapeHtml(exerciseKey)}" data-vibe-base="${escapeHtml(baseKey)}"`
             : '';
 
         let html = `<div class="exercise exercise-work-item${completedClass}"${drill ? '' : ` data-exercise-key="${exerciseKey}"`}${challengeAttr}${objectiveAttrs}>`;

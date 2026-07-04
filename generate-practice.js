@@ -739,6 +739,17 @@ function ensureGoMod() {
   if (!fs.existsSync(goModPath) || !fs.readFileSync(goModPath, 'utf8').includes('gopkg.in/yaml.v3')) {
     fs.writeFileSync(goModPath, wantGoMod);
   }
+  // Anchor the yaml dependency from a real package: the stubs alone don't
+  // import it (learner solutions do), and `go mod vendor` only ships source
+  // for packages the module imports. Without this the packaged app's
+  // vendored seed lacks yaml and -mod=vendor makes those exercises
+  // unsolvable offline.
+  const depsDir = path.join(PRACTICE_DIR, 'internal', 'deps');
+  mkdirp(depsDir);
+  fs.writeFileSync(path.join(depsDir, 'deps.go'),
+    '// Package deps anchors module dependencies that learner solutions\n' +
+    '// import, so `go mod vendor` ships their source with the desktop app.\n' +
+    'package deps\n\nimport _ "gopkg.in/yaml.v3"\n');
   if (!fs.existsSync(path.join(PRACTICE_DIR, 'go.sum'))) {
     const dl = spawnSync(GO_BINARY, ['mod', 'download', 'all'], { cwd: PRACTICE_DIR, encoding: 'utf8' });
     if (dl.status !== 0) {

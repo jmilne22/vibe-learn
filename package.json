@@ -23,6 +23,12 @@
   "bin": {
     "vibe": "./vibe.js"
   },
+  "dependencies": {
+    "highlight.js": "^11.11.1",
+    "js-yaml": "^4.1.0",
+    "marked": "^15.0.0",
+    "marked-highlight": "^2.2.3"
+  },
   "devDependencies": {
     "@electron-forge/cli": "^7.11.2",
     "@electron-forge/maker-base": "^7.11.2",
@@ -31,10 +37,6 @@
     "@electron-forge/maker-rpm": "^7.11.2",
     "@electron-forge/maker-squirrel": "^7.11.2",
     "@electron-forge/maker-zip": "^7.11.2",
-    "electron": "^43.0.0",
-    "highlight.js": "^11.11.1",
-    "js-yaml": "^4.1.0",
-    "marked": "^15.0.0",
-    "marked-highlight": "^2.2.3"
+    "electron": "^43.0.0"
   }
 }

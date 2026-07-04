@@ -7,7 +7,8 @@ in separate locations.
 
 | Data | Packaged app | Development app |
 | --- | --- | --- |
-| Course and seed assets | read-only application resources | `build/desktop-resources/` |
+| Course assets | read-only application resources | repository `dist/` |
+| Practice seed | read-only application resources | `build/desktop-resources/practice-seed/` |
 | Learner workspace | `Documents/Vibe Learn/workspaces/infra-go/` | `Documents/Vibe Learn Dev/workspaces/infra-go/` |
 | Progress and browser state | OS app data under `Vibe Learn` | OS app data under `Vibe Learn Dev` |
 | Runner state and caches | profile app data | development profile app data |
@@ -16,9 +17,11 @@ in separate locations.
 The ignored repository `practice/` directory is used only by the browser/CLI
 workflow. Desktop preparation always regenerates a clean seed from course YAML.
 
-Packaged apps ship only the courses in `VIBE_DESKTOP_COURSES` (default
-`infra-go`); other built courses and the web landing page — a download page
-for the app itself — are pruned from the packaged assets.
+Packaged apps ship exactly one course, `VIBE_DESKTOP_COURSE` (default
+`infra-go`). The same slug drives dist pruning, practice-seed generation,
+and the learner workspace directory (recorded in `metadata.json`). Other
+built courses and the web landing page — a download page for the app
+itself — are pruned from the packaged assets.
 
 Workspace updates are hash-based. Missing or untouched generated files are
 updated; any file changed by the learner is preserved.
@@ -63,8 +66,8 @@ Electron Forge creates:
   skip those makers instead of failing the build.
 
 `.github/workflows/desktop.yml` builds these natively on Windows, macOS, and
-Linux and uploads the results as workflow artifacts on every push and pull
-request.
+Linux and uploads the results as workflow artifacts on pull requests and
+pushes to `main`.
 
 ## Cutting a release
 
@@ -91,7 +94,7 @@ the repository.
 
 - Packaged assets are never writable.
 - Development cannot reuse the production daemon because profile, port,
-  instance ID, and workspace must all match.
+  and workspace must all match.
 - Renderer sandboxing, context isolation, navigation restrictions, permission
   denial, and IPC sender validation remain enabled.
 - External links are opened by the operating system instead of inside the

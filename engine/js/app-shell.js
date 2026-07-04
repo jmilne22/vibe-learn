@@ -129,17 +129,24 @@
     }
 
     function initDaemonStatus() {
-        function render(online) {
-            var runnerReady = online && (!isApp || !window.VibeBridge || window.VibeBridge.isWatching());
+        function render() {
+            var online = !!(window.VibeBridge && window.VibeBridge.isOnline());
+            var runnerReady = !!(window.VibeBridge && window.VibeBridge.isRunnerReady());
+            // In-app the pill reflects grading readiness, not just the HTTP
+            // server — a green pill next to "runner unavailable" lies.
+            var healthy = isApp ? runnerReady : online;
             var pill = document.getElementById('win-daemon');
             var label = document.getElementById('win-daemon-label');
             var port = window.VibeBridge ? window.VibeBridge.port : 4711;
-            if (pill) pill.dataset.state = online ? 'online' : 'offline';
-            if (label) label.textContent = online ? 'daemon · :' + port : 'daemon offline';
+            if (pill) pill.dataset.state = healthy ? 'online' : 'offline';
+            if (label) {
+                label.textContent = healthy ? 'daemon · :' + port
+                    : (online ? 'runner unavailable' : 'daemon offline');
+            }
 
             var dot = document.getElementById('rail-daemon-dot');
             var text = document.getElementById('rail-daemon-text');
-            if (dot) dot.className = 'sdot ' + (online ? 'online' : 'offline');
+            if (dot) dot.className = 'sdot ' + (healthy ? 'online' : 'offline');
             if (text) {
                 text.textContent = isApp
                     ? (runnerReady ? 'exercise runner ready' : 'runner unavailable · restart app')
@@ -147,13 +154,13 @@
             }
         }
 
-        window.addEventListener('vibeStatusChanged', function(e) { render(e.detail.online); });
+        window.addEventListener('vibeStatusChanged', render);
         if (window.VibeBridge) {
-            if (window.VibeBridge.isOnline()) render(true);
+            if (window.VibeBridge.isOnline()) render();
             else window.VibeBridge.probe().then(render);
             window.VibeBridge.startPolling();
         } else {
-            render(false);
+            render();
         }
     }
 

@@ -14,8 +14,9 @@ const TOOLCHAIN_DIR = path.join(BUILD_ROOT, 'go');
 const GO_BUILD_CACHE = path.join(ROOT, 'build', '.go-cache');
 const SKIP_GO = process.argv.includes('--skip-go');
 const GO_BINARY = process.env.VIBE_GO_BINARY || 'go';
-const SHIPPED_COURSES = (process.env.VIBE_DESKTOP_COURSES || 'infra-go')
-    .split(',').map((s) => s.trim()).filter(Boolean);
+// One course per packaged app: the same slug drives dist pruning, practice
+// seed generation, and (via metadata.json) the learner workspace directory.
+const SHIPPED_COURSE = (process.env.VIBE_DESKTOP_COURSE || 'infra-go').trim();
 
 function run(command, args, options = {}) {
     console.log(`\n$ ${command} ${args.join(' ')}`);
@@ -54,25 +55,24 @@ fs.mkdirSync(BUILD_ROOT, { recursive: true });
 fs.mkdirSync(GO_BUILD_CACHE, { recursive: true });
 fs.cpSync(path.join(ROOT, 'dist'), COURSE_DIST, { recursive: true });
 
-// The root index.html is the web download page, and courses outside the ship
-// list must not reach the packaged course switcher. Shared assets (style.css,
-// theme.js, guide/settings pages, themes/) stay: course pages link to them.
+// The root index.html is the web download page, and courses other than the
+// shipped one must not reach the packaged course switcher. Shared assets
+// (style.css, theme.js, guide/settings pages, themes/) stay: course pages
+// link to them.
 fs.rmSync(path.join(COURSE_DIST, 'index.html'), { force: true });
 for (const entry of fs.readdirSync(COURSE_DIST, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue;
     const isCourse = fs.existsSync(path.join(COURSE_DIST, entry.name, 'course-data.js'));
-    if (isCourse && !SHIPPED_COURSES.includes(entry.name)) {
+    if (isCourse && entry.name !== SHIPPED_COURSE) {
         fs.rmSync(path.join(COURSE_DIST, entry.name), { recursive: true, force: true });
     }
 }
-for (const slug of SHIPPED_COURSES) {
-    if (!fs.existsSync(path.join(COURSE_DIST, slug, 'index.html'))) {
-        console.error(`Shipped course "${slug}" is missing from dist/. Check courses/ or VIBE_DESKTOP_COURSES.`);
-        process.exit(1);
-    }
+if (!fs.existsSync(path.join(COURSE_DIST, SHIPPED_COURSE, 'index.html'))) {
+    console.error(`Shipped course "${SHIPPED_COURSE}" is missing from dist/. Check courses/ or VIBE_DESKTOP_COURSE.`);
+    process.exit(1);
 }
 
-run(process.execPath, ['generate-practice.js', 'infra-go', '--force'], {
+run(process.execPath, ['generate-practice.js', SHIPPED_COURSE, '--force'], {
     env: {
         ...process.env,
         VIBE_PRACTICE_DIR: PRACTICE_SEED,
@@ -109,6 +109,7 @@ if (!SKIP_GO) {
 const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
 fs.writeFileSync(path.join(BUILD_ROOT, 'metadata.json'), JSON.stringify({
     appVersion: pkg.version,
+    course: SHIPPED_COURSE,
     profile: 'course',
     preparedAt: new Date().toISOString(),
     goVersion: output(GO_BINARY, ['version']),

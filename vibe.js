@@ -33,7 +33,6 @@ const DIST_DIR = path.resolve(process.env.VIBE_ASSETS_DIR || path.join(ROOT, 'di
 const GO_BINARY = process.env.VIBE_GO_BINARY || 'go';
 const GO_RACE = process.env.VIBE_GO_RACE !== '0';
 const PROFILE = process.env.VIBE_PROFILE || 'source';
-const INSTANCE_ID = process.env.VIBE_INSTANCE_ID || `${PROFILE}:${PRACTICE_DIR}`;
 const DEFAULT_PORT = 4711;
 const VERSION = '1.0.0';
 
@@ -353,7 +352,6 @@ function runWatch(args) {
                 ok: true,
                 version: VERSION,
                 profile: PROFILE,
-                instanceId: INSTANCE_ID,
                 workspaceDir: PRACTICE_DIR,
                 assetsDir: DIST_DIR,
                 workspaces: listWorkspaces().length,
@@ -409,7 +407,10 @@ function runWatch(args) {
                 res.writeHead(200, {
                     ...cors,
                     'Content-Type': MIME[path.extname(file)] || 'application/octet-stream',
-                    'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' http://127.0.0.1:*; object-src 'none'; base-uri 'self'; frame-ancestors 'none'",
+                    // connect-src allows https: so the optional cross-device
+                    // sync worker (settings.html) works when the daemon or
+                    // desktop app serves the page. Scripts stay 'self'-only.
+                    'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' http://127.0.0.1:* https:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'",
                     'X-Content-Type-Options': 'nosniff',
                 });
                 res.end(data);
