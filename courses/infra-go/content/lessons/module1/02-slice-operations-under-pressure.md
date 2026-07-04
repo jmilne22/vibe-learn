@@ -66,7 +66,7 @@ That pretest was the single most common slice bug in Go: `append` doesn't modify
 pods = append(pods, "web-2")  // reassign!
 ```
 
-This is the single most common slice bug in Go. Now the correct patterns:
+Now the correct patterns:
 
 ```go
 var pods []string            // nil slice, length 0
@@ -222,7 +222,7 @@ for _, p := range «prices[1:]» {
 ```
 </gaps>
 
-One pass, two comparisons per element. `prices[1:]` skips the first element since it's already accounted for. This works for any comparable type — ints, floats, strings.
+One pass, two comparisons per element. The loop starts one element in, because the initialization already covered it. This works for any comparable type — ints, floats, strings.
 
 </attempt>
 
