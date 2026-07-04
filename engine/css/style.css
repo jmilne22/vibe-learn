@@ -8754,3 +8754,45 @@ kbd {
         margin-left: calc(50vw - 440px);
     }
 }
+
+/* Workbench setup panel + card stars */
+.workbench-setup {
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    background: var(--bg-surface);
+    padding: 14px 18px;
+    margin: var(--space-4) 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.workbench-setup summary { cursor: pointer; font-weight: 600; color: var(--text-primary); }
+
+.workbench-body { padding-top: 10px; }
+.workbench-body p { margin: 0 0 10px; line-height: 1.55; }
+.workbench-body pre {
+    background: var(--bg-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-family: var(--font-mono, 'JetBrains Mono', monospace);
+    font-size: 0.82rem;
+    line-height: 1.7;
+    overflow-x: auto;
+    margin: 0 0 12px;
+}
+
+.workbench-status-dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--bg-muted);
+    margin-right: 8px;
+    vertical-align: 1px;
+}
+.workbench-status-dot.online  { background: var(--green-bright); }
+.workbench-status-dot.offline { background: var(--orange); }
+
+.workbench-hint { color: var(--text-tertiary); font-size: 0.82rem; }
+
+.vibe-card-stars { color: var(--orange); font-size: 0.78rem; letter-spacing: 0.1em; }

@@ -68,6 +68,20 @@
             <p class="mastery-footnote">Fading modules pull their items into today's review automatically — nothing is ever "lost", it just comes back sooner.</p>
         </section>
 
+        <details class="workbench-setup" id="workbench-setup">
+            <summary><span class="workbench-status-dot" id="workbench-dot"></span>Local workbench — how exercises run on your machine</summary>
+            <div class="workbench-body">
+                <p>Exercises run in <strong>your</strong> editor and terminal, verified by real <code>go test -race</code>. This page only schedules and watches. One-time setup:</p>
+                <pre>git clone https://github.com/jmilne22/vibe-learn && cd vibe-learn
+npm install
+npm run practice        # generate the Go exercise workspaces in practice/</pre>
+                <p>Then, whenever you study (including on the hosted site — the page talks to your local daemon directly):</p>
+                <pre>node vibe.js watch      # leave running: watches practice/, relays results here</pre>
+                <p>The loop: a card names its exercise → <code>node vibe.js next</code> points you at the file → edit in your editor → <strong>save</strong> → tests run automatically → the card updates and grades itself within a few seconds. No code is ever typed into the browser.</p>
+                <p class="workbench-hint" id="workbench-hint"></p>
+            </div>
+        </details>
+
         <div id="stale-return-banner" class="stale-return-banner hidden"></div>
 
         <section class="learning-path" id="learning-path" aria-labelledby="learning-path-title">
@@ -160,6 +174,28 @@
     <script src="streaks.js"></script>
     <script src="data-backup.js"></script>
     <script src="progress.js"></script>
+    <script src="vibe-bridge.js"></script>
     <script src="dashboard.js"></script>
+    <script>
+    // Workbench panel reflects daemon state: green dot when connected,
+    // open with a hint when not.
+    (function() {
+        function render(online) {
+            var dot = document.getElementById('workbench-dot');
+            var hint = document.getElementById('workbench-hint');
+            var panel = document.getElementById('workbench-setup');
+            if (dot) dot.className = 'workbench-status-dot ' + (online ? 'online' : 'offline');
+            if (hint) hint.textContent = online
+                ? 'Connected — vibe watch is running on this machine.'
+                : 'Not connected — start `node vibe.js watch` to enable test-graded exercises.';
+            if (panel && online) panel.removeAttribute('open');
+        }
+        window.addEventListener('vibeStatusChanged', function(e) { render(e.detail.online); });
+        if (window.VibeBridge) {
+            window.VibeBridge.probe().then(render);
+            window.VibeBridge.startPolling();
+        }
+    })();
+    </script>
 </body>
 </html>
