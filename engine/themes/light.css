@@ -418,12 +418,6 @@
     background: linear-gradient(135deg, var(--amethyst-dim), var(--amethyst), var(--lavender));
 }
 
-/* Nav pills — light */
-[data-theme="light"] .nav-pill {
-    background: rgba(15, 143, 120, 0.04);
-    border-color: rgba(15, 143, 120, 0.12);
-}
-
 /* Session config — light */
 [data-theme="light"] .session-config {
     border-color: rgba(15, 143, 120, 0.12);

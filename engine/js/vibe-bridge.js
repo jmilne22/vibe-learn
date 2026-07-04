@@ -112,6 +112,19 @@
 
     function isOnline() { return online; }
     function isWatching() { return watching; }
+
+    /**
+     * Map a build-time practice dir ('practice/moduleN/<ws>') onto the app's
+     * real workspace directory for display. Outside the desktop app the
+     * relative repo path is already the right thing to show.
+     */
+    function displayPath(practiceDir) {
+        var wsRoot = window.vibeApp && window.vibeApp.workspaceDir;
+        if (!wsRoot) return practiceDir;
+        var rel = String(practiceDir).replace(/^practice[\\/]/, '');
+        var sep = wsRoot.indexOf('\\') !== -1 ? '\\' : '/';
+        return wsRoot.replace(/[\\/]$/, '') + sep + rel.replace(/[\\/]/g, sep);
+    }
     // The daemon answering is not enough inside the app: grading also needs
     // its file watcher. This is the single definition of "runner ready".
     function isRunnerReady() { return online && (!isApp || watching); }
@@ -346,6 +359,7 @@
         isWatching: isWatching,
         isRunnerReady: isRunnerReady,
         getWorkspaceDir: getWorkspaceDir,
+        displayPath: displayPath,
         hasWorkspace: hasWorkspace,
         resolveWorkspace: resolveWorkspace,
         announce: announce,

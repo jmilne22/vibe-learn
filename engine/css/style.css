@@ -3534,19 +3534,6 @@ footer {
     background-clip: text;
 }
 
-/* Dashboard back link */
-.dashboard-back-link {
-    color: var(--text-secondary);
-    text-decoration: none;
-    font-size: 0.9rem;
-    font-family: 'JetBrains Mono', monospace;
-    transition: color var(--transition-normal);
-}
-
-.dashboard-back-link:hover {
-    color: var(--accent);
-}
-
 /* Dashboard action bar — Continue Learning + session timer in one row */
 .dashboard-action-bar {
     display: flex;
@@ -3578,27 +3565,6 @@ footer {
     transform: translateY(-2px);
     box-shadow: 0 6px 24px rgba(45, 212, 191, 0.4);
     color: #fff;
-}
-
-/* Dashboard nav — feature pill row */
-.dashboard-nav {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-2);
-    margin-bottom: var(--space-4);
-}
-.nav-pill--primary {
-    background: var(--green-bright);
-    color: var(--bg-base);
-    border-color: var(--green-bright);
-    font-weight: 700;
-}
-.nav-pill--primary:hover {
-    background: var(--accent-hover);
-    border-color: var(--accent-hover);
-    color: var(--bg-base);
-    box-shadow: var(--shadow-accent);
 }
 
 /* Segmented progress bar */
@@ -3645,26 +3611,6 @@ footer {
     margin: 0;
     margin-left: auto;
 }
-.nav-pill {
-    padding: 0.35rem 0.9rem;
-    border: 1px solid rgba(45, 212, 191, 0.12);
-    border-radius: var(--radius-full);
-    font-size: 0.8rem;
-    color: var(--text-secondary);
-    text-decoration: none;
-    font-family: 'JetBrains Mono', monospace;
-    transition: all var(--transition-normal);
-    background: rgba(45, 212, 191, 0.04);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-}
-.nav-pill:hover {
-    border-color: var(--amethyst);
-    color: var(--amethyst);
-    background: rgba(45, 212, 191, 0.08);
-    box-shadow: 0 0 12px rgba(45, 212, 191, 0.1);
-}
-
 /* Stats Strip (compact pill badges) */
 .stats-strip {
     display: flex;
@@ -5332,8 +5278,7 @@ footer {
     .dashboard-header,
     .stats-strip,
     .progress-segments,
-    .dashboard-action-bar,
-    .dashboard-nav {
+    .dashboard-action-bar {
         animation: none !important;
         opacity: 1 !important;
     }
@@ -5367,11 +5312,6 @@ footer {
     opacity: 0;
     animation: fadeUp 0.4s ease 0.15s forwards;
 }
-.dashboard-nav {
-    opacity: 0;
-    animation: fadeUp 0.4s ease 0.2s forwards;
-}
-
 .module-item {
     opacity: 0;
     animation: fadeUp 0.4s ease forwards;
@@ -5932,24 +5872,6 @@ textarea:focus-visible,
     padding: var(--space-6) 0 var(--space-12);
 }
 
-.dashboard-topbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-4);
-    padding: var(--space-2) 0 var(--space-6);
-}
-
-.dashboard-back-link {
-    color: var(--text-secondary);
-    font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size: 0.78rem;
-}
-
-.dashboard-back-link:hover {
-    color: var(--text-primary);
-}
-
 nav {
     margin-bottom: var(--space-6);
 }
@@ -5998,37 +5920,6 @@ nav {
 .nav-btn.next-btn {
     color: var(--accent);
     border-color: rgba(15, 118, 110, 0.24);
-}
-
-.dashboard-nav {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: var(--space-2);
-    margin: 0;
-}
-
-.nav-pill {
-    min-height: 34px;
-    display: inline-flex;
-    align-items: center;
-    border: 1px solid var(--border-default);
-    border-radius: var(--radius-md);
-    background: var(--bg-surface);
-    color: var(--text-secondary);
-    padding: 0.35rem 0.7rem;
-    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-    font-size: 0.84rem;
-    font-weight: 550;
-    backdrop-filter: none;
-}
-
-.nav-pill:hover,
-.nav-pill--primary:hover {
-    border-color: var(--border-strong);
-    background: var(--bg-elevated);
-    color: var(--text-primary);
-    box-shadow: none;
 }
 
 .dashboard-hero {
@@ -6870,7 +6761,6 @@ nav {
 }
 
 @media (max-width: 900px) {
-    .dashboard-topbar,
     .dashboard-hero,
     .today-grid,
     .progress-overview,
@@ -6878,13 +6768,8 @@ nav {
         grid-template-columns: 1fr;
     }
 
-    .dashboard-topbar,
     .path-header {
         align-items: flex-start;
-    }
-
-    .dashboard-nav {
-        justify-content: flex-start;
     }
 
     .module-row {
@@ -7041,10 +6926,6 @@ nav {
 /* ============================================================
    Workbook Rebuild: Lesson Shell, Sidebar, Exercises
    ============================================================ */
-.workbook-shell {
-    min-height: 100vh;
-}
-
 .workbook-container {
     max-width: 900px;
     padding-top: var(--space-10);
@@ -9053,8 +8934,6 @@ body.rail-collapsed .app-main { border-left: 0; border-radius: 0 0 14px 14px; }
 body.is-app .app-main .dashboard-shell {
     max-width: none;
 }
-
-.app-main .workbook-shell { min-height: 0; }
 
 .app-main .workbook-container {
     margin: 0;

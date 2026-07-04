@@ -184,10 +184,6 @@ marked.setOptions({
 // ---------------------------------------------------------------------------
 // Theme links HTML (shared across all courses)
 // ---------------------------------------------------------------------------
-const themeFiles = fs.readdirSync(
-    fs.existsSync(THEMES_DIR) ? THEMES_DIR : path.join(ROOT, 'themes')
-).filter(f => f.endsWith('.css')).sort();
-
 // Inline script checks localStorage for theme, honors prefers-color-scheme,
 // and dynamically loads themes/light.css only when needed. No render-blocking link.
 const themeInitScript = `    <script>(function(){var d=document.documentElement;var lights={'light':1,'gruvbox-light':1,'solarized-light':1,'everforest-light':1,'terminal-light':1};try{var t=localStorage.getItem('vibe-learn-theme');if(t&&t!=='dark'&&t!=='light'){t=lights[t]?'light':'dark';localStorage.setItem('vibe-learn-theme',t)}if(!t){t=window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'}d.setAttribute('data-theme',t);if(t==='light'){var l=document.createElement('link');l.rel='stylesheet';l.id='theme-css';l.href='themes/light.css?v=light-code-1';document.head.appendChild(l)}}catch(e){}})()</script>`;
@@ -832,10 +828,6 @@ function buildCourse(slug) {
     // sidebarPages is populated dynamically during module generation.
 
     // 6. Navigation helpers (scoped to this course's data)
-    function buildNavLinks(currentFile) {
-        return `            <a href="index.html" class="nav-btn prev-btn">&larr; Dashboard</a>`;
-    }
-
     function buildNavButtons(currentFile) {
         const idx = sidebarPages.findIndex(p => p.file === currentFile);
         let html = '        <div class="nav-buttons">\n';
@@ -1065,7 +1057,6 @@ function buildCourse(slug) {
             .replace('{{BREADCRUMB}}', () => breadcrumb)
             .replace('{{LESSON_CONTENT}}', () => htmlContent)
             .replace('{{THEME_LINKS}}', () => themeLinksHtml)
-            .replace('{{NAV_LINKS}}', buildNavLinks(currentFile))
             .replace('{{NAV_BUTTONS}}', buildNavButtons(currentFile))
             .replace('{{SCRIPTS}}', buildExerciseScripts(moduleId));
 
@@ -1218,7 +1209,6 @@ function buildCourse(slug) {
             .replace(/\{\{MODULE_DESC\}\}/g, proj.description)
             .replace('{{LESSON_CONTENT}}', () => htmlContent)
             .replace('{{THEME_LINKS}}', () => themeLinksHtml)
-            .replace('{{NAV_LINKS}}', () => buildNavLinks(currentFile))
             .replace('{{NAV_BUTTONS}}', () => buildNavButtons(currentFile));
 
         page = applyAppShell(page);
@@ -1304,29 +1294,14 @@ function buildCourse(slug) {
         return html;
     }
 
-    // Build plugin nav pills for the dashboard
-    function buildPluginNavPills() {
-        let html = '';
-        activePlugins.forEach(p => {
-            html += `                <a href="${p.name}.html" class="nav-pill">${p.label}</a>\n`;
-        });
-        return html;
-    }
-
     const moduleCount = modules.filter(m => m.id > 0).length;
-
-    // First page of module 0 — split modules start at module0-1.html
-    const mod0 = modules.find(m => m.id === 0);
-    const referenceHref = mod0 && mod0.isSplit ? 'module0-1.html' : 'module0.html';
 
     let indexPage = indexTemplate
         .replace(/\{\{COURSE_NAME\}\}/g, course.name)
         .replace(/\{\{COURSE_DESCRIPTION\}\}/g, course.description)
         .replace(/\{\{MODULE_COUNT\}\}/g, String(moduleCount))
-        .replace('{{REFERENCE_HREF}}', referenceHref)
         .replace('{{THEME_LINKS}}', themeLinksHtml)
-        .replace('{{MODULE_LIST}}', buildModuleListHtml())
-        .replace('{{PLUGIN_NAV_PILLS}}', buildPluginNavPills());
+        .replace('{{MODULE_LIST}}', buildModuleListHtml());
 
     indexPage = applyAppShell(indexPage);
     fs.writeFileSync(path.join(COURSE_DIST, 'index.html'), indexPage);
