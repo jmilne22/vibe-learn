@@ -63,10 +63,29 @@ Electron Forge creates:
   skip those makers instead of failing the build.
 
 `.github/workflows/desktop.yml` builds these natively on Windows, macOS, and
-Linux and uploads the results as workflow artifacts. Production releases still
-require Windows signing credentials and an Apple Developer ID/notarization
-credentials; the Forge configuration reads those values from environment
-variables and does not store secrets in the repository.
+Linux and uploads the results as workflow artifacts on every push and pull
+request.
+
+## Cutting a release
+
+Pushing a `v*` tag publishes a GitHub release with all installers attached —
+this is what the download page's `releases/latest` links resolve to:
+
+```bash
+npm version 1.1.0 --no-git-tag-version   # or edit package.json
+git commit -am "v1.1.0" && git tag v1.1.0
+git push && git push --tags
+```
+
+The workflow fails the build if the tag does not match the `package.json`
+version, so artifacts can never carry a different version than the release
+they are attached to. Re-running a failed release job overwrites existing
+assets instead of erroring.
+
+Releases are unsigned until Windows signing credentials and an Apple
+Developer ID/notarization credentials are configured; the Forge configuration
+reads those values from environment variables and does not store secrets in
+the repository.
 
 ## Safety boundaries
 
