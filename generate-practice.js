@@ -778,6 +778,19 @@ function main() {
   }
 
   const { written, kept } = writeWorkspace(entries, { force });
+
+  // Committed manifest so build.js (and CI, which never generates
+  // practice/) knows which variants have local test workspaces.
+  const manifest = {};
+  for (const e of entries) {
+    manifest[`m${e.modNum}_${e.challenge.id}_${e.variant.id}`] =
+      `practice/module${e.modNum}/${e.challenge.id}_${e.variant.id}`;
+  }
+  fs.writeFileSync(
+    path.join(ROOT, 'practice-manifest.json'),
+    JSON.stringify(manifest, null, 1) + '\n'
+  );
+  console.log(`practice-manifest.json: ${entries.length} workspaces (commit this file)`);
   const perModule = {};
   for (const e of entries) {
     perModule[e.modNum] = (perModule[e.modNum] || 0) + 1;

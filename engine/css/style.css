@@ -8796,3 +8796,39 @@ kbd {
 .workbench-hint { color: var(--text-tertiary); font-size: 0.82rem; }
 
 .vibe-card-stars { color: var(--orange); font-size: 0.78rem; letter-spacing: 0.1em; }
+
+/* Vibe daemon connection pill (exercise pages) */
+.vibe-status-pill {
+    position: fixed;
+    bottom: 16px;
+    left: 16px;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border-default);
+    background: var(--bg-elevated);
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    font-family: var(--font-mono, 'JetBrains Mono', monospace);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    max-width: min(420px, calc(100vw - 32px));
+}
+
+.vibe-status-pill code { color: var(--text-primary); }
+
+.vibe-status-pill .pill-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--bg-muted);
+    flex-shrink: 0;
+}
+
+.vibe-status-pill.online { border-color: color-mix(in srgb, var(--green-bright) 40%, transparent); }
+.vibe-status-pill.online .pill-dot { background: var(--green-bright); }
+.vibe-status-pill.offline .pill-dot { background: var(--orange); }
+.vibe-status-pill.probing .pill-dot { background: var(--bg-muted); animation: pill-pulse 1.2s ease-in-out infinite; }
+
+@keyframes pill-pulse { 50% { opacity: 0.4; } }
