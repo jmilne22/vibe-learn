@@ -377,19 +377,19 @@ variants:
           title: Keys to Slice
           description: >-
             Given <code>ports := map[string]int{"http": 80, "https": 443, "ssh": 22}</code>, collect all the keys into a
-            string slice. Print the slice.
-          expected: |-
-            [http https ssh]
-            (order may vary)
+            string slice. Sort the slice with <code>sort.Strings</code> (map order is random), then print it.
+          expected: "[http https ssh]"
           hints:
             - "Use <code>range</code> over the map to get each key."
             - "Append each key to a slice: <code>keys = append(keys, k)</code>."
+            - "Sort with <code>sort.Strings(keys)</code> so the output order is stable."
           solution: |-
             ports := map[string]int{"http": 80, "https": 443, "ssh": 22}
             var keys []string
             for k := range ports {
                 keys = append(keys, k)
             }
+            sort.Strings(keys)
             fmt.Println(keys)
         - id: v7
           title: Update a Value
@@ -1862,6 +1862,10 @@ variants:
             <pre>nums := []int{10, 20, 30}
             nums[0], nums[2] = nums[2], nums[0]
             fmt.Println(nums)</pre>
+          codeGo: |-
+            nums := []int{10, 20, 30}
+            nums[0], nums[2] = nums[2], nums[0]
+            fmt.Println(nums)
           solution: "[30 20 10]"
         - id: v2
           type: fix
@@ -1874,6 +1878,15 @@ variants:
             fmt.Println(nums)</pre>
             Fix it so both values actually swap.
           hints: ["After <code>nums[0] = nums[2]</code> runs, what is <code>nums[0]</code>? The original 10 is gone."]
+          codeGo: |-
+            nums := []int{10, 20, 30}
+            nums[0] = nums[2]
+            nums[2] = nums[0]
+            fmt.Println(nums)
+          solutionGo: |-
+            nums := []int{10, 20, 30}
+            nums[0], nums[2] = nums[2], nums[0]
+            fmt.Println(nums)
           solution: |-
             // The original nums[0] is overwritten before nums[2] reads it.
             // Fix: use simultaneous assignment so both sides read before writing.
@@ -1886,6 +1899,14 @@ variants:
             <pre>vals := []string{"a", "b", "c", "d"}
             ____________________________
             fmt.Println(vals) // [a d c b]</pre>
+          codeGo: |-
+            vals := []string{"a", "b", "c", "d"}
+            // TODO: swap index 1 and 3 in one statement
+            fmt.Println(vals)
+          solutionGo: |-
+            vals := []string{"a", "b", "c", "d"}
+            vals[1], vals[3] = vals[3], vals[1]
+            fmt.Println(vals)
           solution: 'vals[1], vals[3] = vals[3], vals[1]'
         - id: v4
           type: produce
@@ -1924,6 +1945,12 @@ variants:
                 s[i], s[j] = s[j], s[i]
             }
             fmt.Println(s)</pre>
+          codeGo: |-
+            s := []int{1, 2, 3, 4}
+            for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
+                s[i], s[j] = s[j], s[i]
+            }
+            fmt.Println(s)
           solution: "[4 3 2 1]"
         - id: v2
           type: fix
@@ -1936,6 +1963,18 @@ variants:
             }
             fmt.Println(s) // prints [a b c d] — unchanged!</pre>
           hints: ["The loop should stop when the two pointers meet in the middle, not when i reaches the end."]
+          codeGo: |-
+            s := []string{"a", "b", "c", "d"}
+            for i, j := 0, len(s)-1; i < len(s); i, j = i+1, j-1 {
+                s[i], s[j] = s[j], s[i]
+            }
+            fmt.Println(s)
+          solutionGo: |-
+            s := []string{"a", "b", "c", "d"}
+            for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
+                s[i], s[j] = s[j], s[i]
+            }
+            fmt.Println(s)
           solution: |-
             // i < len(s) makes i go all the way across, swapping everything
             // back to where it started. Stop when pointers meet:
@@ -1951,6 +1990,19 @@ variants:
             for i, j := _____, _____; i < j; _____, _____ {
                 items[i], items[j] = items[j], items[i]
             }</pre>
+          codeGo: |-
+            items := []string{"x", "y", "z", "w"}
+            // TODO: fill in the for clause — start i and j at opposite ends, move them inward
+            for i, j := 0, 0; i < j; i, j = i+1, j-1 {
+                items[i], items[j] = items[j], items[i]
+            }
+            fmt.Println(items)
+          solutionGo: |-
+            items := []string{"x", "y", "z", "w"}
+            for i, j := 0, len(items)-1; i < j; i, j = i+1, j-1 {
+                items[i], items[j] = items[j], items[i]
+            }
+            fmt.Println(items)
           solution: |-
             for i, j := 0, len(items)-1; i < j; i, j = i+1, j-1 {
                 items[i], items[j] = items[j], items[i]
@@ -1985,6 +2037,17 @@ variants:
             }
             nums = nums[:n]
             fmt.Println(nums)</pre>
+          codeGo: |-
+            nums := []int{1, 2, 3, 4, 5, 6}
+            n := 0
+            for _, v := range nums {
+                if v%2 == 0 {
+                    nums[n] = v
+                    n++
+                }
+            }
+            nums = nums[:n]
+            fmt.Println(nums)
           solution: "[2 4 6]"
         - id: v2
           type: complete
@@ -2000,6 +2063,26 @@ variants:
                 }
             }
             pods = pods[:n]</pre>
+          codeGo: |-
+            pods := []string{"web-1", "api-1", "web-2", "db-1"}
+            n := 0
+            for _, p := range pods {
+                // TODO: if p starts with "web", write it to pods[n] and increment n
+                _ = p
+            }
+            pods = pods[:n]
+            fmt.Println(pods)
+          solutionGo: |-
+            pods := []string{"web-1", "api-1", "web-2", "db-1"}
+            n := 0
+            for _, p := range pods {
+                if strings.HasPrefix(p, "web") {
+                    pods[n] = p
+                    n++
+                }
+            }
+            pods = pods[:n]
+            fmt.Println(pods)
           solution: |-
             if strings.HasPrefix(p, "web") {
                 pods[n] = p
@@ -2036,6 +2119,12 @@ variants:
                 return nums[i] > nums[j]
             })
             fmt.Println(nums)</pre>
+          codeGo: |-
+            nums := []int{3, 1, 4, 1, 5}
+            sort.Slice(nums, func(i, j int) bool {
+                return nums[i] > nums[j]
+            })
+            fmt.Println(nums)
           solution: "[5 4 3 1 1]"
         - id: v2
           type: fix
@@ -2047,6 +2136,18 @@ variants:
                 return names[i] > names[j]
             })</pre>
           hints: ["<code>></code> means 'i comes first if it's larger' — that's descending. What operator gives ascending?"]
+          codeGo: |-
+            names := []string{"charlie", "alice", "bob"}
+            sort.Slice(names, func(i, j int) bool {
+                return names[i] > names[j]
+            })
+            fmt.Println(names)
+          solutionGo: |-
+            names := []string{"charlie", "alice", "bob"}
+            sort.Slice(names, func(i, j int) bool {
+                return names[i] < names[j]
+            })
+            fmt.Println(names)
           solution: |-
             // Change > to < for ascending (A-Z) order:
             sort.Slice(names, func(i, j int) bool {
@@ -2062,6 +2163,19 @@ variants:
                 return _______________________
             })
             fmt.Println(times) // [12 45 234 891]</pre>
+          codeGo: |-
+            times := []int{234, 12, 891, 45}
+            sort.Slice(times, func(i, j int) bool {
+                // TODO: return the comparison that sorts ascending (fastest first)
+                return false
+            })
+            fmt.Println(times)
+          solutionGo: |-
+            times := []int{234, 12, 891, 45}
+            sort.Slice(times, func(i, j int) bool {
+                return times[i] < times[j]
+            })
+            fmt.Println(times)
           solution: "times[i] < times[j]"
         - id: v4
           type: produce
@@ -2104,6 +2218,12 @@ variants:
                 return vals[i] > vals[j]
             })
             fmt.Println(vals[:2])</pre>
+          codeGo: |-
+            vals := []int{10, 50, 30, 20, 40}
+            sort.Slice(vals, func(i, j int) bool {
+                return vals[i] > vals[j]
+            })
+            fmt.Println(vals[:2])
           solution: "[50 40]"
         - id: v2
           type: complete
@@ -2116,6 +2236,22 @@ variants:
             })
             top3 := latencies[:___]
             fmt.Println(top3)</pre>
+          codeGo: |-
+            latencies := []int{234, 12, 891, 45, 567}
+            sort.Slice(latencies, func(i, j int) bool {
+                // TODO: return the comparison that sorts descending (highest first)
+                return false
+            })
+            // TODO: take the first 3 elements
+            top3 := latencies[:0]
+            fmt.Println(top3)
+          solutionGo: |-
+            latencies := []int{234, 12, 891, 45, 567}
+            sort.Slice(latencies, func(i, j int) bool {
+                return latencies[i] > latencies[j]
+            })
+            top3 := latencies[:3]
+            fmt.Println(top3)
           solution: |-
             latencies[i] > latencies[j]
             // and
@@ -2144,6 +2280,11 @@ variants:
             fmt.Println(s[1:4])
             fmt.Println(s[:2])
             fmt.Println(s[3:])</pre>
+          codeGo: |-
+            s := []string{"a", "b", "c", "d", "e"}
+            fmt.Println(s[1:4])
+            fmt.Println(s[:2])
+            fmt.Println(s[3:])
           solution: |-
             [b c d]
             [a b]
@@ -2158,6 +2299,14 @@ variants:
             fmt.Println(last3)</pre>
             Fix the slice expression.
           hints: ["The end index in a slice expression is exclusive — it goes up to but not including that index."]
+          codeGo: |-
+            items := []string{"a", "b", "c", "d", "e"}
+            last3 := items[len(items)-3 : len(items)+1]
+            fmt.Println(last3)
+          solutionGo: |-
+            items := []string{"a", "b", "c", "d", "e"}
+            last3 := items[len(items)-3:]
+            fmt.Println(last3)
           solution: |-
             // End index must be <= len(items), not len(items)+1
             last3 := items[len(items)-3:]
@@ -2169,6 +2318,15 @@ variants:
             <pre>nodes := []string{"a", "b", "c", "d"}
             mid := nodes[___:___]
             fmt.Println(mid) // [b c]</pre>
+          codeGo: |-
+            nodes := []string{"a", "b", "c", "d"}
+            // TODO: slice from index 1 up to (not including) index 3
+            mid := nodes[0:0]
+            fmt.Println(mid)
+          solutionGo: |-
+            nodes := []string{"a", "b", "c", "d"}
+            mid := nodes[1:3]
+            fmt.Println(mid)
           solution: "nodes[1:3]"
         - id: v4
           type: produce
@@ -2193,6 +2351,12 @@ variants:
             fmt.Println(a)
             fmt.Println(b)
             fmt.Println(len(a), len(b))</pre>
+          codeGo: |-
+            a := []int{1, 2}
+            b := append(a, 3, 4)
+            fmt.Println(a)
+            fmt.Println(b)
+            fmt.Println(len(a), len(b))
           solution: |-
             [1 2]
             [1 2 3 4]
@@ -2209,6 +2373,18 @@ variants:
             fmt.Println(names)</pre>
             Fix it.
           hints: ["<code>append</code> returns a new slice — it doesn't modify the original."]
+          codeGo: |-
+            var names []string
+            for _, n := range []string{"a", "b", "c"} {
+                _ = append(names, n)
+            }
+            fmt.Println(names)
+          solutionGo: |-
+            var names []string
+            for _, n := range []string{"a", "b", "c"} {
+                names = append(names, n)
+            }
+            fmt.Println(names)
           solution: |-
             // append returns the result; you must assign it back
             names = append(names, n)
@@ -2220,6 +2396,15 @@ variants:
             <pre>servers := []string{"web-1", "api-1"}
             servers = ___________________________
             fmt.Println(servers) // [web-1 api-1 db-1]</pre>
+          codeGo: |-
+            servers := []string{"web-1", "api-1"}
+            // TODO: append "db-1" to the end of the slice
+            servers = append(servers, "TODO")
+            fmt.Println(servers)
+          solutionGo: |-
+            servers := []string{"web-1", "api-1"}
+            servers = append(servers, "db-1")
+            fmt.Println(servers)
           solution: 'append(servers, "db-1")'
         - id: v4
           type: produce
@@ -2246,21 +2431,43 @@ variants:
             m["b"]++
             m["a"]++
             fmt.Println(m["a"], m["b"], m["c"])</pre>
+          codeGo: |-
+            m := make(map[string]int)
+            m["a"]++
+            m["b"]++
+            m["a"]++
+            fmt.Println(m["a"], m["b"], m["c"])
           solution: "2 1 0"
         - id: v2
           type: fix
           title: "Fix the Map Lookup"
           description: |-
-            This code should print "found" for keys that exist, but it always prints "found" even for missing keys:
-            <pre>config := map[string]string{"host": "localhost", "port": "5432"}
+            This lookup should report whether the key exists — but <code>timeout</code> IS in the map (set to an empty string), and it prints "not found":
+            <pre>config := map[string]string{"host": "localhost", "timeout": ""}
             val := config["timeout"]
             if val != "" {
                 fmt.Println("found:", val)
             } else {
                 fmt.Println("not found")
             }</pre>
-            What's the problem? What if a key exists with an empty string value?
+            What's the problem? How do you tell "missing" apart from "empty value"?
           hints: ["An empty string is the zero value for string — you can't tell if the key exists or has an empty value. Use the comma-ok pattern."]
+          codeGo: |-
+            config := map[string]string{"host": "localhost", "timeout": ""}
+            val := config["timeout"]
+            if val != "" {
+                fmt.Println("found:", val)
+            } else {
+                fmt.Println("not found")
+            }
+          solutionGo: |-
+            config := map[string]string{"host": "localhost", "timeout": ""}
+            val, ok := config["timeout"]
+            if ok {
+                fmt.Println("found:", val)
+            } else {
+                fmt.Println("not found")
+            }
           solution: |-
             // Use comma-ok to distinguish "missing" from "empty value":
             val, ok := config["timeout"]
@@ -2280,6 +2487,21 @@ variants:
                 _____________
             }
             fmt.Println(counts)</pre>
+          codeGo: |-
+            words := []string{"go", "is", "go", "fun"}
+            counts := make(map[string]int)
+            for _, w := range words {
+                // TODO: increment the count for w
+                _ = w
+            }
+            fmt.Println(counts)
+          solutionGo: |-
+            words := []string{"go", "is", "go", "fun"}
+            counts := make(map[string]int)
+            for _, w := range words {
+                counts[w]++
+            }
+            fmt.Println(counts)
           solution: "counts[w]++"
         - id: v4
           type: produce
@@ -2314,6 +2536,17 @@ variants:
                 }
             }
             fmt.Println(grouped["short"])</pre>
+          codeGo: |-
+            words := []string{"go", "rust", "c", "java", "py"}
+            grouped := make(map[string][]string)
+            for _, w := range words {
+                if len(w) <= 2 {
+                    grouped["short"] = append(grouped["short"], w)
+                } else {
+                    grouped["long"] = append(grouped["long"], w)
+                }
+            }
+            fmt.Println(grouped["short"])
           solution: "[go c py]"
         - id: v2
           type: complete
@@ -2329,6 +2562,28 @@ variants:
                     ___________________________________
                 }
             }</pre>
+          codeGo: |-
+            nums := []int{1, 2, 3, 4, 5, 6}
+            groups := make(map[string][]int)
+            for _, n := range nums {
+                if n%2 == 0 {
+                    // TODO: append n to the "even" group
+                } else {
+                    // TODO: append n to the "odd" group
+                }
+            }
+            fmt.Println(groups)
+          solutionGo: |-
+            nums := []int{1, 2, 3, 4, 5, 6}
+            groups := make(map[string][]int)
+            for _, n := range nums {
+                if n%2 == 0 {
+                    groups["even"] = append(groups["even"], n)
+                } else {
+                    groups["odd"] = append(groups["odd"], n)
+                }
+            }
+            fmt.Println(groups)
           solution: |-
             groups["even"] = append(groups["even"], n)
             // and
@@ -2360,6 +2615,10 @@ variants:
             <pre>s := "a:b:c:d"
             fmt.Println(strings.Split(s, ":"))
             fmt.Println(strings.SplitN(s, ":", 2))</pre>
+          codeGo: |-
+            s := "a:b:c:d"
+            fmt.Println(strings.Split(s, ":"))
+            fmt.Println(strings.SplitN(s, ":", 2))
           solution: |-
             [a b c d]
             [a b:c:d]
@@ -2375,6 +2634,21 @@ variants:
             fmt.Println(host, port)</pre>
             Fix it to handle addresses with or without a port.
           hints: ["When there's no colon, <code>strings.Split</code> returns a single-element slice. Accessing index 1 panics."]
+          codeGo: |-
+            addr := "localhost"
+            parts := strings.Split(addr, ":")
+            host := parts[0]
+            port := parts[1]
+            fmt.Println(host, port)
+          solutionGo: |-
+            addr := "localhost"
+            parts := strings.SplitN(addr, ":", 2)
+            host := parts[0]
+            port := ""
+            if len(parts) == 2 {
+                port = parts[1]
+            }
+            fmt.Println(host, port)
           solution: |-
             parts := strings.SplitN(addr, ":", 2)
             host := parts[0]
@@ -2392,6 +2666,19 @@ variants:
             key := parts[0]
             val := parts[1]
             fmt.Println(key, val) // name Go</pre>
+          codeGo: |-
+            pair := "name=Go"
+            // TODO: what limit splits into exactly 2 parts?
+            parts := strings.SplitN(pair, "=", 1)
+            key := parts[0]
+            val := parts[1]
+            fmt.Println(key, val)
+          solutionGo: |-
+            pair := "name=Go"
+            parts := strings.SplitN(pair, "=", 2)
+            key := parts[0]
+            val := parts[1]
+            fmt.Println(key, val)
           solution: "2"
         - id: v4
           type: produce
@@ -2416,6 +2703,11 @@ variants:
             fmt.Println(strings.Join(parts, "-"))
             fmt.Println(strings.Join(parts, ""))
             fmt.Println(strings.Join(parts, ", "))</pre>
+          codeGo: |-
+            parts := []string{"hello", "world"}
+            fmt.Println(strings.Join(parts, "-"))
+            fmt.Println(strings.Join(parts, ""))
+            fmt.Println(strings.Join(parts, ", "))
           solution: |-
             hello-world
             helloworld
@@ -2428,6 +2720,15 @@ variants:
             <pre>items := []string{"a", "b", "c"}
             result := strings._______(items, "___")
             fmt.Println(result)</pre>
+          codeGo: |-
+            items := []string{"a", "b", "c"}
+            // TODO: call the strings function that joins a slice with "|"
+            result := fmt.Sprint(items)
+            fmt.Println(result)
+          solutionGo: |-
+            items := []string{"a", "b", "c"}
+            result := strings.Join(items, "|")
+            fmt.Println(result)
           solution: 'strings.Join(items, "|")'
         - id: v3
           type: produce
@@ -2450,6 +2751,11 @@ variants:
             b := 2
             fmt.Println(a / b)
             fmt.Println(float64(a) / float64(b))</pre>
+          codeGo: |-
+            a := 7
+            b := 2
+            fmt.Println(a / b)
+            fmt.Println(float64(a) / float64(b))
           solution: |-
             3
             3.5
@@ -2464,6 +2770,16 @@ variants:
             fmt.Printf("%.1f%%\n", float64(pct))</pre>
             Fix it.
           hints: ["Integer division <code>3 / 4</code> equals 0, not 0.75. You need floats BEFORE dividing."]
+          codeGo: |-
+            passed := 3
+            total := 4
+            pct := passed / total * 100
+            fmt.Printf("%.1f%%\n", float64(pct))
+          solutionGo: |-
+            passed := 3
+            total := 4
+            pct := float64(passed) / float64(total) * 100
+            fmt.Printf("%.1f%%\n", pct)
           solution: |-
             // Convert to float64 before dividing
             pct := float64(passed) / float64(total) * 100
@@ -2479,6 +2795,22 @@ variants:
                 fmt.Println("bad number")
             }
             fmt.Println(n)</pre>
+          codeGo: |-
+            s := "42"
+            // TODO: call the strconv function that converts a string to an int
+            n, err := 0, error(nil)
+            _ = s
+            if err != nil {
+                fmt.Println("bad number")
+            }
+            fmt.Println(n)
+          solutionGo: |-
+            s := "42"
+            n, err := strconv.Atoi(s)
+            if err != nil {
+                fmt.Println("bad number")
+            }
+            fmt.Println(n)
           solution: "Atoi"
         - id: v4
           type: produce
@@ -2503,6 +2835,11 @@ variants:
             lines := strings.Split(s, "\n")
             fmt.Println(len(lines))
             fmt.Println(lines[2] == "")</pre>
+          codeGo: |-
+            s := "one\ntwo\n\nthree"
+            lines := strings.Split(s, "\n")
+            fmt.Println(len(lines))
+            fmt.Println(lines[2] == "")
           solution: |-
             4
             true
@@ -2520,6 +2857,22 @@ variants:
             }</pre>
             Fix it.
           hints: ["<code>break</code> exits the entire loop. You want to skip just this iteration."]
+          codeGo: |-
+            input := "# comment\ndata\n# another\nmore"
+            for _, line := range strings.Split(input, "\n") {
+                if strings.HasPrefix(line, "#") {
+                    break
+                }
+                fmt.Println(line)
+            }
+          solutionGo: |-
+            input := "# comment\ndata\n# another\nmore"
+            for _, line := range strings.Split(input, "\n") {
+                if strings.HasPrefix(line, "#") {
+                    continue
+                }
+                fmt.Println(line)
+            }
           solution: |-
             // Use continue instead of break to skip one iteration
             if strings.HasPrefix(line, "#") {
@@ -2539,6 +2892,28 @@ variants:
                 }
             }
             fmt.Println(m)</pre>
+          codeGo: |-
+            input := "a=1\nb=2"
+            m := make(map[string]string)
+            for _, line := range strings.Split(input, "\n") {
+                // TODO: split into at most how many parts?
+                parts := strings.SplitN(line, "=", 1)
+                // TODO: how many parts must there be before indexing parts[1]?
+                if len(parts) == 0 {
+                    m[parts[0]] = parts[1]
+                }
+            }
+            fmt.Println(m)
+          solutionGo: |-
+            input := "a=1\nb=2"
+            m := make(map[string]string)
+            for _, line := range strings.Split(input, "\n") {
+                parts := strings.SplitN(line, "=", 2)
+                if len(parts) == 2 {
+                    m[parts[0]] = parts[1]
+                }
+            }
+            fmt.Println(m)
           solution: |-
             2
             // and
@@ -2571,6 +2946,12 @@ variants:
                 v = v * 10
             }
             fmt.Println(nums)</pre>
+          codeGo: |-
+            nums := []int{1, 2, 3}
+            for _, v := range nums {
+                v = v * 10
+            }
+            fmt.Println(nums)
           solution: "[1 2 3]"
         - id: v2
           type: fix
@@ -2584,6 +2965,18 @@ variants:
             fmt.Println(nums) // still [5 10 15]!</pre>
             Fix it so the elements are actually doubled.
           hints: ["<code>v</code> is a copy of the element. To modify the original, you need the index to write back to the slice."]
+          codeGo: |-
+            nums := []int{5, 10, 15}
+            for _, v := range nums {
+                v = v * 2
+            }
+            fmt.Println(nums)
+          solutionGo: |-
+            nums := []int{5, 10, 15}
+            for i := range nums {
+                nums[i] = nums[i] * 2
+            }
+            fmt.Println(nums)
           solution: |-
             // v is a copy — changes to it don't affect the slice.
             // Fix: use the index form to modify in place.
@@ -2600,6 +2993,18 @@ variants:
                 vals[___] = vals[___] * 3
             }
             fmt.Println(vals) // [6 12 18]</pre>
+          codeGo: |-
+            vals := []int{2, 4, 6}
+            // TODO: range with the index so you can write each element back, tripled
+            for range vals {
+            }
+            fmt.Println(vals)
+          solutionGo: |-
+            vals := []int{2, 4, 6}
+            for i := range vals {
+                vals[i] = vals[i] * 3
+            }
+            fmt.Println(vals)
           solution: |-
             for i := range vals {
                 vals[i] = vals[i] * 3
@@ -2617,6 +3022,15 @@ variants:
             }
             fmt.Println(nums)
             fmt.Println(len(nums))</pre>
+          codeGo: |-
+            nums := []int{1, 2, 3}
+            for i := range nums {
+                if nums[i] == 2 {
+                    nums = append(nums, 99)
+                }
+            }
+            fmt.Println(nums)
+            fmt.Println(len(nums))
           solution: |-
             [1 2 3 99]
             4
@@ -2632,6 +3046,11 @@ variants:
             fmt.Printf("%.2f\n", val)
             fmt.Printf("%.0f\n", val)
             fmt.Printf("%d\n", int(val))</pre>
+          codeGo: |-
+            val := 3.14159
+            fmt.Printf("%.2f\n", val)
+            fmt.Printf("%.0f\n", val)
+            fmt.Printf("%d\n", int(val))
           solution: |-
             3.14
             3
@@ -2650,6 +3069,22 @@ variants:
             fmt.Println(avg)</pre>
             Fix it.
           hints: ["Both <code>sum</code> and <code>len(nums)</code> are ints — integer division truncates. Convert to float64 before dividing."]
+          codeGo: |-
+            nums := []int{1, 2, 3, 4}
+            sum := 0
+            for _, n := range nums {
+                sum += n
+            }
+            avg := sum / len(nums)
+            fmt.Println(avg)
+          solutionGo: |-
+            nums := []int{1, 2, 3, 4}
+            sum := 0
+            for _, n := range nums {
+                sum += n
+            }
+            avg := float64(sum) / float64(len(nums))
+            fmt.Println(avg)
           solution: |-
             // sum and len(nums) are both ints, so division truncates.
             // Fix: convert before dividing.
@@ -2666,6 +3101,23 @@ variants:
                 fmt.Println("bad number")
             }
             fmt.Printf("_____\n", val) // 3.14</pre>
+          codeGo: |-
+            s := "3.14159"
+            // TODO: call the strconv function that parses a string into a float64
+            val, err := 0.0, error(nil)
+            _ = s
+            if err != nil {
+                fmt.Println("bad number")
+            }
+            // TODO: print val with two decimal places
+            fmt.Printf("%v\n", val)
+          solutionGo: |-
+            s := "3.14159"
+            val, err := strconv.ParseFloat(s, 64)
+            if err != nil {
+                fmt.Println("bad number")
+            }
+            fmt.Printf("%.2f\n", val)
           solution: |-
             ParseFloat
             // and
@@ -2700,6 +3152,15 @@ variants:
             }
             fmt.Println(m["age"])
             fmt.Println(len(m))</pre>
+          codeGo: |-
+            input := "name=alice\nage=30\ncity=london"
+            m := make(map[string]string)
+            for _, line := range strings.Split(input, "\n") {
+                parts := strings.SplitN(line, "=", 2)
+                m[parts[0]] = parts[1]
+            }
+            fmt.Println(m["age"])
+            fmt.Println(len(m))
           solution: |-
             30
             3
@@ -2717,6 +3178,24 @@ variants:
             fmt.Println(m)</pre>
             Fix it to skip blank lines.
           hints: ["When <code>line</code> is empty, <code>SplitN</code> returns one element — accessing <code>parts[1]</code> panics. Guard the assignment."]
+          codeGo: |-
+            input := "host=localhost\n\nport=5432"
+            m := make(map[string]string)
+            for _, line := range strings.Split(input, "\n") {
+                parts := strings.SplitN(line, "=", 2)
+                m[parts[0]] = parts[1]
+            }
+            fmt.Println(m)
+          solutionGo: |-
+            input := "host=localhost\n\nport=5432"
+            m := make(map[string]string)
+            for _, line := range strings.Split(input, "\n") {
+                parts := strings.SplitN(line, "=", 2)
+                if len(parts) == 2 {
+                    m[parts[0]] = parts[1]
+                }
+            }
+            fmt.Println(m)
           solution: |-
             // Check that SplitN actually produced two parts:
             for _, line := range strings.Split(input, "\n") {
@@ -2730,7 +3209,7 @@ variants:
           title: "Complete the Config Parser"
           description: |-
             Fill in the blanks to parse config lines, skipping comments and blanks:
-            <pre>input := "# settings\nhost=localhost\n\nport=5432"
+            <pre>input := "# mode=debug\nhost=localhost\n\nport=5432"
             m := make(map[string]string)
             for _, line := range strings.Split(input, "\n") {
                 line = strings.TrimSpace(line)
@@ -2742,6 +3221,35 @@ variants:
                     m[parts[0]] = parts[1]
                 }
             }</pre>
+          codeGo: |-
+            input := "# mode=debug\nhost=localhost\n\nport=5432"
+            m := make(map[string]string)
+            for _, line := range strings.Split(input, "\n") {
+                line = strings.TrimSpace(line)
+                // TODO: also skip comment lines (starting with "#")
+                if line == "" {
+                    continue
+                }
+                parts := strings.SplitN(line, "=", 2)
+                if len(parts) == 2 {
+                    m[parts[0]] = parts[1]
+                }
+            }
+            fmt.Println(m)
+          solutionGo: |-
+            input := "# mode=debug\nhost=localhost\n\nport=5432"
+            m := make(map[string]string)
+            for _, line := range strings.Split(input, "\n") {
+                line = strings.TrimSpace(line)
+                if line == "" || strings.HasPrefix(line, "#") {
+                    continue
+                }
+                parts := strings.SplitN(line, "=", 2)
+                if len(parts) == 2 {
+                    m[parts[0]] = parts[1]
+                }
+            }
+            fmt.Println(m)
           solution: |-
             if line == "" || strings.HasPrefix(line, "#") {
                 continue
@@ -2782,6 +3290,19 @@ variants:
             }
             sort.Strings(keys)
             fmt.Println(keys[0], counts[keys[0]])</pre>
+          codeGo: |-
+            lines := []string{"INFO ok", "ERROR bad", "INFO done", "ERROR oom"}
+            counts := make(map[string]int)
+            for _, line := range lines {
+                level := strings.Fields(line)[0]
+                counts[level]++
+            }
+            keys := make([]string, 0, len(counts))
+            for k := range counts {
+                keys = append(keys, k)
+            }
+            sort.Strings(keys)
+            fmt.Println(keys[0], counts[keys[0]])
           solution: "ERROR 2"
         - id: v2
           type: fix
@@ -2797,6 +3318,22 @@ variants:
             fmt.Println(groups)</pre>
             It creates separate <code>"A"</code> and <code>"a"</code> keys. Fix the grouping key to be case-insensitive.
           hints: ["Normalise the key to lowercase with <code>strings.ToLower</code> so <code>\"Alice\"</code> and <code>\"anna\"</code> share the <code>\"a\"</code> bucket."]
+          codeGo: |-
+            names := []string{"Alice", "bob", "anna", "Ben"}
+            groups := make(map[string][]string)
+            for _, n := range names {
+                key := n[:1]
+                groups[key] = append(groups[key], n)
+            }
+            fmt.Println(groups)
+          solutionGo: |-
+            names := []string{"Alice", "bob", "anna", "Ben"}
+            groups := make(map[string][]string)
+            for _, n := range names {
+                key := strings.ToLower(n[:1])
+                groups[key] = append(groups[key], n)
+            }
+            fmt.Println(groups)
           solution: |-
             // Normalise key to lowercase:
             key := strings.ToLower(n[:1])
@@ -2816,6 +3353,30 @@ variants:
                     fmt.Printf("%s: %d\n", status, n)
                 }
             }</pre>
+          codeGo: |-
+            pods := []string{"Running", "Failed", "Running", "Pending", "Running"}
+            counts := make(map[string]int)
+            for _, p := range pods {
+                // TODO: increment the count for p
+                _ = p
+            }
+            for status, n := range counts {
+                // TODO: only print statuses seen more than once
+                if n > 0 {
+                    fmt.Printf("%s: %d\n", status, n)
+                }
+            }
+          solutionGo: |-
+            pods := []string{"Running", "Failed", "Running", "Pending", "Running"}
+            counts := make(map[string]int)
+            for _, p := range pods {
+                counts[p]++
+            }
+            for status, n := range counts {
+                if n > 1 {
+                    fmt.Printf("%s: %d\n", status, n)
+                }
+            }
           solution: |-
             counts[p]++
             // and

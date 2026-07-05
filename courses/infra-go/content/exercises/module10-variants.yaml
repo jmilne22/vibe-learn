@@ -38,24 +38,39 @@ variants:
         - id: v2
           title: Re-exec Pattern
           description: >-
-            Write the <code>main()</code> skeleton for the re-exec pattern: if <code>os.Args[1]</code> is
-            <code>"run"</code>, call parent(). If <code>"child"</code>, call child(). This is how container runtimes
-            separate namespace setup from container execution.
+            Write the entrypoint skeleton for the re-exec pattern as <code>containerMain(args []string) error</code>:
+            if <code>args[1]</code> is <code>"run"</code>, call parent(). If <code>"child"</code>, call child().
+            Missing or unknown commands return an error. Have parent() and child() print what they would do. This is
+            how container runtimes separate namespace setup from container execution.
           hints:
-            - Use a switch on <code>os.Args[1]</code>. Parent re-execs with <code>/proc/self/exe child</code>
+            - Use a switch on <code>args[1]</code>. Parent re-execs with <code>/proc/self/exe child</code>
+          driverGo: |-
+            fmt.Println("run:", containerMain([]string{"container", "run"}))
+            fmt.Println("child:", containerMain([]string{"container", "child"}))
+            fmt.Println("no args:", containerMain([]string{"container"}))
+            fmt.Println("unknown:", containerMain([]string{"container", "destroy"}))
           solution: |-
-            func main() {
-                if len(os.Args) < 2 {
-                    log.Fatal("usage: container run <cmd>")
+            func parent() {
+                fmt.Println("parent: re-exec /proc/self/exe child")
+            }
+
+            func child() {
+                fmt.Println("child: running container command")
+            }
+
+            func containerMain(args []string) error {
+                if len(args) < 2 {
+                    return fmt.Errorf("usage: container run <cmd>")
                 }
-                switch os.Args[1] {
+                switch args[1] {
                 case "run":
                     parent()
                 case "child":
                     child()
                 default:
-                    log.Fatalf("unknown command: %s", os.Args[1])
+                    return fmt.Errorf("unknown command: %s", args[1])
                 }
+                return nil
             }
     - id: warmup_2
       concept: Cgroups
@@ -393,20 +408,71 @@ variants:
         - id: v3
           title: Container Lifecycle Manager
           description: >-
-            Build a <code>Container</code> struct that manages the full lifecycle: configure namespaces, set up cgroups,
-            prepare the filesystem, run the command, and clean up. Include a <code>Start()</code> that runs the
-            container and a <code>Stop()</code> that sends SIGTERM then SIGKILL after a grace period.
+            Build a <code>Container</code> struct that manages the full lifecycle: configure namespaces (when
+            <code>cfg.Isolate</code> is set — real clone flags need root), set up cgroups via the provided
+            <code>CgroupManager</code> (it mirrors the cgroup-v2 file API onto a temp directory so tests can run
+            unprivileged), run the command, and clean up. Include a <code>Start()</code> that runs the container and a
+            <code>Stop()</code> that sends SIGTERM then SIGKILL after a grace period.
           functionSignature: |-
-            type Container struct { ... }
+            type Container struct { cfg ContainerConfig; cmd *exec.Cmd; cgroup *CgroupManager; done chan struct{} }
             func NewContainer(cfg ContainerConfig) *Container
             func (c *Container) Start() error
             func (c *Container) Stop(gracePeriod time.Duration) error
+          setupGo: |-
+            type ContainerConfig struct {
+                Hostname   string
+                Command    string
+                MemoryMB   int
+                CPUPercent int
+                MaxPids    int
+                Isolate    bool // set namespace clone flags on the child (needs root)
+            }
+
+            // CgroupManager mirrors the cgroup-v2 file API onto a temp directory
+            // so exercises can run without root.
+            type CgroupManager struct {
+                Dir string
+            }
+
+            func NewCgroupManager(name string) (*CgroupManager, error) {
+                dir := filepath.Join(os.TempDir(), "vibe-cgroups", name)
+                if err := os.MkdirAll(dir, 0o755); err != nil {
+                    return nil, err
+                }
+                return &CgroupManager{Dir: dir}, nil
+            }
+
+            func (m *CgroupManager) write(file, value string) error {
+                return os.WriteFile(filepath.Join(m.Dir, file), []byte(value), 0o644)
+            }
+
+            func (m *CgroupManager) SetMemory(bytes int64) error {
+                return m.write("memory.max", fmt.Sprintf("%d", bytes))
+            }
+
+            func (m *CgroupManager) SetCPU(percent int) error {
+                return m.write("cpu.max", fmt.Sprintf("%d 100000", percent*1000))
+            }
+
+            func (m *CgroupManager) SetPids(max int) error {
+                return m.write("pids.max", fmt.Sprintf("%d", max))
+            }
+
+            func (m *CgroupManager) AddProcess(pid int) error {
+                return m.write("cgroup.procs", fmt.Sprintf("%d", pid))
+            }
+
+            func (m *CgroupManager) Cleanup() error {
+                return os.RemoveAll(m.Dir)
+            }
           difficulty: 3
           testCases:
-            - input: NewContainer(cfg).Start()
-              output: process running with namespaces and cgroup limits
-            - input: container.Stop(5 * time.Second)
-              output: SIGTERM, wait, SIGKILL if needed
+            - input: 'c := NewContainer(ContainerConfig{Hostname: "c1", Command: "true", MemoryMB: 64, CPUPercent: 50, MaxPids: 16}); err := c.Start(); mem, _ := os.ReadFile(filepath.Join(c.cgroup.Dir, "memory.max")); c.Stop(time.Second); fmt.Sprintf("start=%v memory.max=%s", err, mem)'
+              output: start=<nil> memory.max=67108864
+            - input: 'c := NewContainer(ContainerConfig{Hostname: "c2", Command: "sleep 10"}); c.Start(); start := time.Now(); err := c.Stop(5 * time.Second); fmt.Sprintf("stop=%v graceful=%v", err, time.Since(start) < time.Second)'
+              output: stop=<nil> graceful=true — SIGTERM ends the process well before the grace period
+            - input: 'f := filepath.Join(os.TempDir(), "vibe-c3-ready"); os.Remove(f); c := NewContainer(ContainerConfig{Hostname: "c3", Command: "trap '''' TERM; echo >" + f + "; sleep 10"}); c.Start(); for range 400 { if _, statErr := os.Stat(f); statErr == nil { break }; time.Sleep(5 * time.Millisecond) }; start := time.Now(); err := c.Stop(100 * time.Millisecond); os.Remove(f); fmt.Sprintf("stop=%v killed_after_grace=%v", err, time.Since(start) >= 100*time.Millisecond)'
+              output: stop=<nil> killed_after_grace=true — the process ignores SIGTERM, so SIGKILL lands after the grace period
           hints:
             - title: Think about it
               content: >-
@@ -419,10 +485,10 @@ variants:
                 for cgroup cleanup.
           solution: |-
             type Container struct {
-                cfg     ContainerConfig
-                cmd     *exec.Cmd
-                cgroup  *CgroupManager
-                done    chan struct{}
+                cfg    ContainerConfig
+                cmd    *exec.Cmd
+                cgroup *CgroupManager
+                done   chan struct{}
             }
 
             func NewContainer(cfg ContainerConfig) *Container {
@@ -439,12 +505,14 @@ variants:
                 cg.SetCPU(c.cfg.CPUPercent)
                 cg.SetPids(c.cfg.MaxPids)
 
-                c.cmd = exec.Command("/proc/self/exe", "child", c.cfg.Command)
-                c.cmd.SysProcAttr = &syscall.SysProcAttr{
-                    Cloneflags: syscall.CLONE_NEWPID | syscall.CLONE_NEWUTS | syscall.CLONE_NEWNS,
+                c.cmd = exec.Command("/bin/sh", "-c", c.cfg.Command)
+                if c.cfg.Isolate {
+                    // real container runtimes always do this — it needs root,
+                    // so tests run with Isolate: false
+                    c.cmd.SysProcAttr = &syscall.SysProcAttr{
+                        Cloneflags: syscall.CLONE_NEWPID | syscall.CLONE_NEWUTS | syscall.CLONE_NEWNS,
+                    }
                 }
-                c.cmd.Stdout = os.Stdout
-                c.cmd.Stderr = os.Stderr
 
                 if err := c.cmd.Start(); err != nil {
                     c.cgroup.Cleanup()

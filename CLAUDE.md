@@ -31,6 +31,7 @@ the prompt's instructions.
 - `build.js` — entire build system
 
 ## Conventions
+- Every exercise variant must be workspace-gradable — `npm run practice -- --verify` is the gate; a skipped variant degrades to a self-rated browser card. Schema paths: `testGo`, warmup `solution`/`driverGo`, challenge `functionSignature`+`testCases`, scaffold `codeGo`/`solutionGo`, test-writing `implGo`+`mutantsGo` (see STARTER_PROMPT.md Step 3).
 - Course manifests: `course.yaml` (not JSON)
 - Module IDs: array index by default, only `title` required
 - Exercise files: `content/exercises/module{id}-variants.yaml`

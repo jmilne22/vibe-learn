@@ -37,8 +37,8 @@ variants:
             100ms done
             200ms done
             300ms done
-            total: ~300ms
-            (line order may vary; exact total varies)
+            ran concurrently: true
+            (line order may vary)
           hints:
             - Use <code>time.Sleep(time.Duration(ms) * time.Millisecond)</code>
             - If total time is ~300ms, they ran concurrently. If ~600ms, they ran sequentially.
@@ -55,7 +55,8 @@ variants:
                 }(ms)
             }
             wg.Wait()
-            fmt.Printf("total: %v\n", time.Since(start)) // ~300ms
+            // ~300ms when concurrent, ~600ms when sequential
+            fmt.Println("ran concurrently:", time.Since(start) < 500*time.Millisecond)
     - id: warmup_2
       concept: Channels
       variants:

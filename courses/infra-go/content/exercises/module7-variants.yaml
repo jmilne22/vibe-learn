@@ -155,7 +155,8 @@ variants:
           title: Ticker Rate Limiter
           description: >-
             Write code that processes 10 items at a rate of 5 per second using <code>time.NewTicker</code>. Print each
-            item with its timestamp to verify the rate.
+            item as it is processed, then print whether the whole batch took at least ~2 seconds — proof the ticker
+            actually paced the work.
           hints:
             - "Ticker interval: <code>200 * time.Millisecond</code> for 5/sec"
             - Wait on <code><-ticker.C</code> before each item
@@ -166,8 +167,10 @@ variants:
             start := time.Now()
             for i := 0; i < 10; i++ {
                 <-ticker.C
-                fmt.Printf("item %d at %v\n", i, time.Since(start).Round(time.Millisecond))
+                fmt.Printf("item %d processed\n", i)
             }
+            // 10 items x 200ms = ~2s when properly rate limited
+            fmt.Println("rate limited:", time.Since(start) >= 1900*time.Millisecond)
   challenges:
     - id: challenge_1
       block: 1

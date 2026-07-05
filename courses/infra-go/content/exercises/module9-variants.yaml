@@ -49,6 +49,23 @@ variants:
           hints:
             - Use <code>net.DialTimeout("tcp", addr, 5*time.Second)</code>
             - Read with <code>bufio.NewReader(conn).ReadString('\n')</code>
+          driverGo: |-
+            ln, err := net.Listen("tcp", "127.0.0.1:0")
+            if err != nil {
+                fmt.Println("listen:", err)
+                return
+            }
+            go func() {
+                conn, err := ln.Accept()
+                if err != nil {
+                    return
+                }
+                defer conn.Close()
+                line, _ := bufio.NewReader(conn).ReadString('\n')
+                fmt.Fprintln(conn, "ACK "+strings.TrimSpace(line))
+            }()
+            reply, err := sendMessage(ln.Addr().String(), "deploy checkout-api")
+            fmt.Println(reply, err)
           solution: |-
             func sendMessage(addr, msg string) (string, error) {
                 conn, err := net.DialTimeout("tcp", addr, 5*time.Second)
@@ -67,10 +84,27 @@ variants:
           title: UDP Echo Server
           description: >-
             Write a UDP server that reads packets and sends back <code>"ACK: "</code> + the received message to the
-            sender.
+            sender. Split it into <code>udpEcho(addr string) error</code>, which listens, and
+            <code>serveEcho(pc net.PacketConn) error</code>, which loops reading and acknowledging packets.
           hints:
             - Use <code>net.ListenPacket("udp", addr)</code> to listen
             - Read with <code>pc.ReadFrom(buf)</code>, respond with <code>pc.WriteTo(response, addr)</code>
+          driverGo: |-
+            pc, err := net.ListenPacket("udp", "127.0.0.1:0")
+            if err != nil {
+                fmt.Println("listen:", err)
+                return
+            }
+            go serveEcho(pc)
+            client, err := net.Dial("udp", pc.LocalAddr().String())
+            if err != nil {
+                fmt.Println("dial:", err)
+                return
+            }
+            fmt.Fprint(client, "deploy web-1")
+            buf := make([]byte, 1024)
+            n, _ := client.Read(buf)
+            fmt.Println(string(buf[:n]))
           solution: |-
             func udpEcho(addr string) error {
                 pc, err := net.ListenPacket("udp", addr)
@@ -78,6 +112,10 @@ variants:
                     return err
                 }
                 defer pc.Close()
+                return serveEcho(pc)
+            }
+
+            func serveEcho(pc net.PacketConn) error {
                 buf := make([]byte, 1024)
                 for {
                     n, sender, err := pc.ReadFrom(buf)
