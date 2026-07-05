@@ -65,9 +65,11 @@ Electron Forge creates:
   has the packaging tools (`dpkg`/`fakeroot`, `rpmbuild`). Missing tools
   skip those makers instead of failing the build.
 
-`.github/workflows/desktop.yml` builds these natively on Windows, macOS, and
-Linux and uploads the results as workflow artifacts on pull requests and
-pushes to `main`.
+`.github/workflows/desktop.yml` runs natively on Windows, macOS, and Linux.
+Pull requests validate packaging (`package:desktop`) without building
+installers; pushes to `main` and version tags run the full `make:desktop`
+and upload the installers as workflow artifacts. Docs-only PRs skip the
+matrix entirely.
 
 ## Cutting a release
 

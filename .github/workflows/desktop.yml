@@ -2,6 +2,9 @@ name: Build desktop installers
 
 on:
   pull_request:
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
   push:
     branches: [main]
     tags: ['v*']
@@ -51,10 +54,28 @@ jobs:
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y dpkg fakeroot rpm
 
+      # generate-practice compiles a Go probe per exercise variant — the
+      # single biggest CI phase (~90s) on a cold cache, near-instant warm.
+      - name: Cache Go build cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            build/.go-cache
+            ~/go/pkg/mod
+          key: go-probes-${{ runner.os }}-${{ hashFiles('generate-practice.js', 'courses/*/content/exercises/*.yaml') }}
+          restore-keys: |
+            go-probes-${{ runner.os }}-
+
       - run: npm ci
-      - run: npm run make:desktop
+
+      # PRs validate packaging (prepare, prune, asar) without paying for
+      # installer compression; main and tag pushes build the real thing.
+      - name: Package (PR) or make installers (main/tag)
+        shell: bash
+        run: npm run ${{ github.event_name == 'pull_request' && 'package:desktop' || 'make:desktop' }}
 
       - name: Upload installers
+        if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: vibe-learn-${{ runner.os }}-${{ runner.arch }}
