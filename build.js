@@ -1400,7 +1400,7 @@ function buildCourse(slug) {
             scaffold.params.forEach((paramSet, idx) => {
                 const variant = { id: 'tp' + (idx + 1) };
                 // Copy template fields, substituting {{key}} placeholders
-                ['type', 'title', 'description', 'solution'].forEach(field => {
+                ['type', 'title', 'description', 'solution', 'codeGo', 'solutionGo'].forEach(field => {
                     if (scaffold.template[field]) {
                         variant[field] = scaffold.template[field].replace(/\{\{(\w+)\}\}/g, (_, key) => {
                             return paramSet[key] !== undefined ? paramSet[key] : `{{${key}}}`;
@@ -1542,7 +1542,7 @@ function buildCourse(slug) {
         // authoritative list is practice-manifest.json (written by
         // generate-practice.js and committed — CI never generates
         // practice/); YAML testGo remains a fallback.
-        [variants.challenges, variants.warmups].forEach(groups => {
+        [variants.challenges, variants.warmups, variants.scaffolds].forEach(groups => {
             if (!Array.isArray(groups)) return;
             groups.forEach(challenge => {
                 (challenge.variants || []).forEach(v => {
@@ -1555,6 +1555,8 @@ function buildCourse(slug) {
                     delete v.testGo;
                     delete v.stubGo;
                     delete v.driverGo;
+                    delete v.codeGo;
+                    delete v.solutionGo;
                 });
             });
         });

@@ -708,7 +708,10 @@
         var keyParts = item.key.replace('m' + item.moduleNum + '_', '');
         var groupsByType = [
             { groups: variants.warmups || [], type: 'warmup' },
-            { groups: variants.challenges || [], type: 'challenge' }
+            { groups: variants.challenges || [], type: 'challenge' },
+            // Scaffold drills enter the SRS store once their workspace runs
+            // are graded; resolve their keys like warmups (no parent group).
+            { groups: variants.scaffolds || [], type: 'warmup' }
         ];
 
         var strategies = [
@@ -821,8 +824,8 @@
         var daemonText = daemonOnline
             ? 'local runner ready · save a file to run its tests'
             : (isApp
-                ? 'local runner unavailable — restart the desktop app; this card falls back to self-rating'
-                : 'daemon offline — run <code>npm run vibe watch</code>; this card falls back to self-rating');
+                ? 'local runner unavailable — restart the desktop app; Next is unlocked meanwhile'
+                : 'daemon offline — run <code>npm run vibe watch</code>; Next is unlocked meanwhile');
 
         // Successive relearning: re-surface the section this concept came
         // from, so the lesson itself gets relearned, not just the exercise.

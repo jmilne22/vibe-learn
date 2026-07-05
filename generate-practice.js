@@ -7,12 +7,18 @@
 // seed outside the repository (used by desktop packaging).
 //
 // Reads courses/<slug>/content/exercises/module{N}-variants.yaml and, for every
-// challenge variant that has a `testGo:` field, writes:
+// warmup/challenge/scaffold variant it can grade, writes:
 //
-//   practice/module{N}/{challengeId}_{variantId}/
-//     exercise.go       stub (from stubGo: or generated from functionSignature)
-//     exercise_test.go  the testGo block
+//   practice/module{N}/{groupId}_{variantId}/
+//     exercise.go       stub (from stubGo:, functionSignature, or generated)
+//     exercise_test.go  hand-written testGo: or an auto-generated harness
 //     README.md         title + description
+//
+// Auto-generation paths (see the sections below): warmups from solution
+// output (optionally driverGo:), challenges from functionSignature +
+// testCases, scaffolds (trace/fix/complete/produce) from codeGo:/solutionGo:,
+// and test-writing exercises via mutation grading (implGo: + mutantsGo:,
+// learner owns learner_test.go instead of exercise.go).
 //
 // `testGo:` and `stubGo:` are Go file *bodies* — no package or import lines.
 // Imports are inferred from package qualifiers against IMPORT_MAP below.
@@ -37,9 +43,20 @@ const VERIFY_DIR = path.join(PRACTICE_DIR, '.verify');
 const MANIFEST_FILE = path.resolve(process.env.VIBE_MANIFEST_FILE || path.join(ROOT, 'practice-manifest.json'));
 const GO_BINARY = process.env.VIBE_GO_BINARY || 'go';
 const GO_VERSION = '1.26';
-const YAML_DEP = 'gopkg.in/yaml.v3 v3.0.1';
+
+// Module dependencies for practice/go.mod. Each is anchored from
+// internal/deps/deps.go so `go mod tidy` never drops it and
+// `go mod vendor` ships its source with the desktop app.
+const GO_DEPS = {
+  'gopkg.in/yaml.v3': { version: 'v3.0.1', anchor: 'gopkg.in/yaml.v3' },
+  'k8s.io/api': { version: 'v0.36.2', anchor: 'k8s.io/api/core/v1' },
+  'k8s.io/apimachinery': { version: 'v0.36.2', anchor: 'k8s.io/apimachinery/pkg/apis/meta/v1' },
+  'k8s.io/client-go': { version: 'v0.36.2', anchor: 'k8s.io/client-go/kubernetes/fake' },
+};
 
 // Package qualifier -> import path. Extend as exercises genuinely need.
+// A value may be { path, alias } for packages imported under an alias
+// (the k8s convention: metav1, corev1, ...).
 const IMPORT_MAP = {
   fmt: 'fmt',
   strings: 'strings',
@@ -78,6 +95,14 @@ const IMPORT_MAP = {
   flag: 'flag',
   testing: 'testing',
   yaml: 'gopkg.in/yaml.v3',
+  kubernetes: 'k8s.io/client-go/kubernetes',
+  fake: 'k8s.io/client-go/kubernetes/fake',
+  rest: 'k8s.io/client-go/rest',
+  metav1: { path: 'k8s.io/apimachinery/pkg/apis/meta/v1', alias: 'metav1' },
+  corev1: { path: 'k8s.io/api/core/v1', alias: 'corev1' },
+  appsv1: { path: 'k8s.io/api/apps/v1', alias: 'appsv1' },
+  apierrors: { path: 'k8s.io/apimachinery/pkg/api/errors', alias: 'apierrors' },
+  watch: 'k8s.io/apimachinery/pkg/watch',
 };
 
 function mkdirp(p) {
@@ -174,8 +199,12 @@ function inferImports(body, context) {
   const imports = [];
   const unknown = [];
   for (const q of qualifiers) {
-    if (IMPORT_MAP[q]) imports.push(IMPORT_MAP[q]);
-    else unknown.push(q);
+    if (IMPORT_MAP[q]) {
+      const spec = IMPORT_MAP[q];
+      imports.push(typeof spec === 'string' ? { path: spec, alias: '' } : spec);
+    } else {
+      unknown.push(q);
+    }
   }
   if (unknown.length > 0) {
     throw new Error(
@@ -183,16 +212,20 @@ function inferImports(body, context) {
         `Add to IMPORT_MAP or declare the identifier locally.`
     );
   }
-  return imports.sort();
+  return imports.sort((a, b) => (a.path < b.path ? -1 : 1));
+}
+
+function importLine(spec) {
+  return (spec.alias ? spec.alias + ' ' : '') + `"${spec.path}"`;
 }
 
 function assembleFile(body, context, pkg) {
   const imports = inferImports(body, context);
   let src = `package ${pkg || 'exercise'}\n\n`;
   if (imports.length === 1) {
-    src += `import "${imports[0]}"\n\n`;
+    src += `import ${importLine(imports[0])}\n\n`;
   } else if (imports.length > 1) {
-    src += 'import (\n' + imports.map((p) => `    "${p}"\n`).join('') + ')\n\n';
+    src += 'import (\n' + imports.map((p) => `    ${importLine(p)}\n`).join('') + ')\n\n';
   }
   return src + body.replace(/\s+$/, '') + '\n';
 }
@@ -235,7 +268,7 @@ const CASE_SENTINEL = '--vibe-case--';
 // Probe results are pure functions of the variant content, so cache them:
 // re-running `npm run practice` only compiles solutions that changed.
 const AUTOGEN_CACHE_FILE = path.join(ROOT, '.autogen-cache.json');
-const AUTOGEN_VERSION = 4; // bump to invalidate all cached probes
+const AUTOGEN_VERSION = 5; // bump to invalidate all cached probes
 let autogenCache = {};
 let autogenCacheDirty = false;
 
@@ -259,6 +292,9 @@ function autogenKey(kind, variant, group) {
     variant.functionSignature || '',
     variant.setupGo || (group && group.setupGo) || '',
     (variant.testCases || []).map((tc) => tc.input),
+    variant.type || '',
+    variant.codeGo || '',
+    variant.solutionGo || '',
   ]);
   return crypto.createHash('sha256').update(material).digest('hex');
 }
@@ -274,6 +310,7 @@ function cachedAutoGen(kind, variant, group, context, fn) {
     if (hit.stubGo) variant.stubGo = hit.stubGo;
     if (hit.verifySolution) variant._verifySolution = hit.verifySolution;
     if (hit.expectedOutput) variant._expectedOutput = hit.expectedOutput;
+    if (hit.taskLine) variant._taskLine = hit.taskLine;
     return {};
   }
   const res = fn();
@@ -283,6 +320,7 @@ function cachedAutoGen(kind, variant, group, context, fn) {
     stubGo: variant.stubGo,
     verifySolution: variant._verifySolution,
     expectedOutput: variant._expectedOutput,
+    taskLine: variant._taskLine,
   };
   return res;
 }
@@ -622,6 +660,213 @@ function autoGenChallenge(group, variant, context) {
   return {};
 }
 
+// --- Test-writing exercises (mutation grading) ---
+//
+// "Write TestX" exercises invert the grading problem: the learner writes
+// the test, so we can't grade by running a test against their code. Instead
+// the workspace ships the real implementation plus subtly broken mutants
+// (from `implGo:` and `mutantsGo:` on the variant), each behind a build
+// tag. The learner's test (learner_test.go) must pass against the real
+// implementation, and a generated grader re-runs it against every mutant
+// via `go test -tags vibe_mN` expecting failure — a test that can't tell
+// the broken implementations from the real one isn't done yet.
+//
+// No generate-time probing: --verify proves the canonical solution test
+// passes against the real implementation and kills every mutant.
+
+function assembleTagged(body, context, tagExpr) {
+  return `//go:build ${tagExpr}\n\n` + assembleFile(body, context);
+}
+
+function autoGenMutation(variant) {
+  const implGo = String(variant.implGo || '').trim();
+  const mutants = (variant.mutantsGo || []).map((m) =>
+    typeof m === 'string' ? { go: m, note: '' } : { go: String(m.go || ''), note: String(m.note || '') });
+  if (!implGo || mutants.length === 0 || mutants.some((m) => !m.go.trim())) {
+    return { error: 'test-writing exercise (needs implGo + mutantsGo)' };
+  }
+  if (!variant.solution) return { error: 'test-writing exercise (needs a canonical solution test)' };
+  const testNames = [...new Set(String(variant.functionSignature).match(/Test\w+/g) || [])];
+  if (testNames.length === 0) return { error: 'cannot find Test name in functionSignature' };
+  const testName = testNames[0];
+  const runPattern = `^(${testNames.join('|')})$`;
+  const namesLabel = testNames.map((n) => '`' + n + '`').join(', ');
+
+  const tags = mutants.map((_, i) => `vibe_m${i + 1}`);
+  const mutantRows = tags
+    .map((tag, i) => `    {${goStr(tag)}, ${goStr(mutants[i].note)}},`)
+    .join('\n');
+  variant.testGo =
+    '// Mutation grader — your test must pass against the real implementation\n' +
+    '// (the normal go test run covers that) and FAIL against every broken\n' +
+    '// implementation below. Each mutant lives behind a build tag.\n' +
+    'var vibeMutants = []struct{ tag, note string }{\n' + mutantRows + '\n}\n\n' +
+    `func TestVibeMutants(t *testing.T) {
+    goBin := os.Getenv("VIBE_GO_BINARY")
+    if goBin == "" {
+        goBin = "go"
+    }
+    for _, m := range vibeMutants {
+        cmd := exec.Command(goBin, "test", "-tags", m.tag, "-run", ${goStr(runPattern)}, "-count=1", ".")
+        out, err := cmd.CombinedOutput()
+        if strings.Contains(string(out), "no tests to run") {
+            t.Fatal("keep your test(s) named ${testNames.join(', ')} — the grader runs them by name")
+        }
+        if err == nil {
+            label := m.tag
+            if m.note != "" {
+                label += " (" + m.note + ")"
+            }
+            t.Errorf("broken implementation %s slipped past your test — tighten your assertions so it fails", label)
+        }
+    }
+}\n`;
+  if (!variant.stubGo) {
+    variant.stubGo =
+      '// ' + String(variant.title || 'Write a test').replace(/\n/g, ' ') + '\n' +
+      '//\n' +
+      `// Write ${testNames.join(', ')} below. They run against the real\n` +
+      '// implementation in impl.go — and the grader re-runs them against\n' +
+      '// broken implementations that your assertions must catch. See README.md.\n' +
+      testNames
+        .map((n) => `func ${n}(t *testing.T) {\n    t.Fatal("write your test — see README.md")\n}`)
+        .join('\n\n') + '\n';
+  }
+  variant._mutation = { implGo, mutants, tags, testName };
+  variant._verifySolution = variant.solution;
+  variant._taskLine =
+    `Write ${namesLabel} in \`learner_test.go\`, then run \`go test\`. ` +
+    (testNames.length > 1 ? 'They' : 'It') +
+    ' must pass against the real implementation and fail against every broken one the grader swaps in.';
+  return {};
+}
+
+// --- Scaffold drills (trace / fix / complete / produce) ---
+//
+// Scaffolds are the remedial drill ladder. Each type maps onto the
+// workbench differently:
+//   trace            — codeGo is the program; the learner sets `predicted`
+//                      in exercise.go to what it prints. The test compares
+//                      the prediction against the golden output.
+//   fix / complete   — codeGo is the broken/blanked starting run() body;
+//                      the canonical solution (solutionGo, falling back to
+//                      solution when it's runnable) produces the golden
+//                      output the learner's run() must match.
+//   produce          — same as a plain warmup: empty run() stub, output
+//                      must match the canonical solution's.
+
+const TRACE_TEST_HARNESS = `func TestPrediction(t *testing.T) {
+    if strings.TrimSpace(predicted) == "" {
+        t.Fatal("set ` + '`predicted`' + ` in exercise.go — trace the code by hand first, don't run it")
+    }
+    got := strings.TrimSpace(predicted)
+    want := strings.TrimSpace(expectedOutput)
+    if got != want {
+        t.Errorf("prediction mismatch\\n--- your prediction ---\\n%s\\n--- the code actually prints ---\\n%s", got, want)
+    }
+}`;
+
+function runFuncFrom(src) {
+  const { decls, stmts } = splitTopLevel(src);
+  if (!stmts) return { error: 'no statements to run' };
+  return {
+    body: (decls ? decls + '\n\n' : '') + 'func run() {\n' + indent(stmts, '    ') + '\n}\n',
+    probeBody: (decls ? decls + '\n\n' : '') + 'func main() {\n' + indent(stmts, '    ') + '\n}\n',
+  };
+}
+
+function autoGenScaffold(variant, context) {
+  const type = variant.type || 'produce';
+
+  if (type === 'trace') {
+    if (!variant.codeGo) return { error: 'trace scaffold needs codeGo' };
+    const rf = runFuncFrom(variant.codeGo);
+    if (rf.error) return { error: 'codeGo has no statements to run' };
+    const probe = runProbe(rf.probeBody, context);
+    if (probe.error) return { error: probe.error };
+    const golden = probe.output.replace(/\s+$/, '');
+    if (!golden.trim()) return { error: 'codeGo prints nothing' };
+
+    if (!variant.stubGo) {
+      variant.stubGo =
+        '// ' + String(variant.title || 'Trace').replace(/\n/g, ' ') + '\n' +
+        '//\n' +
+        '// Trace the code in run() BY HAND — don\'t execute it. Set `predicted`\n' +
+        '// to exactly what it prints (use a raw string literal with backticks\n' +
+        '// for multi-line output), then save. The test checks your prediction.\n' +
+        'var predicted = ``\n\n' + rf.body;
+    }
+    variant.testGo =
+      'const expectedOutput = ' + goStr(golden) + '\n\n' + TRACE_TEST_HARNESS + '\n';
+    variant._verifySolution = 'var predicted = ' + goStr(golden) + '\n\n' + rf.body;
+    variant._taskLine =
+      'Trace the code in `exercise.go` by hand, fill in `predicted`, then run `go test`.';
+    return {};
+  }
+
+  // fix / complete / produce: output-matching against the canonical solution
+  const canonical = String(variant.solutionGo || variant.solution || '').trim();
+  if (!canonical) return { error: 'no solution' };
+  const sol = runFuncFrom(canonical);
+  if (sol.error) return { error: 'solution has no statements to run' };
+  const probe = runProbe(sol.probeBody, context);
+  if (probe.error) return { error: probe.error };
+  const golden = probe.output.replace(/\s+$/, '');
+  if (!golden.trim()) return { error: 'solution prints nothing' };
+
+  if (!variant.stubGo) {
+    if (variant.codeGo && (type === 'fix' || type === 'complete')) {
+      const start = runFuncFrom(variant.codeGo);
+      if (start.error) return { error: 'codeGo has no statements to run' };
+      const header = type === 'fix'
+        ? '// This code is broken — fix run() so the test passes.\n'
+        : '// Fill in the blanks (TODO markers) in run() so the test passes.\n';
+      variant.stubGo =
+        '// ' + String(variant.title || 'Scaffold').replace(/\n/g, ' ') + '\n' +
+        '//\n' + header + start.body;
+    } else {
+      variant.stubGo =
+        '// ' + String(variant.title || 'Scaffold').replace(/\n/g, ' ') + '\n' +
+        '//\n' +
+        '// Task: see README.md. Make run() print exactly the "Expected output"\n' +
+        '// shown there. Add any types, helpers, and imports you need.\n' +
+        'func run() {\n    // your code here\n}\n';
+    }
+  }
+  variant.testGo =
+    'const expectedOutput = ' + goStr(golden) + '\n\n' + WARMUP_TEST_HARNESS + '\n';
+  variant._verifySolution = sol.body;
+  variant._expectedOutput = golden;
+  return {};
+}
+
+// Mirror of build.js expandScaffoldTemplates: {{key}} substitution over
+// template + params. Kept in sync so manifest keys match the built site.
+function expandScaffoldTemplates(scaffolds) {
+  if (!Array.isArray(scaffolds)) return scaffolds;
+  const sub = (text, paramSet) =>
+    text.replace(/\{\{(\w+)\}\}/g, (_, key) =>
+      paramSet[key] !== undefined ? paramSet[key] : `{{${key}}}`);
+  return scaffolds.map((scaffold) => {
+    if (!scaffold.template || !Array.isArray(scaffold.params)) return scaffold;
+    const expanded = { ...scaffold, variants: [] };
+    scaffold.params.forEach((paramSet, idx) => {
+      const variant = { id: 'tp' + (idx + 1) };
+      ['type', 'title', 'description', 'solution', 'codeGo', 'solutionGo'].forEach((field) => {
+        if (scaffold.template[field]) variant[field] = sub(scaffold.template[field], paramSet);
+      });
+      if (Array.isArray(scaffold.template.hints)) {
+        variant.hints = scaffold.template.hints.map((hint) =>
+          typeof hint === 'string' ? sub(hint, paramSet) : hint);
+      }
+      expanded.variants.push(variant);
+    });
+    delete expanded.template;
+    delete expanded.params;
+    return expanded;
+  });
+}
+
 function stripHTML(s) {
   return String(s)
     .replace(/<[^>]+>/g, '')
@@ -647,9 +892,12 @@ function collectVariants(courseDir) {
   for (const modNum of moduleNums) {
     const file = path.join(exercisesDir, `module${modNum}-variants.yaml`);
     const parsed = yaml.load(fs.readFileSync(file, 'utf8'));
+    const scaffolds = expandScaffoldTemplates(
+      (parsed && parsed.variants && parsed.variants.scaffolds) || []);
     const kinds = [
       { groups: (parsed && parsed.variants && parsed.variants.challenges) || [], kind: 'challenge' },
       { groups: (parsed && parsed.variants && parsed.variants.warmups) || [], kind: 'warmup' },
+      { groups: scaffolds, kind: 'scaffold' },
     ];
     process.stdout.write(`module${modNum}: probing solutions `);
     for (const { groups, kind } of kinds) {
@@ -657,10 +905,16 @@ function collectVariants(courseDir) {
         for (const variant of challenge.variants || []) {
           const context = `module${modNum}/${challenge.id}_${variant.id}`;
           if (!variant.testGo) {
-            const res = cachedAutoGen(kind, variant, challenge, context, () =>
-              kind === 'warmup'
-                ? autoGenWarmup(variant, context)
-                : autoGenChallenge(challenge, variant, context));
+            // Test-writing exercises route to the mutation grader; it does
+            // no probing (--verify validates it), so it skips the cache.
+            const isMutation = kind === 'challenge' &&
+              /^(func\s+)?Test[A-Z_]/.test(String(variant.functionSignature || '').trim());
+            const res = isMutation
+              ? autoGenMutation(variant)
+              : cachedAutoGen(kind, variant, challenge, context, () =>
+                  kind === 'warmup' ? autoGenWarmup(variant, context)
+                    : kind === 'scaffold' ? autoGenScaffold(variant, context)
+                    : autoGenChallenge(challenge, variant, context));
             process.stdout.write(res.error ? 'x' : '.');
             if (res.error) {
               skipped.push({ context, reason: res.error });
@@ -680,6 +934,16 @@ function collectVariants(courseDir) {
   return { found, skipped };
 }
 
+function writeMutationImpls(dir, mu, context) {
+  const notAll = mu.tags.map((t) => '!' + t).join(' && ');
+  fs.writeFileSync(path.join(dir, 'impl.go'),
+    assembleTagged(mu.implGo, `${context} (impl)`, notAll));
+  mu.mutants.forEach((m, i) => {
+    fs.writeFileSync(path.join(dir, `impl_${mu.tags[i]}.go`),
+      assembleTagged(m.go, `${context} (mutant ${i + 1})`, mu.tags[i]));
+  });
+}
+
 function writeWorkspace(entries, { force }) {
   let written = 0;
   let kept = 0;
@@ -690,12 +954,18 @@ function writeWorkspace(entries, { force }) {
     mkdirp(dir);
 
     const stubBody = variant.stubGo || stubFromSignature(variant.functionSignature, context);
-    const stubPath = path.join(dir, 'exercise.go');
+    // Mutation (test-writing) workspaces: the learner owns learner_test.go;
+    // the implementation and its tagged mutants are generator-owned.
+    const stubPath = path.join(dir, variant._mutation ? 'learner_test.go' : 'exercise.go');
     if (force || !fs.existsSync(stubPath)) {
       fs.writeFileSync(stubPath, assembleFile(stubBody, `${context} (stub)`));
       written++;
     } else {
       kept++;
+    }
+    if (variant._mutation) {
+      writeMutationImpls(dir, variant._mutation, context);
+      fs.rmSync(path.join(dir, 'exercise.go'), { force: true });
     }
     fs.writeFileSync(
       path.join(dir, 'exercise_test.go'),
@@ -709,8 +979,12 @@ function writeWorkspace(entries, { force }) {
     if (variant._expectedOutput) {
       readme += `\n## Expected output\n\nMake \`run()\` print exactly this:\n\n\`\`\`\n${variant._expectedOutput}\n\`\`\`\n`;
     }
-    readme += '\nWrite your solution in `exercise.go`, then run `go test`';
-    readme += [6, 7, 8, 9].includes(modNum) ? ' (and `go test -race`).\n' : '.\n';
+    if (variant._taskLine) {
+      readme += '\n' + variant._taskLine + '\n';
+    } else {
+      readme += '\nWrite your solution in `exercise.go`, then run `go test`';
+      readme += [6, 7, 8, 9].includes(modNum) ? ' (and `go test -race`).\n' : '.\n';
+    }
     fs.writeFileSync(path.join(dir, 'README.md'), readme);
   }
   return { written, kept };
@@ -723,33 +997,49 @@ function writeVerifyTree(entries) {
     const dir = path.join(VERIFY_DIR, `module${modNum}`, dirName);
     const context = `verify ${`module${modNum}/${dirName}`}`;
     mkdirp(dir);
-    fs.writeFileSync(path.join(dir, 'exercise.go'),
+    fs.writeFileSync(path.join(dir, variant._mutation ? 'learner_test.go' : 'exercise.go'),
       assembleFile(variant._verifySolution || variant.solution, `${context} (solution)`));
+    if (variant._mutation) writeMutationImpls(dir, variant._mutation, context);
     fs.writeFileSync(path.join(dir, 'exercise_test.go'), assembleFile(variant.testGo, `${context} (test)`));
   }
 }
 
 function ensureGoMod() {
   mkdirp(PRACTICE_DIR);
-  // Always pin the yaml require: `go mod tidy` must never be run here — the
-  // solution tree lives in a dot-dir the go tool can't see, and the stubs
-  // alone don't import yaml, so tidy would drop the dependency.
-  const goModPath = path.join(PRACTICE_DIR, 'go.mod');
-  const wantGoMod = `module practice\n\ngo ${GO_VERSION}\n\nrequire ${YAML_DEP}\n`;
-  if (!fs.existsSync(goModPath) || !fs.readFileSync(goModPath, 'utf8').includes('gopkg.in/yaml.v3')) {
-    fs.writeFileSync(goModPath, wantGoMod);
-  }
-  // Anchor the yaml dependency from a real package: the stubs alone don't
-  // import it (learner solutions do), and `go mod vendor` only ships source
-  // for packages the module imports. Without this the packaged app's
-  // vendored seed lacks yaml and -mod=vendor makes those exercises
-  // unsolvable offline.
+  // Anchor every dependency from a real package first: the stubs alone
+  // don't import them (learner solutions and generated tests do), and both
+  // `go mod tidy` and `go mod vendor` only see packages the module imports.
+  // Without the anchors the packaged app's vendored seed would lack these
+  // and -mod=vendor would make those exercises unsolvable offline.
   const depsDir = path.join(PRACTICE_DIR, 'internal', 'deps');
   mkdirp(depsDir);
   fs.writeFileSync(path.join(depsDir, 'deps.go'),
     '// Package deps anchors module dependencies that learner solutions\n' +
-    '// import, so `go mod vendor` ships their source with the desktop app.\n' +
-    'package deps\n\nimport _ "gopkg.in/yaml.v3"\n');
+    '// import, so `go mod tidy` keeps them and `go mod vendor` ships their\n' +
+    '// source with the desktop app.\n' +
+    'package deps\n\nimport (\n' +
+    Object.values(GO_DEPS).map((d) => `    _ "${d.anchor}"\n`).join('') +
+    ')\n');
+
+  const goModPath = path.join(PRACTICE_DIR, 'go.mod');
+  const have = fs.existsSync(goModPath) ? fs.readFileSync(goModPath, 'utf8') : '';
+  const missing = Object.keys(GO_DEPS).filter((m) => !have.includes(m));
+  if (missing.length > 0) {
+    const requires = Object.entries(GO_DEPS)
+      .map(([mod, d]) => `\t${mod} ${d.version}`)
+      .join('\n');
+    fs.writeFileSync(goModPath,
+      `module practice\n\ngo ${GO_VERSION}\n\nrequire (\n${requires}\n)\n`);
+    // Fill in indirect requires + go.sum for the new deps. Safe because
+    // deps.go (above) anchors everything we must keep.
+    const tidy = spawnSync(GO_BINARY, ['mod', 'tidy'], { cwd: PRACTICE_DIR, encoding: 'utf8' });
+    if (tidy.status !== 0) {
+      console.warn(
+        'warning: `go mod tidy` failed (offline?). Run `go mod tidy` in practice/ before using dependency-based exercises.\n' +
+          (tidy.stderr || '')
+      );
+    }
+  }
   if (!fs.existsSync(path.join(PRACTICE_DIR, 'go.sum'))) {
     const dl = spawnSync(GO_BINARY, ['mod', 'download', 'all'], { cwd: PRACTICE_DIR, encoding: 'utf8' });
     if (dl.status !== 0) {

@@ -42,6 +42,7 @@
                     description: v.description,
                     hints: v.hints,
                     solution: v.solution,
+                    practiceDir: v.practiceDir,
                     scaffoldId: scaffold.id,
                     concept: concept
                 });
@@ -201,6 +202,7 @@
         var ER = window.ExerciseRenderer;
         var moduleNum = getModuleNum();
 
+        var exerciseKey = 'm' + moduleNum + '_' + step.id;
         var cardHtml = ER.renderExerciseCard({
             num: num,
             variant: {
@@ -208,11 +210,12 @@
                 title: step.title,
                 description: step.description,
                 hints: step.hints,
-                solution: step.solution
+                solution: step.solution,
+                practiceDir: step.practiceDir
             },
             challenge: null,
             type: 'warmup',
-            exerciseKey: 'm' + moduleNum + '_' + step.id,
+            exerciseKey: exerciseKey,
             drill: true
         });
 
@@ -220,6 +223,19 @@
         wrapper.innerHTML = cardHtml;
         var cardEl = wrapper.firstElementChild;
         content.appendChild(cardEl);
+
+        // Workspace-backed drill steps are graded by the local test runner:
+        // wire assist tracking and point `vibe next` at the step on screen.
+        if (step.practiceDir) {
+            if (window.initExerciseProgress) window.initExerciseProgress();
+            if (window.VibeBridge) {
+                window.VibeBridge.announce({
+                    key: exerciseKey.replace(/_(?:v|tp)\w+$/, ''),
+                    variantKey: exerciseKey,
+                    title: step.title
+                });
+            }
+        }
 
         // Update nav button
         var navBtn = container._navBtn;

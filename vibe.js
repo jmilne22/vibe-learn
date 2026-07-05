@@ -93,7 +93,8 @@ function parseExerciseDir(dir) {
     if (!m) return null;
     const modNum = parseInt(m[1], 10);
     const dirName = m[2];
-    const vm = dirName.match(/^(.+)_(v\w+)$/);
+    // Variant ids are v1/v2/… or tp1/tp2/… (template-expanded scaffolds)
+  const vm = dirName.match(/^(.+)_((?:v|tp)\w+)$/);
     const exerciseId = vm ? vm[1] : dirName;
     const variantId = vm ? vm[2] : null;
     return {

@@ -12,12 +12,15 @@ variants:
       variants:
         - id: v1
           title: List Pods by Label
-          description: Write a function that lists all pods in a namespace matching a label selector. Return a slice of pod names.
+          description: >-
+            Write a function that lists all pods in a namespace matching a label selector. Return a slice of pod names.
+            The driver seeds a fake clientset (<code>k8s.io/client-go/kubernetes/fake</code>) with three pods — no real
+            cluster needed; the fake applies label selectors just like the API server.
           hints:
             - "Use <code>clientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{LabelSelector: selector})</code>"
             - Iterate <code>pods.Items</code> and collect <code>pod.Name</code>
           solution: |-
-            func listPodsByLabel(clientset *kubernetes.Clientset, namespace, selector string) ([]string, error) {
+            func listPodsByLabel(clientset kubernetes.Interface, namespace, selector string) ([]string, error) {
                 pods, err := clientset.CoreV1().Pods(namespace).List(
                     context.Background(),
                     metav1.ListOptions{LabelSelector: selector},
@@ -31,18 +34,34 @@ variants:
                 }
                 return names, nil
             }
+          driverGo: |-
+            clientset := fake.NewClientset(
+                &corev1.Pod{ObjectMeta: metav1.ObjectMeta{Name: "web-1", Namespace: "default", Labels: map[string]string{"app": "web"}}},
+                &corev1.Pod{ObjectMeta: metav1.ObjectMeta{Name: "web-2", Namespace: "default", Labels: map[string]string{"app": "web"}}},
+                &corev1.Pod{ObjectMeta: metav1.ObjectMeta{Name: "db-1", Namespace: "default", Labels: map[string]string{"app": "db"}}},
+            )
+            names, err := listPodsByLabel(clientset, "default", "app=web")
+            if err != nil {
+                fmt.Println("error:", err)
+                return
+            }
+            sort.Strings(names)
+            for _, name := range names {
+                fmt.Println(name)
+            }
         - id: v2
           title: Create ConfigMap
           description: >-
             Write a function that creates a ConfigMap in a given namespace with the provided key-value data. Return an
-            error if creation fails.
+            error if creation fails. The driver runs it against a fake clientset, then reads the ConfigMap back to
+            verify what was stored.
           hints:
             - >-
               Build a <code>&corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns}, Data:
               data}</code>
             - Use <code>clientset.CoreV1().ConfigMaps(ns).Create(ctx, cm, metav1.CreateOptions{})</code>
           solution: |-
-            func createConfigMap(clientset *kubernetes.Clientset, ns, name string, data map[string]string) error {
+            func createConfigMap(clientset kubernetes.Interface, ns, name string, data map[string]string) error {
                 cm := &corev1.ConfigMap{
                     ObjectMeta: metav1.ObjectMeta{
                         Name:      name,
@@ -55,6 +74,28 @@ variants:
                 )
                 return err
             }
+          driverGo: |-
+            clientset := fake.NewClientset()
+            if err := createConfigMap(clientset, "default", "app-config", map[string]string{"env": "prod", "region": "us-east-1"}); err != nil {
+                fmt.Println("error:", err)
+                return
+            }
+            cm, err := clientset.CoreV1().ConfigMaps("default").Get(
+                context.Background(), "app-config", metav1.GetOptions{},
+            )
+            if err != nil {
+                fmt.Println("error:", err)
+                return
+            }
+            fmt.Println("created:", cm.Namespace+"/"+cm.Name)
+            keys := make([]string, 0, len(cm.Data))
+            for k := range cm.Data {
+                keys = append(keys, k)
+            }
+            sort.Strings(keys)
+            for _, k := range keys {
+                fmt.Println(k + "=" + cm.Data[k])
+            }
     - id: warmup_2
       concept: Reconciliation
       variants:
@@ -63,12 +104,12 @@ variants:
           description: >-
             Write a reconcile function that ensures a pod has a specific annotation. If the annotation already exists
             with the correct value, do nothing. If it's missing or wrong, update the pod. This demonstrates idempotent
-            reconciliation.
+            reconciliation — the driver counts <code>update</code> API calls to prove the second reconcile is a no-op.
           hints:
             - Check <code>pod.Annotations[key]</code> first — if it matches, return nil (no-op)
             - If missing or different, set it and call <code>clientset.CoreV1().Pods(ns).Update(...)</code>
           solution: |-
-            func ensureAnnotation(clientset *kubernetes.Clientset, ns, podName, key, value string) error {
+            func ensureAnnotation(clientset kubernetes.Interface, ns, podName, key, value string) error {
                 pod, err := clientset.CoreV1().Pods(ns).Get(
                     context.Background(), podName, metav1.GetOptions{},
                 )
@@ -87,29 +128,164 @@ variants:
                 )
                 return err
             }
+          driverGo: |-
+            clientset := fake.NewClientset(
+                &corev1.Pod{ObjectMeta: metav1.ObjectMeta{Name: "web-1", Namespace: "default"}},
+            )
+            countUpdates := func() int {
+                n := 0
+                for _, action := range clientset.Actions() {
+                    if action.GetVerb() == "update" {
+                        n++
+                    }
+                }
+                return n
+            }
+            if err := ensureAnnotation(clientset, "default", "web-1", "owner", "team-infra"); err != nil {
+                fmt.Println("error:", err)
+                return
+            }
+            fmt.Println("updates after first reconcile:", countUpdates())
+            if err := ensureAnnotation(clientset, "default", "web-1", "owner", "team-infra"); err != nil {
+                fmt.Println("error:", err)
+                return
+            }
+            fmt.Println("updates after second reconcile:", countUpdates())
+            pod, _ := clientset.CoreV1().Pods("default").Get(
+                context.Background(), "web-1", metav1.GetOptions{},
+            )
+            fmt.Println("annotation:", pod.Annotations["owner"])
         - id: v2
           title: Work Queue Handler
           description: >-
-            Write a <code>processNextItem</code> function for a K8s controller work queue. Get an item, call reconcile,
-            requeue on error with rate limiting, forget on success.
+            Write a <code>processNextItem</code> function for a K8s controller work queue: get an item, call reconcile,
+            requeue on error with rate limiting, forget on success. The <code>WorkQueue</code> interface in the
+            workspace mirrors client-go's <code>workqueue</code> API; the driver drains a recording queue so the exact
+            call sequence is visible.
           hints:
-            - Call <code>queue.Get()</code> to get the next item. Defer <code>queue.Done(key)</code>.
-            - "On error: <code>queue.AddRateLimited(key)</code>. On success: <code>queue.Forget(key)</code>."
+            - Call <code>queue.Get()</code> to get the next item. Defer <code>queue.Done(item)</code>.
+            - "On error: <code>queue.AddRateLimited(item)</code>. On success: <code>queue.Forget(item)</code>."
           solution: |-
-            func processNextItem(queue workqueue.RateLimitingInterface, reconcile func(string) error) bool {
-                key, quit := queue.Get()
-                if quit {
+            // WorkQueue mirrors the client-go workqueue methods a controller uses.
+            type WorkQueue interface {
+                Get() (item string, shutdown bool)
+                Done(item string)
+                AddRateLimited(item string)
+                Forget(item string)
+            }
+
+            // recordingQueue is a test double: it serves items from a slice and
+            // logs every call so the driver can print the exact call sequence.
+            type recordingQueue struct {
+                items []string
+                log   []string
+            }
+
+            func (q *recordingQueue) Get() (string, bool) {
+                if len(q.items) == 0 {
+                    return "", true
+                }
+                item := q.items[0]
+                q.items = q.items[1:]
+                q.log = append(q.log, "get "+item)
+                return item, false
+            }
+
+            func (q *recordingQueue) Done(item string) {
+                q.log = append(q.log, "done "+item)
+            }
+
+            func (q *recordingQueue) AddRateLimited(item string) {
+                q.log = append(q.log, "requeue "+item)
+            }
+
+            func (q *recordingQueue) Forget(item string) {
+                q.log = append(q.log, "forget "+item)
+            }
+
+            func processNextItem(queue WorkQueue, reconcile func(string) error) bool {
+                item, shutdown := queue.Get()
+                if shutdown {
                     return false
                 }
-                defer queue.Done(key)
+                defer queue.Done(item)
 
-                if err := reconcile(key.(string)); err != nil {
-                    queue.AddRateLimited(key)
-                    slog.Error("reconcile failed", "key", key, "error", err)
+                if err := reconcile(item); err != nil {
+                    queue.AddRateLimited(item)
                     return true
                 }
-                queue.Forget(key)
+                queue.Forget(item)
                 return true
+            }
+          driverGo: |-
+            queue := &recordingQueue{items: []string{"default/web-1", "default/web-2", "default/db-1"}}
+            reconcile := func(key string) error {
+                if key == "default/web-2" {
+                    return errors.New("conflict: object modified")
+                }
+                return nil
+            }
+            for processNextItem(queue, reconcile) {
+            }
+            for _, entry := range queue.log {
+                fmt.Println(entry)
+            }
+          stubGo: |-
+            // WorkQueue mirrors the client-go workqueue methods a controller uses.
+            type WorkQueue interface {
+                Get() (item string, shutdown bool)
+                Done(item string)
+                AddRateLimited(item string)
+                Forget(item string)
+            }
+
+            // recordingQueue is a test double: it serves items from a slice and
+            // logs every call so the driver can print the exact call sequence.
+            type recordingQueue struct {
+                items []string
+                log   []string
+            }
+
+            func (q *recordingQueue) Get() (string, bool) {
+                if len(q.items) == 0 {
+                    return "", true
+                }
+                item := q.items[0]
+                q.items = q.items[1:]
+                q.log = append(q.log, "get "+item)
+                return item, false
+            }
+
+            func (q *recordingQueue) Done(item string) {
+                q.log = append(q.log, "done "+item)
+            }
+
+            func (q *recordingQueue) AddRateLimited(item string) {
+                q.log = append(q.log, "requeue "+item)
+            }
+
+            func (q *recordingQueue) Forget(item string) {
+                q.log = append(q.log, "forget "+item)
+            }
+
+            func processNextItem(queue WorkQueue, reconcile func(string) error) bool {
+                panic("implement me")
+            }
+
+            // Driver — already wired up; make it print the expected output.
+            func run() {
+                queue := &recordingQueue{items: []string{"default/web-1", "default/web-2", "default/db-1"}}
+                reconcile := func(key string) error {
+                    if key == "default/web-2" {
+                        return errors.New("conflict: object modified")
+                    }
+                    return nil
+                }
+                for processNextItem(queue, reconcile) {
+                }
+                for _, entry := range queue.log {
+                    fmt.Println(entry)
+                }
             }
   challenges:
     - id: challenge_1
@@ -121,14 +297,28 @@ variants:
           title: Pod Health Reporter
           description: >-
             Write a function that lists all pods across all namespaces and returns a health report: counts of Running,
-            Pending, Failed, and Unknown pods, grouped by namespace.
-          functionSignature: func podHealthReport(clientset *kubernetes.Clientset) (map[string]map[string]int, error)
+            Pending, Failed, and Unknown pods, grouped by namespace. The tests run it against a fake clientset —
+            <code>seedClientset()</code> in the workspace pre-loads pods across three namespaces.
+          functionSignature: func podHealthReport(clientset kubernetes.Interface) (map[string]map[string]int, error)
           difficulty: 1
+          setupGo: |-
+            // seedClientset returns a fake clientset pre-loaded with pods in
+            // several namespaces and phases — no real cluster involved.
+            func seedClientset() kubernetes.Interface {
+                return fake.NewClientset(
+                    &corev1.Pod{ObjectMeta: metav1.ObjectMeta{Name: "web-1", Namespace: "default"}, Status: corev1.PodStatus{Phase: corev1.PodRunning}},
+                    &corev1.Pod{ObjectMeta: metav1.ObjectMeta{Name: "web-2", Namespace: "default"}, Status: corev1.PodStatus{Phase: corev1.PodRunning}},
+                    &corev1.Pod{ObjectMeta: metav1.ObjectMeta{Name: "web-3", Namespace: "default"}, Status: corev1.PodStatus{Phase: corev1.PodPending}},
+                    &corev1.Pod{ObjectMeta: metav1.ObjectMeta{Name: "batch-1", Namespace: "jobs"}, Status: corev1.PodStatus{Phase: corev1.PodFailed}},
+                    &corev1.Pod{ObjectMeta: metav1.ObjectMeta{Name: "batch-2", Namespace: "jobs"}, Status: corev1.PodStatus{Phase: corev1.PodRunning}},
+                    &corev1.Pod{ObjectMeta: metav1.ObjectMeta{Name: "probe-1", Namespace: "monitoring"}, Status: corev1.PodStatus{Phase: corev1.PodUnknown}},
+                )
+            }
           testCases:
-            - input: cluster with 3 namespaces
-              output: map["default"]map["Running":5,"Pending":1]
-            - input: empty cluster
-              output: empty map, nil
+            - input: podHealthReport(seedClientset())
+              output: "map[default:map[Pending:1 Running:2] jobs:map[Failed:1 Running:1] monitoring:map[Unknown:1]] <nil>"
+            - input: podHealthReport(fake.NewClientset())
+              output: "map[] <nil>"
           hints:
             - title: Think about it
               content: How do you list pods across all namespaces? What field gives you the pod phase?
@@ -137,7 +327,7 @@ variants:
                 Use empty string for namespace to list all: Pods("").List(...). Group by pod.Namespace, count by
                 string(pod.Status.Phase).
           solution: |-
-            func podHealthReport(clientset *kubernetes.Clientset) (map[string]map[string]int, error) {
+            func podHealthReport(clientset kubernetes.Interface) (map[string]map[string]int, error) {
                 pods, err := clientset.CoreV1().Pods("").List(
                     context.Background(), metav1.ListOptions{},
                 )
@@ -164,23 +354,53 @@ variants:
           description: >-
             Write a controller-style function that watches a source ConfigMap and syncs its data to ConfigMaps in all
             other namespaces. When the source changes, update all copies. Implement as a reconcile function that's
-            called with the source ConfigMap name.
-          functionSignature: func reconcileConfigSync(clientset *kubernetes.Clientset, sourceNS, sourceName string) error
+            called with the source ConfigMap name. The tests run it against a fake clientset seeded by
+            <code>seedSyncCluster()</code>: three namespaces, the source in <code>default</code>, a stale copy in
+            <code>prod</code>, and nothing yet in <code>staging</code>.
+          functionSignature: func reconcileConfigSync(clientset kubernetes.Interface, sourceNS, sourceName string) error
           difficulty: 2
+          setupGo: |-
+            // seedSyncCluster: three namespaces, a source ConfigMap in default,
+            // and a stale copy in prod (staging has none — reconcile creates it).
+            func seedSyncCluster() kubernetes.Interface {
+                return fake.NewClientset(
+                    &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "default"}},
+                    &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "prod"}},
+                    &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "staging"}},
+                    &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "app-config", Namespace: "default"}, Data: map[string]string{"env": "shared", "version": "v2"}},
+                    &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "app-config", Namespace: "prod"}, Data: map[string]string{"env": "stale", "version": "v1"}},
+                )
+            }
+
+            // dumpConfigMaps prints ns:data for every namespace holding the ConfigMap.
+            func dumpConfigMaps(clientset kubernetes.Interface, name string) string {
+                namespaces, _ := clientset.CoreV1().Namespaces().List(context.Background(), metav1.ListOptions{})
+                var out []string
+                for _, ns := range namespaces.Items {
+                    cm, err := clientset.CoreV1().ConfigMaps(ns.Name).Get(context.Background(), name, metav1.GetOptions{})
+                    if err != nil {
+                        continue
+                    }
+                    out = append(out, ns.Name+":"+fmt.Sprint(cm.Data))
+                }
+                sort.Strings(out)
+                return strings.Join(out, " ")
+            }
           testCases:
-            - input: source ConfigMap exists with data
-              output: copies created/updated in all namespaces
-            - input: source ConfigMap deleted
-              output: returns NotFound error (caller handles)
+            - input: 'cs := seedSyncCluster(); fmt.Println(reconcileConfigSync(cs, "default", "app-config")); dumpConfigMaps(cs, "app-config")'
+              output: "<nil>, then all three namespaces hold map[env:shared version:v2]"
+            - input: 'cs := seedSyncCluster(); apierrors.IsNotFound(reconcileConfigSync(cs, "default", "missing"))'
+              output: "true"
           hints:
             - title: Think about it
               content: How do you list all namespaces? How do you handle the create-or-update pattern?
             - title: Hint
               content: >-
-                List namespaces, skip the source namespace. For each target namespace: try Get — if NotFound, Create. If
-                exists, compare data and Update if different. This is the create-or-update pattern.
+                List namespaces, skip the source namespace. For each target namespace: try Get — if
+                apierrors.IsNotFound, Create. If it exists, compare data and Update if different. This is the
+                create-or-update pattern.
           solution: |-
-            func reconcileConfigSync(clientset *kubernetes.Clientset, sourceNS, sourceName string) error {
+            func reconcileConfigSync(clientset kubernetes.Interface, sourceNS, sourceName string) error {
                 source, err := clientset.CoreV1().ConfigMaps(sourceNS).Get(
                     context.Background(), sourceName, metav1.GetOptions{},
                 )
@@ -202,7 +422,7 @@ variants:
                     existing, err := clientset.CoreV1().ConfigMaps(ns.Name).Get(
                         context.Background(), sourceName, metav1.GetOptions{},
                     )
-                    if errors.IsNotFound(err) {
+                    if apierrors.IsNotFound(err) {
                         cm := &corev1.ConfigMap{
                             ObjectMeta: metav1.ObjectMeta{
                                 Name:      sourceName,
@@ -210,14 +430,18 @@ variants:
                             },
                             Data: source.Data,
                         }
-                        clientset.CoreV1().ConfigMaps(ns.Name).Create(
+                        if _, err := clientset.CoreV1().ConfigMaps(ns.Name).Create(
                             context.Background(), cm, metav1.CreateOptions{},
-                        )
+                        ); err != nil {
+                            return err
+                        }
                     } else if err == nil && !reflect.DeepEqual(existing.Data, source.Data) {
                         existing.Data = source.Data
-                        clientset.CoreV1().ConfigMaps(ns.Name).Update(
+                        if _, err := clientset.CoreV1().ConfigMaps(ns.Name).Update(
                             context.Background(), existing, metav1.UpdateOptions{},
-                        )
+                        ); err != nil {
+                            return err
+                        }
                     }
                 }
                 return nil
@@ -228,86 +452,166 @@ variants:
               text: "Create-or-Update: Get → NotFound? Create : changed? Update. The core K8s reconciliation pattern."
             - type: gotcha
               label: IsNotFound Check
-              text: Always check errors.IsNotFound(err) — don't assume a Get error means the resource doesn't exist
+              text: >-
+                Always check apierrors.IsNotFound(err) (k8s.io/apimachinery/pkg/api/errors) — don't assume a Get error
+                means the resource doesn't exist
         - id: v3
           title: Operator Reconciler with Finalizer
           description: >-
-            Write a reconcile function for a custom resource that: (1) adds a finalizer on creation, (2) runs cleanup on
-            deletion (before the finalizer is removed), (3) ensures a corresponding ConfigMap exists with data from the
-            CR spec, (4) updates the CR status with the ConfigMap's creation timestamp.
-          functionSignature: func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error)
+            Write the reconcile function for a small operator. A real operator registers
+            <code>Reconcile(ctx, req)</code> with controller-runtime against a CRD; here the custom resource is played
+            by a ConfigMap and the client is client-go's fake clientset — the lifecycle mechanics are identical. Your
+            reconcile must: (1) add the <code>example.com/cleanup</code> finalizer on first reconcile, (2) when the CR
+            is marked for deletion (<code>DeletionTimestamp</code> set), delete the rendered child ConfigMap and only
+            then remove the finalizer, (3) otherwise ensure a <code>&lt;name&gt;-rendered</code> ConfigMap exists whose
+            Data matches the CR's, (4) record status by setting the CR's <code>example.com/rendered</code> annotation
+            to <code>"true"</code> (with a real CRD this would be the status subresource).
+          functionSignature: func reconcileApp(clientset kubernetes.Interface, ns, name string) error
           difficulty: 3
+          setupGo: |-
+            // The "custom resource" here is played by a ConfigMap so the fake
+            // clientset can store it; a real operator would define a CRD and
+            // generated types, but the reconcile lifecycle is the same.
+            const appFinalizer = "example.com/cleanup"
+
+            func newAppCR(ns, name string, data map[string]string) *corev1.ConfigMap {
+                return &corev1.ConfigMap{
+                    ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns},
+                    Data:       data,
+                }
+            }
+
+            // deletingAppCR returns the CR as the API server presents it
+            // mid-deletion: DeletionTimestamp set, finalizer holding it alive.
+            func deletingAppCR(ns, name string, data map[string]string) *corev1.ConfigMap {
+                cr := newAppCR(ns, name, data)
+                deleted := metav1.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
+                cr.DeletionTimestamp = &deleted
+                cr.Finalizers = []string{appFinalizer}
+                return cr
+            }
+
+            func dumpApp(clientset kubernetes.Interface, ns, name string) string {
+                var parts []string
+                cr, err := clientset.CoreV1().ConfigMaps(ns).Get(context.Background(), name, metav1.GetOptions{})
+                if apierrors.IsNotFound(err) {
+                    parts = append(parts, "cr=gone")
+                } else {
+                    parts = append(parts, fmt.Sprintf("cr=present finalizers=%d rendered=%q", len(cr.Finalizers), cr.Annotations["example.com/rendered"]))
+                }
+                child, err := clientset.CoreV1().ConfigMaps(ns).Get(context.Background(), name+"-rendered", metav1.GetOptions{})
+                if apierrors.IsNotFound(err) {
+                    parts = append(parts, "child=gone")
+                } else {
+                    parts = append(parts, "child=present data="+fmt.Sprint(child.Data))
+                }
+                return strings.Join(parts, " | ")
+            }
           testCases:
-            - input: new CR created
-              output: finalizer added, ConfigMap created, status updated
-            - input: CR deleted
-              output: cleanup runs, finalizer removed, ConfigMap deleted
-            - input: CR spec changed
-              output: ConfigMap updated to match
+            - input: 'cs := fake.NewClientset(newAppCR("default", "app", map[string]string{"replicas": "3"})); fmt.Println(reconcileApp(cs, "default", "app")); dumpApp(cs, "default", "app")'
+              output: finalizer added, child created, rendered annotation set
+            - input: 'cs := fake.NewClientset(deletingAppCR("default", "app", map[string]string{"replicas": "3"}), &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "app-rendered", Namespace: "default"}, Data: map[string]string{"replicas": "3"}}); fmt.Println(reconcileApp(cs, "default", "app")); dumpApp(cs, "default", "app")'
+              output: child deleted, finalizer removed (the real API server would then let the CR disappear)
+            - input: 'cr := newAppCR("default", "app", map[string]string{"replicas": "5"}); cr.Finalizers = []string{appFinalizer}; cr.Annotations = map[string]string{"example.com/rendered": "true"}; cs := fake.NewClientset(cr, &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "app-rendered", Namespace: "default"}, Data: map[string]string{"replicas": "3"}}); fmt.Println(reconcileApp(cs, "default", "app")); dumpApp(cs, "default", "app")'
+              output: child updated to match the changed spec
+            - input: 'cs := fake.NewClientset(); fmt.Println(reconcileApp(cs, "default", "app")); dumpApp(cs, "default", "app")'
+              output: CR already gone — reconcile is a no-op returning nil
           hints:
             - title: Think about it
-              content: What order should you check things? How do you tell if the resource is being deleted?
+              content: >-
+                What must you check first on every reconcile? Why does the finalizer have to be added before the child
+                ConfigMap is created?
             - title: Hint
               content: >-
-                Check DeletionTimestamp first — if set, run cleanup and remove finalizer. Otherwise: add finalizer if
-                missing, ensure ConfigMap exists (create-or-update), update status. Use client.IgnoreNotFound for the
-                initial Get.
+                Check cr.DeletionTimestamp first — if set, delete the &lt;name&gt;-rendered ConfigMap (tolerate
+                apierrors.IsNotFound), remove the finalizer with slices.DeleteFunc, and Update. Otherwise: add the
+                finalizer if missing (slices.Contains), create-or-update the child from cr.Data, then set the
+                example.com/rendered annotation to "true".
           solution: |-
-            func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-                var cr v1.MyResource
-                if err := r.Get(ctx, req.NamespacedName, &cr); err != nil {
-                    return ctrl.Result{}, client.IgnoreNotFound(err)
+            func reconcileApp(clientset kubernetes.Interface, ns, name string) error {
+                cr, err := clientset.CoreV1().ConfigMaps(ns).Get(
+                    context.Background(), name, metav1.GetOptions{},
+                )
+                if apierrors.IsNotFound(err) {
+                    return nil // already gone — nothing to reconcile
+                }
+                if err != nil {
+                    return err
                 }
 
-                finalizer := "myresource.example.com/cleanup"
+                childName := name + "-rendered"
 
-                // Handle deletion
+                // Deletion: clean up the child, then release the finalizer. The
+                // API server keeps the CR alive until the finalizer list empties.
                 if cr.DeletionTimestamp != nil {
-                    if containsString(cr.Finalizers, finalizer) {
-                        // Cleanup: delete the ConfigMap
-                        cm := &corev1.ConfigMap{}
-                        cm.Name = cr.Name
-                        cm.Namespace = cr.Namespace
-                        r.Delete(ctx, cm)
-
-                        cr.Finalizers = removeString(cr.Finalizers, finalizer)
-                        r.Update(ctx, &cr)
+                    if slices.Contains(cr.Finalizers, appFinalizer) {
+                        err := clientset.CoreV1().ConfigMaps(ns).Delete(
+                            context.Background(), childName, metav1.DeleteOptions{},
+                        )
+                        if err != nil && !apierrors.IsNotFound(err) {
+                            return err
+                        }
+                        cr.Finalizers = slices.DeleteFunc(cr.Finalizers, func(f string) bool {
+                            return f == appFinalizer
+                        })
+                        if _, err := clientset.CoreV1().ConfigMaps(ns).Update(
+                            context.Background(), cr, metav1.UpdateOptions{},
+                        ); err != nil {
+                            return err
+                        }
                     }
-                    return ctrl.Result{}, nil
+                    return nil
                 }
 
-                // Add finalizer
-                if !containsString(cr.Finalizers, finalizer) {
-                    cr.Finalizers = append(cr.Finalizers, finalizer)
-                    if err := r.Update(ctx, &cr); err != nil {
-                        return ctrl.Result{}, err
+                // Add the finalizer before creating anything we'd have to clean up.
+                if !slices.Contains(cr.Finalizers, appFinalizer) {
+                    cr.Finalizers = append(cr.Finalizers, appFinalizer)
+                    cr, err = clientset.CoreV1().ConfigMaps(ns).Update(
+                        context.Background(), cr, metav1.UpdateOptions{},
+                    )
+                    if err != nil {
+                        return err
                     }
                 }
 
-                // Ensure ConfigMap
-                var cm corev1.ConfigMap
-                err := r.Get(ctx, req.NamespacedName, &cm)
-                if errors.IsNotFound(err) {
-                    cm = corev1.ConfigMap{
-                        ObjectMeta: metav1.ObjectMeta{
-                            Name:      cr.Name,
-                            Namespace: cr.Namespace,
-                        },
-                        Data: cr.Spec.Data,
+                // Ensure the child matches the CR spec (create-or-update).
+                child, err := clientset.CoreV1().ConfigMaps(ns).Get(
+                    context.Background(), childName, metav1.GetOptions{},
+                )
+                if apierrors.IsNotFound(err) {
+                    child = &corev1.ConfigMap{
+                        ObjectMeta: metav1.ObjectMeta{Name: childName, Namespace: ns},
+                        Data:       cr.Data,
                     }
-                    if err := r.Create(ctx, &cm); err != nil {
-                        return ctrl.Result{}, err
+                    if _, err := clientset.CoreV1().ConfigMaps(ns).Create(
+                        context.Background(), child, metav1.CreateOptions{},
+                    ); err != nil {
+                        return err
                     }
-                } else if err == nil {
-                    cm.Data = cr.Spec.Data
-                    r.Update(ctx, &cm)
+                } else if err != nil {
+                    return err
+                } else if !reflect.DeepEqual(child.Data, cr.Data) {
+                    child.Data = cr.Data
+                    if _, err := clientset.CoreV1().ConfigMaps(ns).Update(
+                        context.Background(), child, metav1.UpdateOptions{},
+                    ); err != nil {
+                        return err
+                    }
                 }
 
-                // Update status
-                cr.Status.ConfigMapCreated = cm.CreationTimestamp
-                r.Status().Update(ctx, &cr)
-
-                return ctrl.Result{}, nil
+                // "Status" update — with a real CRD this would be Status().Update().
+                if cr.Annotations["example.com/rendered"] != "true" {
+                    if cr.Annotations == nil {
+                        cr.Annotations = make(map[string]string)
+                    }
+                    cr.Annotations["example.com/rendered"] = "true"
+                    if _, err := clientset.CoreV1().ConfigMaps(ns).Update(
+                        context.Background(), cr, metav1.UpdateOptions{},
+                    ); err != nil {
+                        return err
+                    }
+                }
+                return nil
             }
           annotations:
             - type: pattern
@@ -319,5 +623,5 @@ variants:
             - type: gotcha
               label: Status Subresource
               text: >-
-                Update the status subresource separately with Status().Update() — regular Update() ignores status
-                changes
+                With a real CRD you update status separately via Status().Update() — regular Update() ignores status
+                changes. The example.com/rendered annotation stands in for status here.

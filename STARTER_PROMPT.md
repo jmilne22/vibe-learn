@@ -21,7 +21,7 @@ vibe-learn is a static course platform. You're generating content files that the
 - Spaced repetition (SM-2 algorithm)
 - Flashcard sessions
 - Daily practice with multiple modes
-- Interactive exercises with hints, solutions, and self-rating
+- Interactive exercises with hints and solutions, graded objectively by local `go test` workspaces (see Step 3)
 - Analytics dashboard
 - Offline support via service worker
 
@@ -508,6 +508,51 @@ variants:
 - **Solutions** must be correct, complete, and runnable
 - **Annotations** are optional but valuable (the `type` must match a key in `annotationTypes` from course.yaml)
 - HTML is allowed in descriptions, hints, and annotation text (use `<code>`, `<strong>`, etc.)
+
+### Local test workspaces (objective grading — REQUIRED for Go courses)
+
+Exercises are not graded in the browser. `npm run practice` generates a local
+Go workspace per variant (`practice/module{N}/{groupId}_{variantId}/`), and the
+`vibe watch` daemon grades saved work with `go vet` + `go test -race`. The test
+run replaces self-rating, so **every variant must be workspace-gradable** — a
+variant the generator skips falls back to a self-rated browser card, which is a
+degraded, inconsistent experience. After authoring, run
+`npm run practice -- --verify` and fix every entry in the "Skipped" list.
+
+How each variant becomes gradable (checked in this order by `generate-practice.js`):
+
+1. **Hand-written test** — add `testGo:` (a Go test file body, no package/import
+   lines; imports are inferred) and optionally `stubGo:` (the starting
+   `exercise.go` body). Full control; use when auto-generation doesn't fit.
+2. **Auto-generated challenge** — needs `functionSignature` + `solution` +
+   `testCases` with single-line Go `input:` expressions
+   (`'s := New(); s.Add(2); s.Total()'` — split on `;`, last expression's
+   printed value is compared). Shared fixture types go in `setupGo:` on the
+   variant or group. The solution must compile standalone.
+3. **Auto-generated warmup** — the `solution` must be runnable statements that
+   print deterministic output; or declare functions in `solution` and add
+   `driverGo:` (fixed statements that call them and print). Output is compared
+   as a sorted line set, so map-iteration order is fine but line content must
+   be deterministic.
+4. **Test-writing exercises** (`functionSignature: func TestX(t *testing.T)`)
+   are graded by **mutation testing**: add `implGo:` (correct implementation of
+   what the learner tests) and `mutantsGo:` (2–4 entries of
+   `{note: <the planted bug>, go: <broken implementation>}`). The learner's
+   test must pass against `implGo` and fail against every mutant; the canonical
+   `solution` test must do the same (verified by `--verify`).
+5. **Scaffold drills** (`variants.scaffolds`, types trace/fix/complete/produce):
+   - `trace` — add `codeGo:` (the runnable code shown in the description); the
+     learner fills a `predicted` variable with the output.
+   - `fix` / `complete` — add `codeGo:` (the broken/blanked starting code — it
+     must COMPILE; use `// TODO: …` comments for blanks) and `solutionGo:` (the
+     full corrected runnable snippet ending in a print). Keep `solution` as the
+     browser-displayed answer.
+   - `produce` — just make `solution` runnable statements that print.
+
+Hard rules for gradable content: deterministic output only (no timestamps, no
+unseeded randomness in printed values), no real network (use
+`net/http/httptest`), no external clusters (use `k8s.io/client-go/kubernetes/fake`),
+and only package qualifiers listed in `IMPORT_MAP` in `generate-practice.js`.
 
 ### Full working example
 

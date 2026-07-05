@@ -358,13 +358,16 @@
         </div>`;
 
         // Workspace-backed exercises are graded by the test run — mark the
-        // card objective so no self-rating UI is ever offered for it.
+        // card objective so no self-rating UI is ever offered for it. Drill
+        // cards with a workspace also carry the exercise key so hint/solution
+        // peeks count as assists for the objective grade.
         const baseKey = exerciseKey ? String(exerciseKey).replace(/_(?:v|tp)\w+$/, '') : '';
-        const objectiveAttrs = variant.practiceDir && !drill
+        const objectiveAttrs = variant.practiceDir
             ? ` data-objective="1" data-vibe-key="${escapeHtml(exerciseKey)}" data-vibe-base="${escapeHtml(baseKey)}"`
             : '';
+        const keyAttr = (!drill || variant.practiceDir) ? ` data-exercise-key="${exerciseKey}"` : '';
 
-        let html = `<div class="exercise exercise-work-item${completedClass}"${drill ? '' : ` data-exercise-key="${exerciseKey}"`}${challengeAttr}${objectiveAttrs}>`;
+        let html = `<div class="exercise exercise-work-item${completedClass}"${keyAttr}${challengeAttr}${objectiveAttrs}>`;
 
         if (drill) {
             // Drill cards: flat layout, no accordion

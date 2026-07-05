@@ -12,17 +12,22 @@ variants:
         - id: v1
           title: Build a GET Request
           description: >-
-            Create an <code>http.Client</code> with a 10-second timeout. Build a GET request to
-            <code>https://api.example.com/v1/nodes</code> with an Accept: application/json header. Execute it and check
-            for errors.
+            Create an <code>http.Client</code> with a 10-second timeout. Spin up a local
+            <code>httptest.Server</code>, build a GET request to its <code>/v1/nodes</code> path with an Accept:
+            application/json header. Execute it and check for errors.
           expected: "Status: 200"
           hints:
             - "Use <code>&http.Client{Timeout: 10 * time.Second}</code>"
             - Use <code>http.NewRequest("GET", url, nil)</code> then <code>req.Header.Set(...)
           solution: |-
+            srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+                fmt.Fprintln(w, `{"nodes": 3}`)
+            }))
+            defer srv.Close()
+
             client := &http.Client{Timeout: 10 * time.Second}
 
-            req, err := http.NewRequest("GET", "https://api.example.com/v1/nodes", nil)
+            req, err := http.NewRequest("GET", srv.URL+"/v1/nodes", nil)
             if err != nil {
                 log.Fatal(err)
             }
@@ -38,7 +43,8 @@ variants:
           title: POST JSON Body
           description: >-
             Build a POST request to <code>/v1/pods</code> with a JSON body:
-            <code>{"name":"web-1","namespace":"prod"}</code>. Set Content-Type to application/json.
+            <code>{"name":"web-1","namespace":"prod"}</code>. Set Content-Type to application/json. Print the method,
+            path, Content-Type header, and body to confirm the request is wired correctly.
           hints:
             - Marshal the map with <code>json.Marshal</code>
             - Use <code>bytes.NewReader(body)</code> as the request body
@@ -54,6 +60,10 @@ variants:
                 log.Fatal(err)
             }
             req.Header.Set("Content-Type", "application/json")
+
+            fmt.Println(req.Method, req.URL.Path)
+            fmt.Println("Content-Type:", req.Header.Get("Content-Type"))
+            fmt.Println("Body:", string(body))
     - id: warmup_2
       concept: JSON Round-Tripping
       variants:
@@ -71,6 +81,13 @@ variants:
                 ID   string `json:"id"`
                 Type string `json:"type"`
             }
+
+            resp := &http.Response{
+                StatusCode: 200,
+                Body: io.NopCloser(strings.NewReader(
+                    `{"instances":[{"id":"i-1","type":"t3.medium"},{"id":"i-2","type":"t3.large"}]}`)),
+            }
+            defer resp.Body.Close()
 
             var result struct {
                 Instances []Instance `json:"instances"`

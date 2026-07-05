@@ -43,7 +43,36 @@ variants:
           hints:
             - "Use <code>fmt.Errorf(\"loading app config: %w\", err)</code> to wrap"
             - Check <code>if err != nil</code> immediately after the call
+          driverGo: |-
+            fmt.Println("ok:", loadApp("app.yaml"))
+            fmt.Println("missing:", loadApp("missing.yaml"))
+          stubGo: |-
+            // readConfig is given: it succeeds only for "app.yaml".
+            func readConfig(path string) (string, error) {
+                if path != "app.yaml" {
+                    return "", fmt.Errorf("open %s: no such file", path)
+                }
+                return "host=localhost port=8080", nil
+            }
+
+            func loadApp(path string) error {
+                panic("implement me")
+            }
+
+            // Driver — already wired up; make it print the expected output.
+            func run() {
+                fmt.Println("ok:", loadApp("app.yaml"))
+                fmt.Println("missing:", loadApp("missing.yaml"))
+            }
           solution: |-
+            // readConfig is given: it succeeds only for "app.yaml".
+            func readConfig(path string) (string, error) {
+                if path != "app.yaml" {
+                    return "", fmt.Errorf("open %s: no such file", path)
+                }
+                return "host=localhost port=8080", nil
+            }
+
             func loadApp(path string) error {
                 cfg, err := readConfig(path)
                 if err != nil {
@@ -93,7 +122,40 @@ variants:
           hints:
             - Build path with <code>fmt.Sprintf("/etc/pods/%s/%s.yaml", namespace, pod)</code>
             - "Wrap: <code>fmt.Errorf(\"fetching config for %s/%s: %w\", namespace, pod, err)</code>"
+          driverGo: |-
+            cfg, err := fetchPodConfig("web", "prod")
+            fmt.Println(cfg, err)
+            _, err = fetchPodConfig("api", "dev")
+            fmt.Println(err)
+          stubGo: |-
+            // readFile is given: only "/etc/pods/prod/web.yaml" exists.
+            func readFile(path string) (string, error) {
+                if path == "/etc/pods/prod/web.yaml" {
+                    return "image: nginx:1.27", nil
+                }
+                return "", fmt.Errorf("open %s: no such file", path)
+            }
+
+            func fetchPodConfig(pod, namespace string) (string, error) {
+                panic("implement me")
+            }
+
+            // Driver — already wired up; make it print the expected output.
+            func run() {
+                cfg, err := fetchPodConfig("web", "prod")
+                fmt.Println(cfg, err)
+                _, err = fetchPodConfig("api", "dev")
+                fmt.Println(err)
+            }
           solution: |-
+            // readFile is given: only "/etc/pods/prod/web.yaml" exists.
+            func readFile(path string) (string, error) {
+                if path == "/etc/pods/prod/web.yaml" {
+                    return "image: nginx:1.27", nil
+                }
+                return "", fmt.Errorf("open %s: no such file", path)
+            }
+
             func fetchPodConfig(pod, namespace string) (string, error) {
                 path := fmt.Sprintf("/etc/pods/%s/%s.yaml", namespace, pod)
                 data, err := readFile(path)
@@ -133,17 +195,28 @@ variants:
         - id: v2
           title: Extract with errors.As
           description: >-
-            Given a function that returns errors, write code that checks if the error is a <code>*net.OpError</code>
+            Write <code>describeError(err error)</code> that checks if the error is a <code>*net.OpError</code>
             (has Op and Addr fields). If it is, print the operation and address. If not, print the raw error.
           hints:
             - Declare <code>var opErr *net.OpError</code> then use <code>errors.As(err, &opErr)</code>
             - If As returns true, access <code>opErr.Op</code> and <code>opErr.Addr</code>
+          driverGo: |-
+            dialErr := fmt.Errorf("checking upstream: %w", &net.OpError{
+                Op:   "dial",
+                Net:  "tcp",
+                Addr: &net.TCPAddr{IP: net.ParseIP("10.0.0.5"), Port: 8080},
+                Err:  errors.New("connection refused"),
+            })
+            describeError(dialErr)
+            describeError(errors.New("config missing"))
           solution: |-
-            var opErr *net.OpError
-            if errors.As(err, &opErr) {
-                fmt.Printf("operation %s failed on %v\n", opErr.Op, opErr.Addr)
-            } else {
-                fmt.Printf("error: %v\n", err)
+            func describeError(err error) {
+                var opErr *net.OpError
+                if errors.As(err, &opErr) {
+                    fmt.Printf("operation %s failed on %v\n", opErr.Op, opErr.Addr)
+                } else {
+                    fmt.Printf("error: %v\n", err)
+                }
             }
         - id: v3
           title: Is Through a Chain
@@ -174,6 +247,38 @@ variants:
           hints:
             - "Define: <code>var ErrNotFound = errors.New(\"not found\")</code>"
             - "Use comma-ok on the map: <code>val, ok := store[key]</code>"
+          stubGo: |-
+            // Define Sentinels
+            //
+            // The sentinel definitions are started for you — getConfig must return
+            // exactly these values (the test checks identity with errors.Is).
+            var (
+                ErrNotFound      = errors.New("not found")
+                ErrInvalidConfig = errors.New("invalid config")
+            )
+
+            func getConfig(key string, store map[string]string) (string, error) {
+                panic("implement me")
+            }
+          testGo: |-
+            func TestGetConfig(t *testing.T) {
+                store := map[string]string{"host": "localhost", "debug": ""}
+
+                val, err := getConfig("host", store)
+                if err != nil || val != "localhost" {
+                    t.Errorf(`getConfig("host") = %q, %v; want "localhost", nil`, val, err)
+                }
+
+                _, err = getConfig("missing", store)
+                if !errors.Is(err, ErrNotFound) {
+                    t.Errorf(`getConfig("missing") should return ErrNotFound, got %v`, err)
+                }
+
+                _, err = getConfig("debug", store)
+                if !errors.Is(err, ErrInvalidConfig) {
+                    t.Errorf(`getConfig("debug") should return ErrInvalidConfig, got %v`, err)
+                }
+            }
           solution: |-
             var (
                 ErrNotFound      = errors.New("not found")
@@ -234,7 +339,39 @@ variants:
           hints:
             - "Use <code>fmt.Errorf(\"service %s in namespace %s: %w\", name, namespace, ErrNotFound)</code>"
             - The %w verb preserves the sentinel so errors.Is still works
+          stubGo: |-
+            // Wrap a Sentinel
+            //
+            // Service and the sentinel are given — write findService so the
+            // wrapped error still satisfies errors.Is(err, ErrNotFound).
+            type Service struct {
+                Name string
+            }
+
+            var ErrNotFound = errors.New("not found")
+
+            func findService(name, namespace string) (Service, error) {
+                panic("implement me")
+            }
+          testGo: |-
+            func TestFindService(t *testing.T) {
+                _, err := findService("web", "prod")
+                if err == nil {
+                    t.Fatal("expected an error, got nil")
+                }
+                if !errors.Is(err, ErrNotFound) {
+                    t.Error("errors.Is(err, ErrNotFound) = false; wrap with %w so the sentinel survives")
+                }
+                want := "service web in namespace prod: not found"
+                if err.Error() != want {
+                    t.Errorf("err.Error() = %q, want %q", err.Error(), want)
+                }
+            }
           solution: |-
+            type Service struct {
+                Name string
+            }
+
             var ErrNotFound = errors.New("not found")
 
             func findService(name, namespace string) (Service, error) {
@@ -252,7 +389,28 @@ variants:
           hints:
             - "Test function: <code>func TestAdd(t *testing.T)</code>"
             - Use <code>t.Errorf("got %d, want %d", got, want)</code> for failures
+          stubGo: |-
+            // First Test
+            //
+            // Add is the function under test — already implemented.
+            func Add(a, b int) int {
+                return a + b
+            }
+
+            // Write TestAdd below (keep the name — the grader calls it).
+            func TestAdd(t *testing.T) {
+                t.Fatal("write TestAdd — see README.md")
+            }
+          testGo: |-
+            func TestYourTestsPass(t *testing.T) {
+                t.Run("TestAdd", TestAdd)
+            }
           solution: |-
+            // Add is the function under test — already implemented.
+            func Add(a, b int) int {
+                return a + b
+            }
+
             func TestAdd(t *testing.T) {
                 got := Add(2, 3)
                 if got != 5 {
@@ -273,7 +431,47 @@ variants:
           hints:
             - "For the happy path: <code>if err != nil { t.Fatalf(...) }</code>, then check the value"
             - "For the error path: <code>if err == nil { t.Fatal(\"expected error\") }</code>"
+          stubGo: |-
+            // Test Error Cases
+            //
+            // ParsePort is the function under test — already implemented.
+            func ParsePort(s string) (int, error) {
+                port, err := strconv.Atoi(s)
+                if err != nil {
+                    return 0, fmt.Errorf("invalid port %q: %w", s, err)
+                }
+                if port < 1 || port > 65535 {
+                    return 0, fmt.Errorf("port %d out of range", port)
+                }
+                return port, nil
+            }
+
+            // Write both tests below (keep the names — the grader calls them).
+            func TestParsePort(t *testing.T) {
+                t.Fatal("write TestParsePort — see README.md")
+            }
+
+            func TestParsePort_Invalid(t *testing.T) {
+                t.Fatal("write TestParsePort_Invalid — see README.md")
+            }
+          testGo: |-
+            func TestYourTestsPass(t *testing.T) {
+                t.Run("TestParsePort", TestParsePort)
+                t.Run("TestParsePort_Invalid", TestParsePort_Invalid)
+            }
           solution: |-
+            // ParsePort is the function under test — already implemented.
+            func ParsePort(s string) (int, error) {
+                port, err := strconv.Atoi(s)
+                if err != nil {
+                    return 0, fmt.Errorf("invalid port %q: %w", s, err)
+                }
+                if port < 1 || port > 65535 {
+                    return 0, fmt.Errorf("port %d out of range", port)
+                }
+                return port, nil
+            }
+
             func TestParsePort(t *testing.T) {
                 port, err := ParsePort("8080")
                 if err != nil {
@@ -299,7 +497,44 @@ variants:
           hints:
             - "First line: <code>t.Helper()</code>"
             - Use <code>strings.Contains(err.Error(), wantMsg)</code> to check the message
+          stubGo: |-
+            // Test with Helper
+            //
+            // validatePort is the function under test — already implemented.
+            func validatePort(port int) error {
+                if port < 1 {
+                    return fmt.Errorf("port %d: must be >= 1", port)
+                }
+                if port > 65535 {
+                    return fmt.Errorf("port %d: must be <= 65535", port)
+                }
+                return nil
+            }
+
+            // Write the helper and the test below (keep the names).
+            func assertError(t *testing.T, err error, wantMsg string) {
+                panic("implement me")
+            }
+
+            func TestValidate(t *testing.T) {
+                t.Fatal("write TestValidate using assertError — see README.md")
+            }
+          testGo: |-
+            func TestYourTestsPass(t *testing.T) {
+                t.Run("TestValidate", TestValidate)
+            }
           solution: |-
+            // validatePort is the function under test — already implemented.
+            func validatePort(port int) error {
+                if port < 1 {
+                    return fmt.Errorf("port %d: must be >= 1", port)
+                }
+                if port > 65535 {
+                    return fmt.Errorf("port %d: must be <= 65535", port)
+                }
+                return nil
+            }
+
             func assertError(t *testing.T, err error, wantMsg string) {
                 t.Helper()
                 if err == nil {
@@ -326,7 +561,42 @@ variants:
           hints:
             - "Define: <code>tests := []struct{ name, input string; want int; wantErr bool }{...}</code>"
             - Loop with <code>for _, tt := range tests { t.Run(tt.name, func(t *testing.T) { ... }) }</code>
+          stubGo: |-
+            // Table Test for ParsePort
+            //
+            // ParsePort is the function under test — already implemented.
+            func ParsePort(s string) (int, error) {
+                port, err := strconv.Atoi(s)
+                if err != nil {
+                    return 0, fmt.Errorf("invalid port %q: %w", s, err)
+                }
+                if port < 1 || port > 65535 {
+                    return 0, fmt.Errorf("port %d out of range", port)
+                }
+                return port, nil
+            }
+
+            // Write the table-driven test below (keep the name — the grader calls it).
+            func TestParsePort(t *testing.T) {
+                t.Fatal("write the table-driven TestParsePort — see README.md")
+            }
+          testGo: |-
+            func TestYourTestsPass(t *testing.T) {
+                t.Run("TestParsePort", TestParsePort)
+            }
           solution: |-
+            // ParsePort is the function under test — already implemented.
+            func ParsePort(s string) (int, error) {
+                port, err := strconv.Atoi(s)
+                if err != nil {
+                    return 0, fmt.Errorf("invalid port %q: %w", s, err)
+                }
+                if port < 1 || port > 65535 {
+                    return 0, fmt.Errorf("port %d out of range", port)
+                }
+                return port, nil
+            }
+
             func TestParsePort(t *testing.T) {
                 tests := []struct {
                     name    string
@@ -368,7 +638,44 @@ variants:
           hints:
             - Use <code>wantErr bool</code> in the test struct
             - "Edge cases: empty string, 63-char name, 64-char name, uppercase, special chars"
+          stubGo: |-
+            // Table Test for Validation
+            //
+            // ValidatePodName is the function under test — already implemented.
+            func ValidatePodName(name string) error {
+                if len(name) == 0 || len(name) > 63 {
+                    return fmt.Errorf("name must be 1-63 characters")
+                }
+                for _, r := range name {
+                    if !(r >= 'a' && r <= 'z' || r >= '0' && r <= '9' || r == '-') {
+                        return fmt.Errorf("invalid character %q", r)
+                    }
+                }
+                return nil
+            }
+
+            // Write the table-driven test below (keep the name — the grader calls it).
+            func TestValidatePodName(t *testing.T) {
+                t.Fatal("write the table-driven TestValidatePodName — see README.md")
+            }
+          testGo: |-
+            func TestYourTestsPass(t *testing.T) {
+                t.Run("TestValidatePodName", TestValidatePodName)
+            }
           solution: |-
+            // ValidatePodName is the function under test — already implemented.
+            func ValidatePodName(name string) error {
+                if len(name) == 0 || len(name) > 63 {
+                    return fmt.Errorf("name must be 1-63 characters")
+                }
+                for _, r := range name {
+                    if !(r >= 'a' && r <= 'z' || r >= '0' && r <= '9' || r == '-') {
+                        return fmt.Errorf("invalid character %q", r)
+                    }
+                }
+                return nil
+            }
+
             func TestValidatePodName(t *testing.T) {
                 tests := []struct {
                     name    string
@@ -405,7 +712,50 @@ variants:
           hints:
             - "<code>wantErr: \"\"</code> means no error expected; non-empty means error containing that text"
             - Use <code>strings.Contains(err.Error(), tt.wantErr)</code>
+          stubGo: |-
+            // Table Test with Error Messages
+            //
+            // Service and NewService are under test — already implemented.
+            type Service struct {
+                Name string
+                Port int
+            }
+
+            func NewService(name string, port int) (Service, error) {
+                if name == "" {
+                    return Service{}, fmt.Errorf("name cannot be empty")
+                }
+                if port < 1 || port > 65535 {
+                    return Service{}, fmt.Errorf("invalid port %d", port)
+                }
+                return Service{Name: name, Port: port}, nil
+            }
+
+            // Write the table-driven test below (keep the name — the grader calls it).
+            func TestNewService(t *testing.T) {
+                t.Fatal("write the table-driven TestNewService — see README.md")
+            }
+          testGo: |-
+            func TestYourTestsPass(t *testing.T) {
+                t.Run("TestNewService", TestNewService)
+            }
           solution: |-
+            type Service struct {
+                Name string
+                Port int
+            }
+
+            // NewService is the function under test — already implemented.
+            func NewService(name string, port int) (Service, error) {
+                if name == "" {
+                    return Service{}, fmt.Errorf("name cannot be empty")
+                }
+                if port < 1 || port > 65535 {
+                    return Service{}, fmt.Errorf("invalid port %d", port)
+                }
+                return Service{Name: name, Port: port}, nil
+            }
+
             func TestNewService(t *testing.T) {
                 tests := []struct {
                     name    string
@@ -789,14 +1139,18 @@ variants:
             <code>errors.Is</code> to return different status codes: 404 for ErrNotFound, 500 for anything else. Write
             all three layers and demonstrate the error chain works.
           functionSignature: func (h *APIHandler) HandleGet(name, namespace string) (int, string)
+          setupGo: |-
+            type Pod struct {
+                Name string
+            }
           difficulty: 3
           testCases:
-            - input: h.HandleGet("web", "prod") // web exists
+            - input: 'h := &APIHandler{service: &PodService{store: &PodStore{pods: map[string]Pod{"web": {Name: "web"}}}}}; h.HandleGet("web", "prod")'
               output: "(200, \"pod: web\")"
-            - input: h.HandleGet("missing", "prod")
+            - input: 'h := &APIHandler{service: &PodService{store: &PodStore{pods: map[string]Pod{}}}}; h.HandleGet("missing", "prod")'
               output: (404, "not found")
-            - input: h.HandleGet("broken", "prod") // store returns unexpected error
-              output: (500, "internal error")
+            - input: 'h := &APIHandler{service: &PodService{store: &PodStore{pods: map[string]Pod{"broken": {}}}}}; h.HandleGet("broken", "prod")'
+              output: (500, "internal error") — the empty entry makes the store fail with a non-sentinel error
           hints:
             - title: Think about it
               content: >-
@@ -818,6 +1172,10 @@ variants:
                 pod, ok := s.pods[name]
                 if !ok {
                     return Pod{}, fmt.Errorf("store get %q: %w", name, ErrNotFound)
+                }
+                if pod.Name == "" {
+                    // corrupt entry — an unexpected, non-sentinel failure
+                    return Pod{}, fmt.Errorf("store get %q: corrupt entry", name)
                 }
                 return pod, nil
             }
@@ -874,6 +1232,70 @@ variants:
             comma (error).
           functionSignature: func TestParseLabels(t *testing.T)
           difficulty: 1
+          implGo: |-
+            func parseLabels(s string) (map[string]string, error) {
+                labels := map[string]string{}
+                if s == "" {
+                    return labels, nil
+                }
+                for _, part := range strings.Split(s, ",") {
+                    k, v, ok := strings.Cut(part, "=")
+                    if !ok || k == "" {
+                        return nil, fmt.Errorf("invalid label %q", part)
+                    }
+                    labels[k] = v
+                }
+                return labels, nil
+            }
+          mutantsGo:
+            - note: returns nil instead of an empty map for empty input
+              go: |-
+                func parseLabels(s string) (map[string]string, error) {
+                    if s == "" {
+                        return nil, nil
+                    }
+                    labels := map[string]string{}
+                    for _, part := range strings.Split(s, ",") {
+                        k, v, ok := strings.Cut(part, "=")
+                        if !ok || k == "" {
+                            return nil, fmt.Errorf("invalid label %q", part)
+                        }
+                        labels[k] = v
+                    }
+                    return labels, nil
+                }
+            - note: silently skips malformed labels instead of returning an error
+              go: |-
+                func parseLabels(s string) (map[string]string, error) {
+                    labels := map[string]string{}
+                    if s == "" {
+                        return labels, nil
+                    }
+                    for _, part := range strings.Split(s, ",") {
+                        k, v, ok := strings.Cut(part, "=")
+                        if !ok || k == "" {
+                            continue
+                        }
+                        labels[k] = v
+                    }
+                    return labels, nil
+                }
+            - note: rejects labels with an empty value like "app="
+              go: |-
+                func parseLabels(s string) (map[string]string, error) {
+                    labels := map[string]string{}
+                    if s == "" {
+                        return labels, nil
+                    }
+                    for _, part := range strings.Split(s, ",") {
+                        k, v, ok := strings.Cut(part, "=")
+                        if !ok || k == "" || v == "" {
+                            return nil, fmt.Errorf("invalid label %q", part)
+                        }
+                        labels[k] = v
+                    }
+                    return labels, nil
+                }
           testCases:
             - input: parseLabels("app=web,env=prod")
               output: map[app:web env:prod]
@@ -938,6 +1360,91 @@ variants:
             cpu). Use <code>wantErr string</code> to verify error messages.
           functionSignature: func TestValidateResource(t *testing.T)
           difficulty: 2
+          implGo: |-
+            func validateResource(name string, memMB, cpuM int) error {
+                if name == "" {
+                    return errors.New("name is required")
+                }
+                if len(name) > 63 {
+                    return fmt.Errorf("name too long: %d chars (max 63)", len(name))
+                }
+                if memMB < 1 {
+                    return fmt.Errorf("memory must be positive, got %d", memMB)
+                }
+                if cpuM < 1 {
+                    return fmt.Errorf("CPU must be positive, got %d", cpuM)
+                }
+                return nil
+            }
+          mutantsGo:
+            - note: off-by-one accepts 64-character names
+              go: |-
+                func validateResource(name string, memMB, cpuM int) error {
+                    if name == "" {
+                        return errors.New("name is required")
+                    }
+                    if len(name) > 64 {
+                        return fmt.Errorf("name too long: %d chars (max 63)", len(name))
+                    }
+                    if memMB < 1 {
+                        return fmt.Errorf("memory must be positive, got %d", memMB)
+                    }
+                    if cpuM < 1 {
+                        return fmt.Errorf("CPU must be positive, got %d", cpuM)
+                    }
+                    return nil
+                }
+            - note: rejects the minimum valid memory of 1 MB
+              go: |-
+                func validateResource(name string, memMB, cpuM int) error {
+                    if name == "" {
+                        return errors.New("name is required")
+                    }
+                    if len(name) > 63 {
+                        return fmt.Errorf("name too long: %d chars (max 63)", len(name))
+                    }
+                    if memMB <= 1 {
+                        return fmt.Errorf("memory must be positive, got %d", memMB)
+                    }
+                    if cpuM < 1 {
+                        return fmt.Errorf("CPU must be positive, got %d", cpuM)
+                    }
+                    return nil
+                }
+            - note: CPU check only rejects zero, lets negatives through
+              go: |-
+                func validateResource(name string, memMB, cpuM int) error {
+                    if name == "" {
+                        return errors.New("name is required")
+                    }
+                    if len(name) > 63 {
+                        return fmt.Errorf("name too long: %d chars (max 63)", len(name))
+                    }
+                    if memMB < 1 {
+                        return fmt.Errorf("memory must be positive, got %d", memMB)
+                    }
+                    if cpuM == 0 {
+                        return fmt.Errorf("CPU must be positive, got %d", cpuM)
+                    }
+                    return nil
+                }
+            - note: wrong error message for the empty-name case
+              go: |-
+                func validateResource(name string, memMB, cpuM int) error {
+                    if name == "" {
+                        return errors.New("name must not be blank")
+                    }
+                    if len(name) > 63 {
+                        return fmt.Errorf("name too long: %d chars (max 63)", len(name))
+                    }
+                    if memMB < 1 {
+                        return fmt.Errorf("memory must be positive, got %d", memMB)
+                    }
+                    if cpuM < 1 {
+                        return fmt.Errorf("CPU must be positive, got %d", cpuM)
+                    }
+                    return nil
+                }
           testCases:
             - input: validateResource("web", 512, 250)
               output: nil
@@ -1004,6 +1511,139 @@ variants:
             each test case.
           functionSignature: func TestPodStore(t *testing.T)
           difficulty: 3
+          implGo: |-
+            type Pod struct {
+                Name string
+            }
+
+            var (
+                ErrNotFound      = errors.New("not found")
+                ErrAlreadyExists = errors.New("already exists")
+            )
+
+            type PodStore struct {
+                pods map[string]Pod
+            }
+
+            func NewPodStore() *PodStore {
+                return &PodStore{pods: map[string]Pod{}}
+            }
+
+            func (s *PodStore) Get(name string) (Pod, error) {
+                pod, ok := s.pods[name]
+                if !ok {
+                    return Pod{}, fmt.Errorf("pod %q: %w", name, ErrNotFound)
+                }
+                return pod, nil
+            }
+
+            func (s *PodStore) Add(pod Pod) error {
+                if _, ok := s.pods[pod.Name]; ok {
+                    return fmt.Errorf("pod %q: %w", pod.Name, ErrAlreadyExists)
+                }
+                s.pods[pod.Name] = pod
+                return nil
+            }
+          mutantsGo:
+            - note: Get invents a fresh error instead of wrapping the ErrNotFound sentinel
+              go: |-
+                type Pod struct {
+                    Name string
+                }
+
+                var (
+                    ErrNotFound      = errors.New("not found")
+                    ErrAlreadyExists = errors.New("already exists")
+                )
+
+                type PodStore struct {
+                    pods map[string]Pod
+                }
+
+                func NewPodStore() *PodStore {
+                    return &PodStore{pods: map[string]Pod{}}
+                }
+
+                func (s *PodStore) Get(name string) (Pod, error) {
+                    pod, ok := s.pods[name]
+                    if !ok {
+                        return Pod{}, fmt.Errorf("pod %q not found", name)
+                    }
+                    return pod, nil
+                }
+
+                func (s *PodStore) Add(pod Pod) error {
+                    if _, ok := s.pods[pod.Name]; ok {
+                        return fmt.Errorf("pod %q: %w", pod.Name, ErrAlreadyExists)
+                    }
+                    s.pods[pod.Name] = pod
+                    return nil
+                }
+            - note: Add silently overwrites duplicates instead of returning ErrAlreadyExists
+              go: |-
+                type Pod struct {
+                    Name string
+                }
+
+                var (
+                    ErrNotFound      = errors.New("not found")
+                    ErrAlreadyExists = errors.New("already exists")
+                )
+
+                type PodStore struct {
+                    pods map[string]Pod
+                }
+
+                func NewPodStore() *PodStore {
+                    return &PodStore{pods: map[string]Pod{}}
+                }
+
+                func (s *PodStore) Get(name string) (Pod, error) {
+                    pod, ok := s.pods[name]
+                    if !ok {
+                        return Pod{}, fmt.Errorf("pod %q: %w", name, ErrNotFound)
+                    }
+                    return pod, nil
+                }
+
+                func (s *PodStore) Add(pod Pod) error {
+                    s.pods[pod.Name] = pod
+                    return nil
+                }
+            - note: returns bare sentinels with no pod-name context in the message
+              go: |-
+                type Pod struct {
+                    Name string
+                }
+
+                var (
+                    ErrNotFound      = errors.New("not found")
+                    ErrAlreadyExists = errors.New("already exists")
+                )
+
+                type PodStore struct {
+                    pods map[string]Pod
+                }
+
+                func NewPodStore() *PodStore {
+                    return &PodStore{pods: map[string]Pod{}}
+                }
+
+                func (s *PodStore) Get(name string) (Pod, error) {
+                    pod, ok := s.pods[name]
+                    if !ok {
+                        return Pod{}, ErrNotFound
+                    }
+                    return pod, nil
+                }
+
+                func (s *PodStore) Add(pod Pod) error {
+                    if _, ok := s.pods[pod.Name]; ok {
+                        return ErrAlreadyExists
+                    }
+                    s.pods[pod.Name] = pod
+                    return nil
+                }
           testCases:
             - input: // Get existing pod
               output: returns pod, no error
@@ -1107,6 +1747,196 @@ variants:
             characters. Verify both the count and content of returned errors.
           functionSignature: func TestLintConfig(t *testing.T)
           difficulty: 1
+          implGo: |-
+            type ConfigEntry struct {
+                Key   string
+                Value string
+            }
+
+            type LintError struct {
+                Key     string
+                Message string
+            }
+
+            func validKey(key string) bool {
+                if key == "" {
+                    return false
+                }
+                for _, r := range key {
+                    ok := r == '_' || r == '-' || r == '.' ||
+                        (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9')
+                    if !ok {
+                        return false
+                    }
+                }
+                return true
+            }
+
+            func lintConfig(entries []ConfigEntry) []LintError {
+                var errs []LintError
+                seen := map[string]bool{}
+                for _, e := range entries {
+                    if !validKey(e.Key) {
+                        errs = append(errs, LintError{Key: e.Key, Message: "invalid characters in key"})
+                    }
+                    if seen[e.Key] {
+                        errs = append(errs, LintError{Key: e.Key, Message: "duplicate key"})
+                    }
+                    seen[e.Key] = true
+                    if e.Value == "" {
+                        errs = append(errs, LintError{Key: e.Key, Message: "empty value"})
+                    }
+                }
+                return errs
+            }
+          mutantsGo:
+            - note: never detects duplicate keys
+              go: |-
+                type ConfigEntry struct {
+                    Key   string
+                    Value string
+                }
+
+                type LintError struct {
+                    Key     string
+                    Message string
+                }
+
+                func validKey(key string) bool {
+                    if key == "" {
+                        return false
+                    }
+                    for _, r := range key {
+                        ok := r == '_' || r == '-' || r == '.' ||
+                            (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9')
+                        if !ok {
+                            return false
+                        }
+                    }
+                    return true
+                }
+
+                func lintConfig(entries []ConfigEntry) []LintError {
+                    var errs []LintError
+                    for _, e := range entries {
+                        if !validKey(e.Key) {
+                            errs = append(errs, LintError{Key: e.Key, Message: "invalid characters in key"})
+                        }
+                        if e.Value == "" {
+                            errs = append(errs, LintError{Key: e.Key, Message: "empty value"})
+                        }
+                    }
+                    return errs
+                }
+            - note: never flags empty values
+              go: |-
+                type ConfigEntry struct {
+                    Key   string
+                    Value string
+                }
+
+                type LintError struct {
+                    Key     string
+                    Message string
+                }
+
+                func validKey(key string) bool {
+                    if key == "" {
+                        return false
+                    }
+                    for _, r := range key {
+                        ok := r == '_' || r == '-' || r == '.' ||
+                            (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9')
+                        if !ok {
+                            return false
+                        }
+                    }
+                    return true
+                }
+
+                func lintConfig(entries []ConfigEntry) []LintError {
+                    var errs []LintError
+                    seen := map[string]bool{}
+                    for _, e := range entries {
+                        if !validKey(e.Key) {
+                            errs = append(errs, LintError{Key: e.Key, Message: "invalid characters in key"})
+                        }
+                        if seen[e.Key] {
+                            errs = append(errs, LintError{Key: e.Key, Message: "duplicate key"})
+                        }
+                        seen[e.Key] = true
+                    }
+                    return errs
+                }
+            - note: fills LintError.Key with the entry's value instead of its key
+              go: |-
+                type ConfigEntry struct {
+                    Key   string
+                    Value string
+                }
+
+                type LintError struct {
+                    Key     string
+                    Message string
+                }
+
+                func validKey(key string) bool {
+                    if key == "" {
+                        return false
+                    }
+                    for _, r := range key {
+                        ok := r == '_' || r == '-' || r == '.' ||
+                            (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9')
+                        if !ok {
+                            return false
+                        }
+                    }
+                    return true
+                }
+
+                func lintConfig(entries []ConfigEntry) []LintError {
+                    var errs []LintError
+                    seen := map[string]bool{}
+                    for _, e := range entries {
+                        if !validKey(e.Key) {
+                            errs = append(errs, LintError{Key: e.Value, Message: "invalid characters in key"})
+                        }
+                        if seen[e.Key] {
+                            errs = append(errs, LintError{Key: e.Value, Message: "duplicate key"})
+                        }
+                        seen[e.Key] = true
+                        if e.Value == "" {
+                            errs = append(errs, LintError{Key: e.Value, Message: "empty value"})
+                        }
+                    }
+                    return errs
+                }
+            - note: never flags keys with invalid characters
+              go: |-
+                type ConfigEntry struct {
+                    Key   string
+                    Value string
+                }
+
+                type LintError struct {
+                    Key     string
+                    Message string
+                }
+
+                func lintConfig(entries []ConfigEntry) []LintError {
+                    var errs []LintError
+                    seen := map[string]bool{}
+                    for _, e := range entries {
+                        if seen[e.Key] {
+                            errs = append(errs, LintError{Key: e.Key, Message: "duplicate key"})
+                        }
+                        seen[e.Key] = true
+                        if e.Value == "" {
+                            errs = append(errs, LintError{Key: e.Key, Message: "empty value"})
+                        }
+                    }
+                    return errs
+                }
           testCases:
             - input: lintConfig([]ConfigEntry{{"host","localhost"},{"port","8080"}})
               output: nil (no errors)
@@ -1184,6 +2014,237 @@ variants:
             line.
           functionSignature: func TestParseMetricLine(t *testing.T)
           difficulty: 2
+          implGo: |-
+            type Metric struct {
+                Name   string
+                Value  int
+                Labels map[string]string
+            }
+
+            func parseMetricLine(line string) (Metric, error) {
+                line = strings.TrimSpace(line)
+                if line == "" {
+                    return Metric{}, errors.New("empty line")
+                }
+                name := line
+                rest := ""
+                labels := map[string]string{}
+                if open := strings.Index(line, "{"); open >= 0 {
+                    end := strings.Index(line, "}")
+                    if end < open {
+                        return Metric{}, fmt.Errorf("malformed labels in %q", line)
+                    }
+                    name = line[:open]
+                    for _, pair := range strings.Split(line[open+1:end], ",") {
+                        if pair == "" {
+                            continue
+                        }
+                        k, v, ok := strings.Cut(pair, "=")
+                        if !ok {
+                            return Metric{}, fmt.Errorf("malformed label %q", pair)
+                        }
+                        labels[k] = strings.Trim(v, "\"")
+                    }
+                    rest = line[end+1:]
+                } else if sp := strings.IndexByte(line, ' '); sp >= 0 {
+                    name = line[:sp]
+                    rest = line[sp+1:]
+                } else {
+                    return Metric{}, fmt.Errorf("missing value in %q", line)
+                }
+                value, err := strconv.Atoi(strings.TrimSpace(rest))
+                if err != nil {
+                    return Metric{}, fmt.Errorf("invalid value in %q: %v", line, err)
+                }
+                return Metric{Name: name, Value: value, Labels: labels}, nil
+            }
+          mutantsGo:
+            - note: returns a nil Labels map for lines without labels
+              go: |-
+                type Metric struct {
+                    Name   string
+                    Value  int
+                    Labels map[string]string
+                }
+
+                func parseMetricLine(line string) (Metric, error) {
+                    line = strings.TrimSpace(line)
+                    if line == "" {
+                        return Metric{}, errors.New("empty line")
+                    }
+                    name := line
+                    rest := ""
+                    var labels map[string]string
+                    if open := strings.Index(line, "{"); open >= 0 {
+                        end := strings.Index(line, "}")
+                        if end < open {
+                            return Metric{}, fmt.Errorf("malformed labels in %q", line)
+                        }
+                        labels = map[string]string{}
+                        name = line[:open]
+                        for _, pair := range strings.Split(line[open+1:end], ",") {
+                            if pair == "" {
+                                continue
+                            }
+                            k, v, ok := strings.Cut(pair, "=")
+                            if !ok {
+                                return Metric{}, fmt.Errorf("malformed label %q", pair)
+                            }
+                            labels[k] = strings.Trim(v, "\"")
+                        }
+                        rest = line[end+1:]
+                    } else if sp := strings.IndexByte(line, ' '); sp >= 0 {
+                        name = line[:sp]
+                        rest = line[sp+1:]
+                    } else {
+                        return Metric{}, fmt.Errorf("missing value in %q", line)
+                    }
+                    value, err := strconv.Atoi(strings.TrimSpace(rest))
+                    if err != nil {
+                        return Metric{}, fmt.Errorf("invalid value in %q: %v", line, err)
+                    }
+                    return Metric{Name: name, Value: value, Labels: labels}, nil
+                }
+            - note: ignores Atoi failures, so bad or missing values parse as 0 with no error
+              go: |-
+                type Metric struct {
+                    Name   string
+                    Value  int
+                    Labels map[string]string
+                }
+
+                func parseMetricLine(line string) (Metric, error) {
+                    line = strings.TrimSpace(line)
+                    if line == "" {
+                        return Metric{}, errors.New("empty line")
+                    }
+                    name := line
+                    rest := ""
+                    labels := map[string]string{}
+                    if open := strings.Index(line, "{"); open >= 0 {
+                        end := strings.Index(line, "}")
+                        if end < open {
+                            return Metric{}, fmt.Errorf("malformed labels in %q", line)
+                        }
+                        name = line[:open]
+                        for _, pair := range strings.Split(line[open+1:end], ",") {
+                            if pair == "" {
+                                continue
+                            }
+                            k, v, ok := strings.Cut(pair, "=")
+                            if !ok {
+                                return Metric{}, fmt.Errorf("malformed label %q", pair)
+                            }
+                            labels[k] = strings.Trim(v, "\"")
+                        }
+                        rest = line[end+1:]
+                    } else if sp := strings.IndexByte(line, ' '); sp >= 0 {
+                        name = line[:sp]
+                        rest = line[sp+1:]
+                    } else {
+                        return Metric{}, fmt.Errorf("missing value in %q", line)
+                    }
+                    value, _ := strconv.Atoi(strings.TrimSpace(rest))
+                    return Metric{Name: name, Value: value, Labels: labels}, nil
+                }
+            - note: keeps the surrounding quotes on label values
+              go: |-
+                type Metric struct {
+                    Name   string
+                    Value  int
+                    Labels map[string]string
+                }
+
+                func parseMetricLine(line string) (Metric, error) {
+                    line = strings.TrimSpace(line)
+                    if line == "" {
+                        return Metric{}, errors.New("empty line")
+                    }
+                    name := line
+                    rest := ""
+                    labels := map[string]string{}
+                    if open := strings.Index(line, "{"); open >= 0 {
+                        end := strings.Index(line, "}")
+                        if end < open {
+                            return Metric{}, fmt.Errorf("malformed labels in %q", line)
+                        }
+                        name = line[:open]
+                        for _, pair := range strings.Split(line[open+1:end], ",") {
+                            if pair == "" {
+                                continue
+                            }
+                            k, v, ok := strings.Cut(pair, "=")
+                            if !ok {
+                                return Metric{}, fmt.Errorf("malformed label %q", pair)
+                            }
+                            labels[k] = v
+                        }
+                        rest = line[end+1:]
+                    } else if sp := strings.IndexByte(line, ' '); sp >= 0 {
+                        name = line[:sp]
+                        rest = line[sp+1:]
+                    } else {
+                        return Metric{}, fmt.Errorf("missing value in %q", line)
+                    }
+                    value, err := strconv.Atoi(strings.TrimSpace(rest))
+                    if err != nil {
+                        return Metric{}, fmt.Errorf("invalid value in %q: %v", line, err)
+                    }
+                    return Metric{Name: name, Value: value, Labels: labels}, nil
+                }
+            - note: tolerates a missing closing brace instead of rejecting malformed labels
+              go: |-
+                type Metric struct {
+                    Name   string
+                    Value  int
+                    Labels map[string]string
+                }
+
+                func parseMetricLine(line string) (Metric, error) {
+                    line = strings.TrimSpace(line)
+                    if line == "" {
+                        return Metric{}, errors.New("empty line")
+                    }
+                    name := line
+                    rest := ""
+                    labels := map[string]string{}
+                    if open := strings.Index(line, "{"); open >= 0 {
+                        name = line[:open]
+                        end := strings.Index(line, "}")
+                        if end < open {
+                            fields := strings.Fields(line[open+1:])
+                            if len(fields) == 0 {
+                                return Metric{}, fmt.Errorf("missing value in %q", line)
+                            }
+                            v, err := strconv.Atoi(fields[len(fields)-1])
+                            if err != nil {
+                                return Metric{}, fmt.Errorf("invalid value in %q: %v", line, err)
+                            }
+                            return Metric{Name: name, Value: v, Labels: labels}, nil
+                        }
+                        for _, pair := range strings.Split(line[open+1:end], ",") {
+                            if pair == "" {
+                                continue
+                            }
+                            k, v, ok := strings.Cut(pair, "=")
+                            if !ok {
+                                return Metric{}, fmt.Errorf("malformed label %q", pair)
+                            }
+                            labels[k] = strings.Trim(v, "\"")
+                        }
+                        rest = line[end+1:]
+                    } else if sp := strings.IndexByte(line, ' '); sp >= 0 {
+                        name = line[:sp]
+                        rest = line[sp+1:]
+                    } else {
+                        return Metric{}, fmt.Errorf("missing value in %q", line)
+                    }
+                    value, err := strconv.Atoi(strings.TrimSpace(rest))
+                    if err != nil {
+                        return Metric{}, fmt.Errorf("invalid value in %q: %v", line, err)
+                    }
+                    return Metric{Name: name, Value: value, Labels: labels}, nil
+                }
           testCases:
             - input: parseMetricLine("http_requests{method=\"GET\"} 42")
               output: Metric{Name:"http_requests", Value:42, Labels:{"method":"GET"}}
@@ -1270,6 +2331,191 @@ variants:
             (<code>t.Run</code>) for each phase: setup, verify-add, verify-get, verify-delete.
           functionSignature: func TestPodStoreIntegration(t *testing.T)
           difficulty: 3
+          implGo: |-
+            type Pod struct {
+                Name string
+            }
+
+            var (
+                ErrNotFound      = errors.New("not found")
+                ErrAlreadyExists = errors.New("already exists")
+            )
+
+            type PodStore struct {
+                pods map[string]Pod
+            }
+
+            func NewPodStore() *PodStore {
+                return &PodStore{pods: map[string]Pod{}}
+            }
+
+            func (s *PodStore) Get(name string) (Pod, error) {
+                pod, ok := s.pods[name]
+                if !ok {
+                    return Pod{}, fmt.Errorf("pod %q: %w", name, ErrNotFound)
+                }
+                return pod, nil
+            }
+
+            func (s *PodStore) Add(pod Pod) error {
+                if _, ok := s.pods[pod.Name]; ok {
+                    return fmt.Errorf("pod %q: %w", pod.Name, ErrAlreadyExists)
+                }
+                s.pods[pod.Name] = pod
+                return nil
+            }
+
+            func (s *PodStore) Delete(name string) error {
+                if _, ok := s.pods[name]; !ok {
+                    return fmt.Errorf("pod %q: %w", name, ErrNotFound)
+                }
+                delete(s.pods, name)
+                return nil
+            }
+
+            func (s *PodStore) Count() int {
+                return len(s.pods)
+            }
+          mutantsGo:
+            - note: Delete reports success but never removes the pod
+              go: |-
+                type Pod struct {
+                    Name string
+                }
+
+                var (
+                    ErrNotFound      = errors.New("not found")
+                    ErrAlreadyExists = errors.New("already exists")
+                )
+
+                type PodStore struct {
+                    pods map[string]Pod
+                }
+
+                func NewPodStore() *PodStore {
+                    return &PodStore{pods: map[string]Pod{}}
+                }
+
+                func (s *PodStore) Get(name string) (Pod, error) {
+                    pod, ok := s.pods[name]
+                    if !ok {
+                        return Pod{}, fmt.Errorf("pod %q: %w", name, ErrNotFound)
+                    }
+                    return pod, nil
+                }
+
+                func (s *PodStore) Add(pod Pod) error {
+                    if _, ok := s.pods[pod.Name]; ok {
+                        return fmt.Errorf("pod %q: %w", pod.Name, ErrAlreadyExists)
+                    }
+                    s.pods[pod.Name] = pod
+                    return nil
+                }
+
+                func (s *PodStore) Delete(name string) error {
+                    if _, ok := s.pods[name]; !ok {
+                        return fmt.Errorf("pod %q: %w", name, ErrNotFound)
+                    }
+                    return nil
+                }
+
+                func (s *PodStore) Count() int {
+                    return len(s.pods)
+                }
+            - note: Count tracks total Adds and never decrements on Delete
+              go: |-
+                type Pod struct {
+                    Name string
+                }
+
+                var (
+                    ErrNotFound      = errors.New("not found")
+                    ErrAlreadyExists = errors.New("already exists")
+                )
+
+                type PodStore struct {
+                    pods  map[string]Pod
+                    added int
+                }
+
+                func NewPodStore() *PodStore {
+                    return &PodStore{pods: map[string]Pod{}}
+                }
+
+                func (s *PodStore) Get(name string) (Pod, error) {
+                    pod, ok := s.pods[name]
+                    if !ok {
+                        return Pod{}, fmt.Errorf("pod %q: %w", name, ErrNotFound)
+                    }
+                    return pod, nil
+                }
+
+                func (s *PodStore) Add(pod Pod) error {
+                    if _, ok := s.pods[pod.Name]; ok {
+                        return fmt.Errorf("pod %q: %w", pod.Name, ErrAlreadyExists)
+                    }
+                    s.pods[pod.Name] = pod
+                    s.added++
+                    return nil
+                }
+
+                func (s *PodStore) Delete(name string) error {
+                    if _, ok := s.pods[name]; !ok {
+                        return fmt.Errorf("pod %q: %w", name, ErrNotFound)
+                    }
+                    delete(s.pods, name)
+                    return nil
+                }
+
+                func (s *PodStore) Count() int {
+                    return s.added
+                }
+            - note: Get on a missing pod returns a fresh error that is not ErrNotFound
+              go: |-
+                type Pod struct {
+                    Name string
+                }
+
+                var (
+                    ErrNotFound      = errors.New("not found")
+                    ErrAlreadyExists = errors.New("already exists")
+                )
+
+                type PodStore struct {
+                    pods map[string]Pod
+                }
+
+                func NewPodStore() *PodStore {
+                    return &PodStore{pods: map[string]Pod{}}
+                }
+
+                func (s *PodStore) Get(name string) (Pod, error) {
+                    pod, ok := s.pods[name]
+                    if !ok {
+                        return Pod{}, fmt.Errorf("no such pod %q", name)
+                    }
+                    return pod, nil
+                }
+
+                func (s *PodStore) Add(pod Pod) error {
+                    if _, ok := s.pods[pod.Name]; ok {
+                        return fmt.Errorf("pod %q: %w", pod.Name, ErrAlreadyExists)
+                    }
+                    s.pods[pod.Name] = pod
+                    return nil
+                }
+
+                func (s *PodStore) Delete(name string) error {
+                    if _, ok := s.pods[name]; !ok {
+                        return fmt.Errorf("pod %q: %w", name, ErrNotFound)
+                    }
+                    delete(s.pods, name)
+                    return nil
+                }
+
+                func (s *PodStore) Count() int {
+                    return len(s.pods)
+                }
           testCases:
             - input: // Full lifecycle test
               output: All phases pass
@@ -1417,17 +2663,17 @@ variants:
           title: Typed Error Inspection
           description: >-
             Define a custom error type <code>RetryableError</code> with a <code>RetryAfter time.Duration</code> field.
-            Write <code>callAPI(url string) (string, error)</code> that wraps a transient failure as a
-            <code>*RetryableError</code> with a 5-second retry. Then write <code>callWithRetry(url string)</code> that
-            uses <code>errors.As</code> to detect the retryable error, sleeps the requested duration, and retries up to
-            3 times.
+            Write <code>callAPI(url string) (string, error)</code> that wraps a transient failure (a connection error
+            or a 503 response) as a <code>*RetryableError</code> with a short retry delay. Then write
+            <code>callWithRetry(url string)</code> that uses <code>errors.As</code> to detect the retryable error,
+            sleeps the requested duration, and retries up to 3 times.
           functionSignature: func callWithRetry(url string) (string, error)
           difficulty: 3
           testCases:
-            - input: callWithRetry("https://flaky.example.com")
-              output: '("ok", nil) after retries'
-            - input: callWithRetry("https://broken.example.com")
-              output: "(\"\", \"giving up after 3 attempts: ...\")"
+            - input: 'var calls int32; srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { if atomic.AddInt32(&calls, 1) <= 2 { w.WriteHeader(503); return }; fmt.Fprint(w, "ok") })); callWithRetry(srv.URL)'
+              output: '("ok", nil) — the flaky server succeeds on the third attempt'
+            - input: 'srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(503) })); _, err := callWithRetry(srv.URL); err'
+              output: 'giving up after 3 attempts: calling API: transient: server returned 503 (retry in 10ms)'
           hints:
             - title: Think about it
               content: >-
@@ -1454,12 +2700,18 @@ variants:
             func callAPI(url string) (string, error) {
                 resp, err := http.Get(url)
                 if err != nil {
-                    return "", fmt.Errorf("calling %s: %w", url, &RetryableError{
-                        Underlying: err,
-                        RetryAfter: 5 * time.Second,
+                    return "", fmt.Errorf("calling API: %w", &RetryableError{
+                        Underlying: errors.New("connection failed"),
+                        RetryAfter: 10 * time.Millisecond,
                     })
                 }
                 defer resp.Body.Close()
+                if resp.StatusCode == http.StatusServiceUnavailable {
+                    return "", fmt.Errorf("calling API: %w", &RetryableError{
+                        Underlying: fmt.Errorf("server returned %d", resp.StatusCode),
+                        RetryAfter: 10 * time.Millisecond,
+                    })
+                }
                 body, _ := io.ReadAll(resp.Body)
                 return string(body), nil
             }
@@ -1504,8 +2756,35 @@ variants:
             <code>p &gt; 65535</code>, write three named tests: <code>TestValidatePort_Valid</code>,
             <code>TestValidatePort_Zero</code>, <code>TestValidatePort_TooHigh</code>. Use <code>t.Errorf</code> for
             unexpected results and <code>t.Fatal</code> when continuing would be meaningless.
-          functionSignature: TestValidatePort_Valid(t *testing.T)
+          functionSignature: |-
+            func TestValidatePort_Valid(t *testing.T)
+            func TestValidatePort_Zero(t *testing.T)
+            func TestValidatePort_TooHigh(t *testing.T)
           difficulty: 1
+          implGo: |-
+            func ValidatePort(p int) error {
+                if p < 1 || p > 65535 {
+                    return fmt.Errorf("port %d out of range (1-65535)", p)
+                }
+                return nil
+            }
+          mutantsGo:
+            - note: upper bound is 1024, so valid registered ports like 8080 are rejected
+              go: |-
+                func ValidatePort(p int) error {
+                    if p < 1 || p > 1024 {
+                        return fmt.Errorf("port %d out of range (1-65535)", p)
+                    }
+                    return nil
+                }
+            - note: validity check is inverted, so every valid port errors
+              go: |-
+                func ValidatePort(p int) error {
+                    if p >= 1 && p <= 65535 {
+                        return fmt.Errorf("port %d out of range (1-65535)", p)
+                    }
+                    return nil
+                }
           testCases:
             - input: go test -run TestValidatePort
               output: PASS
@@ -1556,6 +2835,64 @@ variants:
             expected status has the right count. Map iteration is random — assert by key lookup, not by iterating the map.
           functionSignature: TestCountStatuses(t *testing.T)
           difficulty: 2
+          implGo: |-
+            type Pod struct {
+                Name   string
+                Status string
+            }
+
+            func CountStatuses(pods []Pod) map[string]int {
+                counts := map[string]int{}
+                for _, p := range pods {
+                    counts[p.Status]++
+                }
+                return counts
+            }
+          mutantsGo:
+            - note: records that a status was seen instead of counting occurrences
+              go: |-
+                type Pod struct {
+                    Name   string
+                    Status string
+                }
+
+                func CountStatuses(pods []Pod) map[string]int {
+                    counts := map[string]int{}
+                    for _, p := range pods {
+                        counts[p.Status] = 1
+                    }
+                    return counts
+                }
+            - note: off-by-one loop skips the first pod
+              go: |-
+                type Pod struct {
+                    Name   string
+                    Status string
+                }
+
+                func CountStatuses(pods []Pod) map[string]int {
+                    counts := map[string]int{}
+                    for i := 1; i < len(pods); i++ {
+                        counts[pods[i].Status]++
+                    }
+                    return counts
+                }
+            - note: only counts Running pods, drops every other status
+              go: |-
+                type Pod struct {
+                    Name   string
+                    Status string
+                }
+
+                func CountStatuses(pods []Pod) map[string]int {
+                    counts := map[string]int{}
+                    for _, p := range pods {
+                        if p.Status == "Running" {
+                            counts[p.Status]++
+                        }
+                    }
+                    return counts
+                }
           testCases:
             - input: go test -run TestCountStatuses
               output: PASS
