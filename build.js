@@ -232,6 +232,24 @@ const VARIATIONS_RUNNERS = {
 const VARIATIONS_CACHE_DIR = path.join(ROOT, '.variations-cache');
 const VARIATIONS_TIMEOUT_MS = 5000;
 
+// go run's timeout budget includes compilation. On a machine with a cold Go
+// build cache (a fresh CI runner), the first compile also builds the needed
+// stdlib packages and can blow past VARIATIONS_TIMEOUT_MS, baking a bogus
+// "[timeout]" into the shipped output. Compile one trivial program with no
+// time limit before the first real run so every case pays only its own cost.
+let goBuildCacheWarmed = false;
+function warmGoBuildCache() {
+    if (goBuildCacheWarmed) return;
+    goBuildCacheWarmed = true;
+    const tmpFile = path.join(os.tmpdir(), 'variation-warmup.go');
+    fs.writeFileSync(tmpFile, 'package main\n\nimport "fmt"\n\nfunc main() {\n\tfmt.Print("ok")\n}\n');
+    try {
+        spawnSync('go', ['run', tmpFile], { encoding: 'utf8', maxBuffer: 1024 * 1024 });
+    } finally {
+        try { fs.unlinkSync(tmpFile); } catch (e) {}
+    }
+}
+
 function runVariation(runnerName, code) {
     const runner = VARIATIONS_RUNNERS[runnerName];
     if (!runner) throw new Error(`Unknown variations runner: ${runnerName}`);
@@ -246,10 +264,11 @@ function runVariation(runnerName, code) {
     }
 
     mkdirp(VARIATIONS_CACHE_DIR);
+    if (runnerName === 'go') warmGoBuildCache();
     const tmpFile = path.join(os.tmpdir(), 'variation-' + hash + runner.ext);
     fs.writeFileSync(tmpFile, code);
 
-    let stdout = '', stderr = '', exitCode = 0;
+    let stdout = '', stderr = '', exitCode = 0, failed = false;
     try {
         const result = spawnSync(
             runner.cmd[0],
@@ -259,10 +278,15 @@ function runVariation(runnerName, code) {
         stdout = result.stdout || '';
         stderr = result.stderr || '';
         exitCode = result.status === null ? -1 : result.status;
-        if (result.signal === 'SIGTERM') {
+        if ((result.error && result.error.code === 'ETIMEDOUT') || result.signal === 'SIGTERM') {
+            failed = true;
             stderr += '\n[timeout — exceeded ' + VARIATIONS_TIMEOUT_MS + 'ms]';
+        } else if (result.error) {
+            failed = true;
+            stderr += (stderr ? '\n' : '') + result.error.message;
         }
     } catch (e) {
+        failed = true;
         stderr = e.message;
         exitCode = -1;
     } finally {
@@ -278,8 +302,13 @@ function runVariation(runnerName, code) {
     const tmpEsc = tmpFile.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     output = output.replace(new RegExp(tmpEsc, 'g'), 'example' + runner.ext);
 
-    const data = { output: output, exitCode: exitCode };
-    fs.writeFileSync(cachePath, JSON.stringify(data));
+    const data = { output: output, exitCode: exitCode, failed: failed };
+    // A timeout or spawn failure is an environment problem, not the program's
+    // real output — never cache it. (A non-zero exit from the program itself,
+    // e.g. a deliberate panic, is legitimate output and still cached.)
+    if (!failed) {
+        fs.writeFileSync(cachePath, JSON.stringify(data));
+    }
     return data;
 }
 
@@ -345,6 +374,11 @@ function processVariationsBlocks(md, pageId) {
             }
 
             const result = runVariation(runner, code);
+            if (result.failed) {
+                console.error(`Error: <variations> case "${c.name}" on "${pageId}" did not produce real output — refusing to ship it:`);
+                console.error(result.output.replace(/^/gm, '    '));
+                process.exit(1);
+            }
             const codeHtml = marked.parse('```' + lang + '\n' + code + '\n```').trim();
             rendered.push({
                 name: c.name,

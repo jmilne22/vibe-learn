@@ -48,11 +48,15 @@ function output(command, args, options = {}) {
 }
 
 console.log(`Preparing desktop resources${SKIP_GO ? ' (system Go for development)' : ''}...`);
-run(process.execPath, ['build.js']);
+// Share the persistent Go build cache with build.js's <variations> runner so
+// its go run calls start warm on CI (the workflow restores build/.go-cache).
+fs.mkdirSync(GO_BUILD_CACHE, { recursive: true });
+run(process.execPath, ['build.js'], {
+    env: { ...process.env, GOCACHE: GO_BUILD_CACHE },
+});
 
 fs.rmSync(BUILD_ROOT, { recursive: true, force: true });
 fs.mkdirSync(BUILD_ROOT, { recursive: true });
-fs.mkdirSync(GO_BUILD_CACHE, { recursive: true });
 fs.cpSync(path.join(ROOT, 'dist'), COURSE_DIST, { recursive: true });
 
 // The root index.html is the web download page, and courses other than the
