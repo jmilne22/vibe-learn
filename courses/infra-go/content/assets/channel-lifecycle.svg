@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="540" viewBox="0 0 1200 540" role="img" aria-labelledby="title desc">
+  <title id="title">Go channel ownership and lifecycle</title>
+  <desc id="desc">Workers send values to one channel, a coordinator waits and closes it, and a consumer ranges until the close. A warning shows why receivers should not close a channel.</desc>
+  <rect width="1200" height="540" fill="#101820"/>
+  <style>.h{font:26px Inter,Arial,sans-serif;fill:#eef4f7;font-weight:700}.t{font:19px Inter,Arial,sans-serif;fill:#c6d0d9}.m{font:18px 'JetBrains Mono',monospace;fill:#eef4f7}.node{fill:#182833;stroke:#506675;stroke-width:2}.send{stroke:#55d6be;stroke-width:4;fill:none;marker-end:url(#g)}.control{stroke:#ffb454;stroke-width:4;fill:none;marker-end:url(#o)}.bad{stroke:#ff6b6b;stroke-width:3;stroke-dasharray:8 7;fill:none}</style>
+  <defs><marker id="g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0l10 5-10 5z" fill="#55d6be"/></marker><marker id="o" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0l10 5-10 5z" fill="#ffb454"/></marker></defs>
+  <text x="54" y="55" class="h">Channel lifecycle: sender owns close</text>
+  <g transform="translate(70 125)">
+    <rect width="240" height="78" rx="10" class="node"/><text x="120" y="32" text-anchor="middle" class="m">worker 1</text><text x="120" y="58" text-anchor="middle" class="t">ch &lt;- result</text>
+    <rect y="115" width="240" height="78" rx="10" class="node"/><text x="120" y="147" text-anchor="middle" class="m">worker 2</text><text x="120" y="173" text-anchor="middle" class="t">ch &lt;- result</text>
+    <rect y="230" width="240" height="78" rx="10" class="node"/><text x="120" y="262" text-anchor="middle" class="m">worker N</text><text x="120" y="288" text-anchor="middle" class="t">ch &lt;- result</text>
+    <rect x="420" y="105" width="230" height="105" rx="52" fill="#18312e" stroke="#55d6be" stroke-width="3"/><text x="535" y="147" text-anchor="middle" class="m">results chan</text><text x="535" y="177" text-anchor="middle" class="t">values → closed</text>
+    <rect x="790" y="105" width="250" height="105" rx="10" class="node"/><text x="915" y="145" text-anchor="middle" class="m">consumer</text><text x="915" y="176" text-anchor="middle" class="t">for r := range ch</text>
+    <path d="M240 39C350 39 350 128 420 145" class="send"/><path d="M240 154H420" class="send"/><path d="M240 269C350 269 350 187 420 170" class="send"/><path d="M650 157H790" class="send"/>
+    <rect x="390" y="300" width="290" height="82" rx="10" fill="#302817" stroke="#ffb454" stroke-width="2"/><text x="535" y="332" text-anchor="middle" class="m">coordinator</text><text x="535" y="360" text-anchor="middle" class="t">wg.Wait(); close(ch)</text><path d="M535 300V212" class="control"/>
+  </g>
+  <path d="M990 350v90H735" class="bad"/><text x="765" y="476" class="t" fill="#ff6b6b">Receiver closing the channel can race with a sender and panic.</text>
+  <text x="54" y="510" class="t">Close means “no more values will be sent.” Buffered values remain readable; then receives return the zero value with ok == false.</text>
+</svg>

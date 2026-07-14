@@ -5,10 +5,41 @@ conceptLinks:
   DNS Server: building-a-dns-server
   gRPC: grpc-and-protocol-buffers
 sharedContent: {}
+decisionSets:
+  - id: transport-reliable-stream
+    family: network-transport-choice
+    prompt: Messages may exceed one packet, ordering matters, and the client keeps a long-lived connection. Which transport is the natural starting point?
+    options:
+      - { id: tcp, label: TCP, description: Reliable ordered byte stream with connection state. }
+      - { id: udp, label: UDP, description: Independent best-effort datagrams. }
+      - { id: dns, label: DNS, description: Application protocol for name resolution. }
+    answer: tcp
+    explanation: TCP supplies ordered reliable delivery and stream semantics. The application still needs message framing because TCP does not preserve message boundaries.
+  - id: transport-small-datagrams
+    family: network-transport-choice
+    prompt: A telemetry sender emits tiny independent samples and prefers dropping an occasional sample over head-of-line blocking. Which transport fits?
+    options:
+      - { id: udp, label: UDP, description: Independent datagrams with minimal transport overhead. }
+      - { id: tcp, label: TCP, description: Reliable ordered stream that retransmits loss. }
+      - { id: http, label: HTTP, description: An application protocol usually carried over a transport. }
+    answer: udp
+    explanation: UDP preserves datagram boundaries and avoids retransmission delays. The application must tolerate loss, duplication, and reordering.
+  - id: transport-dns-fallback
+    family: network-transport-choice
+    prompt: A DNS response is too large and arrives with the truncated flag set. What should a conventional resolver do next?
+    options:
+      - { id: tcp, label: Retry over TCP, description: Obtain the full ordered response after UDP truncation. }
+      - { id: udp, label: Repeat UDP forever, description: Keep requesting the same truncated datagram. }
+      - { id: drop, label: Treat it as NXDOMAIN, description: Convert truncation into a missing-name response. }
+    answer: tcp
+    explanation: Classic DNS begins with UDP for common queries and retries over TCP when the TC flag indicates the response was truncated.
 variants:
   warmups:
     - id: warmup_1
       concept: TCP
+      decisionFamily: network-transport-choice
+      strategy: tcp
+      confusableWith: [udp]
       variants:
         - id: v1
           title: TCP Echo Handler
@@ -79,6 +110,9 @@ variants:
             }
     - id: warmup_2
       concept: UDP
+      decisionFamily: network-transport-choice
+      strategy: udp
+      confusableWith: [tcp]
       variants:
         - id: v1
           title: UDP Echo Server

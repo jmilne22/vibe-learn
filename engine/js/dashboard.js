@@ -13,6 +13,7 @@ var LAST_MODULE_KEY = window.CourseConfigHelper ? window.CourseConfigHelper.stor
 // Readiness signal tunables — surface "when can I move on?" on each module card
 var READINESS_CHALLENGE_TARGET = 1.0; // fraction of unique challenges with rating ≤ 2
 var READINESS_WARMUP_TARGET = 0.7;    // fraction of unique warmups completed
+var READINESS_OBJECTIVE_ITEMS = 3;    // distinct test-graded skills, not variants
 var STALE_RETURN_DAYS = 14;           // gap that triggers the "pick up at next module?" banner
 var DAY_MS = 24 * 60 * 60 * 1000;
 var NUDGE_DISMISS_KEY_PREFIX = window.CourseConfigHelper
@@ -33,6 +34,16 @@ function exerciseIdFromKey(key) {
 }
 
 function computeReadiness(moduleId, warmupTotal, challengeTotal, exerciseProgress) {
+    var mastery = window.SRS && window.SRS.getModuleMastery
+        ? window.SRS.getModuleMastery()[moduleId]
+        : null;
+    if (mastery && mastery.objectiveItems >= READINESS_OBJECTIVE_ITEMS) {
+        if (mastery.id === 'ready' || mastery.id === 'strong' || mastery.id === 'refresh') {
+            return { state: 'ready', evidence: mastery };
+        }
+        return { state: 'in-progress', evidence: mastery };
+    }
+
     const prefix = 'm' + moduleId + '_';
     // Per unique exercise: best (lowest) selfRating across variants
     const exercises = {}; // exerciseId -> { type, completed, bestRating }
@@ -203,10 +214,10 @@ function renderStaleReturnBanner(progress, exerciseProgress) {
 
 function saveProgress(moduleId, completed) {
     const progress = loadProgress();
-    progress[moduleId] = {
+    progress[moduleId] = Object.assign({}, progress[moduleId] || {}, {
         completed,
         lastStudied: completed ? new Date().toISOString() : (progress[moduleId]?.lastStudied || null)
-    };
+    });
     localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
     updateStats();
 }
@@ -334,6 +345,7 @@ function updateStats() {
         const checkbox = item.querySelector('.module-checkbox');
         const lastStudied = item.querySelector('.last-studied');
         const exProgress = item.querySelector('.exercise-progress-inline');
+        const verificationBadge = item.querySelector('.project-verification-badge');
 
         if (checkbox && progress[id]) {
             checkbox.checked = progress[id].completed;
@@ -349,6 +361,12 @@ function updateStats() {
             lastStudied.textContent = 'Last studied ' + date.toLocaleDateString();
         } else if (lastStudied) {
             lastStudied.textContent = '';
+        }
+
+        if (verificationBadge) {
+            var verified = !!(progress[id] && progress[id].verified);
+            verificationBadge.textContent = verified ? 'Verified by tests' : 'Milestone · unverified';
+            verificationBadge.classList.toggle('ready', verified);
         }
 
         // Show exercise completion count per module (numeric only)
@@ -436,10 +454,8 @@ function escapeHtmlDash(s) {
     });
 }
 
-function recallColor(recall) {
-    if (recall >= 0.85) return 'var(--green-bright)';
-    if (recall >= 0.7) return 'var(--orange)';
-    return 'var(--red)';
+function masteryColor(band) {
+    return band && band.color ? band.color : 'var(--text-secondary)';
 }
 
 function buildSessionPlanData(progress) {
@@ -473,33 +489,56 @@ function buildSessionPlanData(progress) {
     var projects = cfg.projects || [];
     for (var i = 0; i < projects.length; i++) {
         var p = projects[i];
-        if (progress[p.id] && progress[p.id].completed) continue;
+        if (progress[p.id] && (progress[p.id].completed || progress[p.id].verified)) continue;
         build = { label: p.title, href: (p.file || p.id) + '.html', afterModule: p.afterModule };
         break;
     }
 
-    // Mastery gate: a prerequisite module fading below 70% pulls its items
-    // into today's review before new material unlocks.
-    var gate = null;
-    if (learn && window.SRS && window.SRS.getFadingModules) {
-        var fadingModules = window.SRS.getFadingModules().filter(function (f) {
+    // Refresh recommendation: prerequisite evidence can promote review items,
+    // but memory decay alone never locks new material.
+    var refresh = null;
+    if (learn && window.SRS && window.SRS.getRefreshModules) {
+        var refreshModules = window.SRS.getRefreshModules().filter(function (f) {
             return parseInt(f.moduleNum, 10) < learn.moduleId;
         });
-        if (fadingModules.length > 0) {
-            gate = {
-                modules: fadingModules.map(function (f) {
-                    return { moduleNum: parseInt(f.moduleNum, 10), recall: f.recall };
+        if (refreshModules.length > 0) {
+            refresh = {
+                modules: refreshModules.map(function (f) {
+                    return { moduleNum: parseInt(f.moduleNum, 10), band: f.band };
                 }),
-                blockedModuleId: learn.moduleId
+                nextModuleId: learn.moduleId
             };
         }
     }
 
-    var reviewMin = Math.round(dueCount * 1.25) + (gate ? 5 : 0);
-    var minutes = (learn && !gate ? 3 + 9 : 0) + reviewMin + (build ? 3 : 0);
-    minutes = Math.max(10, Math.round(minutes / 5) * 5);
+    var reachedModule = learn ? learn.moduleId : (parseInt(lastModule || '0', 10) || 0);
+    var decisionModules = [];
+    (window.DecisionSets || []).forEach(function(decision) {
+        var moduleId = parseInt(decision.moduleId, 10);
+        if (moduleId <= reachedModule && decisionModules.indexOf(moduleId) === -1) decisionModules.push(moduleId);
+    });
 
-    return { dueCount: dueCount, tracked: summary.count, learn: learn, build: build, gate: gate, minutes: minutes, reviewMin: reviewMin };
+    var allocation = window.SessionComposer
+        ? window.SessionComposer.allocate({
+            budget: 15,
+            hasLearn: !!learn,
+            hasBuild: !!build,
+            hasDecision: decisionModules.length > 0,
+            dueCount: dueCount + (refresh ? refresh.modules.length : 0),
+            trackedCount: summary.count
+        })
+        : { pretestCount: learn ? 1 : 0, learnCount: learn ? 1 : 0, reviewCount: Math.min(dueCount, 3), decisionCount: 0, buildCount: build ? 1 : 0, estimatedMinutes: 15 };
+
+    return {
+        dueCount: dueCount,
+        tracked: summary.count,
+        learn: learn,
+        build: build,
+        refresh: refresh,
+        decisionModules: decisionModules,
+        allocation: allocation,
+        minutes: allocation.estimatedMinutes
+    };
 }
 
 function renderSessionPlan(progress) {
@@ -533,23 +572,30 @@ function renderSessionPlan(progress) {
             '<span class="segment-est">' + est + '</span></div>';
     }
 
-    if (plan.gate) {
-        var worst = plan.gate.modules[0];
-        rows += row('var(--red)', 'Gate',
-            'Module ' + worst.moduleNum + ' recall is at <strong>' + Math.round(worst.recall * 100) + '%</strong> — ' +
-            'its items lead today’s review; Module ' + plan.gate.blockedModuleId + ' unlocks at 70%', 'first');
-    } else if (plan.learn) {
-        rows += row('var(--purple)', 'Pretest', escapeHtmlDash(plan.learn.label) + ' — commit to answers before you read', '~3 min');
-        rows += row('var(--cyan)', 'Learn', '<a href="' + plan.learn.href + '">' + escapeHtmlDash(plan.learn.label) + '</a> — worked example → fill the gaps → from scratch', '~9 min');
+    if (plan.refresh) {
+        var priority = plan.refresh.modules[0];
+        rows += row(masteryColor(priority.band), 'Refresh',
+            'Module ' + priority.moduleNum + ' is <strong>' + escapeHtmlDash(priority.band.label.toLowerCase()) +
+            '</strong> — a short retrieval comes first, but your path stays open', '~2 min');
     }
-    if (plan.dueCount > 0 || plan.gate) {
+    if (plan.learn && plan.allocation.learnCount) {
+        if (plan.allocation.pretestCount) {
+        rows += row('var(--purple)', 'Pretest', escapeHtmlDash(plan.learn.label) + ' — commit to one answer before you read', '~1 min');
+        }
+        rows += row('var(--cyan)', 'Learn', '<a href="' + plan.learn.href + '">' + escapeHtmlDash(plan.learn.label) + '</a> — worked example → fill the gaps → from scratch', '~7 min');
+    }
+    if (plan.allocation.reviewCount > 0) {
         var fading = window.SRS && window.SRS.getFadingConcepts ? window.SRS.getFadingConcepts(4) : [];
         var conceptNames = fading.map(function (f) { return escapeHtmlDash(String(f.concept).toLowerCase()); }).join(' · ');
         rows += row('var(--orange)', 'Review',
-            (plan.dueCount > 0 ? plan.dueCount + ' due item' + (plan.dueCount === 1 ? '' : 's') : 'fading items') +
-            ', interleaved' + (conceptNames ? ' — ' + conceptNames : ''), '~' + Math.max(plan.reviewMin, 1) + ' min');
+            plan.allocation.reviewCount + ' selected from ' + Math.max(plan.dueCount, plan.allocation.reviewCount) +
+            ' available, interleaved' + (conceptNames ? ' — ' + conceptNames : ''),
+            '~' + Math.ceil(plan.allocation.reviewCount * 1.25) + ' min');
     }
-    if (plan.build) {
+    if (plan.allocation.decisionCount) {
+        rows += row('var(--purple)', 'Decide', 'Choose between confusable strategies before the labels appear', '~2 min');
+    }
+    if (plan.build && plan.allocation.buildCount) {
         rows += row('var(--green-bright)', 'Build', '<a href="' + escapeHtmlDash(plan.build.href) + '">' + escapeHtmlDash(plan.build.label) + '</a> — wire in what you just practiced', '~3 min');
     }
     if (!rows) {
@@ -571,8 +617,7 @@ function renderSessionPlan(progress) {
     if (alt) {
         if (plan.dueCount > 0) {
             alt.innerHTML = 'or <a href="daily-practice.html?autostart&mode=review&count=' +
-                Math.min(plan.dueCount, 14) + '">just the ' + plan.dueCount + ' review' +
-                (plan.dueCount === 1 ? '' : 's') + '</a> (~' + Math.max(plan.reviewMin, 1) + ' min)';
+                Math.min(plan.dueCount, 10) + '">open the full review queue</a> (' + plan.dueCount + ' due)';
         } else if (plan.tracked > 0) {
             alt.textContent = 'nothing due — the review segment mixes weak and recent items';
         } else {
@@ -583,7 +628,12 @@ function renderSessionPlan(progress) {
     // Hand the plan to the session page so "Session Complete" links onward
     try {
         sessionStorage.setItem(SESSION_PLAN_KEY, JSON.stringify({
-            learn: plan.learn, build: plan.build, gate: plan.gate, savedAt: Date.now()
+            learn: plan.learn,
+            build: plan.build,
+            refresh: plan.refresh,
+            decisionModules: plan.decisionModules,
+            allocation: plan.allocation,
+            savedAt: Date.now()
         }));
     } catch (e) {}
 }
@@ -593,14 +643,20 @@ function renderMemoryPanel() {
     if (!recallEl || !window.SRS || !window.SRS.getMemorySummary) return;
 
     var summary = window.SRS.getMemorySummary();
-    recallEl.textContent = summary.avgRecall === null ? '–' : Math.round(summary.avgRecall * 100) + '%';
+    var panel = document.getElementById('memory');
+    var hero = panel && panel.closest('.session-hero');
+    if (panel) panel.hidden = summary.count < 3;
+    if (hero) hero.classList.toggle('memory-pending', summary.count < 3);
+    var band = summary.band || { label: summary.count ? 'Learning' : 'Insufficient evidence', color: 'var(--text-secondary)' };
+    recallEl.textContent = summary.count ? band.label : 'Not started';
+    recallEl.style.color = masteryColor(band);
     var countEl = document.getElementById('memory-count');
     if (countEl) {
         countEl.textContent = summary.count;
         var countLabel = countEl.parentNode;
         if (countLabel) {
-            countLabel.innerHTML = 'predicted recall across <span id="memory-count">' + summary.count +
-                '</span> learned item' + (summary.count === 1 ? '' : 's');
+            countLabel.innerHTML = 'evidence across <span id="memory-count">' + summary.count +
+                '</span> tracked item' + (summary.count === 1 ? '' : 's');
         }
     }
 
@@ -616,11 +672,12 @@ function renderMemoryPanel() {
             list.innerHTML = '<div class="fading-empty">Nothing tracked yet — rate a few exercises first.</div>';
         } else {
             list.innerHTML = fading.map(function (f) {
-                var pct = Math.round(f.recall * 100);
+                var itemBand = f.recall < 0.7
+                    ? { label: 'Refresh soon', color: 'var(--orange)' }
+                    : { label: 'Ready', color: 'var(--cyan)' };
                 return '<div class="fading-row">' +
                     '<span class="fading-name">' + escapeHtmlDash(f.concept) + '</span>' +
-                    '<span class="fading-track"><span class="fading-fill" style="width:' + pct + '%;background:' + recallColor(f.recall) + '"></span></span>' +
-                    '<span class="fading-pct" style="color:' + recallColor(f.recall) + '">' + pct + '%</span>' +
+                    '<span class="memory-band" style="color:' + itemBand.color + '">' + itemBand.label + '</span>' +
                     '</div>';
             }).join('');
         }
@@ -632,7 +689,7 @@ function renderMemoryPanel() {
         foot.textContent = due > 0
             ? 'Today’s ' + due + ' review' + (due === 1 ? '' : 's') + ' target exactly these. Skip a day and the queue grows; nothing is ever “lost”, it just comes back sooner.'
             : (summary.count > 0
-                ? 'Nothing due right now — the model schedules each item just before you’d forget it.'
+                ? 'Nothing due right now — objective results and review timing will choose what comes back next.'
                 : 'Complete and rate exercises and the memory model starts scheduling reviews for you.');
     }
 }
@@ -644,7 +701,7 @@ function renderMasteryMap(progress) {
     var tracks = cfg.tracks || [];
     if (tracks.length === 0) { rowsEl.innerHTML = ''; return; }
 
-    var moduleRecall = window.SRS && window.SRS.getModuleRecall ? window.SRS.getModuleRecall() : {};
+    var moduleMastery = window.SRS && window.SRS.getModuleMastery ? window.SRS.getModuleMastery() : {};
     var modulesById = {};
     (cfg.modules || []).forEach(function (m) { modulesById[m.id] = m; });
     var projectsAfter = {};
@@ -659,16 +716,17 @@ function renderMasteryMap(progress) {
         (track.modules || []).forEach(function (modId) {
             var mod = modulesById[modId];
             if (!mod || modId === 0) return;
-            var rec = moduleRecall[modId];
+            var mastery = moduleMastery[modId];
             var isCurrent = String(modId) === String(lastModule) && !(progress[modId] && progress[modId].completed);
             var title = escapeHtmlDash(mod.title);
             var href = findModulePage(modId);
 
             var cls, label;
-            if (rec && rec.count >= 3) {
-                var pct = Math.round(rec.recall * 100);
-                cls = rec.recall >= 0.85 ? 'strong' : (rec.recall >= 0.7 ? 'fading' : 'weak');
-                label = 'M' + modId + ' · ' + pct + '%';
+            if (mastery && mastery.count >= 1) {
+                cls = mastery.id === 'strong' ? 'strong'
+                    : (mastery.id === 'refresh' ? 'fading'
+                    : (mastery.id === 'needs-practice' ? 'weak' : 'learning'));
+                label = 'M' + modId + ' · ' + mastery.shortLabel.toLowerCase();
                 // Tracked module: clicking the cell drills just that module
                 href = 'daily-practice.html?autostart&mode=mixed&modules=' + modId + '&count=8';
                 title += ' — drill this module';
@@ -684,8 +742,9 @@ function renderMasteryMap(progress) {
             var proj = projectsAfter[modId];
             if (proj) {
                 var done = progress[proj.id] && progress[proj.id].completed;
-                chips += '<a class="mastery-chip milestone' + (done ? ' strong' : '') + '" href="' + escapeHtmlDash((proj.file || proj.id) + '.html') + '" title="' + escapeHtmlDash(proj.title) + '">' +
-                    escapeHtmlDash(String(proj.id).toUpperCase()) + (done ? ' ✓' : '') + '</a>';
+                var verified = progress[proj.id] && progress[proj.id].verified;
+                chips += '<a class="mastery-chip milestone' + (verified ? ' strong' : '') + '" href="' + escapeHtmlDash((proj.file || proj.id) + '.html') + '" title="' + escapeHtmlDash(proj.title + (verified ? ' — verified by tests' : '')) + '">' +
+                    escapeHtmlDash(String(proj.id).toUpperCase()) + (verified ? ' ✓' : (done ? ' · done' : '')) + '</a>';
             }
         });
         if (!chips) return;

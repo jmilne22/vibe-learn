@@ -4,7 +4,7 @@ var BACKUP_KEYS = (function() {
         sk('progress'), sk('exercise-progress'), sk('srs'), sk('personal-notes'),
         sk('last-module'), sk('theme'), sk('focus-mode'), sk('timer-sound'),
         sk('sidebar'), sk('streaks'), sk('activity'), sk('session'),
-        sk('predictions')
+        sk('predictions'), sk('learning-metrics')
     ];
     // Add plugin backup keys
     var plugins = (window.CourseConfig && window.CourseConfig.plugins) || [];

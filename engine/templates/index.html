@@ -36,7 +36,7 @@
                 <div class="section-kicker">Your memory today</div>
                 <div class="memory-headline">
                     <strong id="memory-recall">–</strong>
-                    <span>predicted recall across <span id="memory-count">0</span> learned items</span>
+                    <span>evidence across <span id="memory-count">0</span> tracked items</span>
                 </div>
                 <div class="memory-fading">
                     <div class="memory-fading-label">Fading fastest</div>
@@ -55,14 +55,14 @@
                 </div>
                 <div class="mastery-legend">
                     <span><i class="legend-swatch legend-strong"></i>strong</span>
-                    <span><i class="legend-swatch legend-fading"></i>fading</span>
+                    <span><i class="legend-swatch legend-fading"></i>refresh</span>
                     <span><i class="legend-swatch legend-learning"></i>learning</span>
                     <span><i class="legend-swatch legend-ahead"></i>ahead</span>
                     <span><i class="legend-swatch legend-milestone"></i>milestone</span>
                 </div>
             </div>
             <div id="mastery-rows" class="mastery-rows"></div>
-            <p class="mastery-footnote">Fading modules pull their items into today's review automatically — nothing is ever "lost", it just comes back sooner.</p>
+            <p class="mastery-footnote">Refresh candidates move to the front of today's bounded review — they never lock the path or turn the practice bank into a checklist.</p>
         </section>
 
         <details class="workbench-setup" id="workbench-setup">
@@ -169,6 +169,8 @@ npm run practice        # generate the Go exercise workspaces in practice/</pre>
     <script src="streaks.js"></script>
     <script src="data-backup.js"></script>
     <script src="progress.js"></script>
+    <script src="learning-metrics.js"></script>
+    <script src="session-composer.js"></script>
     <script src="vibe-bridge.js"></script>
     <script src="app-shell.js"></script>
     <script src="dashboard.js"></script>

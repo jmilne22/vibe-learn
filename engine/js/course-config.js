@@ -21,6 +21,7 @@
         get moduleNames() { return cfg.moduleNames || {}; },
         get modulesWithExercises() { return cfg.modulesWithExercises || []; },
         get modulesWithoutExercises() { return cfg.modulesWithoutExercises || new Set(); },
+        get flashcardModules() { return cfg.flashcardModules || []; },
         get sidebarPages() { return cfg.sidebarPages || []; },
         get storagePrefix() { return (cfg.course || {}).storagePrefix || 'course'; },
         get slug() { return (cfg.course || {}).slug || 'course'; },

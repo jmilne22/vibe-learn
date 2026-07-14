@@ -7,6 +7,34 @@ conceptLinks:
   Table-Driven Tests: table-driven-tests
   Test Helpers: test-helpers-and-error-assertions
 sharedContent: {}
+decisionSets:
+  - id: error-wrapped-sentinel
+    family: go-error-inspection
+    prompt: A repository wraps ErrNotFound through two layers. The caller only needs to know whether that sentinel occurred. Which mechanism fits?
+    options:
+      - { id: is, label: errors.Is, description: Match an error identity anywhere in the wrapping chain. }
+      - { id: as, label: errors.As, description: Extract a particular concrete error type. }
+      - { id: compare, label: Direct ==, description: Compare only the outermost error value. }
+    answer: is
+    explanation: errors.Is walks the wrapping chain and checks identity, so callers do not depend on how many layers added context.
+  - id: error-extract-type
+    family: go-error-inspection
+    prompt: An API returns a typed *RateLimitError and the caller needs its RetryAfter field. Which mechanism fits?
+    options:
+      - { id: is, label: errors.Is, description: Match a known error identity. }
+      - { id: as, label: errors.As, description: Find and assign a matching concrete error type. }
+      - { id: string, label: Match Error text, description: Inspect the human-readable message. }
+    answer: as
+    explanation: errors.As locates a compatible typed error through wrapping and assigns it so the caller can read fields such as RetryAfter.
+  - id: error-add-context
+    family: go-error-inspection
+    prompt: A config loader must add the filename while preserving the original error for later inspection. Which mechanism fits?
+    options:
+      - { id: wrap, label: fmt.Errorf with %w, description: Add context while preserving the cause. }
+      - { id: new, label: errors.New, description: Replace the cause with a new message. }
+      - { id: concat, label: String concatenation, description: Preserve text but not error identity. }
+    answer: wrap
+    explanation: The %w verb creates an inspectable wrapping chain; adding text without %w destroys programmatic access to the cause.
 variants:
   warmups:
     - id: warmup_1
@@ -112,6 +140,9 @@ variants:
             }
     - id: warmup_2
       concept: Wrapping
+      decisionFamily: go-error-inspection
+      strategy: wrap-with-percent-w
+      confusableWith: [errors-is, errors-as]
       variants:
         - id: v1
           title: Wrap with Context
@@ -166,6 +197,9 @@ variants:
             }
     - id: warmup_3
       concept: Inspecting Errors
+      decisionFamily: go-error-inspection
+      strategy: errors-is
+      confusableWith: [errors-as, direct-comparison]
       variants:
         - id: v1
           title: Check with errors.Is
@@ -237,6 +271,9 @@ variants:
             fmt.Println(err == os.ErrNotExist) // false
     - id: warmup_4
       concept: Sentinel Errors
+      decisionFamily: go-error-inspection
+      strategy: sentinel-error
+      confusableWith: [typed-error, wrapped-context]
       variants:
         - id: v1
           title: Define Sentinels

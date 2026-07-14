@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="520" viewBox="0 0 1200 520" role="img" aria-labelledby="title desc">
+  <title id="title">Two Go slices sharing one backing array</title>
+  <desc id="desc">A backing array with four elements is viewed by slice s and subslice t. Updating t index zero changes s index one because both point to the same element.</desc>
+  <rect width="1200" height="520" fill="#101820"/>
+  <style>.t{font:24px Inter,Arial,sans-serif;fill:#eef4f7}.m{font:20px 'JetBrains Mono',monospace;fill:#b9c7d0}.small{font:17px Inter,Arial,sans-serif;fill:#9fb0bb}.box{fill:#182833;stroke:#506675;stroke-width:2}.hot{fill:#4a2830;stroke:#ff6b6b;stroke-width:3}.window{fill:none;stroke-width:5}.arrow{stroke:#c994ff;stroke-width:4;fill:none;marker-end:url(#a)}</style>
+  <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0l10 5-10 5z" fill="#c994ff"/></marker></defs>
+  <text x="60" y="56" class="t" font-weight="700">One backing array, two slice windows</text>
+  <text x="60" y="92" class="m">backing := [4]string{"api", "worker", "db", "cache"}</text>
+  <g transform="translate(230 155)">
+    <rect x="0" y="0" width="190" height="90" rx="8" class="box"/><rect x="190" y="0" width="190" height="90" rx="8" class="hot"/><rect x="380" y="0" width="190" height="90" rx="8" class="box"/><rect x="570" y="0" width="190" height="90" rx="8" class="box"/>
+    <text x="95" y="54" text-anchor="middle" class="m">api</text><text x="285" y="54" text-anchor="middle" class="m">worker</text><text x="475" y="54" text-anchor="middle" class="m">db</text><text x="665" y="54" text-anchor="middle" class="m">cache</text>
+    <text x="95" y="118" text-anchor="middle" class="small">index 0</text><text x="285" y="118" text-anchor="middle" class="small">index 1</text><text x="475" y="118" text-anchor="middle" class="small">index 2</text><text x="665" y="118" text-anchor="middle" class="small">index 3</text>
+    <path d="M-18 -20H778V110" class="window" stroke="#55d6be"/><text x="-18" y="-35" class="m" fill="#55d6be">s := backing[:] · len 4 · cap 4</text>
+    <path d="M172 145v58h398v-58" class="window" stroke="#ffb454"/><text x="370" y="238" text-anchor="middle" class="m" fill="#ffb454">t := s[1:3] · len 2 · cap 3</text>
+  </g>
+  <path d="M160 414C300 414 365 315 500 234" class="arrow"/>
+  <text x="60" y="397" class="m" fill="#c994ff">t[0] = "queue"</text>
+  <text x="60" y="438" class="small">The assignment targets backing[1]. Reading s[1] now returns "queue".</text>
+  <text x="60" y="480" class="small">append may allocate a new backing array when capacity is exceeded; always keep its returned slice.</text>
+</svg>

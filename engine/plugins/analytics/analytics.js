@@ -412,7 +412,8 @@
             modules: modules,
             concepts: concepts,
             weakest: weakest,
-            ratings: { gotIt: gotIt, struggled: struggled, peeked: peeked }
+            ratings: { gotIt: gotIt, struggled: struggled, peeked: peeked },
+            learning: window.LearningMetrics ? window.LearningMetrics.summary() : null
         };
     }
 
@@ -455,50 +456,44 @@
     function renderHealthRow(report) {
         var el = document.getElementById('health-row');
 
-        // Overall mastery %
-        var reviewed = 0;
-        for (var i = 0; i < report.modules.length; i++) {
-            reviewed += report.modules[i].count;
+        var learning = report.learning || {};
+        function rateValue(metric) {
+            return metric && metric.total ? Math.round(metric.rate * 100) + '%' : '—';
         }
-        var masteryPct = reviewed > 0 ? Math.round((report.masteredCount / reviewed) * 100) : 0;
-        var masteryColor = masteryPct >= 70 ? 'var(--green-bright)' : (masteryPct >= 40 ? 'var(--orange)' : 'var(--red)');
+        function rateSub(metric, noun) {
+            return metric && metric.total ? metric.hits + '/' + metric.total + ' ' + noun : 'needs attempts';
+        }
 
         // Due for review
         var dueCount = (window.SRS && typeof window.SRS.getDueCount === 'function') ? window.SRS.getDueCount() : 0;
         var dueColor = dueCount > 10 ? 'var(--red)' : (dueCount > 0 ? 'var(--orange)' : 'var(--green-bright)');
 
-        // Streak
-        var currentStreak = (window.Streaks && typeof window.Streaks.getCurrent === 'function') ? window.Streaks.getCurrent() : 0;
-        var longestStreak = (window.Streaks && typeof window.Streaks.getLongest === 'function') ? window.Streaks.getLongest() : 0;
-
-        // Sparkline
-        var snapshots = loadSnapshots();
-        var sparklineHTML = renderSparkline(snapshots);
+        var transferMetric = learning.delayedPass;
+        var finalMetric = learning.projectPass && learning.projectPass.total ? learning.projectPass : learning.decisionAccuracy;
+        var finalLabel = learning.projectPass && learning.projectPass.total ? 'Project Checks' : 'Decision Accuracy';
+        var finalSub = learning.projectPass && learning.projectPass.total ? 'verified checks' : 'strategy choices';
 
         el.innerHTML =
-            // Card 1: Overall Mastery
-            '<div class="stat-card" title="Mastered items as % of all reviewed">' +
-                '<div class="stat-value" style="color: ' + masteryColor + ';">' + masteryPct + '%</div>' +
-                '<div class="stat-sub">' + report.masteredCount + '/' + reviewed + ' reviewed</div>' +
-                '<div class="stat-label">Overall Mastery</div>' +
+            '<div class="stat-card" title="First objective attempt on a previously unseen variant, without a hint or solution">' +
+                '<div class="stat-value" style="color: var(--green-bright);">' + rateValue(learning.coldPass) + '</div>' +
+                '<div class="stat-sub">' + rateSub(learning.coldPass, 'cold attempts') + '</div>' +
+                '<div class="stat-label">Cold Solve Rate</div>' +
             '</div>' +
-            // Card 2: Due for Review
+            '<div class="stat-card" title="Objective retrieval at least one day after the previous attempt on this skill">' +
+                '<div class="stat-value" style="color: var(--cyan);">' + rateValue(transferMetric) + '</div>' +
+                '<div class="stat-sub">' + rateSub(transferMetric, 'delayed attempts') + '</div>' +
+                '<div class="stat-label">Delayed Retrieval</div>' +
+            '</div>' +
             '<div class="stat-card">' +
                 '<a href="daily-practice.html?mode=review&autostart" style="text-decoration: none; color: inherit;">' +
                     '<div class="stat-value" style="color: ' + dueColor + ';">' + dueCount + '</div>' +
                     '<div class="stat-label">Due for Review</div>' +
                 '</a>' +
             '</div>' +
-            // Card 3: Day Streak
             '<div class="stat-card">' +
-                '<div class="stat-value" style="color: var(--orange);">' + currentStreak + '</div>' +
-                '<div class="stat-sub">Longest: ' + longestStreak + '</div>' +
-                '<div class="stat-label">Day Streak</div>' +
-            '</div>' +
-            // Card 4: 30-Day Trend
-            '<div class="stat-card">' +
-                '<div class="sparkline-wrap">' + sparklineHTML + '</div>' +
-                '<div class="stat-label">30-Day Mastery Trend</div>' +
+                '<div class="stat-value" style="color: var(--purple);">' + rateValue(finalMetric) + '</div>' +
+                '<div class="stat-sub">' + rateSub(finalMetric, finalSub) + '</div>' +
+                '<div class="stat-label">' + finalLabel + '</div>' +
             '</div>';
     }
 
@@ -877,6 +872,11 @@
         renderModuleHealthGrid(report);
         renderActionItems(report);
         renderDetailPanels(report);
+
+        var exportBtn = document.getElementById('export-learning-diagnostic');
+        if (exportBtn && window.LearningMetrics) {
+            exportBtn.onclick = function() { window.LearningMetrics.exportDiagnostic(); };
+        }
     }
 
     // ---------------------------------------------------------------------------

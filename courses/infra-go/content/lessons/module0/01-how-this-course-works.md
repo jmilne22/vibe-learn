@@ -22,7 +22,7 @@ Each module has a **lesson**, **warmups**, and **challenges**:
 - **Warmups** are quick one-concept drills. If a warmup feels hard, the gap is in the lesson — go re-read that section.
 - **Challenges** are multi-step problems with difficulty modes (Easy / Progressive / Balanced / Hard / Mixed). Progressive is the right default for a first pass.
 
-**From Module 4 onward, challenges are done in your real editor and terminal.** One-time setup: clone the course repo and run
+**From Module 1 onward, generated practice variants run in your real editor and terminal.** One-time setup: clone the course repo and run
 
 ```bash
 npm run practice
@@ -31,28 +31,26 @@ npm run practice
 This generates a `practice/` directory with one folder per challenge variant — each contains `exercise.go` (a stub) and `exercise_test.go` (a real test). Every challenge card on the site shows its folder. The flow:
 
 ```bash
-cd practice/module4/challenge_1_v1
+cd practice/module1/challenge_1_v1
 # write your code in exercise.go
-go test            # modules 6-9: go test -race
+go test            # concurrency exercises are also checked with the race detector
 ```
 
-**A passing test is the definition of done.** Not "looks right," not "I'd have written that" — green. Self-ratings still matter for review scheduling, but the test is the ground truth under them. (First run needs network once, to download the YAML dependency.)
-
-Modules 1–3 stay eyeball-verified on purpose: you don't know testing yet. Module 3 changes that — it's where `go test` enters your life and never leaves.
+**A passing test is the definition of done.** Not "looks right," not "I'd have written that" — green. The local runner grades test-backed work objectively; self-ratings remain only for cards without an executable check. Module 3 teaches you how those tests work and how to write the same kind of safety net in your projects. (The first run may need network access to download dependencies.)
 
 ### Variants: the shuffle and the two-variant rule
 
 Every exercise has multiple variants — shuffle freely to get fresh versions of a concept, and use **Get Easier Version** / **Get Harder Version** to step difficulty. Stepping down when you're stuck is scaffolding; it's how the course is meant to work.
 
-But there's a limit: **two easier variants, max.** If you've stepped down twice and you're still stuck, more variants will not fix it — the gap is upstream, in the lesson. Go read the section, then come back. (Ask how a course ends up with 154 variants in Module 1 sometime.)
+But there's a limit: **two easier variants, max.** If you've stepped down twice and you're still stuck, more variants will not fix it — the gap is upstream, in the lesson. Go read the section, then come back. The full variant bank is there for fresh retrieval over time, not as a checklist to clear today.
 
 ### Self-rating, self-explanation, and calibration
 
 After viewing a solution, you'll be asked one question before you can rate: **why does this solution work?** One or two sentences, in your own words. This isn't busywork — generating the explanation is one of the strongest effects in the learning research, and it's the difference between recognizing a solution and owning it. Then rate yourself honestly — *Got it*, *Struggled*, or *Needed solution*. Ratings drive spaced repetition; **Daily Practice** pulls exercises that are due for review. Use it as a 10-minute warmup before a build session, never as the session itself.
 
-Test-backed challenges (modules 4+) also ask you to **predict before you run**: will your code pass `go test`? Answer, run it, record what happened. Over time the card shows your hit rate — "when confident: 8/12 pass" — which is feedback on your *judgment*, not just your code. Bad calibration is how you end up grinding 154 variants of something you already know, or shipping something you never tested. Watch that number.
+Test-backed exercises also ask you to **predict before you run**: will your code pass `go test`? Answer, run it, record what happened. Over time the card shows your hit rate — "when confident: 8/12 pass" — which is feedback on your *judgment*, not just your code. Bad calibration is how you end up grinding variants of something you already know, or shipping something you never tested. Watch that number.
 
-The thinking timer (locks hints and solutions for 45 seconds) is worth keeping on — the point of an exercise is the struggle, not the answer.
+The thinking timer is a guardrail, not evidence. The important rule is to make one observable attempt — predict, write, or run — before opening hints or a solution.
 
 ### Working with AI
 

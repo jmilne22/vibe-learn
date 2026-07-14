@@ -2,6 +2,11 @@
 
 Context is how Go propagates cancellation and deadlines through a call chain.
 
+<figure class="lesson-visual">
+  <img src="context-cancellation-tree.svg" alt="A request context propagating cancellation down to database, API, and worker operations">
+  <figcaption>Trace cancellation downward before reading code: each child observes <code>ctx.Done()</code>, performs its own cleanup, and returns <code>ctx.Err()</code> up the call tree.</figcaption>
+</figure>
+
 ### Creating Contexts
 
 ```go

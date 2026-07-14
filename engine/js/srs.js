@@ -225,7 +225,73 @@
      * @param {string} [label] - Human-readable label for display
      * @returns {SRSEntry} Updated SRS entry
      */
-    function recordReview(exerciseKey, quality, label) {
+    function cloneEvidence(evidence) {
+        if (!evidence) return {
+            objectiveAttempts: 0,
+            objectivePasses: 0,
+            cleanPasses: 0,
+            assistedPasses: 0,
+            objectiveFailures: 0,
+            consecutiveObjectiveFailures: 0,
+            selfReviews: 0,
+            variants: {}
+        };
+        try { return JSON.parse(JSON.stringify(evidence)); }
+        catch (e) { return Object.assign({ variants: {} }, evidence); }
+    }
+
+    function updateEvidence(current, quality, opts) {
+        opts = opts || {};
+        var evidence = cloneEvidence(current.evidence);
+        evidence.variants = evidence.variants || {};
+
+        if (opts.source === 'objective') {
+            var passed = opts.pass !== undefined ? !!opts.pass : quality >= 3;
+            var variantKey = opts.variantKey || opts.key || 'unknown';
+            var variant = evidence.variants[variantKey] || {
+                attempts: 0,
+                passes: 0,
+                cleanPasses: 0,
+                firstAt: opts.at || Date.now()
+            };
+
+            evidence.objectiveAttempts++;
+            variant.attempts++;
+            variant.lastAt = opts.at || Date.now();
+            if (passed) {
+                evidence.objectivePasses++;
+                variant.passes++;
+                evidence.consecutiveObjectiveFailures = 0;
+                if (!opts.assist && !(opts.sessionFailures > 0)) {
+                    evidence.cleanPasses++;
+                    variant.cleanPasses++;
+                } else {
+                    evidence.assistedPasses++;
+                }
+            } else {
+                evidence.objectiveFailures++;
+                evidence.consecutiveObjectiveFailures++;
+            }
+            evidence.lastObjectiveResult = passed ? 'pass' : 'fail';
+            evidence.lastObjectiveAt = new Date(opts.at || Date.now()).toISOString();
+            evidence.variants[variantKey] = variant;
+        } else {
+            evidence.selfReviews++;
+            evidence.lastSelfQuality = quality;
+            evidence.lastSelfAt = new Date().toISOString();
+        }
+        return evidence;
+    }
+
+    /**
+     * Record a review result. The optional evidence object is used for
+     * objective local-runner results; older callers remain self-review data.
+     * @param {string} exerciseKey
+     * @param {number} quality
+     * @param {string} [label]
+     * @param {{source?: string, pass?: boolean, variantKey?: string, assist?: string, sessionFailures?: number, at?: number}} [opts]
+     */
+    function recordReview(exerciseKey, quality, label, opts) {
         const srsData = loadSRS();
         const current = srsData[exerciseKey] || {
             easeFactor: 2.5,
@@ -235,7 +301,9 @@
             lastQuality: 0
         };
 
+        var evidence = updateEvidence(current, quality, opts);
         srsData[exerciseKey] = calculateNext(current, quality);
+        srsData[exerciseKey].evidence = evidence;
         srsData[exerciseKey].reviewCount = (current.reviewCount || 0) + 1;
         if (label) {
             srsData[exerciseKey].label = label;
@@ -426,6 +494,99 @@
         return !/_(?:v|tp)\w+$/.test(key);
     }
 
+    // Evidence bands intentionally avoid exposing the scheduler's internal
+    // probability as if it were a direct measurement of programming skill.
+    var MASTERY_BANDS = {
+        insufficient: { id: 'insufficient', label: 'Insufficient evidence', shortLabel: 'Early', color: 'var(--text-secondary)', rank: 0 },
+        learning: { id: 'learning', label: 'Learning', shortLabel: 'Learning', color: 'var(--purple)', rank: 1 },
+        needsPractice: { id: 'needs-practice', label: 'Needs practice', shortLabel: 'Practice', color: 'var(--red)', rank: 1 },
+        refresh: { id: 'refresh', label: 'Refresh soon', shortLabel: 'Refresh', color: 'var(--orange)', rank: 2 },
+        ready: { id: 'ready', label: 'Ready', shortLabel: 'Ready', color: 'var(--cyan)', rank: 3 },
+        strong: { id: 'strong', label: 'Strong', shortLabel: 'Strong', color: 'var(--green-bright)', rank: 4 }
+    };
+
+    function bandCopy(id, extra) {
+        return Object.assign({}, MASTERY_BANDS[id] || MASTERY_BANDS.insufficient, extra || {});
+    }
+
+    /**
+     * Mastery band for one scheduled item. Objective results determine Ready
+     * and Strong; self-ratings can identify learning needs but do not certify
+     * strong performance.
+     */
+    function getItemMasteryBand(keyOrEntry) {
+        var item = typeof keyOrEntry === 'string' ? loadSRS()[keyOrEntry] : keyOrEntry;
+        if (!item) return bandCopy('insufficient', { objectiveCount: 0 });
+        var ev = item.evidence || {};
+        var objectiveCount = ev.objectiveAttempts || 0;
+        var recall = entryRetrievability(item);
+
+        if (objectiveCount > 0) {
+            if ((ev.consecutiveObjectiveFailures || 0) >= 2 ||
+                ((ev.objectivePasses || 0) === 0 && objectiveCount >= 2)) {
+                return bandCopy('needsPractice', { objectiveCount: objectiveCount, recall: recall });
+            }
+            if ((ev.objectivePasses || 0) === 0) {
+                return bandCopy('learning', { objectiveCount: objectiveCount, recall: recall });
+            }
+            if (recall < 0.7) {
+                return bandCopy('refresh', { objectiveCount: objectiveCount, recall: recall });
+            }
+            var passedVariants = Object.keys(ev.variants || {}).filter(function(v) {
+                return (ev.variants[v].passes || 0) > 0;
+            }).length;
+            if (passedVariants >= 2 && (ev.cleanPasses || 0) >= 1 && objectiveCount >= 2) {
+                return bandCopy('strong', { objectiveCount: objectiveCount, recall: recall, passedVariants: passedVariants });
+            }
+            return bandCopy('ready', { objectiveCount: objectiveCount, recall: recall, passedVariants: passedVariants });
+        }
+
+        if ((ev.lastSelfQuality || item.lastQuality || 0) < 3 && (ev.selfReviews || item.reviewCount || 0) > 0) {
+            return bandCopy('needsPractice', { objectiveCount: 0, selfOnly: true, recall: recall });
+        }
+        if ((ev.selfReviews || item.reviewCount || 0) > 0) {
+            return bandCopy('learning', { objectiveCount: 0, selfOnly: true, recall: recall });
+        }
+        return bandCopy('insufficient', { objectiveCount: 0, recall: recall });
+    }
+
+    function aggregateBands(entries) {
+        if (!entries.length) return bandCopy('insufficient', { count: 0, objectiveCount: 0, objectiveItems: 0, bands: {} });
+        var counts = {};
+        var objectiveCount = 0;
+        var objectiveItems = 0;
+        entries.forEach(function(entry) {
+            var band = getItemMasteryBand(entry);
+            counts[band.id] = (counts[band.id] || 0) + 1;
+            objectiveCount += band.objectiveCount || 0;
+            if ((band.objectiveCount || 0) > 0) objectiveItems++;
+        });
+        var id = 'learning';
+        if (objectiveCount === 0) id = 'learning';
+        else if ((counts['needs-practice'] || 0) >= Math.max(1, Math.ceil(entries.length * 0.25))) id = 'needsPractice';
+        else if ((counts.refresh || 0) > 0) id = 'refresh';
+        else if ((counts.strong || 0) >= Math.ceil(entries.length * 0.5)) id = 'strong';
+        else id = 'ready';
+        return bandCopy(id, { count: entries.length, objectiveCount: objectiveCount, objectiveItems: objectiveItems, bands: counts });
+    }
+
+    function getModuleMastery() {
+        var srsData = loadSRS();
+        var groups = {};
+        Object.keys(srsData).forEach(function(key) {
+            if (!isTrackableKey(key) || key.indexOf('fc_') === 0) return;
+            var moduleNum = extractModuleNum(key);
+            if (moduleNum === null) return;
+            if (!groups[moduleNum]) groups[moduleNum] = [];
+            groups[moduleNum].push(srsData[key]);
+        });
+        var out = {};
+        Object.keys(groups).forEach(function(moduleNum) {
+            out[moduleNum] = aggregateBands(groups[moduleNum]);
+        });
+        return out;
+    }
+
     /**
      * Predicted recall probability for one exercise right now (0..1).
      * @param {string} key
@@ -445,13 +606,14 @@
     function getMemorySummary() {
         var srsData = loadSRS();
         var now = Date.now();
-        var sum = 0, count = 0;
+        var sum = 0, count = 0, entries = [];
         for (var key in srsData) {
             if (!isTrackableKey(key)) continue;
             sum += entryRetrievability(srsData[key], now);
             count++;
+            if (key.indexOf('fc_') !== 0) entries.push(srsData[key]);
         }
-        return { count: count, avgRecall: count > 0 ? sum / count : null };
+        return { count: count, avgRecall: count > 0 ? sum / count : null, band: aggregateBands(entries) };
     }
 
     /**
@@ -498,6 +660,33 @@
             }
         }
         out.sort(function(a, b) { return a.recall - b.recall; });
+        return out;
+    }
+
+    /**
+     * Modules worth refreshing. This is a recommendation queue, never a
+     * progression lock. Requires objective evidence before surfacing a module.
+     */
+    function getRefreshModules() {
+        var mastery = getModuleMastery();
+        var recall = getModuleRecall();
+        var out = [];
+        Object.keys(mastery).forEach(function(moduleNum) {
+            var band = mastery[moduleNum];
+            if (band.objectiveCount < 2) return;
+            if (band.id !== 'refresh' && band.id !== 'needs-practice') return;
+            out.push({
+                moduleNum: moduleNum,
+                band: band,
+                recall: recall[moduleNum] ? recall[moduleNum].recall : null,
+                count: band.count
+            });
+        });
+        out.sort(function(a, b) {
+            if (a.band.id === 'needs-practice' && b.band.id !== 'needs-practice') return -1;
+            if (b.band.id === 'needs-practice' && a.band.id !== 'needs-practice') return 1;
+            return (a.recall || 0) - (b.recall || 0);
+        });
         return out;
     }
 
@@ -569,6 +758,10 @@
         getWeakestExercises,
         getDueCount,
         getAll,
+        getItemMasteryBand,
+        getModuleMastery,
+        getRefreshModules,
+        masteryBands: MASTERY_BANDS,
         getConceptStrengths,
         strengthLabel,
         strengthColor,

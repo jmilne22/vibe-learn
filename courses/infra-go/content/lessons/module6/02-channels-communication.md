@@ -2,6 +2,11 @@
 
 Channels are typed conduits for sending data between goroutines.
 
+<figure class="lesson-visual">
+  <img src="channel-lifecycle.svg" alt="Workers send results, a coordinator closes the channel, and a consumer ranges until close">
+  <figcaption>Ownership rule: the goroutine that can prove no more sends will occur closes the channel. Receivers observe closure; they normally do not initiate it.</figcaption>
+</figure>
+
 <attempt type="pretest">
 
 <predict prompt="What does this print?">
