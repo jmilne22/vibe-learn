@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="560" viewBox="0 0 1200 560" role="img" aria-labelledby="title desc">
+  <title id="title">DNS query packet layout</title>
+  <desc id="desc">A DNS query is shown as a 12-byte header followed by a length-prefixed domain name, query type and query class, with byte offsets and big-endian field boundaries.</desc>
+  <rect width="1200" height="560" fill="#101820"/>
+  <style>.h{font:26px Inter,Arial,sans-serif;fill:#eef4f7;font-weight:700}.t{font:18px Inter,Arial,sans-serif;fill:#c6d0d9}.m{font:17px 'JetBrains Mono',monospace;fill:#eef4f7}.s{font:15px 'JetBrains Mono',monospace;fill:#9fb0bb}.field{stroke:#506675;stroke-width:2}.label{fill:#18312e;stroke:#55d6be;stroke-width:2}.count{fill:#302817;stroke:#ffb454;stroke-width:2}</style>
+  <text x="50" y="52" class="h">DNS query: fields are bytes, not structs on the wire</text>
+  <text x="50" y="88" class="t">All 16-bit integers are big-endian. The Question begins immediately after the fixed 12-byte header.</text>
+  <g transform="translate(50 130)">
+    <rect width="170" height="82" fill="#2c2037" class="field"/><text x="85" y="34" text-anchor="middle" class="m">ID</text><text x="85" y="60" text-anchor="middle" class="s">bytes 0–1</text>
+    <rect x="170" width="170" height="82" fill="#2c2037" class="field"/><text x="255" y="34" text-anchor="middle" class="m">FLAGS</text><text x="255" y="60" text-anchor="middle" class="s">2–3</text>
+    <rect x="340" width="170" height="82" class="count"/><text x="425" y="34" text-anchor="middle" class="m">QDCOUNT</text><text x="425" y="60" text-anchor="middle" class="s">4–5 · usually 1</text>
+    <rect x="510" width="170" height="82" class="field" fill="#182833"/><text x="595" y="34" text-anchor="middle" class="m">ANCOUNT</text><text x="595" y="60" text-anchor="middle" class="s">6–7</text>
+    <rect x="680" width="170" height="82" class="field" fill="#182833"/><text x="765" y="34" text-anchor="middle" class="m">NSCOUNT</text><text x="765" y="60" text-anchor="middle" class="s">8–9</text>
+    <rect x="850" width="170" height="82" class="field" fill="#182833"/><text x="935" y="34" text-anchor="middle" class="m">ARCOUNT</text><text x="935" y="60" text-anchor="middle" class="s">10–11</text>
+  </g>
+  <text x="50" y="248" class="m" fill="#55d6be">QNAME: web.local</text>
+  <g transform="translate(50 270)">
+    <rect width="75" height="82" class="count"/><text x="37" y="35" text-anchor="middle" class="m">03</text><text x="37" y="62" text-anchor="middle" class="s">len</text>
+    <rect x="75" width="240" height="82" class="label"/><text x="195" y="48" text-anchor="middle" class="m">w e b</text>
+    <rect x="315" width="75" height="82" class="count"/><text x="352" y="35" text-anchor="middle" class="m">05</text><text x="352" y="62" text-anchor="middle" class="s">len</text>
+    <rect x="390" width="330" height="82" class="label"/><text x="555" y="48" text-anchor="middle" class="m">l o c a l</text>
+    <rect x="720" width="75" height="82" class="count"/><text x="757" y="48" text-anchor="middle" class="m">00</text>
+    <rect x="825" width="140" height="82" class="field" fill="#182833"/><text x="895" y="35" text-anchor="middle" class="m">QTYPE</text><text x="895" y="62" text-anchor="middle" class="s">00 01 · A</text>
+    <rect x="965" width="140" height="82" class="field" fill="#182833"/><text x="1035" y="35" text-anchor="middle" class="m">QCLASS</text><text x="1035" y="62" text-anchor="middle" class="s">00 01 · IN</text>
+  </g>
+  <g transform="translate(50 400)"><text class="m" y="0">parse order</text><text class="t" y="38">1. Require at least 12 bytes.</text><text class="t" y="70">2. Read counts before iterating sections.</text><text class="t" y="102">3. Bounds-check every length and offset before slicing.</text><text class="t" x="550" y="38">4. Compression pointers use the top two bits: 11xxxxxx.</text><text class="t" x="550" y="70">5. Track visited offsets to reject pointer loops.</text></g>
+</svg>

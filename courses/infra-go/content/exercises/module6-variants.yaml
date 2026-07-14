@@ -4,10 +4,41 @@ conceptLinks:
   WaitGroups: waitgroups-knowing-when-its-done
   Concurrent Patterns: your-first-concurrent-pattern
 sharedContent: {}
+decisionSets:
+  - id: concurrency-wait-for-workers
+    family: go-concurrency-coordination
+    prompt: Ten goroutines write results to independent slots. You only need to know when every goroutine has finished. Which primitive is the clearest fit?
+    options:
+      - { id: waitgroup, label: sync.WaitGroup, description: Count completions without carrying values. }
+      - { id: channel, label: Unbuffered channel, description: Transfer a value between goroutines. }
+      - { id: mutex, label: sync.Mutex, description: Protect shared mutable state. }
+    answer: waitgroup
+    explanation: A WaitGroup expresses completion counting directly. No value must be transferred and the independent result slots do not need a mutex.
+  - id: concurrency-transfer-results
+    family: go-concurrency-coordination
+    prompt: Workers produce an unknown stream of results that one collector consumes as they arrive. Which primitive is the clearest fit?
+    options:
+      - { id: channel, label: Channel, description: Transfer ownership of each result to the collector. }
+      - { id: waitgroup, label: sync.WaitGroup, description: Signal only that work is complete. }
+      - { id: mutex, label: sync.Mutex, description: Serialize access to shared memory. }
+    answer: channel
+    explanation: A channel models the result stream and provides synchronization with the transfer. A WaitGroup can still signal final completion, but it cannot carry results.
+  - id: concurrency-shared-map
+    family: go-concurrency-coordination
+    prompt: Many goroutines update one shared map and callers need ordinary synchronous reads. Which primitive is the clearest starting point?
+    options:
+      - { id: mutex, label: sync.RWMutex, description: Protect shared map access with explicit critical sections. }
+      - { id: waitgroup, label: sync.WaitGroup, description: Count completed goroutines. }
+      - { id: close, label: Close a channel, description: Broadcast that no more values will arrive. }
+    answer: mutex
+    explanation: Go maps require synchronization for concurrent mutation. An RWMutex keeps the shared-memory ownership model explicit and permits concurrent readers.
 variants:
   warmups:
     - id: warmup_1
       concept: Goroutines
+      decisionFamily: go-concurrency-coordination
+      strategy: goroutine-lifecycle
+      confusableWith: [waitgroup, channel]
       variants:
         - id: v1
           title: Launch and Wait
@@ -59,6 +90,9 @@ variants:
             fmt.Println("ran concurrently:", time.Since(start) < 500*time.Millisecond)
     - id: warmup_2
       concept: Channels
+      decisionFamily: go-concurrency-coordination
+      strategy: channel
+      confusableWith: [waitgroup, mutex]
       variants:
         - id: v1
           title: Send and Receive
@@ -117,6 +151,9 @@ variants:
             }
     - id: warmup_3
       concept: WaitGroups
+      decisionFamily: go-concurrency-coordination
+      strategy: waitgroup
+      confusableWith: [channel, mutex]
       variants:
         - id: v1
           title: Parallel URL Fetch

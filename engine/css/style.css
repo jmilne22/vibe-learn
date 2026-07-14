@@ -9346,3 +9346,131 @@ body[data-rail] .scroll-progress {
     border-radius: 999px;
     border: 2px solid var(--bg-base);
 }
+
+/* Progressive disclosure and evidence-first learning surfaces */
+.app-navi[hidden] { display: none !important; }
+
+.rail-meta {
+    margin-left: auto;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 0.58rem;
+    color: var(--text-ghost);
+}
+
+.session-hero.memory-pending { grid-template-columns: minmax(0, 1fr); }
+.memory-panel[hidden] { display: none !important; }
+
+.memory-band {
+    margin-left: auto;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 0.7rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+/* Discriminative practice: commit to a strategy before labels/feedback. */
+.decision-card h4 {
+    max-width: 760px;
+    font-size: 1.25rem;
+    line-height: 1.5;
+}
+
+.decision-options {
+    display: grid;
+    gap: 10px;
+    margin: 22px 0 16px;
+}
+
+.decision-option {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    width: 100%;
+    padding: 14px 16px;
+    border: 1px solid var(--border-default);
+    border-radius: 10px;
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    text-align: left;
+    cursor: pointer;
+}
+
+.decision-option:hover:not(:disabled) {
+    border-color: var(--purple);
+    background: color-mix(in srgb, var(--purple) 7%, var(--bg-surface));
+}
+
+.decision-option span { color: var(--text-secondary); font-size: 0.86rem; }
+.decision-option.correct { border-color: var(--green-bright); }
+.decision-option.incorrect { border-color: var(--red); }
+.decision-option:disabled { cursor: default; opacity: 0.78; }
+
+.decision-feedback {
+    padding: 14px 16px;
+    border-left: 3px solid var(--purple);
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--purple) 7%, var(--bg-surface));
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+/* Functional lesson visuals are treated as reference material, not decoration. */
+.lesson-visual {
+    margin: 1.75rem 0;
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    overflow: hidden;
+    background: #101820;
+}
+
+.lesson-visual img { display: block; width: 100%; height: auto; }
+.lesson-visual figcaption {
+    padding: 10px 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    color: #c6d0d9;
+    font-size: 0.82rem;
+    line-height: 1.5;
+}
+
+/* Objective project verification panel. */
+.project-verification {
+    margin: 2.5rem 0 1.5rem;
+    padding: 22px;
+    border: 1px solid color-mix(in srgb, var(--green-bright) 30%, var(--border-default));
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--green-bright) 4%, var(--bg-surface));
+}
+
+.project-verification-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.project-verification h2 { margin: 0; }
+.project-verify-status {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 0.74rem;
+    color: var(--text-secondary);
+}
+.project-verify-status.pass { color: var(--green-bright); }
+.project-verify-status.fail { color: var(--red); }
+.project-verification pre { white-space: pre-wrap; }
+.project-rubric, .project-transfer-tickets { margin-top: 18px; }
+.project-check-output {
+    min-height: 44px;
+    padding: 12px;
+    border-radius: 8px;
+    background: var(--bg-base);
+    color: var(--text-secondary);
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 0.75rem;
+    white-space: pre-wrap;
+}
+
+@media (max-width: 720px) {
+    .decision-option { align-items: flex-start; flex-direction: column; gap: 4px; }
+    .project-verification-head { align-items: flex-start; flex-direction: column; }
+}

@@ -3,6 +3,7 @@
 //
 //   node vibe.js next             what the browser queued up for you
 //   node vibe.js check [dir]      go vet + go test -race on one exercise
+//   node vibe.js project-check ID [dir]  verify a learner project
 //   node vibe.js watch [--port N] serve results to the course pages
 //
 // The browser is the scheduler, the terminal is the workbench:
@@ -27,6 +28,7 @@ const ROOT = __dirname;
 const PRACTICE_DIR = path.resolve(process.env.VIBE_WORKSPACE_DIR || path.join(ROOT, 'practice'));
 const STATE_DIR = path.resolve(process.env.VIBE_STATE_DIR || path.join(ROOT, '.vibe'));
 const RESULTS_FILE = path.join(STATE_DIR, 'results.jsonl');
+const PROJECT_RESULTS_FILE = path.join(STATE_DIR, 'project-results.jsonl');
 const QUEUE_FILE = path.join(STATE_DIR, 'queue.json');
 const CONFIG_FILE = path.join(STATE_DIR, 'config.json');
 const DIST_DIR = path.resolve(process.env.VIBE_ASSETS_DIR || path.join(ROOT, 'dist'));
@@ -34,7 +36,7 @@ const GO_BINARY = process.env.VIBE_GO_BINARY || 'go';
 const GO_RACE = process.env.VIBE_GO_RACE !== '0';
 const PROFILE = process.env.VIBE_PROFILE || 'source';
 const DEFAULT_PORT = 4711;
-const VERSION = '1.0.0';
+const VERSION = '1.1.0';
 
 const MIME = {
     '.html': 'text/html; charset=utf-8',
@@ -66,6 +68,18 @@ function ensureStateDir() {
 function loadResults() {
     try {
         return fs.readFileSync(RESULTS_FILE, 'utf8')
+            .split('\n')
+            .filter(Boolean)
+            .map(line => { try { return JSON.parse(line); } catch { return null; } })
+            .filter(Boolean);
+    } catch {
+        return [];
+    }
+}
+
+function loadProjectResults() {
+    try {
+        return fs.readFileSync(PROJECT_RESULTS_FILE, 'utf8')
             .split('\n')
             .filter(Boolean)
             .map(line => { try { return JSON.parse(line); } catch { return null; } })
@@ -228,6 +242,68 @@ function runCheck(argDir) {
     process.exit(pass ? 0 : 1);
 }
 
+// --- vibe project-check ---
+
+// Project verification is intentionally terminal-initiated. The browser may
+// read results but cannot ask the daemon to execute a command or choose a path.
+// The command set is fixed to Go's static checks and test suite.
+function runProjectCheck(projectId, argDir) {
+    if (!projectId || !/^[a-zA-Z0-9_-]+$/.test(projectId)) {
+        console.error('Project id must contain only letters, numbers, hyphens, or underscores.');
+        console.error('Usage: vibe project-check <project-id> [project-dir]');
+        process.exit(2);
+    }
+
+    const target = path.resolve(argDir || process.cwd());
+    if (!fs.existsSync(path.join(target, 'go.mod'))) {
+        console.error(`No go.mod found in ${target}`);
+        console.error('Run this command from the project root or pass its path.');
+        process.exit(2);
+    }
+
+    const env = {
+        ...process.env,
+        GOTOOLCHAIN: process.env.GOTOOLCHAIN || 'local',
+    };
+    console.log(C.dim(`→ go vet ./...`));
+    const vet = spawnSync(GO_BINARY, ['vet', './...'], {
+        cwd: target, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024, env,
+    });
+    console.log(C.dim(`→ go test -count=1 ./...`));
+    const started = Date.now();
+    const test = spawnSync(GO_BINARY, ['test', '-count=1', './...'], {
+        cwd: target, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024, env,
+    });
+    const elapsedMs = Date.now() - started;
+    const vetOk = vet.status === 0;
+    const testOk = test.status === 0;
+    const record = {
+        projectId,
+        projectName: path.basename(target),
+        pass: vetOk && testOk,
+        vetOk,
+        testOk,
+        vetOutput: vetOk ? undefined : ((vet.stdout || '') + (vet.stderr || '')).trim().slice(0, 4000),
+        testOutput: ((test.stdout || '') + (test.stderr || '')).trim().slice(-6000),
+        elapsedMs,
+        at: Date.now(),
+    };
+    ensureStateDir();
+    fs.appendFileSync(PROJECT_RESULTS_FILE, JSON.stringify(record) + '\n');
+
+    console.log('');
+    console.log(vetOk ? C.green('✓ go vet ./...') : C.red('✗ go vet ./...'));
+    console.log(testOk ? C.green('✓ go test ./...') : C.red('✗ go test ./...'));
+    if (!vetOk && record.vetOutput) console.log(C.dim(record.vetOutput));
+    if (!testOk && record.testOutput) console.log(C.dim(record.testOutput));
+    console.log('');
+    console.log(record.pass
+        ? C.green(C.bold('PROJECT VERIFIED')) + C.dim(` · ${projectId} · ${elapsedMs}ms`)
+        : C.red(C.bold('PROJECT CHECK FAILED')) + C.dim(` · ${projectId}`));
+    console.log(C.dim('result recorded — the project page picks it up while `vibe watch` is running'));
+    process.exit(record.pass ? 0 : 1);
+}
+
 // --- vibe next ---
 
 function runNext() {
@@ -368,6 +444,11 @@ function runWatch(args) {
             const since = parseInt(url.searchParams.get('since') || '0', 10);
             const results = loadResults().filter(r => r.at > since);
             json(200, { now: Date.now(), results });
+        } else if (req.method === 'GET' && url.pathname === '/project-results') {
+            const since = parseInt(url.searchParams.get('since') || '0', 10);
+            const projectId = String(url.searchParams.get('project') || '');
+            const results = loadProjectResults().filter(r => r.at > since && (!projectId || r.projectId === projectId));
+            json(200, { now: Date.now(), results });
         } else if (req.method === 'GET' && url.pathname === '/queue') {
             let queued = null;
             try { queued = JSON.parse(fs.readFileSync(QUEUE_FILE, 'utf8')); } catch {}
@@ -489,6 +570,7 @@ function startFileWatcher() {
 const [, , cmd, ...rest] = process.argv;
 switch (cmd) {
     case 'check': runCheck(rest[0]); break;
+    case 'project-check': runProjectCheck(rest[0], rest[1]); break;
     case 'next': runNext(); break;
     case 'watch': runWatch(rest); break;
     default:
@@ -496,6 +578,7 @@ switch (cmd) {
         console.log('');
         console.log('  vibe next             show the exercise the course page queued');
         console.log('  vibe check [dir]      run go vet + go test -race, record the result');
+        console.log('  vibe project-check ID [dir]  run go vet + go test for a project');
         console.log('  vibe watch            relay results to the course page (127.0.0.1)');
         process.exit(cmd ? 2 : 0);
 }

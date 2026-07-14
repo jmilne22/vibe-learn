@@ -27,11 +27,12 @@
         try { plan = JSON.parse(sessionStorage.getItem('vibe-learn:session-plan') || 'null'); } catch (e) {}
         if (!plan) return;
         var html = '';
-        if (plan.gate && plan.gate.modules && plan.gate.modules.length) {
-            var worst = plan.gate.modules[0];
-            html += '<span class="session-continue-link" style="color:var(--text-tertiary)"><span class="segment-dot" style="background:var(--red)"></span>' +
-                'New material locked — Module ' + worst.moduleNum + ' recall ' + Math.round(worst.recall * 100) + '%, unlocks at 70%</span>';
-        } else if (plan.learn) {
+        if (plan.refresh && plan.refresh.modules && plan.refresh.modules.length) {
+            var priority = plan.refresh.modules[0];
+            html += '<span class="session-continue-link" style="color:var(--text-tertiary)"><span class="segment-dot" style="background:var(--orange)"></span>' +
+                'Refresh queued — Module ' + priority.moduleNum + ' · ' + SE.escapeHtml(priority.band.label) + '. Your path stays open.</span>';
+        }
+        if (plan.learn) {
             html += '<a class="session-continue-link" href="' + plan.learn.href + '"><span class="segment-dot" style="background:var(--cyan)"></span>Learn — ' + SE.escapeHtml(plan.learn.label) + '</a>';
         }
         if (plan.build) {
@@ -228,6 +229,10 @@
     }
 
     function doStartSession() {
+        if (sessionConfig.mode === 'decisions') {
+            startDecisionSession();
+            return;
+        }
         if (sessionConfig.mode === 'discover') {
             startDiscoverSession();
             return;
@@ -260,6 +265,7 @@
         pretest: 'var(--purple)',
         learn: 'var(--cyan)',
         review: 'var(--orange)',
+        decision: 'var(--purple)',
         build: 'var(--green-bright)'
     };
 
@@ -275,29 +281,44 @@
             .filter(function(p) {
                 return p.moduleId === plan.learn.moduleId && !answered[p.id];
             })
-            .slice(0, 3)
+            .slice(0, plan.allocation ? plan.allocation.pretestCount : 1)
             .map(function(p) { return { phase: 'pretest', predict: p }; });
     }
 
     function doStartTodaySession() {
         var plan = loadSessionPlan();
-        var gated = !!(plan && plan.gate && plan.gate.modules && plan.gate.modules.length);
+        if (!plan) plan = {};
+        if (!Array.isArray(plan.decisionModules)) {
+            var reached = 0;
+            try {
+                var lastKey = window.CourseConfigHelper ? window.CourseConfigHelper.storageKey('last-module') : 'go-course-last-module';
+                reached = parseInt(localStorage.getItem(lastKey) || '0', 10) || 0;
+            } catch (e) {}
+            plan.decisionModules = [];
+            (window.DecisionSets || []).forEach(function(d) {
+                var moduleId = parseInt(d.moduleId, 10);
+                if (moduleId <= reached && plan.decisionModules.indexOf(moduleId) === -1) plan.decisionModules.push(moduleId);
+            });
+        }
+        var allocation = plan.allocation || (window.SessionComposer
+            ? window.SessionComposer.allocate({ budget: 15, hasLearn: !!plan.learn, hasBuild: !!plan.build, hasDecision: plan.decisionModules.length > 0, dueCount: window.SRS ? window.SRS.getDueCount() : 0, trackedCount: window.SRS ? Object.keys(window.SRS.getAll()).length : 0 })
+            : { pretestCount: 1, learnCount: 1, reviewCount: 3, decisionCount: 0, buildCount: 1, estimatedMinutes: 15 });
 
-        var reviews = buildQueue('review', 8);
-        if (reviews.length === 0 && !gated) reviews = buildQueue('mixed', 8);
+        var reviews = buildQueue('review', allocation.reviewCount);
+        if (reviews.length === 0) reviews = buildQueue('mixed', allocation.reviewCount);
         reviews.forEach(function(r) { r.phase = 'review'; });
 
-        // Mastery gate: pull the fading prerequisite module's weakest items
-        // to the front of the review segment, even if not strictly due.
-        if (gated && window.SRS && window.SRS.getLowestRecall) {
+        // A prerequisite refresh can lead the bounded review segment, but it
+        // never removes pretest/learn or grows the session beyond allocation.
+        if (plan.refresh && plan.refresh.modules && window.SRS && window.SRS.getLowestRecall) {
             var inQueue = {};
             reviews.forEach(function(r) { inQueue[r.key] = true; });
-            var gateItems = [];
-            plan.gate.modules.forEach(function(g) {
-                window.SRS.getLowestRecall(g.moduleNum, 4).forEach(function(entry) {
+            var refreshItems = [];
+            plan.refresh.modules.forEach(function(g) {
+                window.SRS.getLowestRecall(g.moduleNum, 2).forEach(function(entry) {
                     if (inQueue[entry.key] || !matchesFilters(entry.key)) return;
                     inQueue[entry.key] = true;
-                    gateItems.push({
+                    refreshItems.push({
                         key: entry.key,
                         phase: 'review',
                         moduleNum: g.moduleNum,
@@ -306,14 +327,14 @@
                     });
                 });
             });
-            reviews = interleaveByModule(gateItems.concat(reviews));
+            reviews = interleaveByModule(refreshItems.concat(reviews)).slice(0, allocation.reviewCount);
         }
 
-        // New material stays locked while a prerequisite is below the gate
-        var queue = gated ? [] : buildPretestItems(plan);
-        if (plan && plan.learn && !gated) queue.push({ phase: 'learn', target: plan.learn });
+        var queue = buildPretestItems(plan);
+        if (plan.learn && allocation.learnCount) queue.push({ phase: 'learn', target: plan.learn });
         queue = queue.concat(reviews);
-        if (plan && plan.build) queue.push({ phase: 'build', target: plan.build });
+        if (allocation.decisionCount) queue = queue.concat(buildDecisionQueue(allocation.decisionCount, plan.decisionModules));
+        if (plan.build && allocation.buildCount) queue.push({ phase: 'build', target: plan.build });
 
         if (queue.length === 0) {
             var hintEl = document.getElementById('dp-start-hint');
@@ -324,11 +345,7 @@
             return;
         }
 
-        var pretests = queue.filter(function(q) { return q.phase === 'pretest'; }).length;
-        var totalMin = pretests * 1 +
-            (plan && plan.learn && !gated ? 9 : 0) +
-            Math.ceil(reviews.length * 1.25) +
-            (plan && plan.build ? 3 : 0);
+        var totalMin = allocation.estimatedMinutes || 15;
 
         try {
             var sck = window.CourseConfigHelper ? window.CourseConfigHelper.storageKey('session-count') : 'course-session-count';
@@ -420,6 +437,90 @@
                 'Even one small step counts.</p>' +
                 '<a class="session-next-btn phase-open-link" href="' + escapeAttr(item.target.href) + '" target="_blank" rel="noopener">Open the project \u2197</a>' +
             '</div>';
+    }
+
+    function decisionCandidates(allowedModules) {
+        var decisions = (window.DecisionSets || []).filter(function(d) {
+            if (allowedModules && allowedModules.length && allowedModules.indexOf(parseInt(d.moduleId, 10)) === -1) return false;
+            if (sessionConfig.modules === 'all') return true;
+            return sessionConfig.modules.indexOf(parseInt(d.moduleId, 10)) !== -1;
+        }).slice();
+        decisions.sort(function(a, b) {
+            var aa = window.LearningMetrics ? window.LearningMetrics.lastDecisionAt(a.id) : 0;
+            var bb = window.LearningMetrics ? window.LearningMetrics.lastDecisionAt(b.id) : 0;
+            if (aa !== bb) return aa - bb;
+            return Math.random() - 0.5;
+        });
+        return decisions;
+    }
+
+    function buildDecisionQueue(count, allowedModules) {
+        return decisionCandidates(allowedModules).slice(0, count || 1).map(function(decision) {
+            return {
+                key: 'decision_' + decision.id,
+                phase: 'decision',
+                moduleNum: decision.moduleId,
+                moduleName: 'Decision mix',
+                decision: decision
+            };
+        });
+    }
+
+    function startDecisionSession() {
+        var queue = buildDecisionQueue(sessionConfig.count);
+        if (!queue.length) {
+            var hintEl = document.getElementById('dp-start-hint');
+            if (hintEl) {
+                hintEl.textContent = 'No decision sets match these modules yet. Try All modules or another practice mode.';
+                hintEl.style.display = '';
+            }
+            return;
+        }
+        var title = document.getElementById('dp-title');
+        var desc = document.getElementById('dp-description');
+        if (title) title.textContent = 'Decision mix';
+        if (desc) desc.textContent = 'Choose the mechanism from the situation alone. The concept label and explanation appear only after you commit.';
+        startWithQueue(queue, { itemLabel: 'Decision' });
+    }
+
+    function renderDecisionCard(container, item) {
+        setVibeMode(true);
+        setNextLocked(true, 'Choose an answer to continue');
+        var d = item.decision;
+        var optionList = (d.options || []).slice();
+        SE.shuffle(optionList);
+        var options = optionList.map(function(opt) {
+            return '<button type="button" class="decision-option" data-choice="' + escapeAttr(opt.id) + '">' +
+                '<strong>' + SE.escapeHtml(opt.label) + '</strong>' +
+                (opt.description ? '<span>' + SE.escapeHtml(opt.description) + '</span>' : '') +
+                '</button>';
+        }).join('');
+        container.innerHTML =
+            '<div class="exercise phase-card decision-card">' +
+                '<div class="vibe-card-tag" style="color:var(--purple)">Decision mix · labels withheld until you commit</div>' +
+                '<h4>' + SE.escapeHtml(d.prompt) + '</h4>' +
+                '<div class="decision-options">' + options + '</div>' +
+                '<div class="decision-feedback" hidden></div>' +
+            '</div>';
+
+        container.querySelectorAll('.decision-option').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                if (container.querySelector('.decision-option.answered')) return;
+                var selected = btn.getAttribute('data-choice');
+                var correct = selected === d.answer;
+                container.querySelectorAll('.decision-option').forEach(function(other) {
+                    other.classList.add('answered');
+                    other.disabled = true;
+                    if (other.getAttribute('data-choice') === d.answer) other.classList.add('correct');
+                });
+                if (!correct) btn.classList.add('incorrect');
+                var feedback = container.querySelector('.decision-feedback');
+                feedback.hidden = false;
+                feedback.innerHTML = '<strong>' + (correct ? 'Good choice.' : 'Not this time.') + '</strong> ' + SE.escapeHtml(d.explanation || '');
+                if (window.LearningMetrics) window.LearningMetrics.recordDecision(d, selected, correct);
+                setNextLocked(false);
+            });
+        });
     }
 
     function startDiscoverSession() {
@@ -628,6 +729,7 @@
         // Phase cards (today's session runner)
         if (item.phase === 'pretest') { renderPretestCard(container, item); return; }
         if (item.phase === 'learn') { renderLearnCard(container, item); return; }
+        if (item.phase === 'decision') { renderDecisionCard(container, item); return; }
         if (item.phase === 'build') { renderBuildCard(container, item); return; }
 
         // Local-first: this exercise has a go-test workspace — the terminal
@@ -798,7 +900,7 @@
     function schedulerRailHtml(item, baseKey) {
         if (!window.SRS) return '';
         var entry = window.SRS.getAll()[baseKey];
-        var recall = window.SRS.getRetrievability ? window.SRS.getRetrievability(baseKey) : null;
+        var masteryBand = window.SRS.getItemMasteryBand ? window.SRS.getItemMasteryBand(baseKey) : null;
         railPre = { key: baseKey, stability: entry ? entry.stability : null };
 
         var concept = window.ConceptIndex && window.ConceptIndex[baseKey];
@@ -853,9 +955,9 @@
         return '<div class="vibe-rail">' +
             '<div class="rail-panel">' +
                 '<div class="rail-kicker">Scheduler · this item</div>' +
-                row('Predicted recall', recall === null ? '—' : Math.round(recall * 100) + '%', null, 'var(--orange)') +
+                row('Evidence state', masteryBand ? masteryBand.label : 'Insufficient evidence', null, masteryBand ? masteryBand.color : 'var(--text-secondary)') +
+                row('Evidence', masteryBand && masteryBand.objectiveCount ? masteryBand.objectiveCount + ' objective run' + (masteryBand.objectiveCount === 1 ? '' : 's') : 'self-review only', null) +
                 row('Outcome', 'waiting…', 'rail-outcome') +
-                row('Stability', entry && entry.stability ? entry.stability + 'd' : '—', 'rail-stability') +
                 row('Next review', entry && entry.interval ? 'was ' + entry.interval + 'd' : '—', 'rail-next') +
                 '<p class="rail-footnote">Graded by the test run, not self-rating. One optional dial:</p>' +
                 '<button type="button" class="vibe-hint-btn rail-harder" id="rail-harder" hidden>felt harder than it looks</button>' +
@@ -918,11 +1020,11 @@
 
     // Watch mode: on workspace-backed cards "next" stays locked until the
     // tests go green — the run is the rating. Skip stays available.
-    function setNextLocked(locked) {
+    function setNextLocked(locked, lockedLabel) {
         var btn = document.getElementById('dp-next');
         if (!btn) return;
         btn.disabled = locked;
-        btn.innerHTML = locked ? '🔒 Next — unlocks on green' : 'Next →';
+        btn.innerHTML = locked ? '🔒 ' + (lockedLabel || 'Next — unlocks on green') : 'Next →';
     }
 
     function renderVibeCard(container, item, vd) {
@@ -939,7 +1041,7 @@
         var workspace = wsParts ? 'm' + wsParts[1] + '_' + wsParts[2] : baseKey;
         var displayDir = window.VibeBridge ? window.VibeBridge.displayPath(wsDir) : wsDir;
 
-        var recall = window.SRS && window.SRS.getRetrievability ? window.SRS.getRetrievability(baseKey) : null;
+        var masteryBand = window.SRS && window.SRS.getItemMasteryBand ? window.SRS.getItemMasteryBand(baseKey) : null;
 
         var hintsHtml = '';
         if (variant.hints && variant.hints.length) {
@@ -968,7 +1070,7 @@
                         return '<span class="vibe-card-stars" title="difficulty ' + d + '/3">' +
                             '★★★'.slice(0, d) + '☆☆☆'.slice(0, 3 - d) + '</span>';
                     })() +
-                    (recall !== null ? '<span class="vibe-card-recall">predicted recall <strong>' + Math.round(recall * 100) + '%</strong></span>' : '') +
+                    (masteryBand ? '<span class="vibe-card-recall">evidence <strong style="color:' + masteryBand.color + '">' + SE.escapeHtml(masteryBand.shortLabel.toLowerCase()) + '</strong></span>' : '') +
                     '<span class="run-status fail" id="vibe-run-status">● not passing</span>' +
                 '</div>' +
                 '<h4>' + SE.escapeHtml(variant.title || baseKey) + '</h4>' +

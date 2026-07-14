@@ -4,6 +4,25 @@ conceptLinks:
   Middleware: middleware-pattern
   Health Endpoints: health-and-readiness-endpoints
 sharedContent: {}
+decisionSets:
+  - id: health-process-alive
+    family: service-health-signals
+    prompt: An orchestrator should restart the process only when its event loop is stuck, not when a database is temporarily unavailable. Which endpoint should drive restarts?
+    options:
+      - { id: liveness, label: Liveness, description: Report whether the process itself can make progress. }
+      - { id: readiness, label: Readiness, description: Report whether the instance should receive traffic. }
+      - { id: metrics, label: Metrics, description: Export measurements for observation. }
+    answer: liveness
+    explanation: Liveness should test the process itself. Including transient dependencies can create restart storms when the dependency is already unhealthy.
+  - id: health-remove-from-traffic
+    family: service-health-signals
+    prompt: A server is alive but has lost the configuration required to answer requests safely. Which endpoint should fail so traffic stops without restarting the process?
+    options:
+      - { id: readiness, label: Readiness, description: Remove an instance from service while it recovers. }
+      - { id: liveness, label: Liveness, description: Ask the orchestrator to restart the process. }
+      - { id: debug, label: Debug endpoint, description: Expose internal diagnostic state. }
+    answer: readiness
+    explanation: Readiness controls traffic eligibility. The process can stay alive, reload configuration, and become ready again without a restart.
 variants:
   warmups:
     - id: warmup_1
@@ -192,6 +211,9 @@ variants:
       block: 1
       difficulty: 1
       concept: Health Endpoints
+      decisionFamily: service-health-signals
+      strategy: liveness-readiness
+      confusableWith: [metrics, debug-endpoint]
       variants:
         - id: v1
           title: Simple Health Check

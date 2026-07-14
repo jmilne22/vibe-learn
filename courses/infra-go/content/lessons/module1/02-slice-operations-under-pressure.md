@@ -23,6 +23,11 @@ Wrong is fine — you'll hit exactly this in the worked example below.
 
 A slice is a view over an array: pointer, length, capacity. Think of it like a window over a bookshelf — the pointer says which shelf, the length says how many books are visible through the window, and the capacity says how many the shelf can hold before you need a bigger one. What you need to drill is *using* slices without thinking.
 
+<figure class="lesson-visual">
+  <img src="slice-backing-array.svg" alt="Two slices sharing a backing array, showing that changing a subslice changes the original slice">
+  <figcaption>Predict before tracing the arrow: after <code>t := s[1:3]</code> and <code>t[0] = "queue"</code>, what does <code>s[1]</code> contain? Both slices still point into the same backing array.</figcaption>
+</figure>
+
 *Quick reference*
 
 ```go

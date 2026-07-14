@@ -2,6 +2,11 @@
 
 DNS is the protocol every infra person should understand at the byte level.
 
+<figure class="lesson-visual">
+  <img src="dns-packet-layout.svg" alt="DNS query packet with a 12-byte header and length-prefixed question name">
+  <figcaption>Use the offsets as a parsing checklist: validate the fixed header first, then bounds-check every variable-length label before slicing the packet.</figcaption>
+</figure>
+
 <attempt type="pretest">
 
 <predict prompt="This mimics how DNS puts a name on the wire. What does it print?">

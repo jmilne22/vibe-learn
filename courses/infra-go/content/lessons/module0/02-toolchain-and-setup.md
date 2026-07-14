@@ -7,7 +7,7 @@ Install Go, lay out a project, and wire your editor. Quick reference for everyth
 Install from [go.dev/dl](https://go.dev/dl/) or your package manager. Verify:
 
 ```bash
-go version    # go1.22+ recommended
+go version    # go1.26 recommended; go1.22 is the course minimum
 which go      # should be in $PATH
 ```
 

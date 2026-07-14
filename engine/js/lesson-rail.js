@@ -2,8 +2,7 @@
  * Lesson rail — design-1d right rail on lesson/section pages.
  *
  * Panels:
- *   1. "This concept in your memory" — per-concept exposure, predicted
- *      recall, and next touch, aggregated from FSRS entries.
+ *   1. "This concept in your memory" — evidence band and next touch.
  *   2. "Prerequisites" — weakest concepts from earlier modules with
  *      recall bars.
  *   3. "Reference" — press `r` for the quick-reference module.
@@ -22,32 +21,35 @@
         });
     }
 
-    function recallColor(r) {
-        if (r >= 0.85) return 'var(--green-bright)';
-        if (r >= 0.7) return 'var(--orange)';
-        return 'var(--red)';
+    function combinedBand(bands) {
+        var order = ['needs-practice', 'refresh', 'learning', 'ready', 'strong'];
+        for (var i = 0; i < order.length; i++) {
+            for (var j = 0; j < bands.length; j++) {
+                if (bands[j].id === order[i]) return bands[j];
+            }
+        }
+        return bands[0] || { label: 'Insufficient evidence', color: 'var(--text-secondary)' };
     }
 
     function conceptStats(concept, moduleId) {
         if (!window.SRS || !window.ConceptIndex) return null;
         var all = window.SRS.getAll();
         var prefix = 'm' + moduleId + '_';
-        var count = 0, reviews = 0, recallSum = 0, nextMs = null;
+        var count = 0, reviews = 0, nextMs = null, bands = [];
         for (var key in all) {
             if (key.indexOf(prefix) !== 0) continue;
             if (window.ConceptIndex[key] !== concept) continue;
             var entry = all[key];
             count++;
             reviews += entry.reviewCount || 0;
-            var r = window.SRS.getRetrievability(key);
-            if (r !== null) recallSum += r;
+            if (window.SRS.getItemMasteryBand) bands.push(window.SRS.getItemMasteryBand(key));
             if (entry.nextReview) {
                 var t = new Date(entry.nextReview).getTime();
                 if (nextMs === null || t < nextMs) nextMs = t;
             }
         }
         if (count === 0) return null;
-        return { count: count, reviews: reviews, recall: recallSum / count, nextMs: nextMs };
+        return { count: count, reviews: reviews, band: combinedBand(bands), nextMs: nextMs };
     }
 
     function fmtNext(nextMs) {
@@ -75,7 +77,7 @@
             if (s) {
                 memRows +=
                     '<div class="rail-row"><span>' + esc(concept) + '</span>' +
-                    '<strong style="color:' + recallColor(s.recall) + '">' + Math.round(s.recall * 100) + '%</strong></div>' +
+                    '<strong style="color:' + s.band.color + '">' + esc(s.band.shortLabel || s.band.label) + '</strong></div>' +
                     '<div class="rail-row rail-row-sub"><span>' + s.reviews + ' review' + (s.reviews === 1 ? '' : 's') +
                     '</span><strong>' + fmtNext(s.nextMs) + '</strong></div>';
             } else {
@@ -98,11 +100,11 @@
             }).slice(0, 3);
             if (prereqs.length > 0) {
                 var rows = prereqs.map(function(p) {
-                    var pct = Math.round(p.recall * 100);
+                    var label = p.recall < 0.7 ? 'Refresh soon' : 'Ready';
+                    var color = p.recall < 0.7 ? 'var(--orange)' : 'var(--cyan)';
                     return '<div class="fading-row">' +
                         '<span class="fading-name">' + esc(p.concept) + '</span>' +
-                        '<span class="fading-track"><span class="fading-fill" style="width:' + pct + '%;background:' + recallColor(p.recall) + '"></span></span>' +
-                        '<span class="fading-pct" style="color:' + recallColor(p.recall) + '">' + pct + '%</span>' +
+                        '<span class="memory-band" style="color:' + color + '">' + label + '</span>' +
                         '</div>';
                 }).join('');
                 prereqPanel = '<div class="rail-panel"><div class="rail-kicker">Prerequisites</div>' + rows + '</div>';

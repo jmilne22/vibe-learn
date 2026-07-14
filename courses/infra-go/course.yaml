@@ -69,6 +69,15 @@ projects:
     file: project-config-linter
     afterModule: 4
     description: "Build a CLI that reads K8s YAML, validates against rules, and reports violations. Built via the Build sections closing Modules 1-4; this page is the full spec and ship point."
+    verification:
+      rubric:
+        - "All six rules have table-driven tests with valid, invalid, and malformed fixtures."
+        - "Exit codes distinguish clean input, violations, and operational failure."
+        - "Wrapped errors retain filenames and underlying causes for errors.Is/errors.As."
+        - "The README demonstrates installation, usage, output, and test commands."
+      delayedTickets:
+        - "Add a seventh rule requested by a user without changing the existing rule loop."
+        - "Diagnose why a multi-document YAML file silently skips its second document, then add a regression test."
 
   - id: p2
     num: P2
@@ -76,6 +85,15 @@ projects:
     file: project-cloud-reporter
     afterModule: 5
     description: "Query cloud APIs, aggregate resource data, output formatted reports. Built via the Build sections closing Modules 5-7; this page is the full spec and ship point."
+    verification:
+      rubric:
+        - "HTTP behavior is tested with httptest rather than a live third-party API."
+        - "Cancellation, pagination, non-2xx responses, and malformed JSON have tests."
+        - "Concurrency is bounded and passes the race detector."
+        - "Output is deterministic despite concurrent fetching."
+      delayedTickets:
+        - "Add retry-after handling for 429 responses without duplicating completed pages."
+        - "Investigate and fix a goroutine leak when one page returns malformed JSON."
 
   - id: p3
     num: P3
@@ -83,6 +101,15 @@ projects:
     file: project-dns-server
     afterModule: 9
     description: "Build a DNS server from scratch. Parse binary DNS packets, resolve queries, handle concurrent requests. Built via the Build sections closing Modules 8-9; this page is the full spec and ship point."
+    verification:
+      rubric:
+        - "Packet parsing rejects truncated labels, invalid offsets, and compression loops safely."
+        - "A, AAAA, CNAME, MX, and TXT responses have fixture-based tests."
+        - "The server handles concurrent UDP requests without races."
+        - "UDP truncation and TCP fallback behavior are documented and tested."
+      delayedTickets:
+        - "Add a cache with TTL expiry and prove expired records are not served."
+        - "Debug a packet whose compression pointer creates a cycle without hanging the server."
 
   - id: p4
     num: P4
@@ -90,6 +117,15 @@ projects:
     file: project-container-runtime
     afterModule: 10
     description: "Build a minimal container runtime using Linux namespaces and cgroups. Run isolated processes with resource limits. Applies Module 10."
+    verification:
+      rubric:
+        - "Pure path, mount-plan, and cgroup configuration logic has unprivileged unit tests."
+        - "Privileged integration checks are isolated to a disposable Linux VM."
+        - "Cleanup runs on success, error, signal, and child-process failure."
+        - "Safety limitations are explicit in the README."
+      delayedTickets:
+        - "Inject a child-process failure and prove mounts and cgroup directories are still removed."
+        - "Add a pids.max option without widening the privileged code path."
 
   - id: p5
     num: P5
@@ -97,6 +133,15 @@ projects:
     file: project-k8s-operator
     afterModule: 11
     description: "Build a Kubernetes operator that watches a custom resource and reconciles desired state. Applies Module 11."
+    verification:
+      rubric:
+        - "Reconciliation is idempotent and tested with the fake client."
+        - "Owned resources, status updates, retries, and deletion paths have tests."
+        - "Transient errors requeue safely without hot-looping."
+        - "The controller requires no live cluster for its unit test suite."
+      delayedTickets:
+        - "Handle manual deletion of a child Deployment and prove the next reconcile recreates it."
+        - "Add a finalizer that cleans an external resource and remains safe across retries."
 
 annotationTypes:
   idiom: { icon: "Go", cssClass: ann-idiom }

@@ -164,6 +164,42 @@
         }
     }
 
+    function initProgressiveRail(shell, active) {
+        var tracked = 0;
+        try {
+            tracked = window.SRS && window.SRS.getAll ? Object.keys(window.SRS.getAll()).filter(function(key) {
+                return key.indexOf('fc_') !== 0;
+            }).length : 0;
+        } catch (e) {}
+
+        var metrics = window.LearningMetrics && window.LearningMetrics.summary
+            ? window.LearningMetrics.summary()
+            : { events: 0, objectiveRuns: 0 };
+        var lastModule = 0;
+        try {
+            var lastKey = window.CourseConfigHelper
+                ? window.CourseConfigHelper.storageKey('last-module')
+                : 'go-course-last-module';
+            lastModule = parseInt(localStorage.getItem(lastKey) || '0', 10) || 0;
+        } catch (e) {}
+
+        shell.querySelectorAll('.app-side a[data-progressive]').forEach(function(link) {
+            var rule = link.dataset.progressive;
+            var show = link.dataset.rail === active;
+            if (rule === 'memory') show = show || tracked >= 3;
+            else if (rule === 'activity') show = show || tracked >= 5 || metrics.objectiveRuns >= 3;
+            else if (rule === 'flashcards') {
+                var coverage = (window.CourseConfig && window.CourseConfig.flashcardModules) || [];
+                var firstLearningModule = coverage.filter(function(n) { return n > 0; })[0];
+                show = show || tracked > 0 || (firstLearningModule !== undefined && lastModule >= firstLearningModule);
+                if (coverage.length) link.title = 'Cards currently available for Module' + (coverage.length === 1 ? ' ' : 's ') + coverage.join(', ');
+            } else if (rule.indexOf('module:') === 0) {
+                show = show || lastModule >= parseInt(rule.split(':')[1], 10);
+            }
+            link.hidden = !show;
+        });
+    }
+
     function init() {
         var shell = document.querySelector('.app-body');
         if (!shell) return;
@@ -179,6 +215,8 @@
                 link.setAttribute('aria-current', 'page');
             }
         }
+
+        initProgressiveRail(shell, active);
 
         initCourseSwitcher();
         initWindowControls();

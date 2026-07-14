@@ -159,6 +159,13 @@
      */
     function announce(item) {
         currentItem = item;
+        if (window.LearningMetrics) {
+            window.LearningMetrics.startAttempt({
+                key: item.key,
+                variantKey: item.variantKey || item.key,
+                source: 'scheduled-practice'
+            });
+        }
         if (!online) return Promise.resolve(false);
         return fetchJson('/queue', {
             method: 'POST',
@@ -197,9 +204,20 @@
     function handleResult(result) {
         var quality = qualityFromResult(result);
         var srsKey = result.key; // vibe already strips variant suffixes into .key
+        var evidenceContext = {
+            source: 'objective',
+            pass: !!result.pass,
+            variantKey: result.variantKey || result.key,
+            assist: assists[result.key] || null,
+            sessionFailures: sessionFails[result.key] || 0,
+            at: result.at || Date.now()
+        };
 
         if (window.SRS) {
-            window.SRS.recordReview(srsKey, quality, currentItem && currentItem.title);
+            window.SRS.recordReview(srsKey, quality, currentItem && currentItem.title, evidenceContext);
+        }
+        if (window.LearningMetrics) {
+            window.LearningMetrics.recordObjective(result, evidenceContext);
         }
         if (window.ExerciseProgress && result.pass) {
             var progressKey = result.variantKey || srsKey;
@@ -214,6 +232,20 @@
         window.dispatchEvent(new CustomEvent('vibeResult', {
             detail: { result: result, quality: quality }
         }));
+
+        // A green run closes this attempt. The next variant starts with a
+        // clean assist/failure context even when it shares the same base key.
+        if (result.pass) {
+            delete assists[result.key];
+            delete sessionFails[result.key];
+        }
+    }
+
+    function getProjectResults(projectId, since) {
+        if (!online) return Promise.resolve({ now: Date.now(), results: [] });
+        var path = '/project-results?project=' + encodeURIComponent(projectId || '') +
+            '&since=' + encodeURIComponent(since || 0);
+        return fetchJson(path, null, 2500);
     }
 
     function pollOnce() {
@@ -364,6 +396,7 @@
         resolveWorkspace: resolveWorkspace,
         announce: announce,
         markAssist: markAssist,
+        getProjectResults: getProjectResults,
         startPolling: startPolling,
         stopPolling: stopPolling,
         port: PORT

@@ -858,6 +858,23 @@ function buildCourse(slug) {
             });
     }
 
+    // Flashcard coverage is useful to the runtime even before the plugin
+    // page loads, so the rail can disclose the feature honestly.
+    let flashcardModules = [];
+    const flashcardSource = path.join(CONTENT_DIR, 'flashcards', 'flashcards.yaml');
+    if (fs.existsSync(flashcardSource)) {
+        try {
+            const parsedFlashcards = yaml.load(fs.readFileSync(flashcardSource, 'utf8')) || {};
+            flashcardModules = Object.keys(parsedFlashcards)
+                .filter(key => Array.isArray(parsedFlashcards[key]) && parsedFlashcards[key].length > 0)
+                .map(key => parseInt(key, 10))
+                .filter(Number.isFinite)
+                .sort((a, b) => a - b);
+        } catch (e) {
+            console.warn('  Could not read flashcard coverage:', e.message);
+        }
+    }
+
     // 5. course-data.js is generated after module pages (step 7) since
     // sidebarPages is populated dynamically during module generation.
 
@@ -924,17 +941,25 @@ function buildCourse(slug) {
     function buildRailLinks() {
         const mod0 = modules.find(m => m.id === 0);
         const refHref = mod0 ? (mod0.isSplit ? 'module0-1.html' : 'module0.html') : null;
-        const link = (key, icon, label, href) =>
-            `            <a class="app-navi" data-rail="${key}" href="${href}"><span class="ic" aria-hidden="true">${icon}</span>${label}</a>\n`;
+        const link = (key, icon, label, href, progressive, meta) =>
+            `            <a class="app-navi" data-rail="${key}"${progressive ? ` data-progressive="${progressive}"` : ''} href="${href}"><span class="ic" aria-hidden="true">${icon}</span>${label}${meta ? `<span class="rail-meta">${meta}</span>` : ''}</a>\n`;
         let html = '';
         html += link('today', '▸', 'Today', 'index.html');
         html += link('path', '≡', 'The path', 'index.html#learning-path');
-        html += link('memory', '◈', 'Memory', 'index.html#memory');
+        html += link('memory', '◈', 'Memory', 'index.html#memory', 'memory');
         [...activePlugins]
             .sort((a, b) => (a.sidebarOrder || 99) - (b.sidebarOrder || 99))
             .forEach(p => {
                 const meta = RAIL_PLUGIN_META[p.name] || { icon: '▪', label: p.label };
-                html += link(p.name, meta.icon, meta.label, p.name + '.html');
+                let progressive = null;
+                let coverage = null;
+                if (p.name === 'analytics') progressive = 'activity';
+                if (p.name === 'flashcards') {
+                    progressive = 'flashcards';
+                    if (flashcardModules.length) coverage = 'M' + flashcardModules.join('·');
+                }
+                if (p.name === 'algorithms') progressive = 'module:12';
+                html += link(p.name, meta.icon, meta.label, p.name + '.html', progressive, coverage);
             });
         html += '            <div class="app-sec">Course</div>\n';
         if (refHref) html += link('reference', '§', 'Reference', refHref);
@@ -1214,6 +1239,7 @@ function buildCourse(slug) {
         sidebarPages: sidebarPages,
         plugins: pluginsConfig,
         moduleExerciseCounts: moduleExerciseCounts,
+        flashcardModules: flashcardModules,
         nextModuleHrefs: nextModuleHrefs
     };
 
@@ -1224,6 +1250,38 @@ function buildCourse(slug) {
 
     // 8. Generate project HTML pages
     console.log('Generating project pages...');
+
+    function escapeProjectHtml(value) {
+        return String(value == null ? '' : value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function buildProjectVerification(proj) {
+        const verification = proj.verification || {};
+        const rubric = Array.isArray(verification.rubric) ? verification.rubric : [
+            'The public test suite covers the project\'s promised behavior.',
+            'Errors preserve actionable context and are handled at the right layer.',
+            'The README contains reproducible build, run, and test commands.'
+        ];
+        const tickets = Array.isArray(verification.delayedTickets) ? verification.delayedTickets : [];
+        const command = `node vibe.js project-check ${proj.id} "/path/to/${proj.file.replace(/^project-/, '')}"`;
+        return `
+        <section class="project-verification" id="project-verification" data-project-id="${escapeProjectHtml(proj.id)}">
+            <div class="project-verification-head">
+                <div><div class="section-kicker">Objective checkpoint</div><h2>Verify the project</h2></div>
+                <span class="project-verify-status" id="project-verify-status">not checked yet</span>
+            </div>
+            <p>Run this from the course repository. The command executes a fixed <code>go vet ./...</code> and <code>go test -count=1 ./...</code> inside your project; the browser can read the result but cannot execute commands.</p>
+            <pre>${escapeProjectHtml(command)}</pre>
+            <div class="project-check-output" id="project-check-output">Start <code>node vibe.js watch</code>, then run the checkpoint command.</div>
+            <div class="project-rubric"><h3>Engineering rubric</h3><ul>${rubric.map(item => `<li>${escapeProjectHtml(item)}</li>`).join('')}</ul></div>
+            ${tickets.length ? `<div class="project-transfer-tickets"><h3>Delayed production tickets</h3><p>Return to one of these after at least a day, without reopening the implementation lesson first.</p><ol>${tickets.map(item => `<li>${escapeProjectHtml(item)}</li>`).join('')}</ol></div>` : ''}
+        </section>`;
+    }
+
     projects.forEach(proj => {
         const mdFile = path.join(LESSONS_DIR, proj.file + '.md');
         if (!fs.existsSync(mdFile)) {
@@ -1240,8 +1298,10 @@ function buildCourse(slug) {
         let page = projectTemplate
             .replace(/\{\{COURSE_NAME\}\}/g, course.name)
             .replace(/\{\{TITLE\}\}/g, proj.title)
+            .replace(/\{\{PROJECT_ID\}\}/g, proj.id)
             .replace(/\{\{MODULE_DESC\}\}/g, proj.description)
             .replace('{{LESSON_CONTENT}}', () => htmlContent)
+            .replace('{{PROJECT_VERIFICATION}}', () => buildProjectVerification(proj))
             .replace('{{THEME_LINKS}}', () => themeLinksHtml)
             .replace('{{NAV_BUTTONS}}', () => buildNavButtons(currentFile));
 
@@ -1309,7 +1369,7 @@ function buildCourse(slug) {
             html += `                        <span class="module-desc-inline">${proj.description || ''}</span>\n`;
             html += `                    </a>\n`;
             html += `                    <div class="module-row-meta">\n`;
-            html += `                        <span class="readiness-badge milestone">Milestone</span>\n`;
+            html += `                        <span class="readiness-badge milestone project-verification-badge">Milestone · unverified</span>\n`;
             html += `                        <span class="last-studied" id="last-${proj.id}"></span>\n`;
             html += `                    </div>\n`;
             html += `                </article>\n`;
@@ -1505,7 +1565,9 @@ function buildCourse(slug) {
         : [];
 
     const conceptIndex = {}; // m{N}_{exerciseId} -> concept name
+    const exerciseMetaIndex = {}; // m{N}_{exerciseId} -> optional selection metadata
     const conceptLinks = {}; // moduleNum -> { conceptName: "#anchor" }
+    const decisionSets = []; // discriminative strategy-choice prompts
 
     exerciseFiles.forEach(yamlFile => {
         const yamlPath = path.join(EXERCISES_DIR, yamlFile);
@@ -1559,10 +1621,27 @@ function buildCourse(slug) {
             if (!Array.isArray(variants[type])) return;
             variants[type].forEach(exercise => {
                 if (exercise.id && exercise.concept) {
-                    conceptIndex[`m${moduleNum}_${exercise.id}`] = exercise.concept;
+                    const exerciseKey = `m${moduleNum}_${exercise.id}`;
+                    conceptIndex[exerciseKey] = exercise.concept;
+                    exerciseMetaIndex[exerciseKey] = {
+                        concept: exercise.concept,
+                        decisionFamily: exercise.decisionFamily || null,
+                        strategy: exercise.strategy || null,
+                        confusableWith: Array.isArray(exercise.confusableWith) ? exercise.confusableWith : []
+                    };
                 }
             });
         });
+
+        if (Array.isArray(parsed.decisionSets)) {
+            parsed.decisionSets.forEach((decision, index) => {
+                if (!decision || !decision.prompt || !Array.isArray(decision.options) || !decision.answer) {
+                    console.warn(`    WARN: decisionSets[${index}] in ${yamlFile} is incomplete; skipping`);
+                    return;
+                }
+                decisionSets.push({ ...decision, moduleId: parseInt(moduleNum, 10) });
+            });
+        }
 
         // Update parsed conceptLinks with resolved URLs so per-module JS has correct links
         if (conceptLinks[moduleNum]) {
@@ -1621,9 +1700,9 @@ function buildCourse(slug) {
     const conceptCount = Object.keys(conceptIndex).length;
     fs.writeFileSync(
         path.join(COURSE_DIST, 'concept-index.js'),
-        `// Auto-generated by build.js — do not edit\nwindow.ConceptIndex = ${JSON.stringify(conceptIndex)};\nwindow.ConceptLinks = ${JSON.stringify(conceptLinks)};\n`
+        `// Auto-generated by build.js — do not edit\nwindow.ConceptIndex = ${JSON.stringify(conceptIndex)};\nwindow.ConceptLinks = ${JSON.stringify(conceptLinks)};\nwindow.ExerciseMetaIndex = ${JSON.stringify(exerciseMetaIndex)};\nwindow.DecisionSets = ${JSON.stringify(decisionSets)};\n`
     );
-    console.log(`  concept-index.js (${conceptCount} entries)`);
+    console.log(`  concept-index.js (${conceptCount} entries, ${decisionSets.length} decision prompts)`);
 
     // 11c. Predict index — pretest cards for the session runner
     mkdirp(path.join(COURSE_DIST, 'data'));

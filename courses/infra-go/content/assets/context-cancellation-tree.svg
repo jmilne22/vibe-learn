@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="550" viewBox="0 0 1200 550" role="img" aria-labelledby="title desc">
+  <title id="title">Context cancellation tree</title>
+  <desc id="desc">A request context fans out to database, API and worker operations. Cancellation travels downward to every child while errors and results travel back upward.</desc>
+  <rect width="1200" height="550" fill="#101820"/>
+  <style>.h{font:26px Inter,Arial,sans-serif;fill:#eef4f7;font-weight:700}.t{font:18px Inter,Arial,sans-serif;fill:#c6d0d9}.m{font:18px 'JetBrains Mono',monospace;fill:#eef4f7}.node{fill:#182833;stroke:#506675;stroke-width:2}.root{fill:#2c2037;stroke:#c994ff;stroke-width:3}.edge{stroke:#c994ff;stroke-width:4;fill:none;marker-end:url(#a)}.back{stroke:#55d6be;stroke-width:3;fill:none;stroke-dasharray:7 7;marker-end:url(#g)}</style>
+  <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0l10 5-10 5z" fill="#c994ff"/></marker><marker id="g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0l10 5-10 5z" fill="#55d6be"/></marker></defs>
+  <text x="55" y="55" class="h">Cancellation flows down; results flow back up</text>
+  <rect x="430" y="95" width="340" height="90" rx="12" class="root"/><text x="600" y="130" text-anchor="middle" class="m">request ctx</text><text x="600" y="158" text-anchor="middle" class="t">deadline · cancellation signal</text>
+  <g><rect x="80" y="285" width="280" height="90" rx="12" class="node"/><text x="220" y="320" text-anchor="middle" class="m">queryDB(ctx)</text><text x="220" y="348" text-anchor="middle" class="t">select on ctx.Done()</text><rect x="460" y="285" width="280" height="90" rx="12" class="node"/><text x="600" y="320" text-anchor="middle" class="m">callAPI(ctx)</text><text x="600" y="348" text-anchor="middle" class="t">request carries ctx</text><rect x="840" y="285" width="280" height="90" rx="12" class="node"/><text x="980" y="320" text-anchor="middle" class="m">runWorkers(ctx)</text><text x="980" y="348" text-anchor="middle" class="t">every worker observes done</text></g>
+  <path d="M540 185C500 225 330 230 255 285" class="edge"/><path d="M600 185V285" class="edge"/><path d="M660 185C700 225 870 230 945 285" class="edge"/>
+  <path d="M205 285C265 225 455 220 530 185" class="back"/><path d="M575 285V185" class="back"/><path d="M955 285C875 225 730 220 670 185" class="back"/>
+  <rect x="250" y="430" width="700" height="70" rx="10" fill="#302817" stroke="#ffb454" stroke-width="2"/><text x="600" y="458" text-anchor="middle" class="m">cancel() or deadline exceeded</text><text x="600" y="486" text-anchor="middle" class="t">all descendants become done; each function returns ctx.Err() after cleanup</text>
+  <text x="55" y="530" class="t">Create contexts at boundaries, pass them as the first argument, and never store them in structs for later reuse.</text>
+</svg>
