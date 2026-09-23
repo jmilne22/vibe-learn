@@ -18,3 +18,7 @@ Verified on Linux/NixOS on 2026-09-23, including a fresh source copy and `npm ci
 The generic packaged Electron executable required local ELF loader/library adjustments to launch on NixOS. Those changes affect only the temporary unpacked executable, after ZIP creation; the generated ZIP is unchanged. The smoke script asserts `app.isPackaged`, uses an empty host PATH, and verifies bundled offline Go execution. General Linux distribution should use the standard Ubuntu CI artifact.
 
 Not verified on this host: macOS/Windows execution and signing, or a live Maelstrom run (Java/Graphviz/gnuplot are not installed). The manual/release-tag workflow packages and smoke-tests all three OSes; ordinary PRs run a single Linux verification job. Maelstrom argument construction and report verdict handling are covered by platform tests; its live integration still needs an installed harness. No Kubernetes automated evaluation is intended or included.
+
+## Go and Infrastructure Engineering course
+
+The subsequent course addition has its own [validation record](../courses/go-infrastructure/validation/README.md): 12 starter/solution pairs, separate race checks, three locally executed labs, real desktop exercise execution, and five browser tests. The catalog now has one course and four projects (60 sections).

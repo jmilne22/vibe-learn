@@ -96,7 +96,7 @@ async function main(): Promise<void> {
       .getByRole("textbox", { name: "Notes", exact: true })
       .fill("Keep my reasoning and my tests.");
     await page.getByRole("button", { name: "Save notes", exact: true }).click();
-    await expect(page.getByText("Saved locally")).toBeVisible();
+    await expect(page.getByText("Saved", { exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Close panel" }).click();
     await page.getByRole("button", { name: "☆ Bookmark", exact: true }).click();
     await page.getByRole("button", { name: "Copy stage context" }).click();

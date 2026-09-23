@@ -233,7 +233,7 @@ function App() {
         )}
         <main id="main" className={styles.main} tabIndex={-1}>
           {!catalog.data ? (
-            <p>Opening your library…</p>
+            <p>Loading…</p>
           ) : (
             <Routes>
               <Route path="/" element={<Home items={catalog.data.items} />} />
@@ -374,8 +374,8 @@ function Home({ items }: { items: Item[] }) {
             <div>
               <dt>Exercises</dt>
               <dd>
-                Open the starter files, make a change, and run the tests. Hints
-                and solutions are there when you need them.
+                Coding exercises with starter files, tests, hints, and
+                solutions.
               </dd>
             </div>
             <div>
@@ -387,10 +387,7 @@ function Home({ items }: { items: Item[] }) {
             </div>
             <div>
               <dt>Local workspaces</dt>
-              <dd>
-                Use your usual editor and tools. Your code stays in ordinary
-                folders.
-              </dd>
+              <dd>Open exercise and project folders in your editor.</dd>
             </div>
           </dl>
         </section>
@@ -399,8 +396,8 @@ function Home({ items }: { items: Item[] }) {
           <h1>Continue</h1>
           <p className={styles.intro}>
             {recent.length
-              ? "Your recent courses and projects."
-              : "Nothing started yet. Choose a course or project to begin."}
+              ? "Recent courses and projects"
+              : "No recent courses or projects."}
           </p>
           <div className={styles.actions}>
             <Link className={styles.secondary} to="/courses">
@@ -434,17 +431,15 @@ function Home({ items }: { items: Item[] }) {
           <div>
             <h2>Use your own content</h2>
             <p>
-              Write courses in Markdown and YAML. Add exercises, hints, and
-              flashcards where they’re useful. Keep project briefs alongside
-              your courses.
+              Author courses and project briefs in Markdown and YAML, with
+              exercises and flashcards.
             </p>
           </div>
           <div>
             <h2>Saved locally</h2>
             <p>
-              Read offline and keep your notes, bookmarks, reading positions,
-              and flashcard reviews on your computer. Export notes as Markdown
-              or save a backup.
+              Read offline. Save notes and bookmarks, export notes as Markdown,
+              and back up your library data.
             </p>
           </div>
         </section>
@@ -489,8 +484,8 @@ function Library({ kind, items }: { kind: Item["kind"]; items: Item[] }) {
         {kind === "course"
           ? filtered.length
             ? "Lessons, exercises, and flashcards."
-            : "No courses yet. They’re being rebuilt for the new app."
-          : "Project briefs, requirements, and checks. Each project can be started separately."}
+            : "No courses yet."
+          : "Project briefs and checks."}
       </p>
       {!filtered.length && kind === "course" && (
         <Link className={styles.secondary} to="/projects">
@@ -536,7 +531,7 @@ function Search({ items }: { items: Item[] }) {
       <p aria-live="polite">
         {tokens.length
           ? `${matches.length}${matches.length === 60 ? "+" : ""} matching sections`
-          : "Search lesson text and project requirements."}
+          : ""}
       </p>
       <div className={styles.results}>
         {matches.map(({ item, stage }) => (
@@ -563,9 +558,7 @@ function Bookmarks({ items }: { items: Item[] }) {
   return (
     <>
       <h1>Bookmarks</h1>
-      {!state.bookmarks.length && (
-        <p>Save a section while reading to find it here.</p>
-      )}
+      {!state.bookmarks.length && <p>No bookmarks yet.</p>}
       <div className={styles.grid}>
         {state.bookmarks.map((b) => {
           const item = items.find((i) => i.id === b.itemId);
@@ -600,16 +593,13 @@ function Panel({
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay className={styles.overlay} />
-        <Dialog.Content className={styles.panel}>
+        <Dialog.Content className={styles.panel} aria-describedby={undefined}>
           <div className={styles.panelHead}>
             <Dialog.Title>{title}</Dialog.Title>
             <Dialog.Close asChild>
               <button aria-label="Close panel">×</button>
             </Dialog.Close>
           </div>
-          <Dialog.Description className={styles.muted}>
-            Saved on this computer.
-          </Dialog.Description>
           {children}
         </Dialog.Content>
       </Dialog.Portal>
@@ -718,11 +708,11 @@ function Reading({
         return `${r.label}${section ? "\n" + section.text : ""}`;
       })
       .join("\n\n");
-    const text = `# ${item.title}\n\n${item.description}\n\nPrerequisites: ${item.prerequisites.join("; ") || "None"}\nWorkspace: ${state.workspaces.find((w) => w.itemId === item.id)?.path || "Not attached"}\n\n${chosen.map((s) => `## ${s.title}\n\n${s.text}`).join("\n\n")}\n\nRelated references:\n${related}${output ? "\n\nSelected run output:\n" + output : ""}\n\nWork with me in small changes. Help me understand and test the implementation. Do not treat passing a supplied check as proof of all requirements.`;
+    const text = `# ${item.title}\n\n${item.description}\n\nPrerequisites: ${item.prerequisites.join("; ") || "None"}\nWorkspace: ${state.workspaces.find((w) => w.itemId === item.id)?.path || "Not attached"}\n\n${chosen.map((s) => `## ${s.title}\n\n${s.text}`).join("\n\n")}\n\nRelated references:\n${related}${output ? "\n\nSelected run output:\n" + output : ""}`;
     try {
       if (desktop) await invoke({ type: "copy", text });
       else await navigator.clipboard.writeText(text);
-      setCopied("Context copied. Paste it into your preferred coding tool.");
+      setCopied("Copied");
     } catch {
       setCopied(
         "Clipboard unavailable. Select and copy the text from the lesson.",
@@ -793,7 +783,7 @@ function Reading({
           ))}
           {item.related.length > 0 && (
             <>
-              <p className={styles.navLabel}>EXPLORE ALONGSIDE</p>
+              <p className={styles.navLabel}>RELATED</p>
               {item.related.map((r) => (
                 <Link
                   key={r.itemId + (r.stageId || "")}
@@ -815,12 +805,6 @@ function Reading({
                 ))}
               </ul>
             </div>
-          )}
-          {item.id === "project:relay-operator" && (
-            <p className={styles.guided}>
-              Guided project · Run the experiments in your environment. There is
-              no automated grading or required evidence upload.
-            </p>
           )}
           <article
             ref={article}
@@ -899,9 +883,7 @@ function Notes({
             });
             if (result !== undefined) noteDrafts.delete(item.id);
             setStatus(
-              result === undefined
-                ? "Could not save. Your draft is still here."
-                : "Saved locally",
+              result === undefined ? "Could not save. Try again." : "Saved",
             );
           }}
         >
@@ -937,12 +919,8 @@ function WorkspacePanel({
   const active = state.runs.some((r) => r.status === "running");
   return (
     <>
-      <h3>Local workspace</h3>
-      <p>
-        {workspace
-          ? workspace.path
-          : "Attach a project folder or create a new workspace."}
-      </p>
+      <h3>Workspace</h3>
+      {workspace && <p>{workspace.path}</p>}
       <div className={styles.actions}>
         <button
           onClick={() =>
@@ -1003,12 +981,10 @@ function WorkspacePanel({
           </button>
         </details>
       )}
-      <h3>{item.checks.length ? "Optional checks" : "Guided verification"}</h3>
-      <p>
-        {item.checks.length
-          ? "Checks run only when you choose. Source is never overwritten. Acceptance checks use temporary data."
-          : "Use the examples and expected observations in the guide. No platform-owned suite is required."}
-      </p>
+      <h3>{item.checks.length ? "Checks" : "Verification"}</h3>
+      {!item.checks.length && (
+        <p>Follow the experiments in the project brief.</p>
+      )}
       {item.checks.map((check) => (
         <div className={styles.check} key={check.id}>
           <small>
@@ -1042,21 +1018,18 @@ function WorkspacePanel({
           <summary>
             {run.title} · {run.status}
           </summary>
-          <small>
-            {new Date(run.startedAt).toLocaleString()} · {run.suiteVersion}
-            <br />
-            Source: {run.sourceHash.slice(0, 16)} · Content:{" "}
-            {run.contentVersion}
-          </small>
+          <small>{new Date(run.startedAt).toLocaleString()}</small>
+          <details>
+            <summary>Run details</summary>
+            <p>Checks: {run.suiteVersion}</p>
+            <p>Source: {run.sourceHash.slice(0, 16)}</p>
+            <p>Content: {run.contentVersion}</p>
+          </details>
           {run.sourceChanged && (
             <p className={styles.notice}>
-              Source changed during this run. Rerun before relying on it.
+              Files changed during this run. Run checks again.
             </p>
           )}
-          <p>
-            Result applies to the recorded source revision, not subsequent
-            edits.
-          </p>
           <pre className={styles.log}>{run.output || "Preparing…"}</pre>
           {run.status === "running" && (
             <button onClick={() => void act({ type: "cancel", runId: run.id })}>
@@ -1073,12 +1046,16 @@ function WorkspacePanel({
               Open saved artifacts
             </button>
           )}
-          <strong>Not established by this run</strong>
-          <ul>
-            {run.unchecked.map((u, n) => (
-              <li key={n}>{u}</li>
-            ))}
-          </ul>
+          {!!run.unchecked.length && (
+            <>
+              <strong>Not checked</strong>
+              <ul>
+                {run.unchecked.map((u, n) => (
+                  <li key={n}>{u}</li>
+                ))}
+              </ul>
+            </>
+          )}
         </details>
       ))}
     </>
@@ -1091,9 +1068,9 @@ function Settings({ act }: { act: Action }) {
       <div className={styles.settings}>
         <h2>Backup</h2>
         <p>
-          Export reading positions, bookmarks, notes, flashcard reviews,
-          workspace references, and run summaries. Source files and full run
-          artifacts stay in their folders.
+          Backups include notes, bookmarks, reading positions, reviews,
+          workspace locations, and run summaries. Back up source code and run
+          files separately.
         </p>
         <div className={styles.actions}>
           <button
@@ -1110,13 +1087,8 @@ function Settings({ act }: { act: Action }) {
             Import backup
           </button>
         </div>
-        <p>
-          Imports merge with your saved data. Back up source files and run
-          artifacts separately.
-        </p>
-        {!desktop && (
-          <p>Notes and workspace actions are available in the desktop app.</p>
-        )}
+        <p>Imports merge with your saved data.</p>
+        {!desktop && <p>Backups are available in the desktop app.</p>}
       </div>
     </>
   );

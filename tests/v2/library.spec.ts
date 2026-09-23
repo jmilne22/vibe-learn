@@ -24,7 +24,6 @@ test("read-only preview provides independent paths, useful search, and no old co
       }),
     })
     .click();
-  await expect(page.getByText("Guided project ·")).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Workspace", exact: true }),
   ).toHaveCount(0);
@@ -44,10 +43,10 @@ test("read-only preview provides independent paths, useful search, and no old co
     .getByRole("link", { name: "Courses" })
     .click();
   await expect(
-    page.getByText("No courses yet.", { exact: false }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("link", { name: "Browse projects" }),
+    page.getByRole("heading", {
+      name: "Go and Infrastructure Engineering",
+      exact: true,
+    }),
   ).toBeVisible();
   await expect(page.getByRole("navigation")).not.toContainText(
     /Daily Practice|Analytics/,

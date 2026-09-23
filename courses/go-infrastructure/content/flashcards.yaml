@@ -1,0 +1,113 @@
+- id: boundary
+  moduleId: starting
+  front: Why test 1 and 65535 as well as an ordinary valid port?
+  back: >-
+    They test the inclusive boundaries. A validator can accept 443 while incorrectly rejecting
+    either endpoint.
+- id: slice-copy
+  moduleId: starting
+  front: Does assigning one slice to another give independent elements?
+  back: >-
+    No. The slice descriptors refer to the same backing array. Allocate and copy when the result
+    must be independently editable.
+- id: map-order
+  moduleId: starting
+  front: Can map iteration preserve the order in which target names appeared?
+  back: No. Go map iteration order is unspecified. Keep a separate slice when input order matters.
+- id: reader-owner
+  moduleId: input
+  front: Who should close the file passed into ReadConfig as an io.Reader?
+  back: >-
+    The caller that opened it, unless the API explicitly transfers ownership. The parser only needs
+    to read bytes.
+- id: json-eof
+  moduleId: input
+  front: Why decode a second time after reading one configuration object?
+  back: >-
+    To reject another value or trailing junk while allowing whitespace. The second decode must
+    return io.EOF.
+- id: scanner-error
+  moduleId: input
+  front: Does Scanner.Scan returning false always mean normal end-of-input?
+  back: No. Check Scanner.Err to distinguish EOF from read errors or an oversized token.
+- id: status-error
+  moduleId: http
+  front: Is a received HTTP 503 the same as a transport error?
+  back: >-
+    No. A 503 is a server response with a status. A DNS or connection failure may yield no response
+    at all. Keep those outcomes separate.
+- id: body-close
+  moduleId: http
+  front: Do you need to close an HTTP response body when only reading the status?
+  back: >-
+    Yes. Close it after a successful request. Connection reuse may additionally require consuming
+    the body; do not read unlimited data without a deliberate bound.
+- id: deadline
+  moduleId: http
+  front: How does a context cancellation differ from a timeout?
+  back: >-
+    A timeout sets a time bound. A context can also be canceled because the work is no longer
+    wanted. Operations must observe the context for either to stop them.
+- id: select-choice
+  moduleId: concurrency
+  front: Does a cancellation case listed first in select get priority?
+  back: >-
+    No. If multiple cases are ready, select chooses among them. Check ctx.Err before select if
+    pre-canceled calls must do no work.
+- id: bounded
+  moduleId: concurrency
+  front: Does buffering the results channel bound simultaneous HTTP requests?
+  back: No. It bounds buffered results. Limit the workers or request slots to bound in-flight requests.
+- id: read-lock
+  moduleId: concurrency
+  front: If writes use a mutex, can reads of the same variable ignore it?
+  back: No. Reads and writes need a shared synchronization rule. Unsynchronized reads can still race.
+- id: retry-ambiguity
+  moduleId: concurrency
+  front: Does a timeout prove the server did not perform a write?
+  back: >-
+    No. The write may have completed before the response was lost. Retrying may duplicate it unless
+    the operation or receiver makes repetition safe.
+- id: probe
+  moduleId: kubernetes
+  front: What does a failed readiness probe do that a failed liveness probe does not?
+  back: >-
+    Readiness affects whether the Pod receives Service traffic. Liveness can trigger a container
+    restart after its failure threshold. Neither should be chosen merely because an endpoint is
+    called health.
+- id: forward
+  moduleId: kubernetes
+  front: Does a successful kubectl port-forward to a Service prove cluster DNS and Service routing work?
+  back: >-
+    No. Port-forward selects a backing Pod and forwards to it. Examine DNS and the normal dataplane
+    separately.
+- id: terraform-state
+  moduleId: terraform
+  front: How do configuration and state differ in Terraform?
+  back: >-
+    Configuration expresses intended resources. State associates resource addresses with managed
+    objects and records attributes; refresh obtains current provider observations.
+- id: moved
+  moduleId: terraform
+  front: Why add a moved block when renaming a Terraform resource address?
+  back: >-
+    It records that the old and new addresses represent the same managed object. Without it, a
+    rename can propose destroying one resource and creating another.
+- id: queue-rate
+  moduleId: telemetry
+  front: Input is 1000 records/s and export is 800 records/s. What does a larger queue change?
+  back: >-
+    It buys time while backlog grows at about 200 records/s. It does not fix a sustained capacity
+    deficit.
+- id: cardinality
+  moduleId: telemetry
+  front: Why is request_id usually a costly metric label?
+  back: >-
+    Its value space grows with requests, creating many distinct series. Cardinality depends on
+    label-value combinations, not just the number of label names.
+- id: planes
+  moduleId: telemetry
+  front: Does losing control-plane connectivity prove a customer data plane stopped ingesting?
+  back: >-
+    No. Management reachability and ingest health are different observations. Report each with its
+    timestamp and avoid presenting stale observations as current.

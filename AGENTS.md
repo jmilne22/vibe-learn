@@ -16,7 +16,7 @@ Offline desktop app built with strict TypeScript, React, Electron, SQLite and va
 - `src/content/` compiles authoring sources into a versioned catalog.
 - `src/renderer/` owns UI only; no filesystem, process or database imports.
 - `src/main/` owns storage, workspaces, task execution and validated IPC.
-- `courses/` is currently empty; old infrastructure and sample courses were removed.
+- `courses/go-infrastructure/` contains the Go and Infrastructure Engineering course; old infrastructure and sample courses remain removed.
 - `content/projects/` contains the standalone project briefs. Optional Go experiments are a relay reference section.
 
 ## Product

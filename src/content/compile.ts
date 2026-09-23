@@ -338,11 +338,8 @@ function learnerCheck(): Check {
     title: "Your tests",
     kind: "learner",
     suiteVersion: "go-test-v1",
-    description:
-      "Run go vet and your own go test suite. No tests is reported as unchecked.",
-    unchecked: [
-      "Passing your tests does not certify all project requirements.",
-    ],
+    description: "Run go vet and go test.",
+    unchecked: ["Requirements outside your test coverage."],
   };
 }
 function acceptanceChecks(kind: "relay" | "tsdb"): Check[] {
@@ -356,8 +353,7 @@ function acceptanceChecks(kind: "relay" | "tsdb"): Check[] {
           : "Checkpoint · storage behavior",
     kind: "acceptance",
     suiteVersion: `${kind}-1`,
-    description:
-      "Build your executable and exercise its public interface in a temporary directory. Your source and tests are not modified.",
+    description: "Build the executable and test its public interface.",
     stageId:
       part === "http"
         ? "session-2"
@@ -369,10 +365,10 @@ function acceptanceChecks(kind: "relay" | "tsdb"): Check[] {
     unchecked:
       kind === "relay"
         ? [
-            "Internal batching, deterministic overload, injected write failures, and ownership require your tests and design review.",
+            "Internal batching, deterministic overload, injected write failures, and ownership.",
           ]
         : [
-            "Compression limits, block sealing, WAL corruption handling, retention boundaries, and storage failure injection require your tests and review.",
+            "Compression limits, block sealing, WAL corruption handling, retention boundaries, and storage failure injection.",
           ],
   }));
 }
@@ -385,11 +381,8 @@ function maelstromChecks(stages: Stage[]): Check[] {
       kind: "maelstrom",
       suiteVersion: "maelstrom-0.2.3-v1",
       stageId: s.id,
-      description:
-        "Build the stage binary and run the documented workload. Histories and reports are retained per run.",
-      unchecked: [
-        "Passing sampled histories is not a proof of all executions; inspect results and explain tradeoffs.",
-      ],
+      description: "Build the stage binary and run its Maelstrom workload.",
+      unchecked: ["Behavior outside the sampled Maelstrom histories."],
     }));
 }
 if (

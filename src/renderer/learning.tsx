@@ -36,12 +36,7 @@ export function Decks({ items }: { items: Item[] }) {
   return (
     <>
       <h1>Flashcards</h1>
-      <p className={styles.intro}>
-        Choose a course to browse or review its cards.
-      </p>
-      {!courses.length && (
-        <p>No decks yet. Cards will appear here when courses include them.</p>
-      )}
+      {!courses.length && <p>No flashcards yet.</p>}
       <div className={styles.grid}>
         {courses.map((course) => (
           <Link
@@ -50,7 +45,7 @@ export function Decks({ items }: { items: Item[] }) {
             to={`${base(course)}/flashcards`}
           >
             <h2>{course.title}</h2>
-            <p>{course.flashcards.length} cards · Browse or review</p>
+            <p>{course.flashcards.length} cards</p>
           </Link>
         ))}
       </div>
@@ -144,17 +139,11 @@ function Flashcards({ course, act }: { course: Course; act: Act }) {
     setBusy(false);
     if (result !== undefined) move(index + 1);
     else
-      setError(
-        "Review was not saved. See the notification above; browse cards and start review again to refresh.",
-      );
+      setError("Could not save this answer. Restart the review to try again.");
   }
   return (
     <div className={css.activity}>
       <h1>Flashcards</h1>
-      <p>
-        Browse all cards, or review the ones due. Your answers set the next
-        review date.
-      </p>
       <div className={css.actions}>
         <button
           disabled={busy}
@@ -182,19 +171,13 @@ function Flashcards({ course, act }: { course: Course; act: Act }) {
         </button>
       </div>
       {!desktop && (
-        <p className={css.muted}>
-          The desktop app saves spaced reviews. You can browse all cards here.
-        </p>
+        <p className={css.muted}>Reviews are available in the desktop app.</p>
       )}
       {!total ? (
         <p>No cards available.</p>
       ) : !card ? (
         <div role="status">
           <h2>Review complete</h2>
-          <p>
-            You’ve reviewed the available cards. You can still browse the full
-            deck.
-          </p>
         </div>
       ) : (
         <>
@@ -275,8 +258,7 @@ function Exercises({
     <>
       <h1>Exercises</h1>
       <p className={styles.intro}>
-        Open an exercise in your editor, then run its checks. You can start with
-        any exercise.
+        Edit the exercise in your editor, then run checks.
       </p>
       {!course.exercises.length ? (
         <p>No exercises in this course yet.</p>
@@ -349,9 +331,7 @@ function ExerciseView({
   return (
     <section className={css.exercise}>
       <p className={styles.eyebrow}>
-        {exercise.language === "go"
-          ? "Go · Included"
-          : "Rust · Requires installation"}
+        {exercise.language === "go" ? "Go" : "Rust"}
       </p>
       <h2>{exercise.title}</h2>
       <Html html={exercise.instructionsHtml} />
@@ -387,17 +367,11 @@ function ExerciseView({
         ))}
       </details>
       <div className={css.workspace}>
-        <h3>Your exercise folder</h3>
-        <p>
-          {workspace
-            ? workspace.path
-            : "Create a fresh folder with starter files, or attach an existing exercise folder."}
-        </p>
+        <h3>Exercise folder</h3>
+        {workspace && <p>{workspace.path}</p>}
         {workspace && workspace.version !== exercise.version && (
           <p role="status">
-            This exercise has changed since you prepared the folder. Your files
-            are preserved. Checks use the current version; a fresh copy is
-            available below.
+            The exercise was updated. Runs use the latest checks.
           </p>
         )}
         {exercise.language === "rust" && (
@@ -438,9 +412,6 @@ function ExerciseView({
             </button>
           </div>
         )}
-        <p className={css.muted}>
-          Checks run on a copy of your files. The originals stay unchanged.
-        </p>
       </div>
       {latest && (
         <section aria-label="Check result">
@@ -448,14 +419,10 @@ function ExerciseView({
             <h3>Last run: {latest.status}</h3>
           </div>
           <p className={css.muted}>
-            {new Date(latest.startedAt).toLocaleString()} · Suite{" "}
-            {latest.suiteVersion}
+            {new Date(latest.startedAt).toLocaleString()}
           </p>
-          <p>Run checks again after changing your code.</p>
           {latest.sourceChanged && (
-            <p>
-              Source changed during this run. Run again before relying on it.
-            </p>
+            <p>Files changed during this run. Run checks again.</p>
           )}
           {latest.suiteVersion !== exercise.version && (
             <p>The provided checks have changed since this run.</p>
@@ -483,8 +450,8 @@ function ExerciseView({
               {runs.slice(1).map((run) => (
                 <details key={run.id}>
                   <summary>
-                    {new Date(run.startedAt).toLocaleString()} · {run.status} ·
-                    Suite {run.suiteVersion}
+                    {new Date(run.startedAt).toLocaleString()} · {run.status}
+                    {run.suiteVersion !== exercise.version && " · Older checks"}
                   </summary>
                   <pre className={css.output}>{run.output}</pre>
                 </details>

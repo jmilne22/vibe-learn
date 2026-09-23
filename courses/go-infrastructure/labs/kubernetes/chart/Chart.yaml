@@ -1,0 +1,4 @@
+apiVersion: v2
+name: endpoint-lab
+version: 0.1.0
+description: Local course fixture for rollout and routing investigations

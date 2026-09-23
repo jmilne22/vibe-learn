@@ -146,13 +146,8 @@ export class Runner {
           }
         });
         if (!events.some((e) => e.Action === "pass" && e.Test)) {
-          run.unchecked.push(
-            "No passing test cases were reported; an empty suite is not evidence of behavior.",
-          );
-          throw new TaskError(
-            "error",
-            "No executed tests found. Write tests in this workspace before running this action.",
-          );
+          run.unchecked.push("No passing test cases were reported.");
+          throw new TaskError("error", "No passing tests found.");
         }
       } else if (check.kind === "acceptance") {
         const binary = path.join(
@@ -183,11 +178,7 @@ export class Runner {
           run,
         );
       run.status = "passed";
-      log(
-        exercise
-          ? "\nExercise checks passed for this saved source. You can revisit any exercise at any time.\n"
-          : "\nRequested checks passed. Read the unchecked requirements below; this is not an overall project grade.\n",
-      );
+      log("\nChecks passed.\n");
     } catch (error) {
       run.status = timeout
         ? "timed-out"
@@ -208,9 +199,7 @@ export class Runner {
         run.sourceChanged = true;
       }
       if (run.sourceChanged)
-        log(
-          "\nSource changed during execution. Rerun against a stable revision before relying on this result.\n",
-        );
+        log("\nFiles changed during this run. Run checks again.\n");
       run.finishedAt = new Date().toISOString();
       try {
         if (stream && !stream.destroyed)
@@ -400,10 +389,10 @@ async function runMaelstrom(
   }
   if (["3d", "3e", "5c"].includes(stage))
     run.unchecked.push(
-      "Compare performance budgets and the 5b baseline in saved results.edn; automated runs here establish harness validity, not those comparisons.",
+      "Performance budgets and comparison with the 5b baseline. See results.edn.",
     );
   run.unchecked.push(
-    "Race-instrumented workload runs remain a separate learner check.",
+    "Race detection during workload execution.",
   );
 }
 
