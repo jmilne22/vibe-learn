@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Four infrastructure challenges for learning Go by building with AI.">
+<title>Go Infra Track — Build and Learn</title>
+<script>
+(function () {
+  try {
+    var theme = localStorage.getItem("ingest-relay-v1:theme");
+    if (theme === "light" || theme === "dark") document.documentElement.setAttribute("data-theme", theme);
+  } catch (error) {}
+})();
+</script>
+<style>
+  :root {
+    color-scheme: light;
+    --paper: #ffffff; --ink: #202a30; --muted: #58666e;
+    --rule: #dce3e6; --soft: #f4f6f7; --accent: #12647a;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", Consolas, "Liberation Mono", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --paper: #141b20; --ink: #e1e8ec; --muted: #a7b5bf;
+      --rule: #36434d; --soft: #202a32; --accent: #8ccfdf;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --paper: #141b20; --ink: #e1e8ec; --muted: #a7b5bf;
+    --rule: #36434d; --soft: #202a32; --accent: #8ccfdf;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 17px/1.7 var(--sans); overflow-wrap: break-word; }
+  a { color: var(--accent); text-underline-offset: 0.2em; }
+  a:hover { text-decoration-thickness: 2px; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+  [hidden] { display: none !important; }
+  [id] { scroll-margin-top: 1.5rem; }
+  .skip { position: absolute; top: -5rem; left: 1rem; padding: 0.5rem; background: var(--paper); }
+  .skip:focus { top: 0.5rem; }
+  .toolbar { max-width: 56rem; margin: auto; padding: 1rem 1.5rem; display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1.5rem; border-bottom: 1px solid var(--rule); font-size: 0.82rem; }
+  .back { margin-right: auto; text-decoration: none; }
+  .tools { display: flex; flex-wrap: wrap; align-items: center; gap: 0.7rem; }
+  .themes { display: flex; gap: 0.25rem; }
+  button { font: inherit; color: var(--muted); background: transparent; border: 1px solid var(--rule); border-radius: 4px; padding: 0.25rem 0.55rem; cursor: pointer; }
+  button:hover, button[aria-pressed="true"] { color: var(--ink); background: var(--soft); border-color: var(--muted); }
+  main { max-width: 48rem; padding: 3.5rem 1.5rem 4rem; margin: auto; }
+  header { margin-bottom: 2rem; }
+  .eyebrow { color: var(--accent); font-size: 0.8rem; font-weight: 650; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 0.5rem; }
+  h1 { font-size: clamp(2.3rem, 7vw, 3.3rem); line-height: 1.12; letter-spacing: -0.045em; margin: 0 0 1rem; }
+  .intro { font-size: 1.2rem; line-height: 1.6; }
+  .meta { color: var(--muted); font-size: 0.9rem; }
+  .contents { display: flex; flex-wrap: wrap; gap: 0.35rem 1.1rem; font-size: 0.85rem; padding: 1rem 0; border-block: 1px solid var(--rule); }
+  h2 { font-size: 1.6rem; line-height: 1.3; letter-spacing: -0.02em; margin: 3rem 0 1rem; }
+  h3 { font-size: 1.14rem; line-height: 1.4; margin: 2rem 0 0.65rem; }
+  h4 { font-size: 1rem; line-height: 1.4; margin: 1.5rem 0 0.6rem; }
+  .session { margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid var(--rule); }
+  .session > h3 { font-size: 1.4rem; margin: 0 0 1rem; }
+  p, ul, ol { margin: 0 0 1rem; }
+  ul, ol { padding-left: 1.4rem; }
+  li { padding-left: 0.15rem; margin-bottom: 0.55rem; }
+  strong { font-weight: 650; }
+  code { font: 0.85em var(--mono); background: var(--soft); padding: 0.1em 0.25em; border-radius: 3px; overflow-wrap: anywhere; }
+  pre { background: var(--soft); border: 1px solid var(--rule); border-radius: 5px; padding: 1rem; overflow-x: auto; line-height: 1.6; margin: 0 0 1rem; }
+  pre code { background: none; padding: 0; font-size: 0.8rem; overflow-wrap: normal; }
+  .table-wrap { overflow-x: auto; margin: 1rem 0 1.25rem; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.88rem; line-height: 1.55; }
+  caption { text-align: left; font-weight: 650; margin-bottom: 0.5rem; }
+  th, td { text-align: left; vertical-align: top; padding: 0.65rem 0.6rem; border-bottom: 1px solid var(--rule); }
+  th { background: var(--soft); font-size: 0.8rem; font-weight: 650; }
+  .note { padding: 0.8rem 1rem; border-left: 3px solid var(--accent); background: var(--soft); }
+  pre.output { border-left: 3px solid var(--accent); }
+  .example-label { font-size: 0.85rem; font-weight: 650; margin-bottom: 0.4rem; }
+  .small { color: var(--muted); font-size: 0.88rem; }
+  footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--rule); color: var(--muted); font-size: 0.8rem; }
+  @media (max-width: 36rem) {
+    body { font-size: 16px; }
+    main { padding: 2rem 1.1rem 3rem; }
+    .toolbar { padding-inline: 1.1rem; }
+    h2 { font-size: 1.4rem; }
+    th, td { padding: 0.55rem 0.4rem; }
+  }
+  @page { size: A4; margin: 17mm; }
+  @media print {
+    :root, :root[data-theme], :root:not([data-theme="light"]) {
+      color-scheme: light;
+      --paper: #fff; --ink: #111; --muted: #444; --rule: #ccc; --soft: #f5f5f5; --accent: #204957;
+    }
+    body { font-size: 10pt; line-height: 1.5; }
+    main { max-width: none; margin: 0; padding: 0; }
+    .toolbar, .skip, .contents { display: none !important; }
+    header { margin-bottom: 1rem; }
+    h1 { font-size: 28pt; }
+    h2 { font-size: 17pt; margin-top: 1.8rem; }
+    h3, .session > h3 { font-size: 14pt; margin-top: 1.2rem; }
+    h4 { font-size: 11pt; }
+    h1, h2, h3, h4, caption, .example-label { break-after: avoid; }
+    p { orphans: 3; widows: 3; }
+    tr, pre, .note { break-inside: avoid; }
+    thead { display: table-header-group; }
+    table { font-size: 9pt; }
+    .table-wrap { overflow: visible; }
+    pre { white-space: pre-wrap; overflow: visible; }
+    pre code { font-size: 8.5pt; overflow-wrap: anywhere; }
+    a { color: inherit; }
+  }
+
+  .lede { font-size: 1.2rem; line-height: 1.6; }
+  .caption { color: var(--muted); font-size: 0.88rem; }
+  .session > h2 { margin: 0 0 1rem; font-size: 1.4rem; }
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1.5rem 0; }
+  .card { border: 1px solid var(--rule); border-radius: 6px; padding: 1.25rem; }
+  .card h3 { margin: 0 0 0.65rem; }
+  .card p:last-child { margin-bottom: 0; }
+  .card .meta { font-size: 0.8rem; }
+  details { border-top: 1px solid var(--rule); padding: 1rem 0; margin-top: 2rem; }
+  summary { cursor: pointer; font-weight: 650; }
+  details[open] > summary { margin-bottom: 1rem; }
+  @media (max-width: 36rem) { .cards { grid-template-columns: 1fr; } }
+  @media print { .cards { display: block; } .card { break-inside: avoid; margin-bottom: 1rem; } }
+</style>
+</head>
+<body>
+<a class="skip" href="#brief">Skip to content</a>
+<div class="toolbar">
+  <a class="back" href="index.html">Go Infra Track</a>
+  <div class="tools" id="document-tools" hidden>
+    <div class="themes" role="group" aria-label="Colour theme">
+      <button type="button" data-theme-set="light" aria-pressed="false">Light</button>
+      <button type="button" data-theme-set="dark" aria-pressed="false">Dark</button>
+      <button type="button" data-theme-set="system" aria-pressed="true">System</button>
+    </div>
+    <button type="button" id="print-doc">Print</button>
+  </div>
+</div>
+<main id="top">
+<header id="brief">
+<p class="eyebrow">Go Infra Track</p>
+<h1>Build something.<br>Understand how it works.</h1>
+<p class="lede">Four infrastructure challenges for learning Go by building with AI.</p>
+<p>Add one capability, run it, compare the result with the example, then continue. Each challenge gives you a concrete destination and checks along the way. You choose how to structure the code.</p>
+<p>Pair with AI freely. Ask for explanations, predict what a change will do, and use tests to check your understanding. The aim is working software you can explain and modify. Estimates cover implementation; allow extra time for learning.</p>
+</header>
+<section id="roadmap">
+<h2>Start with the relay</h2>
+<p>Build the <strong>Ingest Relay</strong> first. The <strong>Relay Operator</strong> deploys that service, so it depends on a working relay. <strong>Gossip Glomers</strong> and <strong>Tiny TSDB</strong> are independent projects: after the relay, follow either in whichever order interests you.</p>
+</section>
+<section id="assignments" aria-label="Challenges">
+<div class="cards">
+<article class="card">
+<p class="eyebrow">01 · HTTP and concurrency</p>
+<h3>Ingest Relay</h3>
+<p>Build a service that accepts events, buffers them in a bounded queue, writes batches to disk, and drains safely on shutdown.</p>
+<p><strong>Bring:</strong> a Go toolchain and basic familiarity with functions and structs. Learn HTTP and concurrency as you go.</p>
+<p class="meta">7 steps · 14–18 hours</p>
+<p><a href="go-telemetry-ingest-take-home.html">Build the relay →</a></p>
+</article>
+<article class="card">
+<p class="eyebrow">02 · Kubernetes</p>
+<h3>Relay Operator</h3>
+<p>Turn the relay into a container, then build an operator that maintains its deployment, rolls out changes, and reports status.</p>
+<p><strong>Bring:</strong> your working relay, a container runtime, and room to run a local Kubernetes cluster. Setup is included.</p>
+<p class="meta">6 steps · 14–18 hours</p>
+<p><a href="relay-operator.html">Build the operator →</a></p>
+</article>
+<article class="card">
+<p class="eyebrow">03 · Distributed systems</p>
+<h3>Gossip Glomers</h3>
+<p>Build six Go programs across Fly.io's 14 stages: messaging, unique IDs, broadcast, counters, logs, and transactions.</p>
+<p><strong>Bring:</strong> Go and the Java-based Maelstrom test harness. The guide includes its setup and test commands.</p>
+<p class="meta">14 stages · 14–20 hours</p>
+<p><a href="gossip-glomers.html">Take on the distributed systems challenges →</a></p>
+</article>
+<article class="card">
+<p class="eyebrow">04 · Storage</p>
+<h3>Tiny TSDB</h3>
+<p>Build a time-series database with an HTTP API, crash recovery, compressed chunks, immutable blocks, and retention.</p>
+<p><strong>Bring:</strong> Go and experience from the relay. No existing database code or external Go libraries are needed.</p>
+<p class="meta">6 steps · 16–20 hours</p>
+<p><a href="tiny-tsdb.html">Build the database →</a></p>
+</article>
+</div>
+</section>
+<p class="caption">Want a smaller experiment first? Try the optional <a href="go-scratch-exercises.html">five Go warm-ups</a> on pointers, copies, channels, slices, and resource ownership. About 10–20 minutes each.</p>
+<details id="beyond">
+<summary>More project ideas</summary>
+<p>Other directions to explore whenever one interests you. This is an unranked list of ideas and starting references, not additional required work.</p>
+<ul id="ideas">
+<li><strong>Time-series database in Go</strong> — <a href="tiny-tsdb.html">04 Tiny TSDB</a></li>
+<li><strong>Gossip Glomers</strong> — <a href="gossip-glomers.html">03 guide</a></li>
+<li><strong>Kubernetes operator for your relay</strong> — <a href="relay-operator.html">02 Relay Operator</a></li>
+<li><strong>eBPF observability tool:</strong> per-process TCP latency as metrics — <a href="https://ebpf.party/" target="_blank" rel="noopener">ebpf.party</a> · <a href="https://github.com/cilium/ebpf" target="_blank" rel="noopener">cilium/ebpf</a></li>
+<li><strong>Homelab platform:</strong> k3s, Argo CD, Prometheus/Grafana/Loki, SLO alerts — <a href="https://docs.k3s.io/" target="_blank" rel="noopener">k3s</a> · <a href="https://sre.google/workbook/alerting-on-slos/" target="_blank" rel="noopener">SLO alerting</a></li>
+<li><strong>Container runtime from scratch:</strong> namespaces, cgroups, overlayfs — <a href="https://github.com/lizrice/containers-from-scratch" target="_blank" rel="noopener">Liz Rice</a> · <a href="https://github.com/Fewbytes/rubber-docker" target="_blank" rel="noopener">rubber-docker</a></li>
+<li><strong>Kafka-style append-only log:</strong> segments, offsets, consumer groups — <a href="https://fly.io/dist-sys/5a/" target="_blank" rel="noopener">Glomers #5</a>, then build it on disk</li>
+<li><strong>Redis-compatible key-value server</strong> (RESP) — <a href="https://build-your-own.org/redis/" target="_blank" rel="noopener">build-your-own.org/redis</a></li>
+<li><strong>Raft plus a replicated key-value store</strong> (MIT 6.824) — <a href="https://pdos.csail.mit.edu/6.824/" target="_blank" rel="noopener">6.824</a> · <a href="https://thesquareplanet.com/blog/students-guide-to-raft/" target="_blank" rel="noopener">Students' Guide</a></li>
+<li><strong>Mini OpenTelemetry pipeline:</strong> OTLP to relay to TSDB — <a href="https://opentelemetry.io/docs/specs/otlp/" target="_blank" rel="noopener">OTLP spec</a></li>
+<li><strong>TCP load balancer / proxy</strong> with health checks — <a href="https://github.com/fly-hiring/platform-challenge" target="_blank" rel="noopener">Fly platform challenge</a></li>
+<li><strong>LSM-tree or Bitcask storage engine</strong> — <a href="https://skyzh.github.io/mini-lsm/" target="_blank" rel="noopener">Mini-LSM</a> · <a href="https://riak.com/assets/bitcask-intro.pdf" target="_blank" rel="noopener">Bitcask</a></li>
+<li><strong>Uptime prober + Prometheus exporter</strong> — <a href="https://prometheus.io/docs/instrumenting/writing_exporters/" target="_blank" rel="noopener">Writing exporters</a></li>
+<li><strong>Load generator for your relay:</strong> status mix and latency percentiles — <a href="https://grafana.com/docs/k6/latest/" target="_blank" rel="noopener">k6, for comparison</a></li>
+<li><strong>Kubernetes the Hard Way</strong> — <a href="https://github.com/kelseyhightower/kubernetes-the-hard-way" target="_blank" rel="noopener">the repo</a></li>
+<li><strong>CI/CD with promotion:</strong> dev, staging and prod, with gates and a preview environment per PR — <a href="https://roadmap.sh/devops/projects" target="_blank" rel="noopener">roadmap.sh</a></li>
+<li><strong>Contribute to a CNCF Go project</strong> — <a href="https://contribute.cncf.io/" target="_blank" rel="noopener">contribute.cncf.io</a></li>
+<li><strong>gRPC streaming ingest endpoint</strong> for the relay — <a href="https://grpc.io/docs/languages/go/basics/" target="_blank" rel="noopener">gRPC Go basics</a></li>
+<li><strong>DNS server:</strong> a resolver, then authoritative — <a href="https://github.com/EmilHernvall/dnsguide" target="_blank" rel="noopener">dnsguide</a></li>
+<li><strong>Job queue on Postgres</strong> (<code >SKIP LOCKED</code>) — <a href="https://www.crunchydata.com/blog/message-queuing-using-native-postgresql" target="_blank" rel="noopener">Crunchy Data</a></li>
+<li><strong>SQL database from scratch</strong> — <a href="https://build-your-own.org/database/" target="_blank" rel="noopener">build-your-own.org/database</a></li>
+<li><strong>Homelab networking:</strong> VLANs, OPNsense, BGP on DN42 — <a href="https://dn42.dev/" target="_blank" rel="noopener">dn42.dev</a></li>
+<li><strong>Userspace TCP/IP stack</strong> on a TAP device — <a href="https://www.saminiir.com/lets-code-tcp-ip-stack-1-ethernet-arp/" target="_blank" rel="noopener">saminiir series</a></li>
+<li><strong>Linux From Scratch</strong> — <a href="https://www.linuxfromscratch.org/" target="_blank" rel="noopener">linuxfromscratch.org</a></li>
+<li><strong>BitTorrent client in Go</strong> — <a href="https://blog.jse.li/posts/torrent/" target="_blank" rel="noopener">blog.jse.li</a></li>
+</ul>
+</details>
+<footer>Go Infra Track · Independent practice material, not issued by any company.</footer>
+
+</main>
+<script>
+(function () {
+  "use strict";
+  var root = document.documentElement;
+  var buttons = Array.prototype.slice.call(document.querySelectorAll("[data-theme-set]"));
+  function renderTheme() {
+    var choice = root.getAttribute("data-theme") || "system";
+    buttons.forEach(function (button) {
+      button.setAttribute("aria-pressed", String(button.getAttribute("data-theme-set") === choice));
+    });
+  }
+  buttons.forEach(function (button) {
+    button.addEventListener("click", function () {
+      var choice = button.getAttribute("data-theme-set");
+      if (choice === "system") root.removeAttribute("data-theme");
+      else root.setAttribute("data-theme", choice);
+      try {
+        if (choice === "system") localStorage.removeItem("ingest-relay-v1:theme");
+        else localStorage.setItem("ingest-relay-v1:theme", choice);
+      } catch (error) {}
+      renderTheme();
+    });
+  });
+  renderTheme();
+  document.getElementById("print-doc").addEventListener("click", function () { window.print(); });
+  document.getElementById("document-tools").hidden = false;
+})();
+</script>
+</body>
+</html>

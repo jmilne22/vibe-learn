@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Build a Go ingest relay in seven guided steps, with example inputs, expected outputs, and AI pairing.">
+<title>Build an Ingest Relay — A Guided Go Challenge</title>
+<script>
+(function () {
+  try {
+    var theme = localStorage.getItem("ingest-relay-v1:theme");
+    if (theme === "light" || theme === "dark") document.documentElement.setAttribute("data-theme", theme);
+  } catch (error) {}
+})();
+</script>
+<style>
+  :root {
+    color-scheme: light;
+    --paper: #ffffff; --ink: #202a30; --muted: #58666e;
+    --rule: #dce3e6; --soft: #f4f6f7; --accent: #12647a;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", Consolas, "Liberation Mono", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --paper: #141b20; --ink: #e1e8ec; --muted: #a7b5bf;
+      --rule: #36434d; --soft: #202a32; --accent: #8ccfdf;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --paper: #141b20; --ink: #e1e8ec; --muted: #a7b5bf;
+    --rule: #36434d; --soft: #202a32; --accent: #8ccfdf;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 17px/1.7 var(--sans); overflow-wrap: break-word; }
+  a { color: var(--accent); text-underline-offset: 0.2em; }
+  a:hover { text-decoration-thickness: 2px; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+  [hidden] { display: none !important; }
+  [id] { scroll-margin-top: 1.5rem; }
+  .skip { position: absolute; top: -5rem; left: 1rem; padding: 0.5rem; background: var(--paper); }
+  .skip:focus { top: 0.5rem; }
+  .toolbar { max-width: 56rem; margin: auto; padding: 1rem 1.5rem; display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1.5rem; border-bottom: 1px solid var(--rule); font-size: 0.82rem; }
+  .back { margin-right: auto; text-decoration: none; }
+  .tools { display: flex; flex-wrap: wrap; align-items: center; gap: 0.7rem; }
+  .themes { display: flex; gap: 0.25rem; }
+  button { font: inherit; color: var(--muted); background: transparent; border: 1px solid var(--rule); border-radius: 4px; padding: 0.25rem 0.55rem; cursor: pointer; }
+  button:hover, button[aria-pressed="true"] { color: var(--ink); background: var(--soft); border-color: var(--muted); }
+  main { max-width: 48rem; padding: 3.5rem 1.5rem 4rem; margin: auto; }
+  header { margin-bottom: 2rem; }
+  .eyebrow { color: var(--accent); font-size: 0.8rem; font-weight: 650; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 0.5rem; }
+  h1 { font-size: clamp(2.3rem, 7vw, 3.3rem); line-height: 1.12; letter-spacing: -0.045em; margin: 0 0 1rem; }
+  .intro { font-size: 1.2rem; line-height: 1.6; }
+  .meta { color: var(--muted); font-size: 0.9rem; }
+  .contents { display: flex; flex-wrap: wrap; gap: 0.35rem 1.1rem; font-size: 0.85rem; padding: 1rem 0; border-block: 1px solid var(--rule); }
+  h2 { font-size: 1.6rem; line-height: 1.3; letter-spacing: -0.02em; margin: 3rem 0 1rem; }
+  h3 { font-size: 1.14rem; line-height: 1.4; margin: 2rem 0 0.65rem; }
+  h4 { font-size: 1rem; line-height: 1.4; margin: 1.5rem 0 0.6rem; }
+  .session { margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid var(--rule); }
+  .session > h3 { font-size: 1.4rem; margin: 0 0 1rem; }
+  p, ul, ol { margin: 0 0 1rem; }
+  ul, ol { padding-left: 1.4rem; }
+  li { padding-left: 0.15rem; margin-bottom: 0.55rem; }
+  strong { font-weight: 650; }
+  code { font: 0.85em var(--mono); background: var(--soft); padding: 0.1em 0.25em; border-radius: 3px; overflow-wrap: anywhere; }
+  pre { background: var(--soft); border: 1px solid var(--rule); border-radius: 5px; padding: 1rem; overflow-x: auto; line-height: 1.6; margin: 0 0 1rem; }
+  pre code { background: none; padding: 0; font-size: 0.8rem; overflow-wrap: normal; }
+  .table-wrap { overflow-x: auto; margin: 1rem 0 1.25rem; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.88rem; line-height: 1.55; }
+  caption { text-align: left; font-weight: 650; margin-bottom: 0.5rem; }
+  th, td { text-align: left; vertical-align: top; padding: 0.65rem 0.6rem; border-bottom: 1px solid var(--rule); }
+  th { background: var(--soft); font-size: 0.8rem; font-weight: 650; }
+  .note { padding: 0.8rem 1rem; border-left: 3px solid var(--accent); background: var(--soft); }
+  pre.output { border-left: 3px solid var(--accent); }
+  .example-label { font-size: 0.85rem; font-weight: 650; margin-bottom: 0.4rem; }
+  .small { color: var(--muted); font-size: 0.88rem; }
+  footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--rule); color: var(--muted); font-size: 0.8rem; }
+  @media (max-width: 36rem) {
+    body { font-size: 16px; }
+    main { padding: 2rem 1.1rem 3rem; }
+    .toolbar { padding-inline: 1.1rem; }
+    h2 { font-size: 1.4rem; }
+    th, td { padding: 0.55rem 0.4rem; }
+  }
+  @page { size: A4; margin: 17mm; }
+  @media print {
+    :root, :root[data-theme], :root:not([data-theme="light"]) {
+      color-scheme: light;
+      --paper: #fff; --ink: #111; --muted: #444; --rule: #ccc; --soft: #f5f5f5; --accent: #204957;
+    }
+    body { font-size: 10pt; line-height: 1.5; }
+    main { max-width: none; margin: 0; padding: 0; }
+    .toolbar, .skip, .contents { display: none !important; }
+    header { margin-bottom: 1rem; }
+    h1 { font-size: 28pt; }
+    h2 { font-size: 17pt; margin-top: 1.8rem; }
+    h3, .session > h3 { font-size: 14pt; margin-top: 1.2rem; }
+    h4 { font-size: 11pt; }
+    h1, h2, h3, h4, caption, .example-label { break-after: avoid; }
+    p { orphans: 3; widows: 3; }
+    tr, pre, .note { break-inside: avoid; }
+    thead { display: table-header-group; }
+    table { font-size: 9pt; }
+    .table-wrap { overflow: visible; }
+    pre { white-space: pre-wrap; overflow: visible; }
+    pre code { font-size: 8.5pt; overflow-wrap: anywhere; }
+    a { color: inherit; }
+  }
+</style>
+</head>
+<body>
+<a class="skip" href="#brief">Skip to assignment</a>
+<div class="toolbar">
+  <a class="back" href="index.html">← Go Infra Track</a>
+  <div class="tools" id="document-tools" hidden>
+    <div class="themes" role="group" aria-label="Colour theme">
+      <button type="button" data-theme-set="light" aria-pressed="false">Light</button>
+      <button type="button" data-theme-set="dark" aria-pressed="false">Dark</button>
+      <button type="button" data-theme-set="system" aria-pressed="true">System</button>
+    </div>
+    <button type="button" id="print-doc">Print</button>
+  </div>
+</div>
+<main>
+<header>
+  <p class="eyebrow">Go · Infrastructure · Build and learn</p>
+  <h1>Build an ingest relay</h1>
+  <p class="intro">Receive log events over HTTP and write them to a file. Then make your service handle bursts, batch its writes, and shut down without losing accepted work.</p>
+  <p class="meta">Seven steps for pairing with AI. Allow 14–18 hours to implement them, plus time to learn.</p>
+</header>
+<nav class="contents" aria-label="Contents">
+  <a href="#brief">The challenge</a>
+  <a href="#setup">Setup</a>
+  <a href="#session-1">1. Validate</a>
+  <a href="#session-2">2. Serve HTTP</a>
+  <a href="#session-3">3. Write records</a>
+  <a href="#session-4">4. Add a queue</a>
+  <a href="#session-5">5. Batch writes</a>
+  <a href="#session-6">6. Shut down</a>
+  <a href="#session-7">7. Finish</a>
+</nav>
+
+<section aria-labelledby="brief">
+<h2 id="brief">The challenge</h2>
+<p>Imagine a small service running beside an application. It receives the application’s logs and appends them to a local file for another process to collect. That service is your ingest relay.</p>
+<p>The interesting part starts when events arrive faster than the disk can write them. How much can you keep in memory? When should you reject a request? What happens to accepted events when the process stops? You’ll answer these questions as you build.</p>
+<p>Use Go 1.22 or later and the standard library only, including for tests. Declare the Go version in <code>go.mod</code>. Deployment, Kubernetes, authentication, TLS, databases, retries, persistent queues, rotation, crash recovery, and throughput tuning are outside this challenge. You do not need to build the downstream collector.</p>
+</section>
+
+<section aria-labelledby="setup">
+<h2 id="setup">Before you start</h2>
+<p>Create an empty project and initialize a module:</p>
+<pre><code>go mod init example.com/relay</code></pre>
+<p id="working-with-ai">Pair with AI throughout: ask it to explain unfamiliar concepts, write code with you, and help investigate failures. Work in small changes. Predict what a test will do before running it, and ask why when the result surprises you. No AI transcript or proof of unaided authorship is required.</p>
+<p>Examples assume a main package at the module root and bash or zsh with <code>curl</code>. Adjust the build path if you choose another layout. Once you have a server, build it with <code>go build -o relay .</code>, run it in one terminal, and send requests from another.</p>
+<p>Each step includes a result to aim for. Outputs are examples, not results from an existing implementation. Test names, timings, JSON member order, and error wording may differ; statuses and behavior must match. Use a fresh process and a new output file for each independent example unless stated otherwise.</p>
+<p class="small">Optional warm-ups: <a href="go-scratch-exercises.html">Go Scratch Exercises</a>.</p>
+</section>
+
+<section aria-labelledby="requirements" id="sessions">
+<h2 id="requirements">Build it one step at a time</h2>
+<p>Work through each step with your pair, and split it when you need more time. Keep the tests from earlier steps as you add behavior. The requirements live here alongside the examples.</p>
+
+<section class="session" aria-labelledby="session-1">
+<h3 id="session-1">Step 1 — Read an event</h3>
+<p>Start with code that turns JSON into a validated event. You don’t need HTTP yet. Use this as your first input:</p>
+<pre><code>{"id":"evt-0001","service":"checkout","level":"info","message":"order placed"}</code></pre>
+<h4 id="validation">What to accept</h4>
+<p>Require exactly one object with four string fields: <code>id</code>, <code>service</code>, <code>level</code>, and <code>message</code>. Reject empty strings and strings containing only Unicode whitespace. Preserve valid values exactly. The level must be precisely <code>debug</code>, <code>info</code>, <code>warn</code>, or <code>error</code>.</p>
+<p>Reject missing or unknown fields, non-string values including <code>null</code>, malformed JSON, empty input, and non-object top-level values. Trailing whitespace is fine; another value or other trailing text is not. Choose and document your handling of repeated member names. Event IDs need not be unique; do not deduplicate them.</p>
+<p>Turn the input above into tests. Change one thing at a time. For example:</p>
+<div class="table-wrap"><table>
+<caption>Input change → expected result</caption>
+<thead><tr><th scope="col">Change</th><th scope="col">Result</th></tr></thead>
+<tbody>
+<tr><td>None</td><td>Valid event, all four values unchanged</td></tr>
+<tr><td><code>"message":"  order placed  "</code></td><td>Valid; surrounding spaces preserved</td></tr>
+<tr><td><code>"level":"INFO"</code></td><td>Error identifying the invalid level</td></tr>
+<tr><td>Remove <code>id</code></td><td>Error identifying the missing field</td></tr>
+<tr><td>Append another object</td><td>Error identifying trailing data</td></tr>
+</tbody></table></div>
+<p>Run <code>go test -v ./...</code>. With tests named for those cases, part of the output might look like:</p>
+<pre class="output"><code>--- PASS: TestValidate/valid
+--- PASS: TestValidate/preserve_spaces
+--- PASS: TestValidate/invalid_level
+--- PASS: TestValidate/missing_id
+--- PASS: TestValidate/trailing_data
+PASS</code></pre>
+<p>Before moving on, cover every validation rule and accepted edge case. Explain to your pair the difference between malformed JSON and a well-formed event with invalid values.</p>
+</section>
+
+<section class="session" aria-labelledby="session-2">
+<h3 id="session-2">Step 2 — Put it behind HTTP</h3>
+<p>Add <code>POST /events</code> and <code>GET /healthz</code>. Support <code>-listen</code>, a non-empty TCP <code>host:port</code> address defaulting to <code>127.0.0.1:8080</code>. Test successful admission with a test double for now; you’ll connect the actual queue in Step 4.</p>
+<h4 id="ingestion">Handle a request</h4>
+<p>Check read capacity, body size, validation, and admission in that order. Stop at the first rejection:</p>
+<ul>
+<li>Allow at most 16 requests to read or validate bodies concurrently. If all slots are occupied, return <code>503</code> immediately without reading the body or waiting. Release a slot when reading and validation finish, including on error.</li>
+<li>Limit bodies to 16,384 bytes after transfer decoding, counting trailing whitespace. Enforce bytes actually read, not just <code>Content-Length</code>; an oversized declared length may be rejected early. Exactly the limit is allowed. Larger bodies get <code>413</code>, or <code>400</code> if invalid input was already detected within the limit. Never admit an oversized body.</li>
+<li>Invalid events get <code>400</code>. Do not check <code>Content-Type</code>: valid bodies work regardless of its value or absence.</li>
+<li>Successful admission gets <code>202</code>. A full queue or closed admission gets <code>503</code>, without waiting for space. Handlers never write to the file or wait for storage.</li>
+</ul>
+<p>Every rejected event POST must explain the problem. A <code>400</code> identifies the field or body error and why it failed; a <code>503</code> identifies read capacity, queue capacity, or closed admission. Choose and document response formats, including the success body.</p>
+<p>Health returns <code>200</code> during normal operation; choose the body. It may return <code>503</code> or be unreachable after shutdown begins or storage fails. Other methods on <code>/events</code> return <code>405</code>; unknown paths return <code>404</code>.</p>
+<h4>Try it</h4>
+<p>Run <code>./relay</code>, then send an invalid event from the other terminal:</p>
+<pre><code>curl -sS -w '\n%{http_code}\n' \
+  --data-binary '{"id":"evt-0001","service":"checkout","level":"INFO","message":"order placed"}' \
+  http://127.0.0.1:8080/events</code></pre>
+<p class="example-label">Expected: an explanation and status 400</p>
+<pre class="output"><code>{"error":"level must be debug, info, warn, or error"}
+400</code></pre>
+<p>Also test both size boundaries (16,384 and 16,385 bytes), success, wrong methods, and unknown paths. Hold 16 requests mid-body in a test; the next must get <code>503</code> without its body being read.</p>
+</section>
+
+<section class="session" aria-labelledby="session-3">
+<h3 id="session-3">Step 3 — Write a record</h3>
+<p>Now build the file-writing part independently. Support <code>-out</code>, a non-empty path defaulting to <code>events.jsonl</code>. Open the file at startup in append mode, creating it if needed. Never truncate or rewrite existing content.</p>
+<h4 id="storage">The output format</h4>
+<p>Write one complete JSON object followed by a newline per event. Each record has exactly the four original fields plus a server-assigned receive time. The time must come from the UTC clock while handling the request, before admission; use an RFC 3339 string ending in <code>Z</code>. Choose and document its field name and precision.</p>
+<p>For a writer test, supply the event from Step 1 and a fixed receive time. With the field name <code>received_at</code>, the appended line should look like:</p>
+<pre class="output"><code>{"id":"evt-0001","service":"checkout","level":"info","message":"order placed","received_at":"2026-09-23T10:15:30.123Z"}</code></pre>
+<p>The real service uses its clock, so real timestamps will differ. JSON member order does not matter. Preserve the event’s string values even when encoding changes how characters are escaped.</p>
+<p>Test append behavior with one existing line, then write two records. The result should be <strong>three complete lines</strong>, with the original line unchanged. Decode the new lines to check their values. Make a write fail and verify that the error reaches the caller. You’ll handle it at service level in Step 6.</p>
+</section>
+
+<section class="session" aria-labelledby="session-4">
+<h3 id="session-4">Step 4 — Connect the queue</h3>
+<p>Join the pieces: a handler validates an event, assigns its receive time, and admits it to a bounded queue. Exactly one background worker performs all file writes, in admission order. Concurrent requests need not follow connection arrival order.</p>
+<p>Support <code>-queue-size</code>, an integer ≥ 1 defaulting to <code>128</code>. Queue capacity counts events waiting for the worker, excluding its current batch. Start with one event per write. Keep memory bounded by the 16 read/validation slots, the queue, and one batch. Do not create per-request background work that outlives the request.</p>
+<h4 id="observability">See where the events are</h4>
+<p>Add <code>GET /stats</code>, returning <code>200</code> and a JSON object with at least these integers:</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Field</th><th scope="col">Meaning</th></tr></thead>
+<tbody>
+<tr><td><code>accepted_total</code></td><td>Event POSTs answered 202</td></tr>
+<tr><td><code>rejected_total</code></td><td>Event POSTs answered 400, 413, or 503, each counted once; other paths and methods never count</td></tr>
+<tr><td><code>exported_total</code></td><td>Events in batches whose write completed fully without error; failed or partial writes count as zero</td></tr>
+<tr><td><code>queue_depth</code></td><td>Events not yet taken by the worker; excludes the current batch, even while being written</td></tr>
+</tbody></table></div>
+<p>Counters start at zero for each process and are not persisted. A statistics request after a client receives its response must reflect that response. The values need not be an atomic snapshot.</p>
+<h4 id="examples">Try the whole path</h4>
+<p>Start a fresh process with <code>./relay -out step4.jsonl</code>. Send one event:</p>
+<pre><code>curl -sS -o /dev/null -w '%{http_code}\n' \
+  --data-binary '{"id":"evt-0001","service":"checkout","level":"info","message":"order placed"}' \
+  http://127.0.0.1:8080/events</code></pre>
+<p class="example-label">Expected</p>
+<pre class="output"><code>202</code></pre>
+<p>Run <code>curl -sS http://127.0.0.1:8080/stats</code>. Once the write completes, the values should be:</p>
+<pre class="output"><code>{"accepted_total":1,"rejected_total":0,"exported_total":1,"queue_depth":0}</code></pre>
+<p><code>cat step4.jsonl</code> should show one record like Step 3’s. An immediate stats request can still show work pending; wait for the write before comparing these values.</p>
+<p>For a deterministic overload test, use queue capacity 2 and wait until the worker is blocked inside its first write. Submit two more events, then a fourth. Expect three <code>202</code> responses, one <code>503</code>, and:</p>
+<pre class="output"><code>{"accepted_total":3,"rejected_total":1,"exported_total":0,"queue_depth":2}</code></pre>
+<p>Release the write: eventually exported becomes 3 and queue depth becomes 0. Check other rejection counters too, including that 404 and 405 do not affect them.</p>
+</section>
+
+<section class="session" aria-labelledby="session-5">
+<h3 id="session-5">Step 5 — Write in batches</h3>
+<p>Replace one-event writes with batches of at most <code>-batch-size</code> events: an integer ≥ 1, default 16. Add <code>-flush-interval</code>: a positive Go duration, default <code>1s</code>. Queue and batch sizes are independent.</p>
+<p>Flush when the batch fills, on each periodic flush opportunity if it is non-empty, and when worker input ends. Never write an empty batch. Pass each batch to storage in a single write. A partial batch waits at most about one interval for a flush opportunity; disk completion time is not guaranteed.</p>
+<h4>Try it in a controlled test</h4>
+<p>Use batch size 3 and a writer that records each call. Feed five events and wait until all five have been consumed, holding off the periodic flush. Then trigger one flush opportunity:</p>
+<div class="table-wrap"><table>
+<caption>Expected write calls</caption>
+<thead><tr><th scope="col">Point in the test</th><th scope="col">Writes so far</th><th scope="col">Events in each write</th></tr></thead>
+<tbody>
+<tr><td>Five events consumed, before the tick</td><td>1</td><td>3</td></tr>
+<tr><td>After the tick</td><td>2</td><td>3, 2</td></tr>
+<tr><td>Another tick, no new events</td><td>2</td><td>3, 2</td></tr>
+</tbody></table></div>
+<p>Repeat with input ending instead of a tick: the remaining two events must still be written. Choose your test design; do not rely on racing a real timer. Check write counts and contents, not just how many lines eventually appear in a file.</p>
+</section>
+
+<section class="session" aria-labelledby="session-6">
+<h3 id="session-6">Step 6 — Stop without losing work</h3>
+<p>Now make the relay safe to stop. Work out who waits for whom with your pair before wiring the shutdown together.</p>
+<!-- Intentional correction: normal signal shutdown permits existing handlers to
+     finish admission; storage failure stops all admission immediately. -->
+<h4 id="lifecycle">Shutdown and failure</h4>
+<p>On the first <code>SIGINT</code> or <code>SIGTERM</code>, stop new connections and requests. Let already-running handlers finish their normal checks and admission; they may return <code>202</code>. Once they finish, close worker input. No event may be admitted after that. Drain the queue, flush the partial batch, then close the file.</p>
+<p>Allow one five-second budget from the signal for the whole shutdown. If it expires, report what did not finish and exit nonzero. Choose and document second-signal behavior.</p>
+<p>A write error or short write must immediately stop all admission, including from in-flight handlers. Log the failure, shut down HTTP, and exit nonzero within five seconds of failure. An earlier signal-shutdown deadline still applies. No retries are required; unwritten events may be lost and the file may end with an incomplete line. Document that limitation.</p>
+<p>Every controlled exit after startup logs final accepted, exported, and rejected totals. Exit 0 only after timely, complete shutdown without storage failure. A crash or forced kill cannot promise final logs.</p>
+<h4>Try it</h4>
+<p>Use an output path that does not exist yet. In terminal 1, run <code>./relay -out step6.jsonl -batch-size 16 -flush-interval 1h</code>. In terminal 2, send an event:</p>
+<pre><code>curl -sS -o /dev/null -w '%{http_code}\n' \
+  --data-binary '{"id":"evt-0001","service":"checkout","level":"info","message":"order placed"}' \
+  http://127.0.0.1:8080/events</code></pre>
+<p>After it prints <code>202</code>, press Ctrl+C in terminal 1, then run there:</p>
+<pre><code>echo $?
+wc -l &lt; step6.jsonl</code></pre>
+<p class="example-label">Expected: successful exit, one stored event</p>
+<pre class="output"><code>0
+1</code></pre>
+<p>The long interval leaves the event in a partial batch; shutdown must flush it. Final logs should report accepted 1, exported 1, rejected 0. Log formatting is yours.</p>
+<h4 id="configuration">Finish startup checks</h4>
+<p>Empty, unparseable, or out-of-range flags must report the flag name on standard error and exit nonzero without serving. File-open or address-bind failures must report the cause and exit nonzero. Announce readiness only after both succeed. Log the address and effective configuration, or explain a departure in the README.</p>
+<p>For example, <code>./relay -queue-size 0</code> should report something like <code>-queue-size must be at least 1</code> and fail. Also automate draining a nonempty queue, final flushing, stalled shutdown, and no admission after input closes. For write errors and short writes, assert that exported totals do not increase, the failure is reported, and no later event is admitted.</p>
+<h4 id="guarantees">Be precise about success</h4>
+<p><code>202</code> means accepted into memory, not persisted. Exported means a complete successful write handed bytes to the OS. After exit 0, each accepted event appears exactly once in admission order after earlier file content; this is per admission, not per unique ID.</p>
+<p>No <code>fsync</code> is required. Power loss, crashes, out-of-memory kills, and <code>SIGKILL</code> may lose data. After a failed write, counters show the gap in fully successful writes, not the exact number of intact records on disk.</p>
+</section>
+
+<section class="session" aria-labelledby="session-7">
+<h3 id="session-7">Step 7 — Finish something you can explain</h3>
+<p>You now have the complete relay. Run your checks from a fresh copy:</p>
+<pre id="tests"><code>go build ./...
+go vet ./...
+go test -race ./...</code></pre>
+<p class="example-label">Expected: build and vet succeed silently; the test command reports success</p>
+<pre class="output"><code>ok   example.com/relay   1.024s</code></pre>
+<p>The package name, timing, and number of lines depend on your layout. Format with <code>gofmt</code>; tests must also pass with plain <code>go test ./...</code> and on repeated runs. Use observable conditions rather than fixed sleeps, and avoid depending on a particular port being free.</p>
+<h4 id="deliverables">Keep the result runnable</h4>
+<p>Provide source, <code>go.mod</code>, tests, and a README in a repository or archive. Exclude binaries and event output files.</p>
+<p id="readme">In the README, include run and test commands, the event’s path, ownership of shared state and the file, shutdown order, documented choices, guarantees, and limitations. Note unfinished work and one unfamiliar concept you investigated.</p>
+<p>Review correctness, bounded and race-free concurrency, meaningful tests, and clarity. Trace an event with your pair, explain what happens under overload, and predict the effect of changing a limit. If you cannot explain part of the code yet, explore it next with your pair.</p>
+</section>
+</section>
+<footer>Independent practice material, not issued by any company. Part of the <a href="index.html">Go Infra Track</a>. Step-and-example format inspired by <a href="https://codingchallenges.fyi/challenges/challenge-wc/">Coding Challenges: Build Your Own wc Tool</a>.</footer>
+</main>
+<script>
+(function () {
+  "use strict";
+  var root = document.documentElement;
+  var buttons = Array.prototype.slice.call(document.querySelectorAll("[data-theme-set]"));
+  function renderTheme() {
+    var choice = root.getAttribute("data-theme") || "system";
+    buttons.forEach(function (button) {
+      button.setAttribute("aria-pressed", String(button.getAttribute("data-theme-set") === choice));
+    });
+  }
+  buttons.forEach(function (button) {
+    button.addEventListener("click", function () {
+      var choice = button.getAttribute("data-theme-set");
+      if (choice === "system") root.removeAttribute("data-theme");
+      else root.setAttribute("data-theme", choice);
+      try {
+        if (choice === "system") localStorage.removeItem("ingest-relay-v1:theme");
+        else localStorage.setItem("ingest-relay-v1:theme", choice);
+      } catch (error) {}
+      renderTheme();
+    });
+  });
+  renderTheme();
+  document.getElementById("print-doc").addEventListener("click", function () { window.print(); });
+  document.getElementById("document-tools").hidden = false;
+})();
+</script>
+</body>
+</html>

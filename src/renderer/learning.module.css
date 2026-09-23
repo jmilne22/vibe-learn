@@ -1,0 +1,98 @@
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin: 20px 0;
+}
+.actions a {
+  font-size: 14px;
+  text-underline-offset: 4px;
+}
+.activity {
+  max-width: 760px;
+  margin: 32px auto;
+}
+.muted {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.flashcard {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 32px;
+  min-height: 220px;
+  margin: 20px 0;
+}
+.answer {
+  border-top: 1px solid var(--rule);
+  padding-top: 24px;
+  margin-top: 24px;
+}
+.layout {
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  gap: 40px;
+  margin-top: 32px;
+  align-items: start;
+}
+.exerciseNav {
+  display: grid;
+  gap: 8px;
+}
+.exerciseNav a {
+  display: flex;
+  gap: 12px;
+  text-decoration: none;
+  padding: 14px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+.exerciseNav a[aria-current] {
+  background: var(--tint);
+  font-weight: 600;
+}
+.exerciseNav span {
+  color: var(--muted);
+  font-family: monospace;
+}
+.exercise {
+  min-width: 0;
+  max-width: 840px;
+}
+.exercise h2 {
+  margin-top: 10px;
+}
+.workspace {
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  background: var(--surface);
+  padding: 24px;
+  margin: 28px 0;
+  overflow-wrap: anywhere;
+}
+.output {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: var(--code);
+  padding: 18px;
+  border-radius: 8px;
+  max-height: 440px;
+  overflow: auto;
+  font-size: 12px;
+  line-height: 1.6;
+}
+@media (max-width: 850px) {
+  .layout {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .exerciseNav {
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  }
+  .flashcard {
+    padding: 22px;
+  }
+}

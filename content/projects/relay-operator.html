@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Build a Kubernetes operator in six steps, with commands and expected results.">
+<title>Build a Relay Operator — Go Infra Track</title>
+<script>
+(function () {
+  try {
+    var theme = localStorage.getItem("ingest-relay-v1:theme");
+    if (theme === "light" || theme === "dark") document.documentElement.setAttribute("data-theme", theme);
+  } catch (error) {}
+})();
+</script>
+<style>
+  :root {
+    color-scheme: light;
+    --paper: #ffffff; --ink: #202a30; --muted: #58666e;
+    --rule: #dce3e6; --soft: #f4f6f7; --accent: #12647a;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", Consolas, "Liberation Mono", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --paper: #141b20; --ink: #e1e8ec; --muted: #a7b5bf;
+      --rule: #36434d; --soft: #202a32; --accent: #8ccfdf;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --paper: #141b20; --ink: #e1e8ec; --muted: #a7b5bf;
+    --rule: #36434d; --soft: #202a32; --accent: #8ccfdf;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 17px/1.7 var(--sans); overflow-wrap: break-word; }
+  a { color: var(--accent); text-underline-offset: 0.2em; }
+  a:hover { text-decoration-thickness: 2px; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+  [hidden] { display: none !important; }
+  [id] { scroll-margin-top: 1.5rem; }
+  .skip { position: absolute; top: -5rem; left: 1rem; padding: 0.5rem; background: var(--paper); }
+  .skip:focus { top: 0.5rem; }
+  .toolbar { max-width: 56rem; margin: auto; padding: 1rem 1.5rem; display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1.5rem; border-bottom: 1px solid var(--rule); font-size: 0.82rem; }
+  .back { margin-right: auto; text-decoration: none; }
+  .tools { display: flex; flex-wrap: wrap; align-items: center; gap: 0.7rem; }
+  .themes { display: flex; gap: 0.25rem; }
+  button { font: inherit; color: var(--muted); background: transparent; border: 1px solid var(--rule); border-radius: 4px; padding: 0.25rem 0.55rem; cursor: pointer; }
+  button:hover, button[aria-pressed="true"] { color: var(--ink); background: var(--soft); border-color: var(--muted); }
+  main { max-width: 48rem; padding: 3.5rem 1.5rem 4rem; margin: auto; }
+  header { margin-bottom: 2rem; }
+  .eyebrow { color: var(--accent); font-size: 0.8rem; font-weight: 650; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 0.5rem; }
+  h1 { font-size: clamp(2.3rem, 7vw, 3.3rem); line-height: 1.12; letter-spacing: -0.045em; margin: 0 0 1rem; }
+  .intro { font-size: 1.2rem; line-height: 1.6; }
+  .meta { color: var(--muted); font-size: 0.9rem; }
+  .contents { display: flex; flex-wrap: wrap; gap: 0.35rem 1.1rem; font-size: 0.85rem; padding: 1rem 0; border-block: 1px solid var(--rule); }
+  h2 { font-size: 1.6rem; line-height: 1.3; letter-spacing: -0.02em; margin: 3rem 0 1rem; }
+  h3 { font-size: 1.14rem; line-height: 1.4; margin: 2rem 0 0.65rem; }
+  h4 { font-size: 1rem; line-height: 1.4; margin: 1.5rem 0 0.6rem; }
+  .session { margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid var(--rule); }
+  .session > h3 { font-size: 1.4rem; margin: 0 0 1rem; }
+  p, ul, ol { margin: 0 0 1rem; }
+  ul, ol { padding-left: 1.4rem; }
+  li { padding-left: 0.15rem; margin-bottom: 0.55rem; }
+  strong { font-weight: 650; }
+  code { font: 0.85em var(--mono); background: var(--soft); padding: 0.1em 0.25em; border-radius: 3px; overflow-wrap: anywhere; }
+  pre { background: var(--soft); border: 1px solid var(--rule); border-radius: 5px; padding: 1rem; overflow-x: auto; line-height: 1.6; margin: 0 0 1rem; }
+  pre code { background: none; padding: 0; font-size: 0.8rem; overflow-wrap: normal; }
+  .table-wrap { overflow-x: auto; margin: 1rem 0 1.25rem; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.88rem; line-height: 1.55; }
+  caption { text-align: left; font-weight: 650; margin-bottom: 0.5rem; }
+  th, td { text-align: left; vertical-align: top; padding: 0.65rem 0.6rem; border-bottom: 1px solid var(--rule); }
+  th { background: var(--soft); font-size: 0.8rem; font-weight: 650; }
+  .note { padding: 0.8rem 1rem; border-left: 3px solid var(--accent); background: var(--soft); }
+  pre.output { border-left: 3px solid var(--accent); }
+  .example-label { font-size: 0.85rem; font-weight: 650; margin-bottom: 0.4rem; }
+  .small { color: var(--muted); font-size: 0.88rem; }
+  footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--rule); color: var(--muted); font-size: 0.8rem; }
+  @media (max-width: 36rem) {
+    body { font-size: 16px; }
+    main { padding: 2rem 1.1rem 3rem; }
+    .toolbar { padding-inline: 1.1rem; }
+    h2 { font-size: 1.4rem; }
+    th, td { padding: 0.55rem 0.4rem; }
+  }
+  @page { size: A4; margin: 17mm; }
+  @media print {
+    :root, :root[data-theme], :root:not([data-theme="light"]) {
+      color-scheme: light;
+      --paper: #fff; --ink: #111; --muted: #444; --rule: #ccc; --soft: #f5f5f5; --accent: #204957;
+    }
+    body { font-size: 10pt; line-height: 1.5; }
+    main { max-width: none; margin: 0; padding: 0; }
+    .toolbar, .skip, .contents { display: none !important; }
+    header { margin-bottom: 1rem; }
+    h1 { font-size: 28pt; }
+    h2 { font-size: 17pt; margin-top: 1.8rem; }
+    h3, .session > h3 { font-size: 14pt; margin-top: 1.2rem; }
+    h4 { font-size: 11pt; }
+    h1, h2, h3, h4, caption, .example-label { break-after: avoid; }
+    p { orphans: 3; widows: 3; }
+    tr, pre, .note { break-inside: avoid; }
+    thead { display: table-header-group; }
+    table { font-size: 9pt; }
+    .table-wrap { overflow: visible; }
+    pre { white-space: pre-wrap; overflow: visible; }
+    pre code { font-size: 8.5pt; overflow-wrap: anywhere; }
+    a { color: inherit; }
+  }
+
+  .lede { font-size: 1.2rem; line-height: 1.6; }
+  .caption { color: var(--muted); font-size: 0.88rem; }
+  .session > h2 { margin: 0 0 1rem; font-size: 1.4rem; }
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1.5rem 0; }
+  .card { border: 1px solid var(--rule); border-radius: 6px; padding: 1.25rem; }
+  .card h3 { margin: 0 0 0.65rem; }
+  .card p:last-child { margin-bottom: 0; }
+  .card .meta { font-size: 0.8rem; }
+  details { border-top: 1px solid var(--rule); padding: 1rem 0; margin-top: 2rem; }
+  summary { cursor: pointer; font-weight: 650; }
+  details[open] > summary { margin-bottom: 1rem; }
+  @media (max-width: 36rem) { .cards { grid-template-columns: 1fr; } }
+  @media print { .cards { display: block; } .card { break-inside: avoid; margin-bottom: 1rem; } }
+</style>
+</head>
+<body>
+<a class="skip" href="#brief">Skip to content</a>
+<div class="toolbar">
+  <a class="back" href="index.html">← Go Infra Track</a>
+  <div class="tools" id="document-tools" hidden>
+    <div class="themes" role="group" aria-label="Colour theme">
+      <button type="button" data-theme-set="light" aria-pressed="false">Light</button>
+      <button type="button" data-theme-set="dark" aria-pressed="false">Dark</button>
+      <button type="button" data-theme-set="system" aria-pressed="true">System</button>
+    </div>
+    <button type="button" id="print-doc">Print</button>
+  </div>
+</div>
+<main id="top">
+<header>
+<p class="eyebrow">Go · Kubernetes · Build and learn</p>
+<h1>Build a relay operator</h1>
+<p class="intro">Run your relay on Kubernetes. Then replace hand-maintained manifests with a controller that keeps the workload running and tells you what is happening.</p>
+<p class="meta">Six steps · 14–18 hours of implementation, plus learning time · Requires your working Ingest Relay.</p>
+</header>
+<nav class="contents" aria-label="Contents"><a href="#brief">Setup</a><a href="#session-1">1. Deploy</a><a href="#session-2">2. Define the API</a><a href="#session-3">3. Reconcile</a><a href="#session-4">4. Roll out</a><a href="#session-5">5. Report status</a><a href="#session-6">6. Package</a></nav>
+<section aria-labelledby="brief">
+<h2 id="brief"><span id="must-do" aria-hidden="true"></span><span id="rules" aria-hidden="true"></span><span id="budget" aria-hidden="true"></span>The challenge</h2>
+<p>Your <a href="go-telemetry-ingest-take-home.html">Ingest Relay</a> works locally. Now run one relay on each worker node, writing logs to that node’s disk. An <code>IngestRelay</code> custom resource will describe the desired configuration; your operator will maintain a DaemonSet and a node-local Service for it.</p>
+<p>Use Go, Docker, kind, kubectl, Kubebuilder v4, and Helm. Podman is also fine if you adapt the container commands. Use the Go/tool versions supported by your chosen Kubebuilder release and record them. The allowed modules are controller-runtime, client-go, apimachinery, and scaffold dependencies. See the <a href="https://book.kubebuilder.io/quick-start">Kubebuilder setup guide</a> for tool installation.</p>
+<p>Pair with AI for explanations, implementation, and debugging. Before changing cluster objects, predict what the controller should observe and change. Webhooks, API conversion, leader election tuning, high availability, OLM bundles, publishing, multi-cluster management, and production hardening are outside the challenge. Your design choices remain yours; explain them in the README.</p>
+<p>Outputs below are representative targets, not captured test runs. Names match the examples; hashes, ages, timings, image sizes, and condition messages will vary. Wait for observable readiness rather than copying a fixed sleep.</p>
+<h3 id="conventions">Prepare a local cluster</h3>
+<p>Save this as <code>kind.yaml</code>. The two untainted workers let you observe a rollout across nodes.</p>
+<pre data-lang="yaml"><code>kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+- role: control-plane
+- role: worker
+- role: worker</code></pre>
+<pre data-lang="sh"><code>kind create cluster --name relay-lab --config kind.yaml
+kubectl config use-context kind-relay-lab
+kubectl get nodes</code></pre>
+<p>Expect three Ready nodes, including <code>relay-lab-worker</code> and <code>relay-lab-worker2</code>. Commands below use the default namespace for relays. Run the controller separately when a command says to keep it running.</p>
+</section>
+<div id="sessions">
+<section class="session" aria-labelledby="session-1">
+<h3 id="session-1"><span id="IMG-1" aria-hidden="true"></span><span id="IMG-2" aria-hidden="true"></span><span id="IMG-3" aria-hidden="true"></span><span id="spec-image" aria-hidden="true"></span><span id="reference" aria-hidden="true"></span>Step 1 — Put the relay on both workers</h3>
+<p>In your relay project, write a multi-stage Dockerfile that produces a static binary and a final image smaller than 50 MB. Use a version tag, never <code>latest</code>. Build and load it into your local cluster:</p>
+<pre data-lang="sh"><code>docker build -t ingest-relay:v0.1.0 .
+kind load docker-image ingest-relay:v0.1.0 --name relay-lab
+docker image inspect ingest-relay:v0.1.0 --format '{{.Size}}'</code></pre>
+<p>The last command must print fewer than 50,000,000 bytes. Choose a runtime image and filesystem permissions that let the relay write its node-local directory; document whether you use an init container, root, or another approach.</p>
+<p>Write <code>relay-demo.yaml</code> containing a DaemonSet named <code>relay-demo</code>. Make it listen on <code>0.0.0.0:8080</code>, mount a <code>hostPath</code> at <code>/var/lib/ingest-relay</code>, and write <code>events.jsonl</code> there. Add readiness and liveness probes on <code>/healthz</code>, at least ten seconds of termination grace, and no control-plane toleration. Use <code>IfNotPresent</code> for the loaded image and label its pods <code>app=relay-demo</code> for the commands below.</p>
+<pre data-lang="sh"><code>kubectl apply -f relay-demo.yaml
+kubectl rollout status daemonset/relay-demo --timeout=120s
+kubectl get daemonset relay-demo</code></pre>
+<p class="example-label">Expected columns after readiness</p>
+<pre class="output"><code>NAME         DESIRED   CURRENT   READY
+relay-demo   2         2         2</code></pre>
+<p>In another terminal, select a specific pod so you know which node's file to inspect. Keep this port-forward running:</p>
+<pre data-lang="sh"><code>RELAY_POD=$(kubectl get pods -l app=relay-demo -o jsonpath='{.items[0].metadata.name}')
+RELAY_NODE=$(kubectl get pod "$RELAY_POD" -o jsonpath='{.spec.nodeName}')
+kubectl port-forward "pod/$RELAY_POD" 8080:8080</code></pre>
+<p>From a request terminal, send an event:</p>
+<pre data-lang="sh"><code>curl -sS -o /dev/null -w '%{http_code}\n' \
+  --data-binary '{"id":"operator-1","service":"checkout","level":"info","message":"running on kind"}' \
+  http://127.0.0.1:8080/events</code></pre>
+<p class="example-label">Expected</p><pre class="output"><code>202</code></pre>
+<p>After the flush interval, stop the forward with Ctrl+C. In that same terminal, inspect the selected node container:</p>
+<pre data-lang="sh"><code>docker exec "$RELAY_NODE" cat /var/lib/ingest-relay/events.jsonl</code></pre>
+<p>Expect a JSON record preserving the four submitted event fields, plus the UTC receive-time field you chose in the relay. The timestamp varies. This is the node container's filesystem, not a path on your laptop. Follow the pod's logs while deleting it from another terminal: expect the relay's clean-exit totals before replacement. Delete <code>relay-demo.yaml</code> before Step 3 so it cannot share the operator's files.</p>
+</section>
+<section class="session" aria-labelledby="session-2">
+<h3 id="session-2"><span id="API-1" aria-hidden="true"></span><span id="API-2" aria-hidden="true"></span><span id="API-3" aria-hidden="true"></span><span id="API-4" aria-hidden="true"></span><span id="spec-api" aria-hidden="true"></span>Step 2 — Give the workload an API</h3>
+<p>Create a separate operator project. These commands scaffold types and a controller; they do not implement reconciliation:</p>
+<pre data-lang="sh"><code>mkdir relay-operator
+cd relay-operator
+kubebuilder init --domain example.com --repo example.com/relay-operator
+kubebuilder create api --group telemetry --version v1alpha1 --kind IngestRelay</code></pre>
+<p>Answer yes to resource and controller creation. Define a namespaced <code>telemetry.example.com/v1alpha1</code> kind <code>IngestRelay</code> with a status subresource. Generate schema validation and defaults for these fields:</p>
+<div class="table-wrap"><table><thead><tr><th>Spec field</th><th>Type and rule</th><th>Default</th></tr></thead><tbody>
+<tr><td><code>image</code></td><td>Required, non-empty string</td><td>None</td></tr>
+<tr><td><code>queueSize</code></td><td>int32 ≥ 1</td><td>128</td></tr>
+<tr><td><code>batchSize</code></td><td>int32 ≥ 1</td><td>16</td></tr>
+<tr><td><code>flushInterval</code></td><td>Positive Go duration string; pattern validation</td><td>1s</td></tr>
+<tr><td><code>port</code></td><td>int32, 1024–65535</td><td>8080</td></tr>
+<tr><td><code>hostPath</code></td><td>Absolute path string</td><td>/var/lib/ingest-relay</td></tr>
+<tr><td><code>resources</code></td><td>Optional ResourceRequirements</td><td>None</td></tr>
+</tbody></table></div>
+<p>Keep the duration validation consistent with the relay: accept examples such as <code>500ms</code> and <code>2s</code>, reject nonpositive values, and document the supported syntax. Add field descriptions and printer columns IMAGE, DESIRED, READY, and AGE.</p>
+<p>Run <code>make generate manifests install</code>. Save this as <code>relay.yaml</code>:</p>
+<pre data-lang="yaml"><code>apiVersion: telemetry.example.com/v1alpha1
+kind: IngestRelay
+metadata:
+  name: relay
+spec:
+  image: ingest-relay:v0.1.0</code></pre>
+<pre data-lang="sh"><code>kubectl apply -f relay.yaml
+kubectl get ingestrelay relay -o jsonpath='{.spec.queueSize}{" "}{.spec.batchSize}{" "}{.spec.flushInterval}{"\n"}'
+kubectl explain ingestrelay.spec</code></pre>
+<p class="example-label">Expected defaults</p><pre class="output"><code>128 16 1s</code></pre>
+<p>The explanation should describe every field. A copy of the resource with <code>queueSize: 0</code> must be rejected by the API server. At this step the CR can exist without creating any pods; that is the next capability.</p>
+</section>
+<section class="session" aria-labelledby="session-3">
+<h3 id="session-3"><span id="REC-1" aria-hidden="true"></span><span id="REC-2" aria-hidden="true"></span><span id="REC-3" aria-hidden="true"></span><span id="REC-4" aria-hidden="true"></span><span id="REC-5" aria-hidden="true"></span><span id="TST-1" aria-hidden="true"></span><span id="TST-3" aria-hidden="true"></span><span id="spec-reconcile" aria-hidden="true"></span>Step 3 — Reconcile desired state</h3>
+<p>Implement reconciliation and keep <code>make run</code> running in the operator project. For each CR, create exactly one DaemonSet and one ClusterIP Service, both in its namespace and named after it. Both carry <code>app.kubernetes.io/managed-by=relay-operator</code> and a controller owner reference to the CR.</p>
+<p>The pod inherits the image, resource requirements, port, hostPath, queue size, batch size, and flush interval from the spec. Set <code>-listen</code> to all interfaces on the chosen port, <code>-out</code> to <code>&lt;hostPath&gt;/events.jsonl</code>, and <code>-queue-size</code>, <code>-batch-size</code>, and <code>-flush-interval</code> to their corresponding spec values. Keep the probes, volume, and termination grace from Step 1. Use per-CR pod labels so each Service selects only its own relay. The Service uses the configured port and <code>internalTrafficPolicy: Local</code>.</p>
+<p>Revert drift in owned fields and recreate deleted objects within 30 seconds. Let garbage collection remove the DaemonSet and Service when the CR is deleted; do not add a finalizer. Distinguish owned fields from metadata another controller may maintain.</p>
+<pre data-lang="sh"><code>kubectl rollout status daemonset/relay --timeout=120s
+kubectl get service relay -o jsonpath='{.spec.type}{" "}{.spec.internalTrafficPolicy}{"\n"}'
+kubectl get daemonset relay -o jsonpath='{.metadata.ownerReferences[0].kind}{"\n"}'</code></pre>
+<p class="example-label">Expected</p><pre class="output"><code>ClusterIP Local
+IngestRelay</code></pre>
+<p>Delete the Service and watch for its replacement:</p>
+<pre data-lang="sh"><code>kubectl delete service relay
+kubectl get service relay --watch</code></pre>
+<p>Expect a new Service within the bound; stop the watch with Ctrl+C. Repeat with an owned field changed manually and verify restoration. In envtest, check creation, selectors, translated arguments, owner references, and drift repair. Use the scaffold’s test target to provision its API-server test binaries; envtest has no kubelet and will not make relay pods Ready for you. Test CR deletion on kind, where garbage collection actually runs, then reapply <code>relay.yaml</code>.</p>
+</section>
+<section class="session" aria-labelledby="session-4">
+<h3 id="session-4"><span id="REC-6" aria-hidden="true"></span><span id="REC-7" aria-hidden="true"></span><span id="TST-2" aria-hidden="true"></span>Step 4 — Change configuration safely</h3>
+<p>A spec change should update the pod template and roll the DaemonSet one pod at a time. Choose and document rollout settings such as <code>maxUnavailable</code>. With healthy storage and graceful pod termination, events acknowledged with 202 must survive the rollout in node-local files. This does not promise survival of node failure or deletion of the kind cluster.</p>
+<pre data-lang="sh"><code>kubectl patch ingestrelay relay --type=merge -p '{"spec":{"queueSize":256}}'
+kubectl rollout status daemonset/relay --timeout=120s
+kubectl get daemonset relay -o jsonpath='{.spec.template.spec.containers[0].args}{"\n"}'</code></pre>
+<p class="example-label">Expected argument excerpt; formatting and argument order are yours</p><pre class="output"><code>-queue-size 256</code></pre>
+<p>For the drain check, send uniquely identified events through a port-forward, record which requests received 202, then trigger a rollout. The forward may disconnect when its pod disappears; reconnect as needed. Wait for completion and compare the accepted IDs against records on both worker disks. Rejected or disconnected requests are not acknowledgements.</p>
+<p>Reconciliation must also be quiet when nothing changes. In a controlled envtest, reconcile an already-correct resource again and compare the DaemonSet and Service resourceVersions: they must be unchanged. Test a spec update separately and assert that its intended template fields change. A live cluster’s status updates can change versions independently, so it is not a reliable no-op test.</p>
+</section>
+<section class="session" aria-labelledby="session-5">
+<h3 id="session-5"><span id="STS-1" aria-hidden="true"></span><span id="STS-2" aria-hidden="true"></span><span id="STS-3" aria-hidden="true"></span><span id="STS-4" aria-hidden="true"></span><span id="TST-4" aria-hidden="true"></span><span id="spec-status" aria-hidden="true"></span>Step 5 — Report what is happening</h3>
+<p>Populate <code>status.observedGeneration</code> with the generation successfully reconciled, and mirror the DaemonSet’s <code>desiredNumberScheduled</code> and <code>numberReady</code>. Give each condition a CamelCase reason and a useful message:</p>
+<ul><li><code>Available=True</code> when desired is greater than zero and ready equals desired.</li><li><code>Progressing=True</code> while the DaemonSet’s observed generation or updated counts lag the current template.</li><li><code>Degraded=True</code> after a reconcile failure, or under your documented broader failure definition.</li></ul>
+<p>Do not treat an API update succeeding as evidence that replacement pods are healthy. Use envtest to supply DaemonSet status and check the CR’s counts, conditions, and observed generation.</p>
+<pre data-lang="sh"><code>kubectl wait --for=condition=Available ingestrelay/relay --timeout=120s
+kubectl get ingestrelays</code></pre>
+<p class="example-label">Expected after reconciliation and readiness</p><pre class="output"><code>NAME    IMAGE                   DESIRED   READY   AGE
+relay   ingest-relay:v0.1.0      2         2       2m</code></pre>
+<p>Try an unavailable image, inspect pod events and CR conditions, then restore the working version:</p>
+<pre data-lang="sh"><code>kubectl patch ingestrelay relay --type=merge -p '{"spec":{"image":"ingest-relay:missing"}}'
+kubectl get ingestrelay relay -o yaml
+kubectl patch ingestrelay relay --type=merge -p '{"spec":{"image":"ingest-relay:v0.1.0"}}'
+kubectl rollout status daemonset/relay --timeout=120s</code></pre>
+<p>Once a replacement cannot start, expect a rollout in progress and counts reflecting reality. Report Degraded according to your documented rule; never invent readiness. Conditions can be briefly stale while changes propagate.</p>
+</section>
+<section class="session" aria-labelledby="session-6">
+<h3 id="session-6"><span id="SHIP-1" aria-hidden="true"></span><span id="SHIP-2" aria-hidden="true"></span><span id="SHIP-3" aria-hidden="true"></span><span id="SHIP-4" aria-hidden="true"></span><span id="TST-5" aria-hidden="true"></span><span id="spec-ship" aria-hidden="true"></span><span id="spec-tests" aria-hidden="true"></span>Step 6 — Package a repeatable installation</h3>
+<p>Build an operator image and a Helm chart at <code>charts/relay-operator</code>. Install the CRD, required RBAC, and operator in its own namespace under its own service account. Make the operator image and resources configurable through values. For these examples, expose <code>image.repository</code> and <code>image.tag</code>, and use IfNotPresent for local images.</p>
+<p>Grant only the permissions reconciliation needs: IngestRelay resources and their status, DaemonSets, Services, and events if emitted. Run one controller replica for this exercise; avoid requiring cluster-admin. Stop the local <code>make run</code> process before starting the packaged controller.</p>
+<pre data-lang="sh"><code>make docker-build IMG=relay-operator:v0.1.0
+kind load docker-image relay-operator:v0.1.0 --name relay-lab
+helm lint charts/relay-operator
+helm upgrade --install relay-operator charts/relay-operator \
+  --namespace relay-system --create-namespace --wait --timeout=2m \
+  --set image.repository=relay-operator --set image.tag=v0.1.0
+kubectl wait --for=condition=Available ingestrelay/relay --timeout=120s</code></pre>
+<p class="example-label">Expected final command output</p><pre class="output"><code>ingestrelay.telemetry.example.com/relay condition met</code></pre>
+<p>Check the packaged controller by keeping this forward running:</p>
+<pre data-lang="sh"><code>kubectl port-forward daemonset/relay 8080:8080</code></pre>
+<p>In a second terminal, send a new event:</p>
+<pre data-lang="sh"><code>curl -sS -o /dev/null -w '%{http_code}\n' \
+  --data-binary '{"id":"packaged-1","service":"checkout","level":"info","message":"installed with Helm"}' \
+  http://127.0.0.1:8080/events</code></pre>
+<p>Expect 202 and a matching stored record on the selected worker. Then script the complete installation on a fresh kind cluster: create it, load both images, install the chart, apply the CR, wait for Available=True, send an event, and verify its record. Give readiness checks a timeout and fail clearly when any command fails. A successful install into a cluster that already has your CRD is not sufficient.</p>
+<p>Document Helm upgrade/uninstall effects on CRDs and existing CRs. Helm’s <code>crds/</code> directory installs definitions but does not normally upgrade or delete them; make your chosen handling explicit. See <a href="https://helm.sh/docs/chart_best_practices/custom_resource_definitions/">Helm’s CRD guidance</a>.</p>
+<h4 id="hand-in"><span id="evaluation" aria-hidden="true"></span>Finish</h4>
+<pre data-lang="sh"><code>make test
+helm lint charts/relay-operator</code></pre>
+<p>Expect the controller tests to pass and the chart to be lint-clean. Keep a separate end-to-end result showing the real cluster reached readiness. In the rollout test, track response statuses as well as file contents; a client connection failure must not quietly become a missing “accepted” event.</p>
+<p>Provide the relay Dockerfile, operator source and tests, chart, and an end-to-end script. The README should get a fresh cluster to Available=True and explain the API defaults, ownership, drift repair, rollouts, conditions, RBAC, filesystem permissions, Helm behavior, and unfinished work. Review with your pair why reconciliation converges and why an unchanged desired state produces no resource writes.</p>
+</section>
+</div>
+<footer>Independent practice material. Part of the <a href="index.html">Go Infra Track</a>. Local-cluster commands follow the <a href="https://kind.sigs.k8s.io/docs/user/quick-start/">kind documentation</a>.</footer>
+
+</main>
+<script>
+(function () {
+  "use strict";
+  var root = document.documentElement;
+  var buttons = Array.prototype.slice.call(document.querySelectorAll("[data-theme-set]"));
+  function renderTheme() {
+    var choice = root.getAttribute("data-theme") || "system";
+    buttons.forEach(function (button) {
+      button.setAttribute("aria-pressed", String(button.getAttribute("data-theme-set") === choice));
+    });
+  }
+  buttons.forEach(function (button) {
+    button.addEventListener("click", function () {
+      var choice = button.getAttribute("data-theme-set");
+      if (choice === "system") root.removeAttribute("data-theme");
+      else root.setAttribute("data-theme", choice);
+      try {
+        if (choice === "system") localStorage.removeItem("ingest-relay-v1:theme");
+        else localStorage.setItem("ingest-relay-v1:theme", choice);
+      } catch (error) {}
+      renderTheme();
+    });
+  });
+  renderTheme();
+  document.getElementById("print-doc").addEventListener("click", function () { window.print(); });
+  document.getElementById("document-tools").hidden = false;
+})();
+</script>
+</body>
+</html>
