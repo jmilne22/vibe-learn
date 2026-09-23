@@ -32,4 +32,14 @@ Courses add versioned exercise and flashcard arrays; projects do not. Exercise f
 
 FSRS (`ts-fsrs`) schedules local flashcard reviews. The validated review command checks card identity/version and the prior record timestamp to reject duplicate submissions. Card edits reset memory on the next review. Browse mode does not mutate scheduling. Review records merge by timestamp on backup import; imported exercise paths are not attached automatically. No navigation or project checks depend on recall ratings.
 
-Non-packaged builds accept `VIBE_DEV_CATALOG` for an isolated authoring/test catalog. The desktop smoke uses a test-only course to exercise prepare → fail → edit → pass, review ratings, export and restart; packaged builds always read their bundled catalog. Test fixtures never populate the public Courses library.
+Non-packaged builds accept `VIBE_DEV_CATALOG` for an isolated authoring/test catalog. The desktop smoke uses a test-only course to exercise prepare → fail → edit → pass, review ratings, export and restart; packaged builds start from their bundled catalog and can use a verified downloaded update. Test fixtures never populate the public Courses library.
+
+## Content updates
+
+The content compiler also emits `updates/latest.json` and `updates/<sha256>.json`. The existing Pages deployment publishes both alongside the preview. The manifest declares the update format, minimum app version, source commit date, and catalog hash. Filenames derived from the hash prevent mixing a manifest with a different catalog during deployment; if an older file is no longer available, retry the update to fetch the current manifest.
+
+**Settings & backups → Update content** makes the only network request for content updates. Main fetches from the fixed HTTPS Pages endpoint, refuses redirects, caps requests at 30 seconds and catalogs at 30 MB, checks the hash and compatibility, validates IDs/references/exercise paths and built-in check versions, and sanitizes HTML. Source files in exercises are data until the learner explicitly runs checks. Content updates cannot install a new runner or acceptance suite implementation.
+
+The profile's `content/current.json` holds the verified manifest and catalog, written through a temporary file and rename before changing the active library. A successful replacement retains `previous.json`. Startup reads local files only, falls back to the previous catalog or bundled content if the cache is invalid, and prefers bundled content with a later source commit date. Failed downloads and writes leave the active catalog in place. An update cannot start during a run; runs and exercise preparation cannot start during an update.
+
+Content updates never write SQLite records or learner workspace files. Stable identifiers keep notes, progress, bookmarks and reviews associated; records for removed content remain in backups. Existing exercise folders are not reset when checks change. JSON backups contain learner state, not the downloaded catalog cache. The content can be downloaded again after restoring a backup.

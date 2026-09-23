@@ -18,3 +18,11 @@ Verified on Linux/NixOS on 2026-09-23, including a fresh source copy and `npm ci
 The generic packaged Electron executable required local ELF loader/library adjustments to launch on NixOS. Those changes affect only the temporary unpacked executable, after ZIP creation; the generated ZIP is unchanged. The smoke script asserts `app.isPackaged`, uses an empty host PATH, and verifies bundled offline Go execution. General Linux distribution should use the standard Ubuntu CI artifact.
 
 Not verified on this host: macOS/Windows execution and signing, or a live Maelstrom run (Java/Graphviz/gnuplot are not installed). The manual/release-tag workflow packages and smoke-tests all three OSes; ordinary PRs run a single Linux verification job. Maelstrom argument construction and report verdict handling are covered by platform tests; its live integration still needs an installed harness. No Kubernetes automated evaluation is intended or included.
+
+## Content updater — 23 September 2026
+
+- `npm run verify`: types, lint, catalog validation, 28 platform tests, build, and five browser tests passed.
+- Update tests cover saved/offline startup, hash failures, app/manifest incompatibility, unsupported built-in suites, unsafe exercise paths, sanitized HTML, HTTP errors, redirects, timeouts, oversized streams, concurrent requests, failed atomic replacement, and recovery from a damaged cache.
+- Development and packaged Linux smoke tests passed update → new project visible → HTTP failure leaves content intact → restart with the downloaded catalog. SQLite records and learner source files were unchanged by the update. The packaged smoke also passed bundled offline Go execution.
+- The packaged binary was launched through an FHS wrapper with Electron libraries on NixOS. This did not modify the release binary. Tests used a temporary profile under the home directory so it was visible inside that environment.
+- The generated Pages artifact and installer both contain catalog bytes matching their manifests. Smoke tests use fixture update responses; the public update endpoint will be deployed when this change merges. Windows/macOS execution is left to the existing installer workflow.

@@ -1,6 +1,6 @@
 # Content authoring
 
-Content is authored in this repository and compiled into the application. The desktop app does not yet import content packages at runtime. `courses/` is intentionally empty; the bundled catalog currently contains five standalone projects.
+Content is authored in this repository, bundled with the application, and published to the content update channel by the existing Pages workflow. Desktop users can download the current catalog from Settings after deployment. `courses/` is intentionally empty; the bundled catalog currently contains five standalone projects.
 
 Run `npm run new-course -- my-topic`. Edit `courses/<slug>/course.yaml` and Markdown under `content/lessons`. Run `npm run validate:content`, then `npm run build` or `npm run app`.
 
@@ -67,3 +67,5 @@ Add `content/flashcards.yaml`:
 Use stable card IDs, concise questions and explanatory answers in Markdown. `moduleId` is optional for both cards and exercises; when present it links to that module's first section. Content hashes version cards and exercises independently.
 
 The deck supports unrestricted browsing and optional FSRS review with Again, Hard, Good and Easy ratings. Review state is local SQLite data and is included in backups. Edited cards start fresh on their next review. There are no streaks, scores, daily requirements, reminders or navigation gates. The website allows browsing, while scheduling and task execution require the desktop app.
+
+Ordinary content edits need no desktop release. New runtime features or built-in check implementations require an app release and a corresponding minimum content app version; see [CI and releases](ci.md#updating-content-without-an-installer).

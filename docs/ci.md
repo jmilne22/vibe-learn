@@ -13,3 +13,11 @@ To publish a release after testing, set the package version and lockfile version
 Current installer builds are unsigned. Signing and notarization require separate credentials and setup described in [desktop packaging](desktop-packaging.md). Neither is claimed to be configured by this workflow.
 
 Windows packaging uses the `windows-2022` runner with Visual Studio 2022. Electron's current native-module build tooling does not recognize Visual Studio 2026 on `windows-latest`.
+
+## Updating content without an installer
+
+Merge course or project changes to `main`. The existing Verify/Pages workflow builds and publishes the catalog plus its update manifest. In Vibe Learn 2.0.2 or newer, choose **Settings & backups → Update content** after the Pages deployment succeeds. Reading then uses the saved catalog offline. No version bump, installer build, extra CI job, or GitHub release is needed for ordinary content edits.
+
+App code, native dependencies, or built-in runner changes still require a desktop release. Set `MINIMUM_CONTENT_APP_VERSION` in `src/shared/content-update.ts` to the first app version that supports newly required content behaviour. Update the supported built-in check versions in `src/content/validate-catalog.ts` when changing a suite. Keep course/project/section/activity IDs stable across edits.
+
+Version 2.0.2 introduces the updater; 2.0.1 installations need that one-time app upgrade. Publishing the Pages catalog alone cannot add the updater to an old binary.

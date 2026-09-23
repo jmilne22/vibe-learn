@@ -6,6 +6,7 @@ import {
 import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
+import crypto from "node:crypto";
 import { fixtureCourse } from "../tests/v2/fixtures/course";
 import type { Catalog, AppState, Command } from "../src/shared/model";
 async function main(): Promise<void> {
@@ -270,12 +271,99 @@ async function main(): Promise<void> {
         JSON.parse(await fs.readFile(backup, "utf8")).state.reviews,
       ).toHaveLength(2);
     }
+    // Serve an update through the same main-process fetch path without using the public channel.
+    const updatedCatalog = structuredClone(catalog);
+    updatedCatalog.items.push({
+      id: "project:download-fixture",
+      kind: "project",
+      title: "Downloaded project",
+      description: "Content update smoke fixture",
+      source: "tests",
+      version: "1",
+      stages: [
+        {
+          id: "overview",
+          title: "Overview",
+          html: "<h1>Downloaded project</h1>",
+          text: "Downloaded project",
+        },
+      ],
+      related: [],
+      checks: [],
+      prerequisites: [],
+    });
+    const contentData = JSON.stringify(updatedCatalog);
+    const contentManifest = {
+      formatVersion: 1,
+      minimumAppVersion: "2.0.2",
+      publishedAt: new Date(Date.now() + 60000).toISOString(),
+      revision: crypto.createHash("sha256").update(contentData).digest("hex"),
+    };
+    await app.evaluate(
+      (_electron, payload) => {
+        globalThis.fetch = (async (input) => {
+          const url = String(input);
+          if (
+            url === "https://jmilne22.github.io/vibe-learn/updates/latest.json"
+          )
+            return new Response(JSON.stringify(payload.manifest));
+          if (
+            url ===
+            `https://jmilne22.github.io/vibe-learn/updates/${payload.manifest.revision}.json`
+          )
+            return new Response(payload.data);
+          throw new Error(`Unexpected update URL: ${url}`);
+        }) as typeof fetch;
+      },
+      { manifest: contentManifest, data: contentData },
+    );
+    await page.getByRole("link", { name: "Settings & backups" }).click();
+    const beforeContentUpdate = (await call({ type: "state" })) as AppState;
+    await page
+      .getByRole("button", { name: "Update content", exact: true })
+      .click();
+    await expect(
+      page.getByText("Content updated.", { exact: true }),
+    ).toBeVisible();
+    expect(await call({ type: "state" })).toEqual(beforeContentUpdate);
+    await page.screenshot({ path: "build/screenshots/content-updates.png" });
+    expect(
+      await fs.readFile(path.join(workspace, "addition_test.go"), "utf8"),
+    ).toBe(source);
+    await page
+      .getByRole("navigation")
+      .getByRole("link", { name: "Projects", exact: true })
+      .click();
+    await expect(
+      page.getByRole("heading", { name: "Downloaded project", exact: true }),
+    ).toBeVisible();
+    await app.evaluate(() => {
+      globalThis.fetch = async () =>
+        new Response("Unavailable", { status: 503 });
+    });
+    await page.getByRole("link", { name: "Settings & backups" }).click();
+    await page
+      .getByRole("button", { name: "Update content", exact: true })
+      .click();
+    await expect(
+      page.getByText(/Content server returned HTTP 503/),
+    ).toBeVisible();
+    expect(
+      ((await call({ type: "catalog" })) as Catalog).items.some(
+        (i) => i.id === "project:download-fixture",
+      ),
+    ).toBe(true);
     await page.getByRole("button", { name: "Switch theme" }).click();
     await app.close();
     app = undefined;
     app = await launch();
     page = await app.firstWindow();
     await expect(page.getByRole("heading", { name: "Continue" })).toBeVisible();
+    expect(
+      ((await call({ type: "catalog" })) as Catalog).items.some(
+        (i) => i.id === "project:download-fixture",
+      ),
+    ).toBe(true);
     const restored = (await call({ type: "state" })) as AppState;
     expect(restored.notes[0]?.text).toBe("Keep my reasoning and my tests.");
     expect(restored.bookmarks).toHaveLength(1);
@@ -292,7 +380,7 @@ async function main(): Promise<void> {
     ).toBeCloseTo(0.55, 1);
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
     console.log(
-      `${packaged ? "Packaged" : "Development"} desktop smoke passed: SQLite restart, notes, bookmarks, validated IPC, clipboard, untouched learner code, ${packaged ? "bundled offline" : "local"} Go execution.`,
+      `${packaged ? "Packaged" : "Development"} desktop smoke passed: SQLite restart, content update/recovery, notes, bookmarks, validated IPC, clipboard, untouched learner code, ${packaged ? "bundled offline" : "local"} Go execution.`,
     );
   } finally {
     await app?.close();

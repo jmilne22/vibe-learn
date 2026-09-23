@@ -13,7 +13,6 @@ import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import {
-  CatalogSchema,
   CommandSchema,
   type Workspace,
   type ExerciseWorkspace,
@@ -23,6 +22,7 @@ import { prepareExercise } from "./exercises";
 import { reviewCard } from "./review";
 import { Store } from "./store";
 import { Runner } from "./runner";
+import { ContentLibrary } from "./content-library";
 const profile =
   process.env.VIBE_USER_DATA_DIR ||
   path.join(
@@ -58,15 +58,22 @@ async function start(): Promise<void> {
   const resources = app.isPackaged
     ? path.join(process.resourcesPath, "learning")
     : path.join(app.getAppPath(), "build/content");
-  const catalog = CatalogSchema.parse(
-    JSON.parse(
-      fs.readFileSync(
-        (!app.isPackaged && process.env.VIBE_DEV_CATALOG) ||
-          path.join(resources, "catalog.json"),
-        "utf8",
-      ),
-    ),
+  const bundled = fs.readFileSync(
+    (!app.isPackaged && process.env.VIBE_DEV_CATALOG) ||
+      path.join(resources, "catalog.json"),
+    "utf8",
   );
+  const manifestPath = path.join(resources, "updates/latest.json");
+  const library = await ContentLibrary.open({
+    bundled,
+    directory: path.join(profile, "content"),
+    appVersion: app.getVersion(),
+    bundledManifest: fs.existsSync(manifestPath)
+      ? JSON.parse(fs.readFileSync(manifestPath, "utf8"))
+      : undefined,
+  });
+  let catalog = library.catalog;
+  let updatingContent = false;
   store = await Store.open(path.join(profile, "learning.sqlite"));
   const changed = () => window?.webContents.send("learning:changed");
   const bundledGo = path.join(
@@ -115,6 +122,27 @@ async function start(): Promise<void> {
     const input = CommandSchema.parse(raw);
     if (input.type === "catalog") return catalog;
     if (input.type === "state") return store.state();
+    if (input.type === "content-status") return library.status;
+    if (input.type === "update-content") {
+      if (updatingContent)
+        throw new Error("A content update is already in progress.");
+      if (store.state().runs.some((run) => run.status === "running"))
+        throw new Error(
+          "Wait for the current run to finish before updating content.",
+        );
+      updatingContent = true;
+      try {
+        const result = await library.update();
+        catalog = library.catalog;
+        return result;
+      } finally {
+        updatingContent = false;
+      }
+    }
+    if (updatingContent && (input.type === "run" || input.type === "exercise"))
+      throw new Error(
+        "Wait for the content update to finish before starting an activity.",
+      );
     const item =
       "itemId" in input
         ? catalog.items.find((i) => i.id === input.itemId)
@@ -371,12 +399,10 @@ function createWindow(): void {
     ? process.env.ELECTRON_RENDERER_URL
     : undefined;
   window.webContents.on("will-navigate", (event, url) => {
-    if (
-      !(
-        url.startsWith("vibe://app/") ||
-        (devUrl && new URL(url).origin === new URL(devUrl).origin)
-      )
-    )
+    if (!(
+      url.startsWith("vibe://app/") ||
+      (devUrl && new URL(url).origin === new URL(devUrl).origin)
+    ))
       event.preventDefault();
   });
   window.webContents.setWindowOpenHandler(({ url }) => {
