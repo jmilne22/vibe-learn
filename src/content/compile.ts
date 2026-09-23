@@ -150,6 +150,7 @@ export function compileCatalog(base = root): Catalog {
     "relay-operator",
     "gossip-glomers",
     "tiny-tsdb",
+    "cloud-reporter",
   ];
   for (const file of projectFiles) {
     const document = read(path.join(base, "content/projects", file + ".html"));
@@ -214,6 +215,11 @@ export function compileCatalog(base = root): Catalog {
         "Go, a compatible JDK, Maelstrom, Graphviz, and gnuplot. See setup commands in the overview.",
       ];
       item.checks = maelstromChecks(stages);
+    } else if (file === "cloud-reporter") {
+      item.prerequisites = [
+        "Go. Internet access for live GitHub requests; local HTTP tests work offline.",
+      ];
+      item.checks = [learnerCheck()];
     } else {
       item.prerequisites = [
         "Go. Race-enabled learner tests also need a supported C compiler.",

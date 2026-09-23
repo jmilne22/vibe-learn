@@ -1,6 +1,6 @@
 # Content authoring
 
-Content is authored in this repository and compiled into the application. The desktop app does not yet import content packages at runtime. `courses/` is intentionally empty; the bundled catalog currently contains four standalone projects.
+Content is authored in this repository and compiled into the application. The desktop app does not yet import content packages at runtime. `courses/` is intentionally empty; the bundled catalog currently contains five standalone projects.
 
 Run `npm run new-course -- my-topic`. Edit `courses/<slug>/course.yaml` and Markdown under `content/lessons`. Run `npm run validate:content`, then `npm run build` or `npm run app`.
 
