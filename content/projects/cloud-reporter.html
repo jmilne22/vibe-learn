@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Cloud Resource Reporter</title></head>
+<body>
+<main>
+<header>
+<h1>Cloud Resource Reporter</h1>
+<p>Build a Go CLI that lists an organisation's GitHub repositories, calculates summary statistics, and writes table, JSON, or CSV reports.</p>
+</header>
+<h2>The command</h2>
+<pre><code>cloudreport repos --org kubernetes
+cloudreport repos --org hashicorp --sort stars --limit 20
+cloudreport repos --org prometheus --format json
+cloudreport repos --org grafana --format csv &gt; repos.csv</code></pre>
+<p>Use Go's standard library. Start with a sequential HTTP client and test it against a local server. The live command reads public GitHub data; it needs internet access, but no account or token. Keep live requests out of your test suite.</p>
+<table>
+<thead><tr><th>Flag</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td><code>--org</code></td><td>Required. One organisation name, not a URL or an owner/repository pair.</td></tr>
+<tr><td><code>--format</code></td><td>Default: <code>table</code>. <code>table</code>, <code>json</code>, or <code>csv</code>.</td></tr>
+<tr><td><code>--sort</code></td><td>Default: <code>stars</code>. <code>stars</code>, <code>forks</code>, <code>updated</code> descending, or <code>name</code> ascending. Break ties by full repository name ascending.</td></tr>
+<tr><td><code>--limit</code></td><td>Default: <code>20</code>. Maximum rows displayed. Zero shows all; negative values are errors. Always fetch all pages before applying it.</td></tr>
+<tr><td><code>--timeout</code></td><td>Default: <code>30</code>. Positive integer seconds per HTTP request, including reading its body.</td></tr>
+</tbody>
+</table>
+<p>Exit 0 after writing a complete report, 2 for invalid arguments, and 1 for fetch, cancellation, or output errors. Write reports to stdout and diagnostics to stderr. A failed fetch must leave stdout empty, even when earlier pages succeeded.</p>
+<h2>Start a workspace</h2>
+<p>Create or attach a folder from the Workspace panel. If starting in an external terminal:</p>
+<pre><code>mkdir cloudreport
+cd cloudreport
+go mod init example.com/cloudreport</code></pre>
+<p>A main function, an HTTP client, a report calculation function, and a writer are enough to begin. Choose names and file boundaries as the program grows. The stages below include cases for tests you write yourself.</p>
+
+<section class="session" id="fetch-page">
+<h2>Fetch one page</h2>
+<p>Make one GET request and decode the response into typed Go values. Use this endpoint and request headers:</p>
+<pre><code>GET https://api.github.com/orgs/{org}/repos?type=public&amp;sort=full_name&amp;direction=asc&amp;per_page=100&amp;page=1
+Accept: application/vnd.github+json
+User-Agent: cloudreport
+X-GitHub-Api-Version: 2026-03-10</code></pre>
+<p>Accept only an organisation name in <code>--org</code>; reject blank values, whitespace, and <code>/</code>, <code>\</code>, <code>?</code>, <code>#</code>, <code>:</code>, and <code>@</code>. Build the request using <code>net/url</code>. Make the API base URL injectable in Go so tests can use <code>httptest.NewServer</code>.</p>
+<p>Keep the repository ID, name, full name, stars, forks, language, description, and update time. GitHub calls the count fields <code>stargazers_count</code> and <code>forks_count</code>. Language and description can be null. Use <code>*string</code> if you need to preserve that distinction; the report will display a missing language as <code>Unknown</code> and a missing description as an empty string.</p>
+<p>Decode <code>updated_at</code> into <code>time.Time</code>. A malformed timestamp or JSON body is a fetch error. Ignore unknown JSON fields. Close every response body, including error responses, and check the HTTP status before decoding the repository array.</p>
+<h3>First test</h3>
+<p>Have a local handler check the request path, query parameters, and headers, then return one repository. Assert its decoded name, count, and timestamp. Add an empty array and a repository with null language and description.</p>
+<details><summary>Hint: separate fetching from printing</summary>
+<p>A method such as <code>FetchPage(ctx context.Context, pageURL string) ([]Repo, string, error)</code> can return repositories and the next-page URL. Leave formatting to its caller. Accept an <code>*http.Client</code> so tests can choose a transport.</p>
+</details>
+<p>Reference: <a href="https://docs.github.com/en/rest/repos/repos#list-organization-repositories">List organisation repositories</a>. API version checked against <a href="https://docs.github.com/en/rest/about-the-rest-api/api-versions">GitHub's version documentation</a> on 23 September 2026.</p>
+</section>
+
+<section class="session" id="pagination">
+<h2>Fetch the remaining pages</h2>
+<p>Follow the URL marked <code>rel="next"</code> in the response's <code>Link</code> header. Stop when it is absent. The number of returned rows does not tell you whether another page exists.</p>
+<pre><code>Link: &lt;https://api.github.com/orgs/example-org/repos?page=2&amp;per_page=100&gt;; rel="next", &lt;https://api.github.com/orgs/example-org/repos?page=4&amp;per_page=100&gt;; rel="last"</code></pre>
+<p>Fetch pages in order. Preserve the next URL's query parameters. Resolve relative links against the current page and allow only the configured API origin and the same organisation-repositories path. Reject a repeated next URL. Apply the same origin restriction to redirects so an optional token cannot be forwarded elsewhere.</p>
+<p>Deduplicate repositories by ID, keeping the first observation. GitHub data can change between requests; pagination does not provide a transactionally consistent snapshot. Sorting by full name reduces movement caused by star or update changes, but repositories can still be added, deleted, or renamed during the run.</p>
+<h3>Tests to write</h3>
+<ul>
+<li>Two pages: the first has a next link and the second has none. Assert both were fetched.</li>
+<li>A short first page still has a next link. A full final page has none.</li>
+<li>The header contains <code>prev</code>, <code>last</code>, and <code>next</code> in a different order.</li>
+<li>An ID appears on both pages. The report contains it once, using its first values.</li>
+<li>A next link repeats a visited URL or points at another origin. Return an error without requesting it.</li>
+<li>Page two returns 500 or invalid JSON. Return an error and no partial report.</li>
+</ul>
+<details><summary>Hint: make the loop's state visible</summary>
+<p>Track the next URL, visited URLs, and IDs already collected. Fetch and validate one page before updating those collections. Keep this loop independent of sorting and output limits.</p>
+</details>
+<p>Reference: <a href="https://docs.github.com/en/rest/using-the-rest-api/using-pagination-in-the-rest-api">GitHub pagination</a>.</p>
+</section>
+
+<section class="session" id="aggregate">
+<h2>Calculate the report</h2>
+<p>Calculate the total repository count, total stars, repositories per language, and the count updated within the last seven days. Use all collected repositories for the summary, then sort and limit the displayed rows.</p>
+<p>Capture the current time once per run and pass it into the calculation. Count timestamps from <code>now - 7 × 24 hours</code> through <code>now</code>, inclusive. Exclude future timestamps. Use ordinary string ordering for names and language labels; use full name to break numeric or timestamp ties.</p>
+<h3>A fixed example</h3>
+<p>The following is a constructed dataset. In tests, set <code>now</code> to <code>2026-09-23T12:00:00Z</code>.</p>
+<pre><code>[
+  {"id":1,"name":"alpha","full_name":"example-org/alpha","stargazers_count":8,"forks_count":2,"language":"Go","description":"API, workers","updated_at":"2026-09-22T12:00:00Z"},
+  {"id":2,"name":"beta","full_name":"example-org/beta","stargazers_count":8,"forks_count":4,"language":null,"description":null,"updated_at":"2026-09-01T12:00:00Z"},
+  {"id":3,"name":"gamma","full_name":"example-org/gamma","stargazers_count":3,"forks_count":1,"language":"Go","description":"Queue tools","updated_at":"2026-09-20T12:00:00Z"}
+]</code></pre>
+<p>With <code>--sort stars --limit 2</code>, display alpha then beta. The summary is still <strong>3 repositories, 19 stars, Go: 2, Unknown: 1, and 2 recently updated</strong>.</p>
+<h3>Tests to write</h3>
+<p>Cover every sort mode, ties, zero limit, a limit larger than the dataset, empty input, and timestamps exactly at and just outside the seven-day boundary. Add a future timestamp. Verify that changing the display limit never changes summary totals.</p>
+<details><summary>Hint: test this without HTTP</summary>
+<p>Pass a slice of repositories and a fixed time directly into the report function. Copy the slice before sorting if callers need its original order. Use <code>sort.Slice</code> or <code>slices.SortFunc</code> with the tie-break rule in the same comparator.</p>
+</details>
+</section>
+
+<section class="session" id="formats">
+<h2>Write table, JSON, and CSV output</h2>
+<p>All formats use the same selected rows. Only the presentation changes. The examples below use the fixed dataset and <code>--sort stars --limit 2</code>.</p>
+<h3>Table</h3>
+<pre><code>Repository report: example-org
+Repositories: 3 (showing 2)
+
+NAME   STARS  FORKS  LANGUAGE  UPDATED
+alpha  8      2      Go        2026-09-22
+beta   8      4      Unknown   2026-09-01
+
+Total stars: 19
+Languages: Go (2), Unknown (1)
+Updated in last 7 days: 2</code></pre>
+<p>Use UTC dates and align columns; spacing is your choice. Sort language labels alphabetically. <code>text/tabwriter</code> handles alignment without hand-calculating column widths. Check its flush error.</p>
+<h3>JSON</h3>
+<pre><code>{
+  "org": "example-org",
+  "summary": {
+    "total_repos": 3,
+    "total_stars": 19,
+    "languages": {"Go": 2, "Unknown": 1},
+    "updated_last_7_days": 2
+  },
+  "repos": [
+    {"name":"alpha","full_name":"example-org/alpha","stars":8,"forks":2,"language":"Go","description":"API, workers","updated_at":"2026-09-22T12:00:00Z"},
+    {"name":"beta","full_name":"example-org/beta","stars":8,"forks":4,"language":"Unknown","description":"","updated_at":"2026-09-01T12:00:00Z"}
+  ]
+}</code></pre>
+<p>Use these field names and types. Emit an empty array for no repositories and an empty object for no languages. Pretty-print the result; object key order is irrelevant. Keep timestamps in UTC RFC3339 format.</p>
+<h3>CSV</h3>
+<pre><code>name,full_name,stars,forks,language,updated_at,description
+alpha,example-org/alpha,8,2,Go,2026-09-22T12:00:00Z,"API, workers"
+beta,example-org/beta,8,4,Unknown,2026-09-01T12:00:00Z,</code></pre>
+<p>CSV contains a header and repository rows only. Use <code>encoding/csv</code> for commas, quotes, and newlines in descriptions. Flush the writer and check <code>Error()</code>. For an empty organisation, write only the header.</p>
+<h3>Tests to write</h3>
+<p>Decode JSON output before comparing values; parse CSV output back into records. Check the table's row order and totals. Add descriptions containing commas, double quotes, and newlines. Supply an <code>io.Writer</code> that returns an error and verify that formatting reports it.</p>
+<p>A writer can fail after writing some bytes. Exit 1 and report that failure on stderr; fetching successfully does not make a failed write a successful command.</p>
+</section>
+
+<section class="session" id="failures">
+<h2>Handle failures and cancellation</h2>
+<p>A one-shot report can stop and explain an API failure. The core command does not automatically retry or wait for a rate-limit window.</p>
+<table>
+<thead><tr><th>Response or failure</th><th>Command behaviour</th></tr></thead>
+<tbody>
+<tr><td>401</td><td>Report an authentication error.</td></tr>
+<tr><td>404</td><td>Report that the organisation was not found or is inaccessible.</td></tr>
+<tr><td>403 or 429 with rate-limit details</td><td>Report the limit and any retry time supplied by GitHub. Stop fetching.</td></tr>
+<tr><td>Other non-200 response</td><td>Report the status and a bounded excerpt of its message. A 403 without rate-limit evidence may be an access error.</td></tr>
+<tr><td>Invalid JSON, interrupted body, timeout, or connection failure</td><td>Identify the failed page and return the error.</td></tr>
+<tr><td>Ctrl+C</td><td>Cancel the active request and stop fetching more pages.</td></tr>
+</tbody>
+</table>
+<p>Unauthenticated requests normally share an IP-based budget of 60 per hour. Read <code>X-RateLimit-Remaining</code> and <code>X-RateLimit-Reset</code> from responses. Reset is a Unix timestamp; <code>Retry-After</code> supplies a delay in seconds. Secondary limits can occur with a nonzero remaining count. Missing or invalid headers should not crash the client.</p>
+<p>If a successful response reports fewer than ten requests remaining, write a warning to stderr. If the count is zero and another page is needed, stop with an error. If there are no more pages, the report is complete and can be printed.</p>
+<p>Use <code>signal.NotifyContext</code> at the command boundary and pass its context through every page request. Release its resources when the command returns. Bound error-body reads, for example to 4 KiB, so an HTML error page does not flood the terminal.</p>
+<h3>Tests to write</h3>
+<p>Use local responses for each row in the table. Assert that rate-limit errors never trigger another request and that warnings stay off stdout. For cancellation, have the handler signal that it received the request, wait for its request context to end, then cancel the client's parent context. Use a timeout only to fail a hung test, not to guess when the handler has started.</p>
+<p>References: <a href="https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api">GitHub rate limits</a> and <a href="https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api">API request guidance</a>.</p>
+</section>
+
+<section class="session" id="review">
+<h2>Run and review the command</h2>
+<pre><code>go test ./...
+go build -o cloudreport .
+./cloudreport repos --org kubernetes --format table --limit 5
+./cloudreport repos --org kubernetes --format json --limit 5 &gt; report.json
+./cloudreport repos --org kubernetes --format csv --limit 5 &gt; repos.csv</code></pre>
+<p>On Windows, build <code>cloudreport.exe</code>. Make the live calls once the local tests pass; repository counts and timestamps will differ from the constructed example. Check the process exit status as well as the files. In the app, attach this folder and use <strong>Your tests</strong> to run your suite.</p>
+<h3>Review questions</h3>
+<details><summary>Why fetch every page when the limit is five?</summary>
+<p>The display sort may differ from the API order, and the summary covers the whole organisation. Stopping after five records could miss the highest-starred repository and would undercount the totals.</p>
+</details>
+<details><summary>Why use a fixed time in tests?</summary>
+<p>A repository can cross the seven-day boundary between test runs. Passing a time into the calculation makes that boundary testable without depending on the machine's clock.</p>
+</details>
+<details><summary>Would concurrent page requests help?</summary>
+<p>Each next URL arrives with the preceding page, and more requests can encounter secondary limits. Start sequentially. For multiple organisations, a bounded worker pool may help; keep pagination within each organisation sequential and sort the merged results before printing.</p>
+</details>
+<h3>Optional extensions</h3>
+<ul>
+<li><strong>Authentication:</strong> read <code>GITHUB_TOKEN</code> from the environment and send it as a bearer token only to the configured API origin. Keep the public-repositories filter and exclude the token from errors and reports.</li>
+<li><strong>Caching:</strong> save response bodies with their ETags, send conditional requests, and handle 304 by reading the cached body. Cache each page with its pagination information.</li>
+<li><strong>Diff reports:</strong> add repository IDs to the saved report format, then compare reports by ID to show additions, removals, renames, and count changes.</li>
+<li><strong>Multiple organisations:</strong> add bounded concurrency, cancellation, and tests with controlled handlers. Run <code>go test -race ./...</code> with a host Go toolchain and C compiler.</li>
+<li><strong>History:</strong> save dated reports and plot star changes from those observations. The repository endpoint gives the current count, not a star-history series.</li>
+</ul>
+</section>
+</main>
+</body>
+</html>

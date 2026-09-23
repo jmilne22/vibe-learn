@@ -33,13 +33,14 @@ Linux headless desktop testing needs an X server (`xvfb-run -a npm run smoke:des
 ## What's included
 
 - Independent Courses and Projects libraries, Continue, offline search, collapsible navigation and keyboard access.
-- Four standalone `take-home` projects with stages, examples and resource links. The old courses and samples were removed; the Courses library is intentionally empty.
+- Five standalone projects with stages, examples and resource links. The old courses and samples were removed; the Courses library is intentionally empty.
 - Course framework: Go/Rust starter-file exercises with visible tests, hints, solutions and explicit runs; optional flashcard browsing and local spaced review. New courses must supply their own content.
 - Optional project reference examples, per-item notes with Markdown export, bookmarks and JSON backup/import. Future courses can use the Markdown/YAML authoring framework.
 - Create or attach workspaces on demand, with a minimal Go module for new Go activities. Explicit runs stream output, support cancellation and timeouts, and retain logs and artifacts.
 - Ingest Relay: optional HTTP/storage checkpoints and final public-behavior checks.
 - Tiny TSDB: optional HTTP/recovery/final checks, with internal design and storage invariants left to learner tests and review.
 - Gossip Glomers: integration with the existing Maelstrom harness and saved reports. Install its additional tools separately.
+- Cloud Resource Reporter: a GitHub API CLI project with pagination, summaries, table/JSON/CSV output, and learner-written HTTP tests.
 - Relay Operator: guided experiments and expected observations. **No app-owned automated suite.**
 
 Provided checks and learner tests are separate. A passing run records exactly what was checked, the source fingerprint, content version, suite version, and unchecked requirements. It never gates navigation or claims to verify later edits.

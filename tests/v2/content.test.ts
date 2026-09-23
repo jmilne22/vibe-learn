@@ -7,12 +7,13 @@ import { markdown } from "../../src/content/render";
 import { load } from "cheerio";
 const catalog = compileCatalog();
 describe("content compatibility and independent paths", () => {
-  it("ships only the four standalone projects, with optional experiments inside the relay", () => {
+  it("ships five standalone projects, with optional experiments inside the relay", () => {
     expect(catalog.items.map((i) => i.id)).toEqual([
       "project:ingest-relay",
       "project:relay-operator",
       "project:gossip-glomers",
       "project:tiny-tsdb",
+      "project:cloud-reporter",
     ]);
     expect(
       catalog.items.find((i) => i.id === "project:ingest-relay")!.stages,
@@ -27,6 +28,25 @@ describe("content compatibility and independent paths", () => {
       catalog.items.find((i) => i.id === "project:relay-operator")!
         .prerequisites[0],
     ).toContain("Relay");
+  });
+  it("restores the reporter as a standalone project with learner tests only", () => {
+    const reporter = catalog.items.find(
+      (i) => i.id === "project:cloud-reporter",
+    )!;
+    expect(reporter.kind).toBe("project");
+    expect(reporter.related).toEqual([]);
+    expect(reporter.stages.map((s) => s.id)).toEqual([
+      "overview",
+      "fetch-page",
+      "pagination",
+      "aggregate",
+      "formats",
+      "failures",
+      "review",
+    ]);
+    expect(reporter.checks.map((c) => [c.id, c.kind])).toEqual([
+      ["go-test", "learner"],
+    ]);
   });
   it("resolves every generated internal route and preserves project requirement anchors", () => {
     for (const item of catalog.items)
