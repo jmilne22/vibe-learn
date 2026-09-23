@@ -3,7 +3,7 @@ import { z } from "zod";
 // Raise this when authored content starts requiring new runtime behaviour.
 export const MINIMUM_CONTENT_APP_VERSION = "2.0.2";
 export const CONTENT_UPDATE_URL =
-  "https://jmilne22.github.io/vibe-learn/updates/latest.json";
+  "https://vibe-learn.ai/updates/latest.json";
 export const MAX_CATALOG_BYTES = 30_000_000;
 export const ContentManifestSchema = z.object({
   formatVersion: z.literal(1),

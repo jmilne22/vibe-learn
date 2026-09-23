@@ -304,12 +304,12 @@ async function main(): Promise<void> {
         globalThis.fetch = (async (input) => {
           const url = String(input);
           if (
-            url === "https://jmilne22.github.io/vibe-learn/updates/latest.json"
+            url === "https://vibe-learn.ai/updates/latest.json"
           )
             return new Response(JSON.stringify(payload.manifest));
           if (
             url ===
-            `https://jmilne22.github.io/vibe-learn/updates/${payload.manifest.revision}.json`
+            `https://vibe-learn.ai/updates/${payload.manifest.revision}.json`
           )
             return new Response(payload.data);
           throw new Error(`Unexpected update URL: ${url}`);
