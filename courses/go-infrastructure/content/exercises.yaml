@@ -105,10 +105,11 @@
   title: Check one endpoint
   language: go
   instructions: >-
-    Implement `Check(ctx, client, target) (int, error)`. Make one GET request using the supplied
-    context and client. Return the HTTP status for any received response, including 500, and close
-    its body. On request construction or transport failure return 0 and the error. Do not retry,
-    create a new client, or treat a non-2xx response as a transport error.
+    Implement `Check(ctx, client, target) (int, error)`. Create a GET request with the supplied
+    context and call the supplied client’s Do method once. Redirect handling follows that client’s
+    policy. Return the HTTP status for any received response, including 500, and close its body. On
+    request construction or transport failure return 0 and the error. Do not retry, create a new
+    client, or treat a non-2xx response as a transport error.
 
 
     Add a test for a 204 response using a local httptest server.

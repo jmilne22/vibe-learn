@@ -29,7 +29,7 @@ A context carries cancellation and deadlines across calls. It is not a replaceme
 
 `defer` schedules a call when the surrounding function returns. Place the body close after the successful request, when a response exists. Closing matters even when you only need the status. For reliable connection reuse, callers may also need to consume the response body; blindly reading an unlimited body just to reuse a connection is another resource problem. This exercise closes without making a reuse guarantee.
 
-Pass the client in. A caller can choose transport settings and timeouts once, and tests can supply a controlled transport. Constructing a new client inside every check hides those choices.
+Pass the client in. A caller can choose transport settings and timeouts once, and tests can supply a controlled transport. Constructing a new client inside every check hides those choices. Redirect handling also follows the supplied client: Do may follow redirects unless its policy says otherwise. The final CLI will explicitly disable redirects so it reports the configured endpoint’s own response.
 
 ### Make failure local and reproducible
 
