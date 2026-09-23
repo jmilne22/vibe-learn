@@ -1,12 +1,7 @@
 name: Build desktop installers
 
 on:
-  pull_request:
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
   push:
-    branches: [main]
     tags: ['v*']
   workflow_dispatch:
 
@@ -42,7 +37,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
 
       - uses: actions/setup-go@v5
@@ -50,32 +45,23 @@ jobs:
           go-version: '1.26.x'
           cache: false
 
-      - name: Install Linux packaging tools
-        if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y dpkg fakeroot rpm
-
-      # generate-practice compiles a Go probe per exercise variant — the
-      # single biggest CI phase (~90s) on a cold cache, near-instant warm.
-      - name: Cache Go build cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            build/.go-cache
-            ~/go/pkg/mod
-          key: go-probes-${{ runner.os }}-${{ hashFiles('generate-practice.js', 'courses/*/content/exercises/*.yaml') }}
-          restore-keys: |
-            go-probes-${{ runner.os }}-
-
       - run: npm ci
+      - name: Install Linux desktop test libraries
+        if: runner.os == 'Linux'
+        run: npx playwright install-deps chromium
 
-      # PRs validate packaging (prepare, prune, asar) without paying for
-      # installer compression; main and tag pushes build the real thing.
-      - name: Package (PR) or make installers (main/tag)
-        shell: bash
-        run: npm run ${{ github.event_name == 'pull_request' && 'package:desktop' || 'make:desktop' }}
+      - name: Build installers
+        run: npm run make:desktop
+
+      - name: Smoke test packaged app (Linux)
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npm run smoke:desktop -- --packaged
+
+      - name: Smoke test packaged app (macOS and Windows)
+        if: runner.os != 'Linux'
+        run: npm run smoke:desktop -- --packaged
 
       - name: Upload installers
-        if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: vibe-learn-${{ runner.os }}-${{ runner.arch }}
@@ -84,7 +70,7 @@ jobs:
           retention-days: 14
 
   release:
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     needs: package
     runs-on: ubuntu-latest
     permissions:
@@ -93,6 +79,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
+          pattern: vibe-learn-*
           path: artifacts
 
       - name: Publish GitHub release with installers

@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Work through all 14 distributed systems challenge stages with Go and Maelstrom.">
+<title>Gossip Glomers — Go Infra Track</title>
+<script>
+(function () {
+  try {
+    var theme = localStorage.getItem("ingest-relay-v1:theme");
+    if (theme === "light" || theme === "dark") document.documentElement.setAttribute("data-theme", theme);
+  } catch (error) {}
+})();
+</script>
+<style>
+  :root {
+    color-scheme: light;
+    --paper: #ffffff; --ink: #202a30; --muted: #58666e;
+    --rule: #dce3e6; --soft: #f4f6f7; --accent: #12647a;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", Consolas, "Liberation Mono", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --paper: #141b20; --ink: #e1e8ec; --muted: #a7b5bf;
+      --rule: #36434d; --soft: #202a32; --accent: #8ccfdf;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --paper: #141b20; --ink: #e1e8ec; --muted: #a7b5bf;
+    --rule: #36434d; --soft: #202a32; --accent: #8ccfdf;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 17px/1.7 var(--sans); overflow-wrap: break-word; }
+  a { color: var(--accent); text-underline-offset: 0.2em; }
+  a:hover { text-decoration-thickness: 2px; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+  [hidden] { display: none !important; }
+  [id] { scroll-margin-top: 1.5rem; }
+  .skip { position: absolute; top: -5rem; left: 1rem; padding: 0.5rem; background: var(--paper); }
+  .skip:focus { top: 0.5rem; }
+  .toolbar { max-width: 56rem; margin: auto; padding: 1rem 1.5rem; display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1.5rem; border-bottom: 1px solid var(--rule); font-size: 0.82rem; }
+  .back { margin-right: auto; text-decoration: none; }
+  .tools { display: flex; flex-wrap: wrap; align-items: center; gap: 0.7rem; }
+  .themes { display: flex; gap: 0.25rem; }
+  button { font: inherit; color: var(--muted); background: transparent; border: 1px solid var(--rule); border-radius: 4px; padding: 0.25rem 0.55rem; cursor: pointer; }
+  button:hover, button[aria-pressed="true"] { color: var(--ink); background: var(--soft); border-color: var(--muted); }
+  main { max-width: 48rem; padding: 3.5rem 1.5rem 4rem; margin: auto; }
+  header { margin-bottom: 2rem; }
+  .eyebrow { color: var(--accent); font-size: 0.8rem; font-weight: 650; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 0.5rem; }
+  h1 { font-size: clamp(2.3rem, 7vw, 3.3rem); line-height: 1.12; letter-spacing: -0.045em; margin: 0 0 1rem; }
+  .intro { font-size: 1.2rem; line-height: 1.6; }
+  .meta { color: var(--muted); font-size: 0.9rem; }
+  .contents { display: flex; flex-wrap: wrap; gap: 0.35rem 1.1rem; font-size: 0.85rem; padding: 1rem 0; border-block: 1px solid var(--rule); }
+  h2 { font-size: 1.6rem; line-height: 1.3; letter-spacing: -0.02em; margin: 3rem 0 1rem; }
+  h3 { font-size: 1.14rem; line-height: 1.4; margin: 2rem 0 0.65rem; }
+  h4 { font-size: 1rem; line-height: 1.4; margin: 1.5rem 0 0.6rem; }
+  .session { margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid var(--rule); }
+  .session > h3 { font-size: 1.4rem; margin: 0 0 1rem; }
+  p, ul, ol { margin: 0 0 1rem; }
+  ul, ol { padding-left: 1.4rem; }
+  li { padding-left: 0.15rem; margin-bottom: 0.55rem; }
+  strong { font-weight: 650; }
+  code { font: 0.85em var(--mono); background: var(--soft); padding: 0.1em 0.25em; border-radius: 3px; overflow-wrap: anywhere; }
+  pre { background: var(--soft); border: 1px solid var(--rule); border-radius: 5px; padding: 1rem; overflow-x: auto; line-height: 1.6; margin: 0 0 1rem; }
+  pre code { background: none; padding: 0; font-size: 0.8rem; overflow-wrap: normal; }
+  .table-wrap { overflow-x: auto; margin: 1rem 0 1.25rem; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.88rem; line-height: 1.55; }
+  caption { text-align: left; font-weight: 650; margin-bottom: 0.5rem; }
+  th, td { text-align: left; vertical-align: top; padding: 0.65rem 0.6rem; border-bottom: 1px solid var(--rule); }
+  th { background: var(--soft); font-size: 0.8rem; font-weight: 650; }
+  .note { padding: 0.8rem 1rem; border-left: 3px solid var(--accent); background: var(--soft); }
+  pre.output { border-left: 3px solid var(--accent); }
+  .example-label { font-size: 0.85rem; font-weight: 650; margin-bottom: 0.4rem; }
+  .small { color: var(--muted); font-size: 0.88rem; }
+  footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--rule); color: var(--muted); font-size: 0.8rem; }
+  @media (max-width: 36rem) {
+    body { font-size: 16px; }
+    main { padding: 2rem 1.1rem 3rem; }
+    .toolbar { padding-inline: 1.1rem; }
+    h2 { font-size: 1.4rem; }
+    th, td { padding: 0.55rem 0.4rem; }
+  }
+  @page { size: A4; margin: 17mm; }
+  @media print {
+    :root, :root[data-theme], :root:not([data-theme="light"]) {
+      color-scheme: light;
+      --paper: #fff; --ink: #111; --muted: #444; --rule: #ccc; --soft: #f5f5f5; --accent: #204957;
+    }
+    body { font-size: 10pt; line-height: 1.5; }
+    main { max-width: none; margin: 0; padding: 0; }
+    .toolbar, .skip, .contents { display: none !important; }
+    header { margin-bottom: 1rem; }
+    h1 { font-size: 28pt; }
+    h2 { font-size: 17pt; margin-top: 1.8rem; }
+    h3, .session > h3 { font-size: 14pt; margin-top: 1.2rem; }
+    h4 { font-size: 11pt; }
+    h1, h2, h3, h4, caption, .example-label { break-after: avoid; }
+    p { orphans: 3; widows: 3; }
+    tr, pre, .note { break-inside: avoid; }
+    thead { display: table-header-group; }
+    table { font-size: 9pt; }
+    .table-wrap { overflow: visible; }
+    pre { white-space: pre-wrap; overflow: visible; }
+    pre code { font-size: 8.5pt; overflow-wrap: anywhere; }
+    a { color: inherit; }
+  }
+
+  .lede { font-size: 1.2rem; line-height: 1.6; }
+  .caption { color: var(--muted); font-size: 0.88rem; }
+  .session > h2 { margin: 0 0 1rem; font-size: 1.4rem; }
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1.5rem 0; }
+  .card { border: 1px solid var(--rule); border-radius: 6px; padding: 1.25rem; }
+  .card h3 { margin: 0 0 0.65rem; }
+  .card p:last-child { margin-bottom: 0; }
+  .card .meta { font-size: 0.8rem; }
+  details { border-top: 1px solid var(--rule); padding: 1rem 0; margin-top: 2rem; }
+  summary { cursor: pointer; font-weight: 650; }
+  details[open] > summary { margin-bottom: 1rem; }
+  @media (max-width: 36rem) { .cards { grid-template-columns: 1fr; } }
+  @media print { .cards { display: block; } .card { break-inside: avoid; margin-bottom: 1rem; } }
+</style>
+</head>
+<body>
+<a class="skip" href="#brief">Skip to content</a>
+<div class="toolbar">
+  <a class="back" href="index.html">← Go Infra Track</a>
+  <div class="tools" id="document-tools" hidden>
+    <div class="themes" role="group" aria-label="Colour theme">
+      <button type="button" data-theme-set="light" aria-pressed="false">Light</button>
+      <button type="button" data-theme-set="dark" aria-pressed="false">Dark</button>
+      <button type="button" data-theme-set="system" aria-pressed="true">System</button>
+    </div>
+    <button type="button" id="print-doc">Print</button>
+  </div>
+</div>
+<main id="top">
+<header><p class="eyebrow">Go · Distributed systems · Build and learn</p><h1>Work through Gossip Glomers</h1><p class="intro">Build small distributed systems, break their networks, and find out whether your reasoning survives. Start with echo and finish with transactions.</p><p class="meta">14 stages · 14–20 hours of implementation, plus learning time · Six related Go binaries.</p></header>
+<nav class="contents" aria-label="Contents"><a href="#brief">Setup</a><a href="#session-1">Echo &amp; IDs</a><a href="#session-2">Broadcast</a><a href="#session-3">Efficiency</a><a href="#session-4">Counter</a><a href="#session-5">Log</a><a href="#session-6">Transactions</a></nav>
+<section aria-labelledby="brief"><h2 id="brief"><span id="must-do" aria-hidden="true"></span><span id="rules" aria-hidden="true"></span><span id="budget" aria-hidden="true"></span>The challenge</h2>
+<p>This is a guided route through Fly.io’s distributed-systems challenges, tested by Jepsen’s Maelstrom. Each process is a node, messages travel over simulated networks, and the harness checks histories. The linked official stage specifications remain authoritative. This page adds a build-and-check rhythm, not a replacement consistency model.</p>
+<p>Use Go and Maelstrom’s Go library, <code>github.com/jepsen-io/maelstrom/demo/go</code>; no other third-party modules. Pair with AI for explanations and implementation. Ask what must remain true when messages are delayed, duplicated, or cannot cross a partition. Compare published solutions after your own approach passes and record what you learn.</p>
+<h3 id="conventions">Set up once</h3>
+<p>Install Go, a JDK compatible with Maelstrom, Graphviz, and gnuplot. These examples use Maelstrom 0.2.3, the release used by Fly’s challenge instructions. Keep a record of actual tool and Go library versions in your README.</p>
+
+<pre data-lang="sh"><code>mkdir gossip-work
+cd gossip-work
+GG_ROOT=&quot;$(pwd)&quot;
+mkdir -p &quot;$GG_ROOT/bin&quot;
+curl -fLO https://github.com/jepsen-io/maelstrom/releases/download/v0.2.3/maelstrom.tar.bz2
+tar xjf maelstrom.tar.bz2
+&quot;$GG_ROOT/maelstrom/maelstrom&quot; --help</code></pre>
+
+<p>Expect usage text. Keep this terminal’s <code>GG_ROOT</code> for the commands below. Create six source directories inside it: <code>echo</code>, <code>unique-ids</code>, <code>broadcast</code>, <code>counter</code>, <code>kafka</code>, and <code>txn</code>. Initialize a module and fetch the library in each. For example:</p>
+
+<pre data-lang="sh"><code>mkdir -p &quot;$GG_ROOT/echo&quot;
+cd &quot;$GG_ROOT/echo&quot;
+go mod init example.com/maelstrom-echo
+go get github.com/jepsen-io/maelstrom/demo/go</code></pre>
+
+<p>After writing each main package, build it from its source directory to <code>$GG_ROOT/bin/maelstrom-NAME</code>, substituting its directory name. Rebuild after every change. The harness commands below run from the extracted Maelstrom directory.</p>
+<p>Protocol examples show bodies only and omit message IDs for readability. Real messages include source, destination, and request/reply correlation; use the library’s node and reply handling. Keep diagnostics on stderr so stdout contains only protocol messages. The harness injects network faults, not process crashes, so these challenges do not require disk persistence.</p>
+<p>Expected outputs are targets, not claimed runs. Every stage requires a valid result. Inspect <code>store/latest/results.edn</code>, node logs, and message diagrams; <code>./maelstrom serve</code> exposes a local results browser. A protocol example alone does not prove correctness.</p>
+</section><div id="sessions">
+
+<section class="session" aria-labelledby="challenge-1"><span id="session-1"><span id="reference" aria-hidden="true"></span></span><h3 id="challenge-1"><span id="PASS-1" aria-hidden="true"></span><span id="spec-pass" aria-hidden="true"></span>1 — Echo</h3><p>Make a node receive an echo request and return the same value with an <code>echo_ok</code> type. Preserve the connection between the reply and its request. This is your first check that a Go binary can participate in the harness.</p><p class="example-label">Example request body</p><pre data-lang="json"><code>{&quot;type&quot;:&quot;echo&quot;,&quot;echo&quot;:&quot;hello relay&quot;}</code></pre><p class="example-label">Expected response body</p><pre class="output" data-lang="json"><code>{&quot;type&quot;:&quot;echo_ok&quot;,&quot;echo&quot;:&quot;hello relay&quot;}</code></pre><p>From the echo directory, build with <code>go build -o "$GG_ROOT/bin/maelstrom-echo" .</code>. Check malformed handling without contaminating stdout with debug prints.</p><h4>Run it</h4><pre data-lang="sh"><code>cd &quot;$GG_ROOT/maelstrom&quot;
+./maelstrom test --bin &quot;$GG_ROOT/bin/maelstrom-echo&quot; -w echo --node-count 1 --time-limit 10</code></pre><p class="example-label">Expected</p><pre class="output"><code>Everything looks good!</code></pre><p class="small">Official stage: <a href="https://fly.io/dist-sys/1/">1 — Echo</a>.</p></section>
+<section class="session" aria-labelledby="challenge-2"><h3 id="challenge-2"><span id="PASS-2" aria-hidden="true"></span>2 — Unique IDs</h3><p>Create the unique-ids binary. Every generate request must return a globally unique ID, even while nodes cannot communicate. The representation is yours; a process-local counter alone is insufficient across multiple nodes.</p><p class="example-label">Example request body</p><pre data-lang="json"><code>{&quot;type&quot;:&quot;generate&quot;}</code></pre><p class="example-label">Expected response body</p><pre class="output" data-lang="json"><code>{&quot;type&quot;:&quot;generate_ok&quot;,&quot;id&quot;:&quot;n1-42&quot;}</code></pre><p>The example ID is illustrative: check uniqueness, not that literal value. Explain why concurrent requests on one node and requests on different nodes cannot collide. Availability must not depend on reaching a coordinator.</p><h4>Run it</h4><pre data-lang="sh"><code>cd &quot;$GG_ROOT/maelstrom&quot;
+./maelstrom test --bin &quot;$GG_ROOT/bin/maelstrom-unique-ids&quot; -w unique-ids --time-limit 30 --rate 1000 --node-count 3 --availability total --nemesis partition</code></pre><p class="example-label">Expected</p><pre class="output"><code>:valid? true</code></pre><p class="small">Official stage: <a href="https://fly.io/dist-sys/2/">2 — Unique IDs</a>.</p></section>
+<section class="session" aria-labelledby="challenge-3a"><span id="session-2"></span><h3 id="challenge-3a"><span id="PASS-3a" aria-hidden="true"></span>3a — Remember broadcasts on one node</h3><p>Start the broadcast binary with handlers for <code>broadcast</code>, <code>read</code>, and <code>topology</code>. Store received integer values as a set. A broadcast returns <code>broadcast_ok</code>; a topology message returns <code>topology_ok</code>. Reading returns known values in any order.</p><p class="example-label">Example request body</p><pre data-lang="json"><code>{&quot;type&quot;:&quot;broadcast&quot;,&quot;message&quot;:7}</code></pre><p class="example-label">Expected response body</p><pre class="output" data-lang="json"><code>{&quot;type&quot;:&quot;broadcast_ok&quot;}</code></pre><p>After storing 7 and 11, a read can return <code>{"type":"read_ok","messages":[7,11]}</code>. Repeated delivery of 7 must not create duplicates. Unit-test deduplication before adding network propagation.</p><h4>Run it</h4><pre data-lang="sh"><code>cd &quot;$GG_ROOT/maelstrom&quot;
+./maelstrom test --bin &quot;$GG_ROOT/bin/maelstrom-broadcast&quot; -w broadcast --node-count 1 --time-limit 20 --rate 10</code></pre><p class="example-label">Expected</p><pre class="output"><code>:valid? true</code></pre><p class="small">Official stage: <a href="https://fly.io/dist-sys/3a/">3a — Remember broadcasts on one node</a>.</p></section>
+<section class="session" aria-labelledby="challenge-3b"><h3 id="challenge-3b"><span id="PASS-3b" aria-hidden="true"></span>3b — Share broadcasts across nodes</h3><p>Propagate stored values to the other nodes. You may follow the supplied topology or choose your own. Keep the client protocol unchanged and make values reach every node within a few seconds on a healthy network.</p><p class="example-label">Example request body</p><pre data-lang="json"><code>{&quot;type&quot;:&quot;read&quot;}</code></pre><p class="example-label">Expected response body</p><pre class="output" data-lang="json"><code>{&quot;type&quot;:&quot;read_ok&quot;,&quot;messages&quot;:[7,11]}</code></pre><p>That example is a converged read after broadcasting 7 and 11 anywhere in the cluster, with no other writes. Design a small local test that delivers the same internal message twice; it should not change the final set.</p><h4>Run it</h4><pre data-lang="sh"><code>cd &quot;$GG_ROOT/maelstrom&quot;
+./maelstrom test --bin &quot;$GG_ROOT/bin/maelstrom-broadcast&quot; -w broadcast --node-count 5 --time-limit 20 --rate 10</code></pre><p class="example-label">Expected</p><pre class="output"><code>:valid? true</code></pre><p class="small">Official stage: <a href="https://fly.io/dist-sys/3b/">3b — Share broadcasts across nodes</a>.</p></section>
+<section class="session" aria-labelledby="challenge-3c"><h3 id="challenge-3c"><span id="PASS-3c" aria-hidden="true"></span>3c — Survive a network partition</h3><p>Keep broadcasting while links are unavailable, then converge when communication resumes. Reads return copies of local state. Think through how a value learned just before a partition eventually reaches a node that missed its first delivery.</p><p class="example-label">Example request body</p><pre data-lang="json"><code>{&quot;type&quot;:&quot;read&quot;}</code></pre><p class="example-label">Expected response body</p><pre class="output" data-lang="json"><code>{&quot;type&quot;:&quot;read_ok&quot;,&quot;messages&quot;:[7,11]}</code></pre><p>The response is an eventual result after healing, not a promise that isolated nodes already agree. Avoid waiting forever for an unreachable peer in a client handler.</p><h4>Run it</h4><pre data-lang="sh"><code>cd &quot;$GG_ROOT/maelstrom&quot;
+./maelstrom test --bin &quot;$GG_ROOT/bin/maelstrom-broadcast&quot; -w broadcast --node-count 5 --time-limit 20 --rate 10 --nemesis partition</code></pre><p class="example-label">Expected</p><pre class="output"><code>:valid? true
+All acknowledged values converge by the end of the run.</code></pre><p>The second output line describes the required outcome rather than literal harness text. Pass three consecutive runs and record a failure you fixed.</p><p class="small">Official stage: <a href="https://fly.io/dist-sys/3c/">3c — Survive a network partition</a>.</p></section>
+<section class="session" aria-labelledby="challenge-3d"><span id="session-3"></span><h3 id="challenge-3d"><span id="PASS-3d" aria-hidden="true"></span>3d — Reduce broadcast latency</h3><p>Keep the same broadcast/read/topology API. A read still returns a <code>read_ok</code> set of values; optimization must not change its meaning. Now run 25 nodes with 100 ms message latency. Measure the server-to-server message count and stable broadcast latencies.</p><p class="example-label">Example request body</p><pre data-lang="json"><code>{&quot;type&quot;:&quot;read&quot;}</code></pre><p class="example-label">Expected response after the example values are available</p><pre class="output" data-lang="json"><code>{&quot;type&quot;:&quot;read_ok&quot;,&quot;messages&quot;:[7]}</code></pre><h4>Run it</h4><pre data-lang="sh"><code>cd &quot;$GG_ROOT/maelstrom&quot;
+./maelstrom test --bin &quot;$GG_ROOT/bin/maelstrom-broadcast&quot; -w broadcast --node-count 25 --time-limit 20 --rate 100 --latency 100</code></pre><p class="example-label">Expected</p><pre class="output"><code>:valid? true
+server messages/op &lt; 30
+median stable latency &lt; 400 ms
+maximum stable latency &lt; 600 ms</code></pre><p>The numeric lines are acceptance thresholds, not example measurements. Read <code>:net :servers :msgs-per-op</code> and <code>:workload :stable-latencies</code> in results.edn. Repeat the command with <code>--nemesis partition</code>: correctness must still pass; those latency budgets apply to the healthy-network run.</p><p class="small">Official stage: <a href="https://fly.io/dist-sys/3d/">3d — Reduce broadcast latency</a>.</p></section>
+<section class="session" aria-labelledby="challenge-3e"><h3 id="challenge-3e"><span id="PASS-3e" aria-hidden="true"></span>3e — Trade some latency for fewer messages</h3><p>Using the same protocol and workload, reduce network cost further. For example, two broadcasts of 7 and 11 must still converge to a read set containing both, whether they travel together or separately. Compare batching and topology choices with your previous design.</p><p class="example-label">Example request body</p><pre data-lang="json"><code>{&quot;type&quot;:&quot;read&quot;}</code></pre><p class="example-label">Expected response after the example values are available</p><pre class="output" data-lang="json"><code>{&quot;type&quot;:&quot;read_ok&quot;,&quot;messages&quot;:[7,11]}</code></pre><h4>Run it</h4><pre data-lang="sh"><code>cd &quot;$GG_ROOT/maelstrom&quot;
+./maelstrom test --bin &quot;$GG_ROOT/bin/maelstrom-broadcast&quot; -w broadcast --node-count 25 --time-limit 20 --rate 100 --latency 100</code></pre><p class="example-label">Expected</p><pre class="output"><code>:valid? true
+server messages/op &lt; 20
+median stable latency &lt; 1000 ms
+maximum stable latency &lt; 2000 ms</code></pre><p>Record measured figures for both designs, with workload settings, rather than inventing a universal performance number. Re-run this design with <code>--nemesis partition</code> for correctness too. Explain why a latency increase can accompany a lower message count.</p><p class="small">Official stage: <a href="https://fly.io/dist-sys/3e/">3e — Trade some latency for fewer messages</a>.</p></section>
+<section class="session" aria-labelledby="challenge-4"><span id="session-4"></span><h3 id="challenge-4"><span id="PASS-4" aria-hidden="true"></span>4 — Build a grow-only counter</h3><p>Create the counter binary with <code>add</code> and <code>read</code> handlers. Back the counter with Maelstrom’s <code>seq-kv</code> service. Concurrent acknowledged additions must not overwrite each other, despite the backing store’s sequential consistency.</p><p class="example-label">Example request body</p><pre data-lang="json"><code>{&quot;type&quot;:&quot;add&quot;,&quot;delta&quot;:5}</code></pre><p class="example-label">Expected response body</p><pre class="output" data-lang="json"><code>{&quot;type&quot;:&quot;add_ok&quot;}</code></pre><p>From a fresh counter, additions of 5 and 8 should eventually produce <code>{"type":"read_ok","value":13}</code> on every node. Reads may lag while writes are active; final reads must converge to the correct total. Explain how retries avoid double-counting.</p><h4>Run it</h4><pre data-lang="sh"><code>cd &quot;$GG_ROOT/maelstrom&quot;
+./maelstrom test --bin &quot;$GG_ROOT/bin/maelstrom-counter&quot; -w g-counter --node-count 3 --rate 100 --time-limit 20 --nemesis partition</code></pre><p class="example-label">Expected</p><pre class="output"><code>:valid? true</code></pre><p>Pass three consecutive runs. Unit-test any merge logic separately from RPCs.</p><p class="small">Official stage: <a href="https://fly.io/dist-sys/4/">4 — Build a grow-only counter</a>.</p></section>
+<section class="session" aria-labelledby="challenge-5a"><span id="session-5"></span><h3 id="challenge-5a"><span id="PASS-5a" aria-hidden="true"></span>5a — Build a single-node log</h3><p>Create the kafka binary. Each string key identifies an append-only log. Assign increasing unique offsets within a log; gaps are allowed. Poll from an inclusive offset, track committed offsets, and list them for requested keys. Polls need not immediately reveal a new write, but must not lose earlier entries.</p>
+<div class="table-wrap"><table><caption>Example body exchanges on one fresh log</caption><thead><tr><th>Request</th><th>Response</th></tr></thead><tbody>
+<tr><td><code>{"type":"send","key":"orders","msg":7}</code></td><td><code>{"type":"send_ok","offset":0}</code></td></tr>
+<tr><td><code>{"type":"poll","offsets":{"orders":0}}</code></td><td><code>{"type":"poll_ok","msgs":{"orders":[[0,7]]}}</code></td></tr>
+<tr><td><code>{"type":"commit_offsets","offsets":{"orders":0}}</code></td><td><code>{"type":"commit_offsets_ok"}</code></td></tr>
+<tr><td><code>{"type":"list_committed_offsets","keys":["orders"]}</code></td><td><code>{"type":"list_committed_offsets_ok","offsets":{"orders":0}}</code></td></tr>
+</tbody></table></div><p>Zero is an illustrative starting offset. Missing keys may be omitted from committed-offset results.</p><h4>Run it</h4><pre data-lang="sh"><code>cd &quot;$GG_ROOT/maelstrom&quot;
+./maelstrom test --bin &quot;$GG_ROOT/bin/maelstrom-kafka&quot; -w kafka --node-count 1 --concurrency 2n --time-limit 20 --rate 1000</code></pre><p class="example-label">Expected</p><pre class="output"><code>:valid? true</code></pre><p class="small">Official stage: <a href="https://fly.io/dist-sys/5a/">5a — Build a single-node log</a>.</p></section>
+<section class="session" aria-labelledby="challenge-5b"><h3 id="challenge-5b"><span id="PASS-5b" aria-hidden="true"></span>5b — Share the log across nodes</h3><p>Distribute the same API across two nodes. Use the provided <code>lin-kv</code> service for coordination in this version. Its stronger consistency is useful when allocating offsets or publishing shared log state; explain where your design relies on that guarantee.</p><p class="example-label">Example request body</p><pre data-lang="json"><code>{&quot;type&quot;:&quot;poll&quot;,&quot;offsets&quot;:{&quot;orders&quot;:0}}</code></pre><p class="example-label">Expected response body</p><pre class="output" data-lang="json"><code>{&quot;type&quot;:&quot;poll_ok&quot;,&quot;msgs&quot;:{&quot;orders&quot;:[[0,7]]}}</code></pre><p>After the write from the previous example is shared, a different node must be able to return it. Preserve offset uniqueness under concurrent sends. Record server messages per operation as the baseline for the next step.</p><h4>Run it</h4><pre data-lang="sh"><code>cd &quot;$GG_ROOT/maelstrom&quot;
+./maelstrom test --bin &quot;$GG_ROOT/bin/maelstrom-kafka&quot; -w kafka --node-count 2 --concurrency 2n --time-limit 20 --rate 1000</code></pre><p class="example-label">Expected</p><pre class="output"><code>:valid? true</code></pre><p class="small">Official stage: <a href="https://fly.io/dist-sys/5b/">5b — Share the log across nodes</a>.</p></section>
+<section class="session" aria-labelledby="challenge-5c"><h3 id="challenge-5c"><span id="PASS-5c" aria-hidden="true"></span>5c — Make the log cheaper</h3><p>Inspect the message diagram and results.edn. Reduce redundant communication or contention while keeping the same client exchanges: a poll for orders from offset 0 still returns the available <code>[offset,message]</code> pairs.</p><p>Choose one change, predict its effect, and compare equivalent runs. Your final version must use fewer server messages per operation than your recorded 5b baseline while staying correct. Do not trade lost writes for attractive metrics.</p><p class="example-label">Example request body</p><pre data-lang="json"><code>{&quot;type&quot;:&quot;poll&quot;,&quot;offsets&quot;:{&quot;orders&quot;:0}}</code></pre><p class="example-label">Expected response after the example values are available</p><pre class="output" data-lang="json"><code>{&quot;type&quot;:&quot;poll_ok&quot;,&quot;msgs&quot;:{&quot;orders&quot;:[[0,7]]}}</code></pre><h4>Run it</h4><pre data-lang="sh"><code>cd &quot;$GG_ROOT/maelstrom&quot;
+./maelstrom test --bin &quot;$GG_ROOT/bin/maelstrom-kafka&quot; -w kafka --node-count 2 --concurrency 2n --time-limit 20 --rate 1000</code></pre><p class="example-label">Expected</p><pre class="output"><code>:valid? true
+server messages/op below your 5b baseline</code></pre><p>Record both measurements, latency, and availability. This stage has no universal numeric target; the second line is your comparison criterion.</p><p class="small">Official stage: <a href="https://fly.io/dist-sys/5c/">5c — Make the log cheaper</a>.</p></section>
+<section class="session" aria-labelledby="challenge-6a"><span id="session-6"></span><h3 id="challenge-6a"><span id="PASS-6a" aria-hidden="true"></span>6a — Execute local transactions</h3><p>Create the txn binary. A request contains ordered read/write triples. Fill in read results, preserve write operations, and return <code>null</code> for absent keys. Start with one node under the read-uncommitted checker.</p><p class="example-label">Example request body</p><pre data-lang="json"><code>{&quot;type&quot;:&quot;txn&quot;,&quot;txn&quot;:[[&quot;r&quot;,1,null],[&quot;w&quot;,1,9]]}</code></pre><p class="example-label">Expected response body</p><pre class="output" data-lang="json"><code>{&quot;type&quot;:&quot;txn_ok&quot;,&quot;txn&quot;:[[&quot;r&quot;,1,null],[&quot;w&quot;,1,9]]}</code></pre><p>This response assumes key 1 was absent. A later read of key 1 should return 9. Explain the visibility of a transaction’s intermediate state to concurrent handlers.</p><h4>Run it</h4><pre data-lang="sh"><code>cd &quot;$GG_ROOT/maelstrom&quot;
+./maelstrom test --bin &quot;$GG_ROOT/bin/maelstrom-txn&quot; -w txn-rw-register --node-count 1 --time-limit 20 --rate 1000 --concurrency 2n --consistency-models read-uncommitted --availability total</code></pre><p class="example-label">Expected</p><pre class="output"><code>:valid? true</code></pre><p class="small">Official stage: <a href="https://fly.io/dist-sys/6a/">6a — Execute local transactions</a>.</p></section>
+<section class="session" aria-labelledby="challenge-6b"><h3 id="challenge-6b"><span id="PASS-6b" aria-hidden="true"></span>6b — Replicate without losing availability</h3><p>Extend the transaction service to two nodes while keeping read-uncommitted consistency and total availability. Do not block client completion on communication with an isolated peer. Preserve the same request/reply shape.</p><p class="example-label">Example request body</p><pre data-lang="json"><code>{&quot;type&quot;:&quot;txn&quot;,&quot;txn&quot;:[[&quot;w&quot;,2,17]]}</code></pre><p class="example-label">Expected response body</p><pre class="output" data-lang="json"><code>{&quot;type&quot;:&quot;txn_ok&quot;,&quot;txn&quot;:[[&quot;w&quot;,2,17]]}</code></pre><p>The write can complete during a partition. A remote read need not immediately observe 17. Run the healthy network first:</p><h4>Run it</h4><pre data-lang="sh"><code>cd &quot;$GG_ROOT/maelstrom&quot;
+./maelstrom test --bin &quot;$GG_ROOT/bin/maelstrom-txn&quot; -w txn-rw-register --node-count 2 --time-limit 20 --rate 1000 --concurrency 2n --consistency-models read-uncommitted --availability total</code></pre><p class="example-label">Expected</p><pre class="output"><code>:valid? true</code></pre><p>Then inject partitions:</p><pre data-lang="sh"><code>cd &quot;$GG_ROOT/maelstrom&quot;
+./maelstrom test --bin &quot;$GG_ROOT/bin/maelstrom-txn&quot; -w txn-rw-register --node-count 2 --time-limit 20 --rate 1000 --concurrency 2n --consistency-models read-uncommitted --availability total --nemesis partition</code></pre><p>Both runs must be valid. Explain your ordering and replication rules; total availability does not mean every consistency model can be supported.</p><p class="small">Official stage: <a href="https://fly.io/dist-sys/6b/">6b — Replicate without losing availability</a>.</p></section>
+<section class="session" aria-labelledby="challenge-6c"><h3 id="challenge-6c"><span id="PASS-6c" aria-hidden="true"></span>6c — Strengthen transaction visibility</h3><p>Keep total availability, but now pass the read-committed checker. Intermediate or aborted transaction writes must not leak to other transactions. Reason about the checker’s full model, not just one successful example.</p><p class="example-label">Example request body</p><pre data-lang="json"><code>{&quot;type&quot;:&quot;txn&quot;,&quot;txn&quot;:[[&quot;w&quot;,1,10],[&quot;w&quot;,1,11]]}</code></pre><p class="example-label">Expected response body</p><pre class="output" data-lang="json"><code>{&quot;type&quot;:&quot;txn_ok&quot;,&quot;txn&quot;:[[&quot;w&quot;,1,10],[&quot;w&quot;,1,11]]}</code></pre><p>Another transaction must not observe the intermediate 10 from this transaction. If you abort for a conflict, Maelstrom’s error code is 30; aborted values must remain invisible. Reads may still be stale across nodes.</p><h4>Run it</h4><pre data-lang="sh"><code>cd &quot;$GG_ROOT/maelstrom&quot;
+./maelstrom test --bin &quot;$GG_ROOT/bin/maelstrom-txn&quot; -w txn-rw-register --node-count 2 --concurrency 2n --time-limit 20 --rate 1000 --consistency-models read-committed --availability total --nemesis partition</code></pre><p class="example-label">Expected</p><pre class="output"><code>:valid? true</code></pre><p class="small">Official stage: <a href="https://fly.io/dist-sys/6c/">6c — Strengthen transaction visibility</a>.</p></section>
+</div><section aria-labelledby="hand-in"><h2 id="hand-in"><span id="DOC-1" aria-hidden="true"></span><span id="DOC-2" aria-hidden="true"></span><span id="DOC-3" aria-hidden="true"></span><span id="ENG-1" aria-hidden="true"></span><span id="ENG-2" aria-hidden="true"></span><span id="ENG-3" aria-hidden="true"></span><span id="spec-notes" aria-hidden="true"></span><span id="spec-eng" aria-hidden="true"></span><span id="evaluation" aria-hidden="true"></span>Finish with evidence</h2>
+<p>Keep all six Go projects, exact harness commands, and tool versions. In each module, run <code>go vet ./...</code> and <code>go test ./...</code>. Unit-test pure logic such as ID generation, deduplication, merges, and ownership hashing.</p>
+<p>Rebuild each binary with the race detector, for example from the broadcast source directory:</p><pre data-lang="sh"><code>go build -race -o &quot;$GG_ROOT/bin/maelstrom-broadcast&quot; .</code></pre>
+<p>Repeat its harness commands. They must remain valid, with no race reports in node logs. Keep non-race builds for comparable efficiency measurements; instrumentation changes timing.</p>
+<p>Write a short NOTES.md entry per stage: approach, a failure and what it taught you, consistency and availability assumptions, and tradeoffs. Copy measured 3d/3e and 5b/5c results into a comparison table. Explain why the final design meets its model instead of relying solely on a green run. Mark unfinished stages honestly.</p>
+<p>If a run fails, keep its history before the next run replaces the latest pointer. Reproduce it, inspect the relevant messages, and make one reasoned change with your AI pair. Three passing repetitions are useful evidence, not a proof that all executions are safe.</p>
+</section><footer>Original challenges by Fly.io, tested with Jepsen’s Maelstrom. Independent learning guide · <a href="index.html">Go Infra Track</a>.</footer>
+</main>
+<script>
+(function () {
+  "use strict";
+  var root = document.documentElement;
+  var buttons = Array.prototype.slice.call(document.querySelectorAll("[data-theme-set]"));
+  function renderTheme() {
+    var choice = root.getAttribute("data-theme") || "system";
+    buttons.forEach(function (button) {
+      button.setAttribute("aria-pressed", String(button.getAttribute("data-theme-set") === choice));
+    });
+  }
+  buttons.forEach(function (button) {
+    button.addEventListener("click", function () {
+      var choice = button.getAttribute("data-theme-set");
+      if (choice === "system") root.removeAttribute("data-theme");
+      else root.setAttribute("data-theme", choice);
+      try {
+        if (choice === "system") localStorage.removeItem("ingest-relay-v1:theme");
+        else localStorage.setItem("ingest-relay-v1:theme", choice);
+      } catch (error) {}
+      renderTheme();
+    });
+  });
+  renderTheme();
+  document.getElementById("print-doc").addEventListener("click", function () { window.print(); });
+  document.getElementById("document-tools").hidden = false;
+})();
+</script>
+</body>
+</html>

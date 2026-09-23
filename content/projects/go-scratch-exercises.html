@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Five short Go experiments: predict, run, and explain the output.">
+<title>Go Warm-ups — Go Infra Track</title>
+<script>
+(function () {
+  try {
+    var theme = localStorage.getItem("ingest-relay-v1:theme");
+    if (theme === "light" || theme === "dark") document.documentElement.setAttribute("data-theme", theme);
+  } catch (error) {}
+})();
+</script>
+<style>
+  :root {
+    color-scheme: light;
+    --paper: #ffffff; --ink: #202a30; --muted: #58666e;
+    --rule: #dce3e6; --soft: #f4f6f7; --accent: #12647a;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", Consolas, "Liberation Mono", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --paper: #141b20; --ink: #e1e8ec; --muted: #a7b5bf;
+      --rule: #36434d; --soft: #202a32; --accent: #8ccfdf;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --paper: #141b20; --ink: #e1e8ec; --muted: #a7b5bf;
+    --rule: #36434d; --soft: #202a32; --accent: #8ccfdf;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 17px/1.7 var(--sans); overflow-wrap: break-word; }
+  a { color: var(--accent); text-underline-offset: 0.2em; }
+  a:hover { text-decoration-thickness: 2px; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+  [hidden] { display: none !important; }
+  [id] { scroll-margin-top: 1.5rem; }
+  .skip { position: absolute; top: -5rem; left: 1rem; padding: 0.5rem; background: var(--paper); }
+  .skip:focus { top: 0.5rem; }
+  .toolbar { max-width: 56rem; margin: auto; padding: 1rem 1.5rem; display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1.5rem; border-bottom: 1px solid var(--rule); font-size: 0.82rem; }
+  .back { margin-right: auto; text-decoration: none; }
+  .tools { display: flex; flex-wrap: wrap; align-items: center; gap: 0.7rem; }
+  .themes { display: flex; gap: 0.25rem; }
+  button { font: inherit; color: var(--muted); background: transparent; border: 1px solid var(--rule); border-radius: 4px; padding: 0.25rem 0.55rem; cursor: pointer; }
+  button:hover, button[aria-pressed="true"] { color: var(--ink); background: var(--soft); border-color: var(--muted); }
+  main { max-width: 48rem; padding: 3.5rem 1.5rem 4rem; margin: auto; }
+  header { margin-bottom: 2rem; }
+  .eyebrow { color: var(--accent); font-size: 0.8rem; font-weight: 650; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 0.5rem; }
+  h1 { font-size: clamp(2.3rem, 7vw, 3.3rem); line-height: 1.12; letter-spacing: -0.045em; margin: 0 0 1rem; }
+  .intro { font-size: 1.2rem; line-height: 1.6; }
+  .meta { color: var(--muted); font-size: 0.9rem; }
+  .contents { display: flex; flex-wrap: wrap; gap: 0.35rem 1.1rem; font-size: 0.85rem; padding: 1rem 0; border-block: 1px solid var(--rule); }
+  h2 { font-size: 1.6rem; line-height: 1.3; letter-spacing: -0.02em; margin: 3rem 0 1rem; }
+  h3 { font-size: 1.14rem; line-height: 1.4; margin: 2rem 0 0.65rem; }
+  h4 { font-size: 1rem; line-height: 1.4; margin: 1.5rem 0 0.6rem; }
+  .session { margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid var(--rule); }
+  .session > h3 { font-size: 1.4rem; margin: 0 0 1rem; }
+  p, ul, ol { margin: 0 0 1rem; }
+  ul, ol { padding-left: 1.4rem; }
+  li { padding-left: 0.15rem; margin-bottom: 0.55rem; }
+  strong { font-weight: 650; }
+  code { font: 0.85em var(--mono); background: var(--soft); padding: 0.1em 0.25em; border-radius: 3px; overflow-wrap: anywhere; }
+  pre { background: var(--soft); border: 1px solid var(--rule); border-radius: 5px; padding: 1rem; overflow-x: auto; line-height: 1.6; margin: 0 0 1rem; }
+  pre code { background: none; padding: 0; font-size: 0.8rem; overflow-wrap: normal; }
+  .table-wrap { overflow-x: auto; margin: 1rem 0 1.25rem; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.88rem; line-height: 1.55; }
+  caption { text-align: left; font-weight: 650; margin-bottom: 0.5rem; }
+  th, td { text-align: left; vertical-align: top; padding: 0.65rem 0.6rem; border-bottom: 1px solid var(--rule); }
+  th { background: var(--soft); font-size: 0.8rem; font-weight: 650; }
+  .note { padding: 0.8rem 1rem; border-left: 3px solid var(--accent); background: var(--soft); }
+  pre.output { border-left: 3px solid var(--accent); }
+  .example-label { font-size: 0.85rem; font-weight: 650; margin-bottom: 0.4rem; }
+  .small { color: var(--muted); font-size: 0.88rem; }
+  footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--rule); color: var(--muted); font-size: 0.8rem; }
+  @media (max-width: 36rem) {
+    body { font-size: 16px; }
+    main { padding: 2rem 1.1rem 3rem; }
+    .toolbar { padding-inline: 1.1rem; }
+    h2 { font-size: 1.4rem; }
+    th, td { padding: 0.55rem 0.4rem; }
+  }
+  @page { size: A4; margin: 17mm; }
+  @media print {
+    :root, :root[data-theme], :root:not([data-theme="light"]) {
+      color-scheme: light;
+      --paper: #fff; --ink: #111; --muted: #444; --rule: #ccc; --soft: #f5f5f5; --accent: #204957;
+    }
+    body { font-size: 10pt; line-height: 1.5; }
+    main { max-width: none; margin: 0; padding: 0; }
+    .toolbar, .skip, .contents { display: none !important; }
+    header { margin-bottom: 1rem; }
+    h1 { font-size: 28pt; }
+    h2 { font-size: 17pt; margin-top: 1.8rem; }
+    h3, .session > h3 { font-size: 14pt; margin-top: 1.2rem; }
+    h4 { font-size: 11pt; }
+    h1, h2, h3, h4, caption, .example-label { break-after: avoid; }
+    p { orphans: 3; widows: 3; }
+    tr, pre, .note { break-inside: avoid; }
+    thead { display: table-header-group; }
+    table { font-size: 9pt; }
+    .table-wrap { overflow: visible; }
+    pre { white-space: pre-wrap; overflow: visible; }
+    pre code { font-size: 8.5pt; overflow-wrap: anywhere; }
+    a { color: inherit; }
+  }
+
+  .lede { font-size: 1.2rem; line-height: 1.6; }
+  .caption { color: var(--muted); font-size: 0.88rem; }
+  .session > h2 { margin: 0 0 1rem; font-size: 1.4rem; }
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1.5rem 0; }
+  .card { border: 1px solid var(--rule); border-radius: 6px; padding: 1.25rem; }
+  .card h3 { margin: 0 0 0.65rem; }
+  .card p:last-child { margin-bottom: 0; }
+  .card .meta { font-size: 0.8rem; }
+  details { border-top: 1px solid var(--rule); padding: 1rem 0; margin-top: 2rem; }
+  summary { cursor: pointer; font-weight: 650; }
+  details[open] > summary { margin-bottom: 1rem; }
+  @media (max-width: 36rem) { .cards { grid-template-columns: 1fr; } }
+  @media print { .cards { display: block; } .card { break-inside: avoid; margin-bottom: 1rem; } }
+</style>
+</head>
+<body>
+<a class="skip" href="#brief">Skip to content</a>
+<div class="toolbar">
+  <a class="back" href="index.html">← Go Infra Track</a>
+  <div class="tools" id="document-tools" hidden>
+    <div class="themes" role="group" aria-label="Colour theme">
+      <button type="button" data-theme-set="light" aria-pressed="false">Light</button>
+      <button type="button" data-theme-set="dark" aria-pressed="false">Dark</button>
+      <button type="button" data-theme-set="system" aria-pressed="true">System</button>
+    </div>
+    <button type="button" id="print-doc">Print</button>
+  </div>
+</div>
+<main id="top">
+<header id="brief"><span id="overview" aria-hidden="true"></span><span id="method" aria-hidden="true"></span>
+<p class="eyebrow">Go Infra Track · Optional warm-ups</p>
+<h1>Predict it. Run it. Explain it.</h1>
+<p class="lede">Five small Go experiments about copies, shared memory, queues, and ownership.</p>
+<p>Use these when a concept in a challenge feels unfamiliar. Each takes roughly 10–20 minutes, with extra time to explore. They are optional and are not part of your submission. Pair with AI: describe your prediction before asking it to help write the experiment, then explain any mismatch together.</p>
+<p>Keep the programs in a scratch directory outside your challenge code. These are tasks to implement, followed by commands to run your programs and expected output. They deliberately leave function names and program structure to you.</p>
+<pre data-lang="sh"><code>mkdir go-warmups
+cd go-warmups
+go mod init example.com/go-warmups
+mkdir values copies channels slices ownership</code></pre>
+<p>Give each folder a <code>main.go</code>. Print only the values requested, using <code>fmt.Println</code>, to compare with the output blocks. Predict first, run second, and change one thing at a time.</p>
+</header>
+<nav class="contents" aria-label="Contents"><a href="#ex-1">1. Values</a><a href="#ex-2">2. Copies</a><a href="#ex-3">3. Channels</a><a href="#ex-4">4. Slices</a><a href="#ex-5">5. Ownership</a></nav>
+<section class="session" id="ex-1"><span id="ex-pointers" aria-hidden="true"></span>
+<h2>Experiment 1: Which counter changes?</h2>
+<p>Make a struct containing one integer counter. Write a function that takes the struct by value and increments its field. Call it with a variable initialized to zero, then print the caller's counter. Add another function that takes a pointer; call it with the same variable's address and print again.</p>
+<p>Next, give the type two increment methods: one with a value receiver and one with a pointer receiver. Starting with a fresh zero counter, call the value method twice, then the pointer method twice. Print the caller's counter after each call.</p>
+<h3>Try it</h3>
+<p>Predict all six lines before running:</p>
+<pre data-lang="sh"><code>go run ./values</code></pre>
+<pre class="output"><code>0
+1
+0
+0
+1
+2</code></pre>
+<p>The value function and value method change their own copies. The pointer versions change the original variable. When a variable is addressable, Go can take its address for a pointer-method call; that convenience does not turn a value receiver into a pointer receiver.</p>
+<p>Move the print inside the value function, after its increment, and predict the extra output. Seeing 1 inside and 0 outside is a useful clue when a handler appears to update a shared counter but the next request sees no change. Ask your AI partner to trace which variable each line reads.</p>
+</section>
+<section class="session" id="ex-2"><span id="ex-copying" aria-hidden="true"></span>
+<h2>Experiment 2: What did the copy share?</h2>
+<p>Make a struct with a string and an integer slice. Initialize it with <code>"a"</code> and <code>[]int{1, 2, 3}</code>, whose length and capacity are both three. Assign the struct to a second variable. Through the second variable, change the string to <code>"b"</code> and slice element zero to 99. Print the first variable's string and slice.</p>
+<p>Append 4 to the second variable's slice, storing the returned slice back into that field. Then change its element one to 42. Print the original slice, the second slice, and the original slice's capacity, each on its own line.</p>
+<h3>Try it</h3>
+<pre data-lang="sh"><code>go run ./copies</code></pre>
+<pre class="output"><code>a [99 2 3]
+[99 2 3]
+[99 42 3 4]
+3</code></pre>
+<p>Copying a slice copies a descriptor pointing to an array, so both structs initially share elements. Assigning a new string field changes only that struct's field. The append needs a larger array because the slice was full; later element changes in the second slice no longer affect the first.</p>
+<p>For a separate check in this folder, add a struct containing <code>sync.Mutex</code> and a counter, plus a function that accepts it by value, locks, increments, and unlocks. Call it once, without adding prints or concurrency. Predict what this command reports:</p>
+<pre data-lang="sh"><code>go vet ./copies</code></pre>
+<pre class="output"><code>… passes lock by value …
+… copies lock value …</code></pre>
+<p>These are diagnostic fragments; filenames, positions, and wording depend on your code and Go version. Expect a nonzero exit status. Each call receives a different lock, so the lock cannot coordinate access between copies. A <a href="https://pkg.go.dev/sync#Mutex">Mutex must not be copied after first use</a>; passing the containing state by pointer avoids this mistake. Fix the example and rerun vet: it should succeed with no diagnostics.</p>
+</section>
+<section class="session" id="ex-3"><span id="ex-channels" aria-hidden="true"></span>
+<h2>Experiment 3: Fill, drain, and close a queue</h2>
+<p>Create an integer channel with capacity two. Send 10 and 20, then print its length and capacity. With no receiver running, use a <code>select</code> to try sending 30, and a <code>default</code> case that prints <code>full</code>.</p>
+<p>Close the channel, range over it while printing received values, then perform one more receive using the two-value form and print both results. Keep this version in a single goroutine so another receiver cannot change which case is ready.</p>
+<h3>Try it</h3>
+<pre data-lang="sh"><code>go run ./channels</code></pre>
+<pre class="output"><code>2 2
+full
+10
+20
+0 false</code></pre>
+<p>The default case makes the send attempt nonblocking. Closing preserves buffered values: the range drains 10 and 20 before it ends. Receiving from the closed, empty channel returns immediately with the element type's zero value and <code>false</code>.</p>
+<p>Now add a final send on the closed channel and run the command again. After the same five lines, expect a panic containing <code>send on closed channel</code> and a nonzero exit status. Stack traces vary. Remove that final send when finished.</p>
+<p>Predict what happens if you remove the default case instead. With the buffer full and no possible receiver, this version cannot make progress. In a concurrent service, checking <code>len</code> before sending is not a reservation: another sender could fill the space. Arrange ownership so the channel closes exactly once, after every sender has stopped.</p>
+</section>
+<section class="session" id="ex-4"><span id="ex-slices" aria-hidden="true"></span>
+<h2>Experiment 4: Reuse a batch buffer</h2>
+<p>Create a string slice with length zero and capacity four, then append <code>"a", "b", "c"</code>. Print its length and capacity. Make a second slice using <code>first[:0]</code>, append <code>"x"</code> to it, and print the first slice.</p>
+<p>Start a separate case with a fresh length-zero, capacity-four slice containing a, b, c. Set <code>u</code> to the result of appending d to that slice. Set <code>v</code> to the result of appending e to the same original three-element slice. Print u and v.</p>
+<p>Finally, start with the literal <code>[]string{"a", "b", "c", "d"}</code>, whose capacity is four. Append e to make w, change w's first element to z, and print the original and w.</p>
+<h3>Try it</h3>
+<pre data-lang="sh"><code>go run ./slices</code></pre>
+<pre class="output"><code>3 4
+[x b c]
+[a b c e]
+[a b c e]
+[a b c d]
+[z b c d e]</code></pre>
+<p>The first three appends that fit in spare capacity reuse existing storage. In the u/v case, both appends target the same fourth slot; the second overwrites d. The final case forces a new array because the original is full. The new capacity may vary; none of these expected results depends on its exact growth factor.</p>
+<p>This is the batching hazard: resetting a slice's length does not detach its array. Before reusing it, establish that no other operation still needs the old contents. Ask your AI partner to help add a version that deliberately copies the elements, then explain the changed output using the <a href="https://go.dev/ref/spec#Appending_and_copying_slices">append and copy rules</a>.</p>
+</section>
+<section class="session" id="ex-5"><span id="ex-ownership" aria-hidden="true"></span>
+<h2>Experiment 5: Who waits, and who closes?</h2>
+<p>Build a program that creates or truncates <code>out.txt</code>, writes three newline-terminated lines synchronously, and starts a goroutine for a fourth line. Give the goroutine an <code>allowWrite</code> channel: it must wait for a receive before touching the file. Have it signal a separate <code>done</code> channel after its write attempt. Check all file errors.</p>
+<p>Use these explicit gates rather than sleeps. They establish an order even on a slow machine. For each variant, rerun the program from scratch so the file starts empty.</p>
+<h3>Try it</h3>
+<p>First, defer the file close and let main return without opening the gate or waiting. The goroutine cannot write its fourth line.</p>
+<pre data-lang="sh"><code>go run ./ownership
+wc -l &lt; out.txt</code></pre>
+<pre class="output"><code>3</code></pre>
+<p>Second, close <code>allowWrite</code> to release the goroutine, then wait for <code>done</code> before returning and letting the deferred close run. Repeat those commands: expect 4 lines and no write error.</p>
+<p>Third, explicitly close the file before releasing the gate, then release it and wait for done. Print the write error. Expect a message containing <code>file already closed</code> and a three-line file. Waiting for completion cannot repair a resource closed too early.</p>
+<p>For two final variants, replace the file experiment. Register three deferred prints, labeled <code>defer 1</code>, <code>defer 2</code>, and <code>defer 3</code>, in that order, then return normally:</p>
+<pre data-lang="sh"><code>go run ./ownership</code></pre>
+<pre class="output"><code>defer 3
+defer 2
+defer 1</code></pre>
+<p>Replace these with one deferred print followed by <code>os.Exit(1)</code>. Run the built binary in a shell without <code>set -e</code> so you can inspect its exit code:</p>
+<pre data-lang="sh"><code>go build -o ownership-demo ./ownership
+./ownership-demo
+printf 'exit=%s\n' "$?"</code></pre>
+<pre class="output"><code>exit=1</code></pre>
+<p><a href="https://pkg.go.dev/os#Exit">os.Exit</a> skips deferred calls. No deferred message should appear. In your service, keep resources alive until their users finish, and complete cleanup before exiting. Explain who owns each close and what makes it safe; that explanation matters more than memorizing the output.</p>
+</section>
+<footer>Go warm-ups · <a href="index.html">Go Infra Track</a> · Independent practice material, not issued by any company.</footer>
+
+</main>
+<script>
+(function () {
+  "use strict";
+  var root = document.documentElement;
+  var buttons = Array.prototype.slice.call(document.querySelectorAll("[data-theme-set]"));
+  function renderTheme() {
+    var choice = root.getAttribute("data-theme") || "system";
+    buttons.forEach(function (button) {
+      button.setAttribute("aria-pressed", String(button.getAttribute("data-theme-set") === choice));
+    });
+  }
+  buttons.forEach(function (button) {
+    button.addEventListener("click", function () {
+      var choice = button.getAttribute("data-theme-set");
+      if (choice === "system") root.removeAttribute("data-theme");
+      else root.setAttribute("data-theme", choice);
+      try {
+        if (choice === "system") localStorage.removeItem("ingest-relay-v1:theme");
+        else localStorage.setItem("ingest-relay-v1:theme", choice);
+      } catch (error) {}
+      renderTheme();
+    });
+  });
+  renderTheme();
+  document.getElementById("print-doc").addEventListener("click", function () { window.print(); });
+  document.getElementById("document-tools").hidden = false;
+})();
+</script>
+</body>
+</html>

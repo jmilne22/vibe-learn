@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Build a time-series database with a WAL, compression, blocks, and retention.">
+<title>Build a Tiny TSDB — Go Infra Track</title>
+<script>
+(function () {
+  try {
+    var theme = localStorage.getItem("ingest-relay-v1:theme");
+    if (theme === "light" || theme === "dark") document.documentElement.setAttribute("data-theme", theme);
+  } catch (error) {}
+})();
+</script>
+<style>
+  :root {
+    color-scheme: light;
+    --paper: #ffffff; --ink: #202a30; --muted: #58666e;
+    --rule: #dce3e6; --soft: #f4f6f7; --accent: #12647a;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", Consolas, "Liberation Mono", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --paper: #141b20; --ink: #e1e8ec; --muted: #a7b5bf;
+      --rule: #36434d; --soft: #202a32; --accent: #8ccfdf;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --paper: #141b20; --ink: #e1e8ec; --muted: #a7b5bf;
+    --rule: #36434d; --soft: #202a32; --accent: #8ccfdf;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 17px/1.7 var(--sans); overflow-wrap: break-word; }
+  a { color: var(--accent); text-underline-offset: 0.2em; }
+  a:hover { text-decoration-thickness: 2px; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+  [hidden] { display: none !important; }
+  [id] { scroll-margin-top: 1.5rem; }
+  .skip { position: absolute; top: -5rem; left: 1rem; padding: 0.5rem; background: var(--paper); }
+  .skip:focus { top: 0.5rem; }
+  .toolbar { max-width: 56rem; margin: auto; padding: 1rem 1.5rem; display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1.5rem; border-bottom: 1px solid var(--rule); font-size: 0.82rem; }
+  .back { margin-right: auto; text-decoration: none; }
+  .tools { display: flex; flex-wrap: wrap; align-items: center; gap: 0.7rem; }
+  .themes { display: flex; gap: 0.25rem; }
+  button { font: inherit; color: var(--muted); background: transparent; border: 1px solid var(--rule); border-radius: 4px; padding: 0.25rem 0.55rem; cursor: pointer; }
+  button:hover, button[aria-pressed="true"] { color: var(--ink); background: var(--soft); border-color: var(--muted); }
+  main { max-width: 48rem; padding: 3.5rem 1.5rem 4rem; margin: auto; }
+  header { margin-bottom: 2rem; }
+  .eyebrow { color: var(--accent); font-size: 0.8rem; font-weight: 650; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 0.5rem; }
+  h1 { font-size: clamp(2.3rem, 7vw, 3.3rem); line-height: 1.12; letter-spacing: -0.045em; margin: 0 0 1rem; }
+  .intro { font-size: 1.2rem; line-height: 1.6; }
+  .meta { color: var(--muted); font-size: 0.9rem; }
+  .contents { display: flex; flex-wrap: wrap; gap: 0.35rem 1.1rem; font-size: 0.85rem; padding: 1rem 0; border-block: 1px solid var(--rule); }
+  h2 { font-size: 1.6rem; line-height: 1.3; letter-spacing: -0.02em; margin: 3rem 0 1rem; }
+  h3 { font-size: 1.14rem; line-height: 1.4; margin: 2rem 0 0.65rem; }
+  h4 { font-size: 1rem; line-height: 1.4; margin: 1.5rem 0 0.6rem; }
+  .session { margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid var(--rule); }
+  .session > h3 { font-size: 1.4rem; margin: 0 0 1rem; }
+  p, ul, ol { margin: 0 0 1rem; }
+  ul, ol { padding-left: 1.4rem; }
+  li { padding-left: 0.15rem; margin-bottom: 0.55rem; }
+  strong { font-weight: 650; }
+  code { font: 0.85em var(--mono); background: var(--soft); padding: 0.1em 0.25em; border-radius: 3px; overflow-wrap: anywhere; }
+  pre { background: var(--soft); border: 1px solid var(--rule); border-radius: 5px; padding: 1rem; overflow-x: auto; line-height: 1.6; margin: 0 0 1rem; }
+  pre code { background: none; padding: 0; font-size: 0.8rem; overflow-wrap: normal; }
+  .table-wrap { overflow-x: auto; margin: 1rem 0 1.25rem; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.88rem; line-height: 1.55; }
+  caption { text-align: left; font-weight: 650; margin-bottom: 0.5rem; }
+  th, td { text-align: left; vertical-align: top; padding: 0.65rem 0.6rem; border-bottom: 1px solid var(--rule); }
+  th { background: var(--soft); font-size: 0.8rem; font-weight: 650; }
+  .note { padding: 0.8rem 1rem; border-left: 3px solid var(--accent); background: var(--soft); }
+  pre.output { border-left: 3px solid var(--accent); }
+  .example-label { font-size: 0.85rem; font-weight: 650; margin-bottom: 0.4rem; }
+  .small { color: var(--muted); font-size: 0.88rem; }
+  footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--rule); color: var(--muted); font-size: 0.8rem; }
+  @media (max-width: 36rem) {
+    body { font-size: 16px; }
+    main { padding: 2rem 1.1rem 3rem; }
+    .toolbar { padding-inline: 1.1rem; }
+    h2 { font-size: 1.4rem; }
+    th, td { padding: 0.55rem 0.4rem; }
+  }
+  @page { size: A4; margin: 17mm; }
+  @media print {
+    :root, :root[data-theme], :root:not([data-theme="light"]) {
+      color-scheme: light;
+      --paper: #fff; --ink: #111; --muted: #444; --rule: #ccc; --soft: #f5f5f5; --accent: #204957;
+    }
+    body { font-size: 10pt; line-height: 1.5; }
+    main { max-width: none; margin: 0; padding: 0; }
+    .toolbar, .skip, .contents { display: none !important; }
+    header { margin-bottom: 1rem; }
+    h1 { font-size: 28pt; }
+    h2 { font-size: 17pt; margin-top: 1.8rem; }
+    h3, .session > h3 { font-size: 14pt; margin-top: 1.2rem; }
+    h4 { font-size: 11pt; }
+    h1, h2, h3, h4, caption, .example-label { break-after: avoid; }
+    p { orphans: 3; widows: 3; }
+    tr, pre, .note { break-inside: avoid; }
+    thead { display: table-header-group; }
+    table { font-size: 9pt; }
+    .table-wrap { overflow: visible; }
+    pre { white-space: pre-wrap; overflow: visible; }
+    pre code { font-size: 8.5pt; overflow-wrap: anywhere; }
+    a { color: inherit; }
+  }
+
+  .lede { font-size: 1.2rem; line-height: 1.6; }
+  .caption { color: var(--muted); font-size: 0.88rem; }
+  .session > h2 { margin: 0 0 1rem; font-size: 1.4rem; }
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1.5rem 0; }
+  .card { border: 1px solid var(--rule); border-radius: 6px; padding: 1.25rem; }
+  .card h3 { margin: 0 0 0.65rem; }
+  .card p:last-child { margin-bottom: 0; }
+  .card .meta { font-size: 0.8rem; }
+  details { border-top: 1px solid var(--rule); padding: 1rem 0; margin-top: 2rem; }
+  summary { cursor: pointer; font-weight: 650; }
+  details[open] > summary { margin-bottom: 1rem; }
+  @media (max-width: 36rem) { .cards { grid-template-columns: 1fr; } }
+  @media print { .cards { display: block; } .card { break-inside: avoid; margin-bottom: 1rem; } }
+</style>
+</head>
+<body>
+<a class="skip" href="#brief">Skip to content</a>
+<div class="toolbar">
+  <a class="back" href="index.html">← Go Infra Track</a>
+  <div class="tools" id="document-tools" hidden>
+    <div class="themes" role="group" aria-label="Colour theme">
+      <button type="button" data-theme-set="light" aria-pressed="false">Light</button>
+      <button type="button" data-theme-set="dark" aria-pressed="false">Dark</button>
+      <button type="button" data-theme-set="system" aria-pressed="true">System</button>
+    </div>
+    <button type="button" id="print-doc">Print</button>
+  </div>
+</div>
+<main id="top">
+<header id="brief"><span id="must-do" aria-hidden="true"></span><span id="rules" aria-hidden="true"></span><span id="budget" aria-hidden="true"></span>
+<p class="eyebrow">Go Infra Track · Challenge 04</p>
+<h1>Build a Tiny TSDB</h1>
+<p class="lede">Store a stream of metric samples, recover it after a crash, and answer time-range queries without keeping the whole history in memory.</p>
+<p>Build a single-node time-series database in Go using only the standard library. Metrics arrive as timestamp/value pairs grouped by labels. Your database will acknowledge durable writes, compress samples, move older data into immutable files, and expire those files by retention.</p>
+<p>Allow <strong>16–20 hours of implementation</strong>, plus time to learn. Experience with the <a href="go-telemetry-ingest-take-home.html">Ingest Relay</a> helps, but this is a separate program. Pair with AI throughout: ask it to explain an unfamiliar idea, predict a small experiment together, and test the resulting code. AI may write code; you should understand and be able to change it.</p>
+<p>Package structure, concurrency design, series IDs, and file formats are yours to choose. PromQL, aggregation, remote-write, block compaction, downsampling, histograms, exemplars, staleness markers, replication, and authentication are outside scope.</p>
+</header>
+<nav class="contents" aria-label="Contents"><a href="#session-1">1. Model</a><a href="#session-2">2. HTTP</a><a href="#session-3">3. Recovery</a><a href="#session-4">4. Compression</a><a href="#session-5">5. Blocks</a><a href="#session-6">6. Retention</a><a href="#hand-in">Deliverables</a></nav>
+<p class="caption">Commands assume Bash, curl, and jq. Output blocks are expected results for the stated fixtures, not measurements from an implementation supplied here. JSON whitespace and equivalent number formatting may differ.</p>
+<section class="session" id="session-1"><span id="MOD-1" aria-hidden="true"></span><span id="MOD-2" aria-hidden="true"></span><span id="MOD-3" aria-hidden="true"></span><span id="TST-1" aria-hidden="true"></span><span id="spec-model" aria-hidden="true"></span><span id="sessions" aria-hidden="true"></span><span id="reference" aria-hidden="true"></span>
+<h2>Step 1: Give each series an identity</h2>
+<p>Build an in-memory head: the recent samples that have not yet moved into immutable blocks. A series is identified by its complete label set, including <code>__name__</code>. Changing label order must not change identity; changing any name or value must.</p>
+<p>Label names must match <code>[a-zA-Z_][a-zA-Z0-9_]*</code>, be unique within a set, and include <code>__name__</code>. Label values must be nonempty UTF-8. Timestamps are signed 64-bit integers in milliseconds; sample values are finite float64 JSON numbers. Within each series, timestamps must increase strictly. Reject a timestamp equal to or earlier than its last stored timestamp.</p>
+<h3>Try it</h3>
+<p>Write a test that applies these operations to an empty head. The notation below describes test inputs, not a public Go API you must implement.</p>
+<div class="table-wrap"><table><thead><tr><th>Operation</th><th>Expected result</th></tr></thead><tbody>
+<tr><td>Append <code>{__name__="up",host="a"}</code> at 1000 → 1</td><td>One series, one sample</td></tr>
+<tr><td>Append <code>{host="a",__name__="up"}</code> at 2000 → 2</td><td>Same series, two samples</td></tr>
+<tr><td>Append that series at 2000 or 1500</td><td>Rejected; state unchanged</td></tr>
+<tr><td>Append <code>{__name__="up",host="b"}</code> at 1000 → 1</td><td>Second series</td></tr>
+<tr><td>Append a label set without <code>__name__</code></td><td>Rejected</td></tr>
+<tr><td>Query host a over [0, 1999]</td><td>Only [1000, 1]</td></tr>
+</tbody></table></div>
+<pre data-lang="sh"><code>go test ./...</code></pre>
+<p>Also test invalid and duplicate label names, empty or invalid UTF-8 values, independent series ordering, and inclusive range bounds: samples at 1000 through 5000 queried over [2000, 4000] return exactly 2000, 3000, 4000 in ascending order. An empty range returns no samples. Ask your AI partner to find two different label sets that could collide under your proposed identity representation.</p>
+</section>
+<section class="session" id="session-2"><span id="API-1" aria-hidden="true"></span><span id="API-2" aria-hidden="true"></span><span id="API-3" aria-hidden="true"></span><span id="API-4" aria-hidden="true"></span><span id="API-5" aria-hidden="true"></span><span id="OPS-1" aria-hidden="true"></span><span id="OPS-2" aria-hidden="true"></span><span id="TST-2" aria-hidden="true"></span><span id="spec-api" aria-hidden="true"></span><span id="spec-ops" aria-hidden="true"></span><span id="conventions" aria-hidden="true"></span>
+<h2>Step 2: Write and query over HTTP</h2>
+<p>Add these endpoints. A write is atomic across its entire JSON Lines body, including ordering between lines in that body and concurrent requests. Validate before exposing any part of a rejected batch.</p>
+<div class="table-wrap"><table><thead><tr><th>Request</th><th>Contract</th></tr></thead><tbody>
+<tr><td><code>POST /api/v1/write</code></td><td>One <code>{"labels":{…},"t":int,"v":number}</code> per line. Body limit 1 MiB (1,048,576 bytes). Return 204 for a stored batch, 400 naming the first invalid line and reason with nothing stored, or 413 for an oversized body.</td></tr>
+<tr><td><code>GET /api/v1/query</code></td><td>Required <code>match</code>, <code>start</code>, <code>end</code>; inclusive millisecond bounds. Return 200 with the shape below. Sort series by canonical label set and samples by ascending time. No matches returns <code>{"series":[]}</code>.</td></tr>
+<tr><td><code>GET /api/v1/series?match=SEL</code></td><td>Return 200 with <code>{"series":[{labels},…]}</code>.</td></tr>
+<tr><td><code>GET /healthz</code></td><td>200 when serving.</td></tr>
+<tr><td><code>GET /stats</code></td><td>200 with <code>series</code>, <code>samples_ingested</code>, <code>head_samples</code>, <code>blocks</code>, <code>chunk_bytes</code>, <code>chunk_samples</code>, and <code>wal_bytes</code>. Extra fields are allowed.</td></tr>
+</tbody></table></div>
+<p>Selectors support equality only: <code>up</code>, <code>up{host="a"}</code>, or <code>{host="a"}</code>. Values need double quotes and there must be at least one matcher overall. Invalid selectors or parameters, including <code>start &gt; end</code>, return 400. Wrong methods return 405; unknown paths return 404. Error response wording is your choice.</p>
+<p>Support the following flags as their capabilities are added. Invalid values must name the flag on stderr and exit nonzero before serving.</p>
+<div class="table-wrap"><table><thead><tr><th>Flag</th><th>Default</th><th>Valid values</th></tr></thead><tbody>
+<tr><td><code>-listen</code></td><td><code>127.0.0.1:9201</code></td><td>Nonempty HTTP address</td></tr>
+<tr><td><code>-data-dir</code></td><td><code>data</code></td><td>Nonempty path</td></tr>
+<tr><td><code>-block-duration</code></td><td><code>2h</code></td><td>Duration ≥ 1 minute</td></tr>
+<tr><td><code>-retention</code></td><td><code>24h</code></td><td>Duration ≥ block duration</td></tr>
+<tr><td><code>-wal-fsync</code></td><td><code>true</code></td><td>Boolean</td></tr>
+</tbody></table></div>
+<h3>Try it</h3>
+<p>Build and start the server in terminal 1. Keep the printed data path for restart experiments. Use a new temporary directory whenever a scenario asks for fresh data.</p>
+<pre data-lang="sh"><code>go build -o tsdb .
+TSDB_DATA=$(mktemp -d)
+printf '%s\n' "$TSDB_DATA"
+./tsdb -data-dir "$TSDB_DATA"</code></pre>
+<p>In terminal 2, submit two samples:</p>
+<pre data-lang="sh"><code>curl -sS -o /dev/null -w '%{http_code}\n' \
+  --data-binary @- http://127.0.0.1:9201/api/v1/write &lt;&lt;'JSONL'
+{"labels":{"__name__":"up","host":"a"},"t":1000,"v":1}
+{"labels":{"host":"a","__name__":"up"},"t":2000,"v":2}
+JSONL
+curl -sS -G --data-urlencode 'match=up{host="a"}' \
+  --data-urlencode start=1000 --data-urlencode end=2000 \
+  http://127.0.0.1:9201/api/v1/query</code></pre>
+<pre class="output"><code>204
+{"series":[{"labels":{"__name__":"up","host":"a"},"samples":[[1000,1],[2000,2]]}]}</code></pre>
+<p>Now submit a batch containing timestamps 3000 then 2000 for that series. Expect 400 identifying line 2; the query must still contain only the original two samples. Test the same failure at line 7 of a ten-line batch. Before any restart, <code>/stats</code> must show <code>series: 1</code> and <code>samples_ingested: 2</code>. Add tests for selector parsing, atomicity, every status above, and the later WAL failure status. Document counter behavior across restarts rather than assuming these lifetime counters persist.</p>
+</section>
+<section class="session" id="session-3"><span id="WAL-1" aria-hidden="true"></span><span id="WAL-2" aria-hidden="true"></span><span id="WAL-3" aria-hidden="true"></span><span id="WAL-4" aria-hidden="true"></span><span id="TST-3" aria-hidden="true"></span><span id="spec-wal" aria-hidden="true"></span>
+<h2>Step 3: Recover acknowledged writes</h2>
+<p>Add a write-ahead log (WAL). Return 204 only after appending the entire batch and, with the default <code>-wal-fsync=true</code>, syncing it to storage. A WAL failure returns a 5xx and stores nothing. Recovery must never apply a fraction of a batch.</p>
+<p>With fsync enabled, acknowledged writes must survive crashes, subject to the storage device honoring synchronization. With it disabled, acknowledgement means appended, without a per-request sync guarantee: a machine crash can lose acknowledged data. Choose and document whether and when you sync in that mode. Killing only the process tests replay; it does not simulate loss of the operating system's write cache.</p>
+<h3>Try it</h3>
+<p>Use a fresh directory. In terminal 1, start your built binary in the background and record its PID:</p>
+<pre data-lang="sh"><code>TSDB_DATA=$(mktemp -d)
+./tsdb -data-dir "$TSDB_DATA" &amp;
+TSDB_PID=$!</code></pre>
+<p>Wait until <code>/healthz</code> succeeds. In terminal 2, write and query two samples:</p>
+<pre data-lang="sh"><code>curl -sS -o /dev/null -w '%{http_code}\n' \
+  --data-binary @- http://127.0.0.1:9201/api/v1/write &lt;&lt;'JSONL'
+{"labels":{"__name__":"up","host":"a"},"t":1000,"v":1}
+{"labels":{"__name__":"up","host":"a"},"t":2000,"v":2}
+JSONL
+curl -sS -G --data-urlencode 'match=up{host="a"}' \
+  --data-urlencode start=1000 --data-urlencode end=2000 \
+  http://127.0.0.1:9201/api/v1/query</code></pre>
+<p>Expect 204 and both samples. After observing that acknowledgement, run this in terminal 1:</p>
+<pre data-lang="sh"><code>kill -KILL "$TSDB_PID"
+wait "$TSDB_PID" # A nonzero status is expected after SIGKILL.
+./tsdb -data-dir "$TSDB_DATA"</code></pre>
+<p>After readiness, repeat the query. Both samples must remain:</p>
+<pre class="output"><code>{"series":[{"labels":{"__name__":"up","host":"a"},"samples":[[1000,1],[2000,2]]}]}</code></pre>
+<p>Write recovery tests using two batches of 50 increasing samples each. A healthy replay returns 100. Stop the process and truncate three bytes from the final batch record: restart must keep the first 50 and discard the incomplete second batch completely. Also test a checksum-failing final record. Truncate the WAL to its last valid record and log the number of dropped bytes. These deliberately damaged-file tests do not promise recovery of data you removed.</p>
+<p>A checksum failure in any nonfinal record must instead stop startup with an error naming the WAL. Include a failing writer test that returns 5xx and exposes no batch data. You choose the record layout and tail-detection method; explain how it distinguishes an incomplete final record from corruption earlier in the log.</p>
+</section>
+<section class="session" id="session-4"><span id="CHK-1" aria-hidden="true"></span><span id="CHK-2" aria-hidden="true"></span><span id="CHK-3" aria-hidden="true"></span><span id="TST-4" aria-hidden="true"></span><span id="spec-chunks" aria-hidden="true"></span>
+<h2>Step 4: Compress the samples</h2>
+<p>Store samples in chunks of at most 120 per series, using Gorilla's delta-of-delta timestamps and XOR-encoded float values. Decoding must reproduce every timestamp and float bit exactly. Within an active sequence of chunks, only the newest may be partly filled; sealing a time window may end its last chunk early. Keep blocks compressed too.</p>
+<p>Test bit I/O across byte boundaries, irregular timestamps, negative delta-of-deltas, repeated and fractional values, large values, signed zero, and NaN payloads at the encoder level. NaN remains invalid at the HTTP boundary. With 250 samples in one window, expect chunk sizes 120, 120, 10 and a query returning all 250.</p>
+<h3>Try it</h3>
+<p>Use these exact reference datasets: 2,880 samples, 15 seconds apart. Define the generator in your request terminal. The gauge values are rounded to two decimals.</p>
+<pre data-lang="sh"><code>gen() {
+  LC_ALL=C awk -v name="$1" -v n="$2" -v mode="$3" 'BEGIN {
+    t0 = 1700000000000; s = 0
+    for (i = 0; i &lt; n; i++) {
+      t = t0 + i * 15000
+      if (mode == "counter") { s += i % 7; v = s }
+      else if (mode == "const") { v = 1 }
+      else { v = sprintf("%.2f", 50 + 10 * sin(i / 20)) }
+      printf "{\"labels\":{\"__name__\":\"%s\",\"host\":\"node-1\"},\"t\":%.0f,\"v\":%s}\n", name, t, v
+    }
+  }'
+}
+gen up 2880 counter | curl -sS -o /dev/null -w '%{http_code}\n' \
+  --data-binary @- http://127.0.0.1:9201/api/v1/write
+curl -sS http://127.0.0.1:9201/stats | jq '.chunk_bytes / .chunk_samples'</code></pre>
+<p>Run each mode against fresh data with default flags, stopping the previous server first. Expect 204 and a ratio satisfying:</p>
+<div class="table-wrap"><table><thead><tr><th>Mode</th><th>Maximum bytes/sample</th><th>Maximum chunk bytes for 2,880 samples</th></tr></thead><tbody>
+<tr><td><code>const</code></td><td>1.0</td><td>2,880</td></tr>
+<tr><td><code>counter</code></td><td>2.5</td><td>7,200</td></tr>
+<tr><td><code>gauge</code></td><td>10</td><td>28,800</td></tr>
+</tbody></table></div>
+<p>Count encoded chunk bytes, including chunk headers, across head and blocks; do not divide only a selected subset by the full sample count. WAL and index bytes are separate. These are limits, not claimed benchmark results. The counter's last sample is <code>[1700043185000,8634]</code>. Read <a href="https://www.vldb.org/pvldb/vol8/p1816-teller.pdf">Gorilla, section 4.1</a> with your AI partner, then explain why the three datasets compress differently before measuring.</p>
+</section>
+<section class="session" id="session-5"><span id="BLK-1" aria-hidden="true"></span><span id="BLK-2" aria-hidden="true"></span><span id="BLK-3" aria-hidden="true"></span><span id="BLK-4" aria-hidden="true"></span><span id="MOD-4" aria-hidden="true"></span><span id="WAL-5" aria-hidden="true"></span><span id="TST-5" aria-hidden="true"></span><span id="spec-blocks" aria-hidden="true"></span>
+<h2>Step 5: Seal immutable blocks</h2>
+<p>Align time windows to multiples of <code>-block-duration</code> since the Unix epoch. A window is half-open: [start, end). Seal it when the newest head sample reaches <code>end + block-duration / 2</code>. Its immutable block must appear atomically. An interrupted seal must expose no partial block and lose no data. Only remove WAL data once everything it covers is persisted in blocks.</p>
+<p>At startup, load existing blocks. Queries must merge blocks and head in order without duplicates. Keep memory proportional to the head, not the full sample history. Once a window seals, reject timestamps before the head's lower bound as out of bounds, even for a previously unseen series.</p>
+<h3>Try it</h3>
+<p>Start with fresh data and <code>-block-duration 1m -retention 2m</code>. Submit:</p>
+<pre data-lang="sh"><code>curl -sS -o /dev/null -w '%{http_code}\n' \
+  --data-binary @- http://127.0.0.1:9201/api/v1/write &lt;&lt;'JSONL'
+{"labels":{"__name__":"up"},"t":0,"v":1}
+{"labels":{"__name__":"up"},"t":60000,"v":2}
+{"labels":{"__name__":"up"},"t":90000,"v":3}
+JSONL
+curl -sS http://127.0.0.1:9201/stats | jq '{blocks,head_samples}'
+curl -sS -G --data-urlencode match=up --data-urlencode start=0 \
+  --data-urlencode end=90000 http://127.0.0.1:9201/api/v1/query</code></pre>
+<pre class="output"><code>204
+{"blocks":1,"head_samples":2}
+{"series":[{"labels":{"__name__":"up"},"samples":[[0,1],[60000,2],[90000,3]]}]}</code></pre>
+<p>The first window ends at 60000 and seals at 90000. Repeat the query after a restart: the same three samples must appear. A new series at 30000 now gets 400. Test immediately before and exactly at the seal threshold, an interrupted seal, WAL reclamation, and merged queries.</p>
+<p>Also rerun the 2,880-sample counter fixture with default flags on fresh data. Expect <code>blocks: 5</code>, <code>head_samples: 533</code>, and 2,880 queried samples before and after restart. The first window begins at 1699999200000; sealed windows end through 1700035200000. The remaining 533 samples begin at that boundary or later. Query bounds 0 through 9999999999999 include the whole fixture.</p>
+</section>
+<section class="session" id="session-6"><span id="RET-1" aria-hidden="true"></span><span id="OPS-3" aria-hidden="true"></span><span id="TST-6" aria-hidden="true"></span><span id="spec-tests" aria-hidden="true"></span>
+<h2>Step 6: Expire history and stop cleanly</h2>
+<p>Delete a block when its window end is ≤ <code>newest stored timestamp − retention</code>. Evaluate this after every seal and at startup. Use data time, not the wall clock, and never delete the head. Queries already reading a block must remain safe while retention runs.</p>
+<h3>Try it</h3>
+<p>For a boundary test, use fresh data, one-minute blocks, two-minute retention, and one series with timestamps 0, 90000, 179999 and values 1, 2, 3. Two windows seal. Restart, then append timestamp 180000 with value 4 and restart again. No new seal is needed for the second startup to check retention:</p>
+<div class="table-wrap"><table><thead><tr><th>Newest timestamp</th><th>Retention cutoff</th><th>Expected after restart</th></tr></thead><tbody>
+<tr><td>179999</td><td>59999</td><td>2 blocks; sample at 0 remains</td></tr>
+<tr><td>180000</td><td>60000</td><td>1 block; sample at 0 removed; 90000, 179999, 180000 remain</td></tr>
+</tbody></table></div>
+<p>Repeat the reference counter on fresh data with <code>-retention 6h</code> and default two-hour blocks. Expect two blocks and 1,493 samples, starting at 1700020805000. The cutoff is 1700021585000; the three blocks ending at or before 1700020800000 expire. Retention operates on whole windows, so a query can include samples older than the cutoff.</p>
+<p>On SIGINT or SIGTERM, stop accepting requests, finish in-flight writes, close the WAL, log final stats, and exit 0. All phases share a five-second budget; failure or timeout must log an error and exit nonzero. Restart should recover only the head from the remaining WAL, alongside the blocks.</p>
+<p>Add a programmatic crash loop: on fresh default storage, perform 20 rounds of start, wait for health with a bounded readiness check, write the next 100 samples of the counter dataset, observe 204, kill the process, and wait for it to exit. After a final restart, query all samples. Fail the test on any unsuccessful request rather than counting it as acknowledged.</p>
+<pre class="output"><code>acked=2000 stored=2000</code></pre>
+<p>That line is the required result of this controlled test. Record actual results from your implementation. Run retention-boundary tests and the complete suite:</p>
+<pre data-lang="sh"><code>go test -race ./...</code></pre>
+</section>
+<section id="hand-in"><span id="evaluation" aria-hidden="true"></span>
+<h2>What to hand in</h2>
+<p>Include runnable Go source, <code>go.mod</code>, meaningful tests for each step, and a short README explaining how to run them. Document every on-disk format byte by byte, series identity and hashing choices, the write and recovery paths, both fsync modes, measured compression results, memory cost per series/sample, limitations, and remaining work.</p>
+<p>Review focuses on correct queries and atomic writes, crash recovery, concurrency safety, compression and bounded memory, and a design you can explain and modify. A reader should be able to write a file reader from your documentation.</p>
+</section>
+<footer>Tiny TSDB · <a href="index.html">Go Infra Track</a> · Independent practice material, not issued by any company.</footer>
+
+</main>
+<script>
+(function () {
+  "use strict";
+  var root = document.documentElement;
+  var buttons = Array.prototype.slice.call(document.querySelectorAll("[data-theme-set]"));
+  function renderTheme() {
+    var choice = root.getAttribute("data-theme") || "system";
+    buttons.forEach(function (button) {
+      button.setAttribute("aria-pressed", String(button.getAttribute("data-theme-set") === choice));
+    });
+  }
+  buttons.forEach(function (button) {
+    button.addEventListener("click", function () {
+      var choice = button.getAttribute("data-theme-set");
+      if (choice === "system") root.removeAttribute("data-theme");
+      else root.setAttribute("data-theme", choice);
+      try {
+        if (choice === "system") localStorage.removeItem("ingest-relay-v1:theme");
+        else localStorage.setItem("ingest-relay-v1:theme", choice);
+      } catch (error) {}
+      renderTheme();
+    });
+  });
+  renderTheme();
+  document.getElementById("print-doc").addEventListener("click", function () { window.print(); });
+  document.getElementById("document-tools").hidden = false;
+})();
+</script>
+</body>
+</html>

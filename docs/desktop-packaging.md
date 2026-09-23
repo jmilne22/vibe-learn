@@ -1,103 +1,23 @@
 # Desktop packaging
 
-The Electron app keeps installed assets, learner work, and development state
-in separate locations.
+Use Node 24+, npm, Go and native build prerequisites for better-sqlite3 (Python and C/C++ tooling). Linux/macOS ZIP packaging also needs the `zip` command (included in `shell.nix`). Build on the target operating system and architecture.
 
-## Storage model
+`npm run package:desktop` compiles the catalog, Electron main/preload/renderer and static website, prepares the current Go toolchain, then runs Electron Forge. `npm run make:desktop` produces Windows Squirrel, macOS DMG/ZIP, or Linux ZIP artifacts. Output is in `out/`.
 
-| Data | Packaged app | Development app |
-| --- | --- | --- |
-| Course assets | read-only application resources | repository `dist/` |
-| Practice seed | read-only application resources | `build/desktop-resources/practice-seed/` |
-| Learner workspace | `Documents/Vibe Learn/workspaces/infra-go/` | `Documents/Vibe Learn Dev/workspaces/infra-go/` |
-| Progress and browser state | OS app data under `Vibe Learn` | OS app data under `Vibe Learn Dev` |
-| Runner state and caches | profile app data | development profile app data |
-| Local port | `4711` | `4712` |
+The ASAR contains only application bundles and production dependencies; better-sqlite3's native module is unpacked. `resources/learning` contains the catalog and Go toolchain (including its license). No user database, workspace, run artifact, old daemon or sync worker is bundled. Go caches and run artifacts live in the writable profile, never application resources. The bundling step makes copied toolchain files writable in its staging area, including toolchains sourced from read-only package stores.
 
-The ignored repository `practice/` directory is used only by the browser/CLI
-workflow. Desktop preparation always regenerates a clean seed from course YAML.
+The app uses native window chrome. The default profile is `Vibe Learn 2`, development uses `Vibe Learn 2 Dev`, and `VIBE_USER_DATA_DIR` is available for tests. Both profiles are separate from the previous application. No local HTTP port is used in production.
 
-Packaged apps ship exactly one course, `VIBE_DESKTOP_COURSE` (default
-`infra-go`). The same slug drives dist pruning, practice-seed generation,
-and the learner workspace directory (recorded in `metadata.json`). Other
-built courses and the web landing page — a download page for the app
-itself — are pruned from the packaged assets.
+Basic standard-library Go exercises can execute offline. Third-party modules need cached/vendored assets or an online dependency download. Race tests require a supported C compiler. Rust/Cargo, Java, Maelstrom, Graphviz, gnuplot, containers, Kubernetes and Helm are not bundled. Missing dependencies are reported rather than installed.
 
-Workspace updates are hash-based. Missing or untouched generated files are
-updated; any file changed by the learner is preserved.
+Run `npm run verify` before packaging, then `npm run smoke:desktop -- --packaged`. On headless Linux, prefix the smoke command with `xvfb-run -a`. The smoke test removes host tools from PATH and disables module downloads to prove that packaged Go works on a clean fixture.
 
-## Commands
+The manual/release-tag workflow packages and smoke-tests on Linux, macOS and Windows. Ordinary PRs run one Linux verification job; see [CI and releases](ci.md). The checked-in workflow produces **unsigned** installers.
 
-```bash
-npm run app                 # isolated development app
-npm run prepare:desktop     # build resources and bundle this platform's Go
-npm run package:desktop     # unpacked platform application
-npm run make:desktop        # OS installer/distributable
-```
+For signed macOS builds, install a Developer ID Application identity in the build machine’s keychain, set `APPLE_SIGNING_ENABLED=1`, and provide `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, and `APPLE_TEAM_ID` to the packaging process for notarization. For Windows, provide `WINDOWS_CERTIFICATE_FILE` (a real certificate file on the build machine) and `WINDOWS_CERTIFICATE_PASSWORD`. These variables are read by `forge.config.js`; adding repository secrets alone does not import certificates or pass them to CI. That signing setup is not included or tested here. See Forge’s [macOS](https://www.electronforge.io/guides/code-signing/code-signing-macos) and [Windows](https://www.electronforge.io/guides/code-signing/code-signing-windows) instructions.
 
-Use environment overrides for automated or disposable runs:
+Local successful packaging is not evidence that another OS build or signing succeeded.
 
-```bash
-VIBE_USER_DATA_DIR=/tmp/vibe-profile \
-VIBE_WORKSPACE_DIR=/tmp/vibe-workspace \
-VIBE_PORT=4714 npm run app:dev
-```
+On NixOS, generic downloaded Electron binaries need an FHS runtime or adjusted ELF loader/library paths. Local smoke tests can use `ELECTRON_PATH` for development; testing a packaged app must launch that package's executable. Such host-specific adjustments must not be included in a general Linux release artifact. Prefer the Ubuntu CI artifact for general distribution.
 
-## Self-contained Go execution
-
-`prepare:desktop` copies the active `GOROOT` into the application resources and
-vendors module dependencies into the clean exercise seed. The packaged runner
-sets `GOTOOLCHAIN=local` and `GOFLAGS=-mod=vendor`, so it does not download a
-toolchain or modules.
-
-Packaged checks omit `-race` because the race detector requires an external C
-toolchain on several supported platforms. Development and direct CLI checks
-retain `-race`. Set `VIBE_GO_RACE=0` to disable it in source mode.
-
-## Platform outputs
-
-Electron Forge creates:
-
-- Windows: Squirrel installer
-- macOS: DMG and ZIP
-- Linux: a portable tar.gz that works on any distro (Void, Arch, NixOS,
-  ...) — unpack and run `./vibe-learn` — plus DEB and RPM when the host
-  has the packaging tools (`dpkg`/`fakeroot`, `rpmbuild`). Missing tools
-  skip those makers instead of failing the build.
-
-`.github/workflows/desktop.yml` runs natively on Windows, macOS, and Linux.
-Pull requests validate packaging (`package:desktop`) without building
-installers; pushes to `main` and version tags run the full `make:desktop`
-and upload the installers as workflow artifacts. Docs-only PRs skip the
-matrix entirely.
-
-## Cutting a release
-
-Pushing a `v*` tag publishes a GitHub release with all installers attached —
-this is what the download page's `releases/latest` links resolve to:
-
-```bash
-npm version 1.1.0 --no-git-tag-version   # or edit package.json
-git commit -am "v1.1.0" && git tag v1.1.0
-git push && git push --tags
-```
-
-The workflow fails the build if the tag does not match the `package.json`
-version, so artifacts can never carry a different version than the release
-they are attached to. Re-running a failed release job overwrites existing
-assets instead of erroring.
-
-Releases are unsigned until Windows signing credentials and an Apple
-Developer ID/notarization credentials are configured; the Forge configuration
-reads those values from environment variables and does not store secrets in
-the repository.
-
-## Safety boundaries
-
-- Packaged assets are never writable.
-- Development cannot reuse the production daemon because profile, port,
-  and workspace must all match.
-- Renderer sandboxing, context isolation, navigation restrictions, permission
-  denial, and IPC sender validation remain enabled.
-- External links are opened by the operating system instead of inside the
-  privileged application window.
+`ELECTRON_PATH` selects the development smoke runtime only. Packaged smoke resolves the executable inside `out/` and asserts that Electron is running a packaged app; `VIBE_PACKAGED_EXECUTABLE` can point to a custom packaged location.
