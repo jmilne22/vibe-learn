@@ -6,7 +6,7 @@ A deployment exists, its container is running, and the application works when re
 client -> service name -> Service -> eligible endpoint -> Pod IP:port -> process
 ```
 
-This is a logical path, not a claim that a Service is a proxy process through which every packet physically passes. The implementation can use kube-proxy or another networking dataplane.
+kube-proxy or another networking dataplane implements Service routing; the Service object stores its configuration.
 
 ### Keep the objects separate
 
@@ -26,9 +26,9 @@ Inside the cluster, the name `endpoint-lab.course.svc.cluster.local` identifies 
 
 ### Use observations that distinguish causes
 
-`kubectl get pods` is a summary. `describe pod` shows scheduling/probe events. `logs` shows what the container wrote; `logs --previous` can reveal the previous crashed container. None alone proves the full request path works.
+`kubectl get pods` is a summary. `describe pod` shows scheduling/probe events. `logs` shows what the container wrote; `logs --previous` can reveal the previous crashed container.
 
-`kubectl port-forward service/...` selects a backing Pod and forwards to it. It does **not** exercise the normal cluster Service dataplane or DNS path. It is useful for inspecting the application, but a successful port-forward is not proof that cluster routing works. In the lab, use EndpointSlices to examine Service selection and port-forward only to reach the chosen application.
+`kubectl port-forward service/...` selects a backing Pod and forwards to it. It does **not** exercise the normal cluster Service dataplane or DNS path. Use it to inspect the application directly. In the lab, use EndpointSlices to examine Service selection and port-forward only to reach the chosen application.
 
 ### Requests and limits answer different questions
 

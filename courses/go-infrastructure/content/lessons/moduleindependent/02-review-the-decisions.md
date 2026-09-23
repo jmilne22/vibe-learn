@@ -1,6 +1,6 @@
-## Review what the tool can claim
+## Review the design
 
-A passing test suite establishes the checked behaviors. It does not establish that the tool measures availability accurately under every network condition. Review the claims you would make to somebody using its report.
+The CLI preserves input order, disables redirects, and cancels the whole report when its parent context ends. Here are the tradeoffs behind those choices.
 
 ### Why preserve input order?
 
@@ -34,15 +34,11 @@ First confirm what changed besides the configured worker count. Inspect in-fligh
 
 </details>
 
-A useful answer names a hypothesis and an observation that could disprove it. Listing every observability tool you know does not establish a diagnosis.
-
-### Optional extensions, in order of interest
+### Optional extensions
 
 These are outside the 30-hour core. Choose one or two; doing all is roughly another ten hours.
 
 - **Profile before changing code (2 hours).** Generate a large local input, add a benchmark for parsing/report assembly, collect CPU/allocation profiles, and explain one measured bottleneck. Keep network latency out of a CPU benchmark. [Go diagnostics](https://go.dev/doc/diagnostics).
 - **Add a bounded retry policy (2 hours).** Extend the retry-budget exercise with an injected wait function, capped exponential delay, cancellation while waiting, and a documented retryable-error policy. Explain duplicate-operation risk before using it for writes.
 - **Review a Helm upgrade (2 hours).** Render two configurations, compare the resulting Deployment, and observe which changes replace Pods. Inspect Helm history and roll back one local revision. Explain why rolling back manifests does not necessarily roll back external data changes.
-- **Move into a project (up to 4 hours to begin).** Pick an early stage of the [Ingest Relay](#/read/project%3Aingest-relay/overview) for a small service, [Gossip Glomers](#/read/project%3Agossip-glomers/overview) for message handling, or [Tiny TSDB](#/read/project%3Atiny-tsdb/session-1) for data representation. These estimates are for starting a stage, not finishing a whole project. The [Relay Operator](#/read/project%3Arelay-operator/overview) needs a working relay and remains guided rather than app-graded.
-
-You should leave with a few pieces of code and investigations you can explain precisely. Use your actual work when discussing them; the course's constructed scenarios are not employment experience.
+- **Move into a project (up to 4 hours to begin).** Pick an early stage of the [Ingest Relay](#/read/project%3Aingest-relay/overview) for a small service, [Gossip Glomers](#/read/project%3Agossip-glomers/overview) for message handling, or [Tiny TSDB](#/read/project%3Atiny-tsdb/session-1) for data representation. These estimates are for starting a stage, not finishing a whole project. The [Relay Operator](#/read/project%3Arelay-operator/overview) needs a working relay.

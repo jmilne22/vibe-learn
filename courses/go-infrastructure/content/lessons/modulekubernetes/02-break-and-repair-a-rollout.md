@@ -78,7 +78,7 @@ kubectl -n course delete pod POD_NAME --wait=false
 
 The fixture logs shutdown starting, lets the in-flight handler finish, and logs shutdown completion. The request should return `work complete` if deletion occurs after it starts and before it finishes. The Deployment creates a replacement Pod. If you missed the five-second window, repeat with the replacement rather than interpreting an idle shutdown as a drain test.
 
-The app's shutdown budget is 12 seconds and the Pod grace period is 15. A request exceeding those budgets can still be interrupted. Readiness/endpoint changes and process shutdown happen through different components; this one experiment does not prove zero dropped requests under all routing conditions.
+The app's shutdown budget is 12 seconds and the Pod grace period is 15. A request exceeding those budgets can still be interrupted. Endpoint updates and process shutdown happen separately, so traffic may still arrive while the process is shutting down.
 
 ### Clean up
 

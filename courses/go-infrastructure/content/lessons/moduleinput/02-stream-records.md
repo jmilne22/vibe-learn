@@ -28,9 +28,9 @@ if err := scanner.Err(); err != nil {
 }
 ```
 
-`Scan` returning false can mean end-of-input or failure. Ignoring `Err` makes a truncated read look like a complete report. For a tool used during an incident, a confident but incomplete count can be worse than an explicit failure.
+`Scan` returning false can mean end-of-input or failure. Ignoring `Err` makes a truncated read look like a complete report.
 
-Scanner's default token limit is about 64 KiB; the exact usable record length is slightly smaller because of buffering and delimiters. Our exercise rejects oversized lines. If the product needs larger records, set a documented bound with `Scanner.Buffer` or use a reader with explicit size accounting. “Unlimited” is not a free choice: somebody pays for the memory.
+Scanner's default token limit is about 64 KiB; the exact usable record length is slightly smaller because of buffering and delimiters. Our exercise rejects oversized lines. If the product needs larger records, set a documented bound with `Scanner.Buffer` or use a reader with explicit size accounting.
 
 Decode a line into the fields you need:
 
@@ -43,7 +43,7 @@ if err := json.Unmarshal([]byte(text), &record); err != nil {
 }
 ```
 
-Unlike our configuration, log records allow extra fields. We only need service, and other producers may add fields over time. Strictness belongs to an interface's contract, not to a blanket rule for all JSON.
+Unlike our configuration, log records allow extra fields. We only need service, and other producers may add fields over time.
 
 ### Decide whether partial results are useful
 

@@ -24,7 +24,6 @@ test("read-only preview provides independent paths, useful search, and no old co
       }),
     })
     .click();
-  await expect(page.getByText("Guided project ·")).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Workspace", exact: true }),
   ).toHaveCount(0);

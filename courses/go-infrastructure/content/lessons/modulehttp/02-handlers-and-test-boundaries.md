@@ -18,7 +18,7 @@ For a readiness endpoint, start by listing cases:
 
 The 405 response also sets `Allow: GET`. It should not evaluate readiness at all.
 
-**Exercise: Expose readiness over HTTP.** The supplied callback is deliberately small. It lets you test the handler's decision without running a database or cluster. Readiness changes over time, so call it for each supported request.
+**Exercise: Expose readiness over HTTP.** The supplied callback lets you change readiness during a test. Readiness changes over time, so call it for each supported request.
 
 ### Test a handler without opening a socket
 
@@ -28,7 +28,7 @@ request := httptest.NewRequest("GET", "/ready", nil)
 handler.ServeHTTP(recorder, request)
 ```
 
-Now inspect `recorder.Code`, `recorder.Body.String()`, and response headers. This test covers handler behavior. It does not prove DNS, TLS, routing, or the real server's timeout configuration. Use NewServer when you need an actual client/server exchange; use Recorder when the handler contract is the question.
+Now inspect `recorder.Code`, `recorder.Body.String()`, and response headers. ResponseRecorder captures what the handler writes without starting a server. Use NewServer when the test needs a client/server exchange.
 
 ### Introduce failure deliberately
 
@@ -42,10 +42,10 @@ A service might be alive but unable to accept a request because it has not loade
 
 A failed downstream dependency raises another question: can this instance still serve any useful traffic? Removing every instance from service because one shared backend is briefly unavailable can make a partial outage total. The right answer depends on request handling and fallback behavior, not on naming the endpoint `/health`.
 
-We will observe readiness and liveness separately in the Kubernetes lab. The Go handler exercise proves the response contract, not that a particular production probe policy is wise.
+We will observe readiness and liveness separately in the Kubernetes lab.
 
 ### A small test plan to carry forward
 
-For each boundary, test success, a meaningful failure, and cleanup. For a parser that means valid input, bad input, and reader failure. For a client it means a received response, a transport failure, and closing the body. For a handler it means method/status/body behavior. You do not need a mock of every internal helper.
+For each boundary, test success, a meaningful failure, and cleanup. For a parser that means valid input, bad input, and reader failure. For a client it means a received response, a transport failure, and closing the body. For a handler it means method/status/body behavior.
 
 Reference: [httptest.ResponseRecorder](https://pkg.go.dev/net/http/httptest#ResponseRecorder).

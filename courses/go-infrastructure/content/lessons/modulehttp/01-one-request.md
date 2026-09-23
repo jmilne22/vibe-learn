@@ -25,9 +25,9 @@ defer response.Body.Close()
 return response.StatusCode, nil
 ```
 
-A context carries cancellation and deadlines across calls. It is not a replacement for an HTTP client. The request attaches the context so the transport can stop work when cancellation arrives.
+A context carries cancellation and deadlines across calls. The request attaches the context so the transport can stop work when cancellation arrives.
 
-`defer` schedules a call when the surrounding function returns. Place the body close after the successful request, when a response exists. Closing matters even when you only need the status. For reliable connection reuse, callers may also need to consume the response body; blindly reading an unlimited body just to reuse a connection is another resource problem. This exercise closes without making a reuse guarantee.
+`defer` schedules a call when the surrounding function returns. Place the body close after the successful request, when a response exists. Closing matters even when you only need the status. Connection reuse may also require reading the body to EOF. This exercise only closes it; a large or streaming body would need a read limit.
 
 Pass the client in. A caller can choose transport settings and timeouts once, and tests can supply a controlled transport. Constructing a new client inside every check hides those choices. Redirect handling also follows the supplied client: Do may follow redirects unless its policy says otherwise. The final CLI will explicitly disable redirects so it reports the configured endpoint’s own response.
 
@@ -49,7 +49,7 @@ if err != nil || status != 503 {
 
 This test fragment belongs inside a test function and uses `net/http`, `net/http/httptest`, `context`, and `testing`. `httptest` binds a local test server to an available port. The handler function is the service's behavior. You control it, so the expected response is known.
 
-**Exercise: Check one endpoint.** The supplied checks cover a 503 response, body closure, cancellation, an invalid target, and a transport error. Add a 204 case yourself. Read the test transport as a small substitute for the network, not as a general mocking framework.
+**Exercise: Check one endpoint.** The supplied checks cover a 503 response, body closure, cancellation, an invalid target, and a transport error. Add a 204 case yourself.
 
 ### Check a cancellation without waiting for a real outage
 

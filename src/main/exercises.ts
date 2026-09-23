@@ -102,9 +102,7 @@ export async function runExercise(
       CARGO_TARGET_DIR: path.join(artifactDir, "target"),
     },
   };
-  ctx.log(
-    "Checks run in a saved copy of your workspace using the course’s provided tests. Your files are left intact.\n",
-  );
+  ctx.log("Running exercise checks…\n");
   let output: string;
   if (exercise.language === "go") {
     await command(go, ["version"], snapshot, ctx);

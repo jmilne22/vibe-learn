@@ -16,13 +16,11 @@ export async function invoke(command: Command): Promise<unknown> {
   if (window.learning) return window.learning.invoke(command);
   if (command.type === "catalog") {
     const res = await fetch("./catalog.json");
-    if (!res.ok) throw new Error("The content package could not be loaded.");
+    if (!res.ok) throw new Error("Could not load the library.");
     return res.json();
   }
   if (command.type === "state") return emptyState();
-  throw new Error(
-    "This is the read-only web preview. Open the desktop app to save your work or run checks.",
-  );
+  throw new Error("Saving and running checks require the desktop app.");
 }
 export const getCatalog = async (): Promise<Catalog> =>
   CatalogSchema.parse(await invoke({ type: "catalog" }));

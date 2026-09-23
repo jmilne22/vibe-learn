@@ -6,9 +6,9 @@ A user runs your tool with this file:
 {"targets":["http://localhost:8080/ready"],"workers":2}
 ```
 
-Before implementing a parser, decide what the file means. Can targets be empty? Does workers=0 mean unlimited, default, or invalid? What happens if someone writes `worker` instead of `workers`? Accepting a file is a promise about how you will interpret it.
+Before implementing a parser, decide what the file means. Can targets be empty? Does workers=0 mean unlimited, default, or invalid? What happens if someone writes `worker` instead of `workers`?
 
-For this course, targets must be nonempty and workers must be 1–16. Unknown fields are errors. We will reject ambiguous input early instead of guessing. Another tool might choose defaults, but it must specify them.
+For this course, targets must be nonempty and workers must be 1–16. Unknown fields are errors.
 
 ### Translate the input into a type
 
@@ -28,8 +28,6 @@ func ReadConfig(r io.Reader) (Config, error)
 ```
 
 `io.Reader` is an interface: a type that has a `Read` method of the required form can supply bytes. An open file and `strings.NewReader(text)` both work. That means the parser can be tested with a short string while file opening remains the caller's responsibility.
-
-This is a useful reason for an interface: there are already two concrete inputs with the same needed behavior. Do not introduce an interface for every struct in a small program.
 
 ```go
 file, err := os.Open("config.json")
@@ -55,7 +53,7 @@ if err := decoder.Decode(&config); err != nil {
 
 `&config` passes its address so the decoder can fill the original variable. `%w` wraps an error while preserving its identity for `errors.Is` and `errors.As`. Add context that tells a caller which operation failed; do not replace the original cause with “something went wrong.”
 
-One successful Decode is not proof that the entire input was consumed. A stream can contain another JSON object. Decode once more into a disposable value and require `io.EOF`. Trailing whitespace is fine; another value is not.
+Decode reads one JSON value. The stream may contain more. Decode once more into a disposable value and require `io.EOF`. Trailing whitespace is fine; another value is not.
 
 Validate the meaning after decoding. `url.Parse` parses URL syntax, but a syntactically valid relative URL is not a valid HTTP target for this tool. Check the scheme and hostname separately. Reject credentials in the URL: they are easy to leak into reports. This still does not make arbitrary URLs safe to accept from untrusted remote users.
 
@@ -65,7 +63,7 @@ Validate the meaning after decoding. `url.Parse` parses URL syntax, but a syntac
 
 <details><summary>One reasonable answer</summary>
 
-Defaults are helpful for optional settings. They are dangerous when a typo silently changes the requested behavior. Here, rejecting `worker` makes the mistake visible. Choosing a default worker count would also be reasonable if it were explicit and an unknown field still failed. “Strict” is not automatically better; the goal is predictable interpretation.
+Defaults are helpful for optional settings. They are dangerous when a typo silently changes the requested behavior. Here, rejecting `worker` makes the mistake visible. Choosing a default worker count would also be reasonable if it were explicit and an unknown field still failed.
 
 </details>
 

@@ -24,7 +24,7 @@ Readers must follow the same synchronization rule. Locking only writes does not 
 go test -race ./...
 ```
 
-The app's bundled exercise checks run with cgo disabled and do not run the race detector. A race detector finds races on executed paths; a clean run is evidence, not a proof about all schedules.
+The app's bundled exercise checks run with cgo disabled and do not run the race detector. The race detector can report races only on paths your tests execute.
 
 ### Bound the expensive operation
 

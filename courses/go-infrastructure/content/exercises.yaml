@@ -116,7 +116,7 @@
   hints:
     - Build the request with http.NewRequestWithContext.
     - Check err before touching response.Body. Close the body after a successful Do call.
-  solution: "A 503 is a successfully received HTTP response about an unhealthy service. A DNS failure is different: there is no response status. The caller decides whether either outcome is acceptable. Closing the body releases resources; this small checker does not promise connection reuse because it does not consume arbitrary response bodies. A production probe should make a deliberate, bounded body-reading choice.\n\n```go\npackage exercise\n\nimport (\n\t\"context\"\n\t\"net/http\"\n)\n\nfunc Check(ctx context.Context, client *http.Client, target string) (int, error) {\n\treq, err := http.NewRequestWithContext(ctx, http.MethodGet, target, nil)\n\tif err != nil {\n\t\treturn 0, err\n\t}\n\tresponse, err := client.Do(req)\n\tif err != nil {\n\t\treturn 0, err\n\t}\n\tdefer response.Body.Close()\n\treturn response.StatusCode, nil\n}\n```\n"
+  solution: "A 503 is a successfully received HTTP response about an unhealthy service. A DNS failure is different: there is no response status. The caller decides whether either outcome is acceptable. Closing the body releases resources. Connection reuse may also require reading it to EOF; this checker only closes it.\n\n```go\npackage exercise\n\nimport (\n\t\"context\"\n\t\"net/http\"\n)\n\nfunc Check(ctx context.Context, client *http.Client, target string) (int, error) {\n\treq, err := http.NewRequestWithContext(ctx, http.MethodGet, target, nil)\n\tif err != nil {\n\t\treturn 0, err\n\t}\n\tresponse, err := client.Do(req)\n\tif err != nil {\n\t\treturn 0, err\n\t}\n\tdefer response.Body.Close()\n\treturn response.StatusCode, nil\n}\n```\n"
   starter: content/exercises/http-check/starter
   checks: content/exercises/http-check/checks
 - id: ready-handler
@@ -152,7 +152,7 @@
   hints:
     - Check ctx.Err before the select to handle an already-canceled context.
     - Inside select, wait on both out <- value and ctx.Done().
-  solution: "A context does not interrupt a channel operation by magic. The blocked operation must explicitly select on Done. The initial check establishes the pre-canceled behavior; select alone chooses randomly among ready cases. The test uses a deadline only as a deadlock guard, not to infer that a goroutine has reached a particular line.\n\n```go\npackage exercise\n\nimport \"context\"\n\nfunc Send(ctx context.Context, out chan<- int, value int) error {\n\tif err := ctx.Err(); err != nil {\n\t\treturn err\n\t}\n\tselect {\n\tcase out <- value:\n\t\treturn nil\n\tcase <-ctx.Done():\n\t\treturn ctx.Err()\n\t}\n}\n```\n"
+  solution: "Selecting on Done lets cancellation unblock the send. The initial check establishes the pre-canceled behavior; select alone chooses randomly among ready cases. The test uses a deadline only as a deadlock guard, not to infer that a goroutine has reached a particular line.\n\n```go\npackage exercise\n\nimport \"context\"\n\nfunc Send(ctx context.Context, out chan<- int, value int) error {\n\tif err := ctx.Err(); err != nil {\n\t\treturn err\n\t}\n\tselect {\n\tcase out <- value:\n\t\treturn nil\n\tcase <-ctx.Done():\n\t\treturn ctx.Err()\n\t}\n}\n```\n"
   starter: content/exercises/cancel-send/starter
   checks: content/exercises/cancel-send/checks
 - id: shared-counter
@@ -170,7 +170,7 @@
   hints:
     - Protect the whole read-modify-write, not just the assignment.
     - Reads need synchronization too. Use pointer receivers.
-  solution: "A mutex protects the invariant that each addition sees and updates the current count. Value uses the same lock, so reads and writes share the same synchronization rule. The test can reveal lost updates, but passing a normal test does not establish race freedom; that is why the separate race run matters.\n\n```go\npackage exercise\n\nimport \"sync\"\n\ntype Counter struct {\n\tmu sync.Mutex\n\tn  int\n}\n\nfunc (c *Counter) Add(n int)  { c.mu.Lock(); defer c.mu.Unlock(); c.n += n }\nfunc (c *Counter) Value() int { c.mu.Lock(); defer c.mu.Unlock(); return c.n }\n```\n"
+  solution: "A mutex protects the invariant that each addition sees and updates the current count. Value uses the same lock, so reads and writes share the same synchronization rule. Run go test -race to check for unsynchronized access as well as lost updates.\n\n```go\npackage exercise\n\nimport \"sync\"\n\ntype Counter struct {\n\tmu sync.Mutex\n\tn  int\n}\n\nfunc (c *Counter) Add(n int)  { c.mu.Lock(); defer c.mu.Unlock(); c.n += n }\nfunc (c *Counter) Value() int { c.mu.Lock(); defer c.mu.Unlock(); return c.n }\n```\n"
   starter: content/exercises/shared-counter/starter
   checks: content/exercises/shared-counter/checks
 - id: bounded-checks

@@ -60,7 +60,7 @@ Expect a move and zero resource creates/changes/destroys. State now contains `lo
 
 ### Where import fits
 
-Import associates an existing supported object with a Terraform address. It does not prove your configuration matches the object or that the next apply is harmless. Read the plan afterward. This particular local-file exercise uses a moved block; it is not an import lab and does not assume every resource supports import.
+Import associates an existing object with a Terraform address, when the resource supports it. Read the plan afterward: differences between the configuration and the imported object can still cause changes or replacement.
 
 ### Clean up
 

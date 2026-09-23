@@ -1,10 +1,10 @@
 ## Build an endpoint report from a brief
 
-This is the point where the course stops supplying the next function to write. You have a config file, a reporting contract, and visible checks. Decide the structure yourself.
+Build a CLI that reads a list of endpoints and reports their HTTP status. Use the requirements below to choose your functions and tests.
 
-Open **Build an endpoint reporting CLI** in Exercises. Its starter includes a main function and a Run entry point so tests can invoke the command without launching another process. All other helpers are yours. You may reuse your earlier code; you do not need to retype a configuration parser to prove you remember it.
+Open **Build an endpoint reporting CLI** in Exercises. Its starter includes a main function and a Run entry point so tests can invoke the command without launching another process. You can reuse code from the earlier exercises.
 
-### The useful result
+### Input and output
 
 Given:
 
@@ -29,17 +29,13 @@ The exit code is 1 because not every endpoint returned 2xx. A transport failure 
 
 The full validation, cancellation, redirect, concurrency, and exit-code rules are in the exercise brief. Keep that brief open as the specification. Do not add continuous polling, retries, authentication, a UI, or a configuration framework.
 
-### Choose your first vertical slice
+### Start with one endpoint
 
-A useful first slice is: read one target, make one request, write one result. Test it using httptest. Then add invalid configuration and exit-code cases. Introduce concurrency after this sequential behavior works.
-
-This order lets each step produce a working command. It is easier to debug than creating every package and abstraction first, with nothing runnable until the end.
-
-You can organize everything in one source file initially. Split it when two responsibilities become hard to read together, not because a template says every program needs a services directory.
+Read one target, make one request, and write one result. Test it using httptest. Then add invalid configuration and exit-code cases. Introduce concurrency after this sequential behavior works.
 
 ### Add a test the supplied suite does not give you
 
-Use duplicate targets and check that they produce duplicate observations rather than being deduplicated. Earlier we wrote a deduplication function; that does not mean every later program should use it. Requirements decide.
+Use duplicate targets and check that they produce duplicate observations rather than being deduplicated. Each entry in the configuration requires its own observation.
 
 For the concurrency bound, use a local handler with an active-request counter protected by a mutex or atomics. Hold requests behind a channel so you can observe multiple in flight. Release the channel and wait for all results. Do not infer concurrency from a stopwatch: a busy machine makes wall-clock comparisons unreliable.
 
@@ -55,5 +51,3 @@ printf 'exit=%s\n' "$?"
 ```
 
 Use the built binary when checking exact exit codes. `go run` wraps the program and reports a child failure; its own exit behavior is not the same interface. On Windows, build an `.exe` and inspect the shell's native exit-code variable, or use the Bash-based Linux lab environment.
-
-Solutions are available immediately. If you get stuck, compare the smallest missing decision first: the function signature, validation rule, worker lifecycle, or output error. You do not have to abandon your entire implementation to learn from another one.

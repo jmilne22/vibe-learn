@@ -4,13 +4,13 @@ Logs, traces, and metrics share collection infrastructure, but their useful acce
 
 ### Learn the role before the internals
 
-ClickHouse is a column-oriented analytical database. Selecting a few columns and filtering/aggregating many rows is a different workload from repeatedly updating one transactional row. For telemetry, batching, ordering keys, partitions, and retention affect ingestion and query work. A label change is not a magic fix for an unsuitable sort order or too many tiny inserts.
+ClickHouse is a column-oriented analytical database. Selecting a few columns and filtering/aggregating many rows is a different workload from repeatedly updating one transactional row. For telemetry, batching, ordering keys, partitions, and retention affect ingestion and query work.
 
 VictoriaMetrics stores and queries metrics/time series. A metric name plus its label set identifies a series. Adding a label whose value is a request ID can turn a bounded set of series into one that grows with traffic. Cardinality affects memory, indexing, ingestion, and queries; it is not merely how many label names appear in a sample.
 
 If 100 services each have 20 instances and every instance emits ten methods' worth of a metric, there can be 20,000 combinations before adding routes, status codes, or tenants. Not every theoretical combination necessarily occurs, but this calculation shows why a label's value space matters.
 
-Groundcover's public material describes a customer-owned data plane and a managed control plane, with ClickHouse and VictoriaMetrics playing different storage roles. Use that as architectural context, not a specification of its private implementation. [Public architecture description](https://www.groundcover.com/guides/securing-customer-owned-telemetry-planes).
+Groundcover's public material describes a customer-owned data plane and a managed control plane, with ClickHouse and VictoriaMetrics playing different storage roles. [Public architecture description](https://www.groundcover.com/guides/securing-customer-owned-telemetry-planes).
 
 ### A control plane can be down while data still flows
 

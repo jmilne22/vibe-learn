@@ -1,6 +1,6 @@
 ## Turn several observations into a result
 
-A port validator makes one decision. A report needs to make that decision, or a similar one, repeatedly. Start with an ordinary loop before reaching for concurrency.
+An endpoint report needs to count successful responses. This loop counts status codes in the 200–299 range:
 
 ```go
 codes := []int{200, 503, 200}
@@ -38,7 +38,7 @@ type Observation struct {
 observation := Observation{Target: "api", Status: 503}
 ```
 
-This is preferable to two parallel slices whose indices must always line up. A type declaration also makes the vocabulary of a program visible: this is an observation, not an arbitrary pair.
+Each Observation holds one target and its status. Keeping them in one value avoids having to maintain matching indices in two separate slices.
 
 ### Copying a slice is not copying its elements
 
@@ -61,7 +61,7 @@ This is an element copy, not a recursive deep copy. If the elements themselves c
 
 ### Return useful results instead of printing from every function
 
-The counting function returns a map. It does not print the report. That lets a caller choose JSON, text, or a test comparison without rewriting the counting logic. This separation is small, but it is the beginning of program structure: transform data in one place, perform I/O at the edges.
+The counting function returns a map. It does not print the report. That lets a caller choose JSON, text, or a test comparison without rewriting the counting logic. The same counting function can serve all three callers.
 
 For a function that can fail, Go conventionally returns a result and an error:
 
@@ -78,6 +78,6 @@ This snippet needs `import "fmt"`. `nil` means there is no error. At the call si
 
 ### A short review
 
-A map counts or looks up by key. A slice keeps a sequence. A struct names related fields. A function boundary separates a decision from where its input came from. These are enough to write a useful configuration reader; we do not need interfaces or goroutines yet.
+A map counts or looks up by key. A slice keeps a sequence. A struct names related fields. A function boundary separates a decision from where its input came from. The next module uses these types to read configuration.
 
 References: [A Tour of Go: slices](https://go.dev/tour/moretypes/7), [maps](https://go.dev/tour/moretypes/19), and [errors](https://go.dev/tour/methods/19).

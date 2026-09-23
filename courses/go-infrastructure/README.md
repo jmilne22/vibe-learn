@@ -1,6 +1,6 @@
 # Go and Infrastructure Engineering
 
-A 30-hour core for an infrastructure engineer learning to write Go independently, with practical Kubernetes/Terraform refreshers. The role linked in the first lesson informs the topics; the course does not claim employer affiliation or knowledge of its interview questions.
+A 30-hour core for an infrastructure engineer learning to write Go independently, with practical Kubernetes/Terraform refreshers. Topics were selected with the [Groundcover infrastructure role](https://www.comeet.com/jobs/groundcover/88.008/infra-engineer/AB.A47) in mind. The course uses constructed scenarios, without employer affiliation or inside knowledge of its interviews.
 
 - Eight modules / 22 sections, 12 distinct Go exercises, 20 optional flashcards.
 - Three guided local labs: Kubernetes rollout/routing, Terraform state/drift, Collector buffering/recovery.

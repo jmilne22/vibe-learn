@@ -36,7 +36,7 @@ Variables provide inputs, outputs expose selected results, and a module groups c
 
 A plan may propose create, update, destroy, or replacement. Replacement means an object will be recreated; for a database or persistent volume, that has very different consequences from changing a label. Read the attributes forcing the change and the dependency effects.
 
-A speculative plan is an observation at a point in time. `terraform plan -out=change.tfplan` saves an executable plan; `terraform apply change.tfplan` applies that plan rather than silently inventing another one. Plan/state files may contain secrets, even when command output redacts them. Do not treat them as ordinary public debug attachments.
+A speculative plan is an observation at a point in time. `terraform plan -out=change.tfplan` saves an executable plan; `terraform apply change.tfplan` applies the saved plan. Plan/state files may contain secrets, even when command output redacts them. Keep them out of public logs and attachments.
 
 ### State is shared coordination data
 
