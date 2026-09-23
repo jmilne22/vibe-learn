@@ -33,7 +33,8 @@ Linux headless desktop testing needs an X server (`xvfb-run -a npm run smoke:des
 ## What's included
 
 - Independent Courses and Projects libraries, Continue, offline search, collapsible navigation and keyboard access.
-- Four standalone `take-home` projects with stages, examples and resource links. The old courses and samples were removed; the Courses library is intentionally empty.
+- Go and Infrastructure Engineering: a 30-hour course with 12 Go exercises, 20 optional flashcards, and three guided local labs. See [course notes](courses/go-infrastructure/README.md).
+- Four standalone `take-home` projects with stages, examples and resource links. The old infrastructure course and samples remain removed.
 - Course framework: Go/Rust starter-file exercises with visible tests, hints, solutions and explicit runs; optional flashcard browsing and local spaced review. New courses must supply their own content.
 - Optional project reference examples, per-item notes with Markdown export, bookmarks and JSON backup/import. Future courses can use the Markdown/YAML authoring framework.
 - Create or attach workspaces on demand, with a minimal Go module for new Go activities. Explicit runs stream output, support cancellation and timeouts, and retain logs and artifacts.

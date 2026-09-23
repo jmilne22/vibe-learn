@@ -1,0 +1,13 @@
+services:
+  receiver:
+    image: vibe-course-fixture:1
+    ports:
+      - "127.0.0.1:18080:8080"
+  collector:
+    image: otel/opentelemetry-collector:0.148.0
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./collector.yaml:/etc/otelcol/config.yaml:ro
+    ports:
+      - "127.0.0.1:14318:4318"
+      - "127.0.0.1:18888:8888"

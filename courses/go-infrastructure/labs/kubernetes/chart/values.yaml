@@ -1,0 +1,5 @@
+image: vibe-course-fixture:1
+version: first
+serviceTarget: endpoint-lab
+readinessPath: /ready
+replicas: 1

@@ -44,10 +44,10 @@ test("read-only preview provides independent paths, useful search, and no old co
     .getByRole("link", { name: "Courses" })
     .click();
   await expect(
-    page.getByText("No courses yet.", { exact: false }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("link", { name: "Browse projects" }),
+    page.getByRole("heading", {
+      name: "Go and Infrastructure Engineering",
+      exact: true,
+    }),
   ).toBeVisible();
   await expect(page.getByRole("navigation")).not.toContainText(
     /Daily Practice|Analytics/,

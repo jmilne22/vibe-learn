@@ -1,0 +1,34 @@
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+exporters:
+  otlp_http/lab:
+    endpoint: http://receiver:8080
+    encoding: json
+    compression: none
+    timeout: 2s
+    sending_queue:
+      enabled: true
+      num_consumers: 1
+      queue_size: 4
+      sizer: requests
+    retry_on_failure:
+      enabled: true
+      initial_interval: 1s
+      max_interval: 2s
+      max_elapsed_time: 30s
+service:
+  telemetry:
+    metrics:
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: 0.0.0.0
+                port: 8888
+  pipelines:
+    logs:
+      receivers: [otlp]
+      exporters: [otlp_http/lab]

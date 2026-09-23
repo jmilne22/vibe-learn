@@ -1,0 +1,25 @@
+course:
+  name: Go and Infrastructure Engineering
+  slug: go-infrastructure
+  description: >-
+    Write and test Go tools, investigate Kubernetes failures, revisit Terraform,
+    and follow telemetry through a system. A 30-hour core with optional
+    extensions.
+modules:
+  - id: starting
+    title: Starting a Go program
+  - id: input
+    title: Reading real input
+  - id: http
+    title: Working with HTTP
+  - id: concurrency
+    title: Doing several things safely
+  - id: kubernetes
+    title: Understanding a Kubernetes rollout
+  - id: terraform
+    title: Returning to Terraform
+  - id: telemetry
+    title: Following telemetry through a system
+  - id: independent
+    title: Building without the walkthrough
+projects: []

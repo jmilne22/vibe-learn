@@ -7,8 +7,9 @@ import { markdown } from "../../src/content/render";
 import { load } from "cheerio";
 const catalog = compileCatalog();
 describe("content compatibility and independent paths", () => {
-  it("ships only the four standalone projects, with optional experiments inside the relay", () => {
+  it("ships the course alongside four independent projects, with optional experiments inside the relay", () => {
     expect(catalog.items.map((i) => i.id)).toEqual([
+      "course:go-infrastructure",
       "project:ingest-relay",
       "project:relay-operator",
       "project:gossip-glomers",

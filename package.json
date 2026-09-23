@@ -23,7 +23,8 @@
     "package:desktop": "npm run prepare:desktop && electron-forge package",
     "make:desktop": "npm run prepare:desktop && electron-forge make",
     "smoke:desktop": "tsx scripts/smoke-desktop.ts",
-    "new-course": "tsx scripts/create-course.ts"
+    "new-course": "tsx scripts/create-course.ts",
+    "verify:course": "tsx scripts/verify-course.ts"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",

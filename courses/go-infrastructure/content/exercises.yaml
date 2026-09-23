@@ -1,0 +1,257 @@
+- id: valid-port
+  moduleId: starting
+  title: Validate a port
+  language: go
+  instructions: >-
+    Fix `ValidPort(int) bool`. Accept 1 through 65535 inclusive; reject every other integer. The
+    starter gets the boundaries wrong. Read the test failure before editing.
+
+
+    Add a negative-port case in learner_test.go.
+  hints:
+    - Write down what should happen at 0, 1, 65535, and 65536.
+    - Both conditions must be true; use `&&`.
+  solution: >
+    The valid interval includes both endpoints. Checking only an ordinary value such as 443 would
+    miss both starter bugs. A boolean is enough here: callers only need a yes/no answer.
+
+
+    ```go
+
+    package exercise
+
+
+    func ValidPort(port int) bool { return port >= 1 && port <= 65535 }
+
+    ```
+  starter: content/exercises/valid-port/starter
+  checks: content/exercises/valid-port/checks
+- id: count-statuses
+  moduleId: starting
+  title: Count response classes
+  language: go
+  instructions: >-
+    Implement `CountStatuses([]int) map[string]int`. Count 200–299 as `ok`, 400–499 as `client`,
+    500–599 as `server`, and everything else as `other`. Always return all four keys, including zero
+    counts. Do not change the input.
+
+
+    Add a test with three identical status codes to check that counts accumulate.
+  hints:
+    - Initialize the result map with four zero values.
+    - Walk through the slice once; increment exactly one category for each code.
+  solution: "A map connects each category name with its count. Initializing every key makes an empty input useful to a report renderer. The switch chooses one category; separate overlapping if-statements would make accidental double counting easier.\n\n```go\npackage exercise\n\nfunc CountStatuses(codes []int) map[string]int {\n\tresult := map[string]int{\"ok\": 0, \"client\": 0, \"server\": 0, \"other\": 0}\n\tfor _, code := range codes {\n\t\tswitch {\n\t\tcase code >= 200 && code < 300:\n\t\t\tresult[\"ok\"]++\n\t\tcase code >= 400 && code < 500:\n\t\t\tresult[\"client\"]++\n\t\tcase code >= 500 && code < 600:\n\t\t\tresult[\"server\"]++\n\t\tdefault:\n\t\t\tresult[\"other\"]++\n\t\t}\n\t}\n\treturn result\n}\n```\n"
+  starter: content/exercises/count-statuses/starter
+  checks: content/exercises/count-statuses/checks
+- id: unique-targets
+  moduleId: starting
+  title: Return independent target names
+  language: go
+  instructions: >-
+    Implement `UniqueTargets([]string) []string`. Remove duplicates while preserving first-seen
+    order. Return independent storage: changing an element in the result must not change the input.
+    Empty input may return nil or an empty slice. Names are exact strings; do not trim or lowercase
+    them.
+
+
+    Add a test with "api" and " api" to make exact-string handling explicit.
+  hints:
+    - Use a map as a membership set and a separate slice for ordered output.
+    - Start a new result slice rather than reusing input[:0].
+  solution: "The set answers whether a name has appeared; the result slice preserves order. A map iteration would lose that order. Allocating the result separately gives the caller ownership of its elements; assigning a slice alone would share its backing array.\n\n```go\npackage exercise\n\nfunc UniqueTargets(names []string) []string {\n\tseen := make(map[string]bool)\n\tresult := make([]string, 0, len(names))\n\tfor _, name := range names {\n\t\tif !seen[name] {\n\t\t\tseen[name] = true\n\t\t\tresult = append(result, name)\n\t\t}\n\t}\n\treturn result\n}\n```\n"
+  starter: content/exercises/unique-targets/starter
+  checks: content/exercises/unique-targets/checks
+- id: read-config
+  moduleId: input
+  title: Read and validate configuration
+  language: go
+  instructions: >-
+    Implement `ReadConfig(io.Reader) (Config, error)` for JSON with `targets` and `workers`. Require
+    at least one target and workers between 1 and 16. Each target must be an http/https URL with a
+    hostname and no embedded credentials. Reject unknown fields, malformed JSON, empty input, and a
+    second JSON value. Whitespace after one object is allowed. Return a zero Config on any error. Do
+    not contact the targets.
+
+
+    Add a test for a fractional worker count. It must fail rather than silently round.
+  hints:
+    - Decode with json.Decoder and DisallowUnknownFields. Decode a second time and require io.EOF.
+    - Parsing a URL and validating its allowed scheme are separate steps.
+  solution: "Decoding establishes the JSON shape; validation establishes what this tool accepts. A second Decode distinguishes trailing whitespace from another value. We return no partial configuration on failure, so callers cannot accidentally use a half-valid configuration. This validator is not an SSRF defense: a URL can still point at a private or privileged endpoint.\n\n```go\npackage exercise\n\nimport (\n\t\"encoding/json\"\n\t\"fmt\"\n\t\"io\"\n\t\"net/url\"\n)\n\ntype Config struct {\n\tTargets []string `json:\"targets\"`\n\tWorkers int      `json:\"workers\"`\n}\n\nfunc ReadConfig(r io.Reader) (Config, error) {\n\tvar c Config\n\td := json.NewDecoder(r)\n\td.DisallowUnknownFields()\n\tif err := d.Decode(&c); err != nil {\n\t\treturn Config{}, fmt.Errorf(\"decode config: %w\", err)\n\t}\n\tvar extra any\n\tif err := d.Decode(&extra); err != io.EOF {\n\t\treturn Config{}, fmt.Errorf(\"expected one JSON object\")\n\t}\n\tif len(c.Targets) == 0 || c.Workers < 1 || c.Workers > 16 {\n\t\treturn Config{}, fmt.Errorf(\"need targets and workers in 1..16\")\n\t}\n\tfor _, target := range c.Targets {\n\t\tu, err := url.Parse(target)\n\t\tif err != nil || (u.Scheme != \"http\" && u.Scheme != \"https\") || u.Hostname() == \"\" || u.User != nil {\n\t\t\treturn Config{}, fmt.Errorf(\"invalid target %q\", target)\n\t\t}\n\t}\n\treturn c, nil\n}\n```\n"
+  starter: content/exercises/read-config/starter
+  checks: content/exercises/read-config/checks
+- id: read-records
+  moduleId: input
+  title: Report the line that failed
+  language: go
+  instructions: >-
+    Implement `ReadRecords(io.Reader) (map[string]int, error)`. Read newline-delimited JSON objects
+    with a nonempty `service` string. Ignore blank lines. Count records per service. On invalid
+    JSON, empty service, a read error, or a line above the scanner limit, return nil and an error;
+    errors for invalid records must include their 1-based physical line number. Use bufio.Scanner
+    with its default line limit (roughly 64 KiB), and document that bound. Unknown JSON fields are
+    allowed.
+
+
+    Add tests for empty input and for a record whose service value is a number.
+  hints:
+    - Track physical lines before skipping whitespace.
+    - Scanner.Scan returning false can mean an error; check Scanner.Err after the loop.
+  solution: "Physical line numbers include blank lines because that is what an editor displays. We discard partial counts on failure rather than returning a plausible-looking incomplete report. Scanner has a deliberate size bound; for large records choose a different bound or a streaming reader instead of silently dropping them.\n\n```go\npackage exercise\n\nimport (\n\t\"bufio\"\n\t\"encoding/json\"\n\t\"fmt\"\n\t\"io\"\n\t\"strings\"\n)\n\nfunc ReadRecords(r io.Reader) (map[string]int, error) {\n\tresult := map[string]int{}\n\tscan := bufio.NewScanner(r)\n\tline := 0\n\tfor scan.Scan() {\n\t\tline++\n\t\ttext := strings.TrimSpace(scan.Text())\n\t\tif text == \"\" {\n\t\t\tcontinue\n\t\t}\n\t\tvar record struct {\n\t\t\tService string `json:\"service\"`\n\t\t}\n\t\tif err := json.Unmarshal([]byte(text), &record); err != nil {\n\t\t\treturn nil, fmt.Errorf(\"line %d: %w\", line, err)\n\t\t}\n\t\tif record.Service == \"\" {\n\t\t\treturn nil, fmt.Errorf(\"line %d: empty service\", line)\n\t\t}\n\t\tresult[record.Service]++\n\t}\n\tif err := scan.Err(); err != nil {\n\t\treturn nil, fmt.Errorf(\"read records near line %d: %w\", line+1, err)\n\t}\n\treturn result, nil\n}\n```\n"
+  starter: content/exercises/read-records/starter
+  checks: content/exercises/read-records/checks
+- id: http-check
+  moduleId: http
+  title: Check one endpoint
+  language: go
+  instructions: >-
+    Implement `Check(ctx, client, target) (int, error)`. Make one GET request using the supplied
+    context and client. Return the HTTP status for any received response, including 500, and close
+    its body. On request construction or transport failure return 0 and the error. Do not retry,
+    create a new client, or treat a non-2xx response as a transport error.
+
+
+    Add a test for a 204 response using a local httptest server.
+  hints:
+    - Build the request with http.NewRequestWithContext.
+    - Check err before touching response.Body. Close the body after a successful Do call.
+  solution: "A 503 is a successfully received HTTP response about an unhealthy service. A DNS failure is different: there is no response status. The caller decides whether either outcome is acceptable. Closing the body releases resources; this small checker does not promise connection reuse because it does not consume arbitrary response bodies. A production probe should make a deliberate, bounded body-reading choice.\n\n```go\npackage exercise\n\nimport (\n\t\"context\"\n\t\"net/http\"\n)\n\nfunc Check(ctx context.Context, client *http.Client, target string) (int, error) {\n\treq, err := http.NewRequestWithContext(ctx, http.MethodGet, target, nil)\n\tif err != nil {\n\t\treturn 0, err\n\t}\n\tresponse, err := client.Do(req)\n\tif err != nil {\n\t\treturn 0, err\n\t}\n\tdefer response.Body.Close()\n\treturn response.StatusCode, nil\n}\n```\n"
+  starter: content/exercises/http-check/starter
+  checks: content/exercises/http-check/checks
+- id: ready-handler
+  moduleId: http
+  title: Expose readiness over HTTP
+  language: go
+  instructions: >-
+    Implement `ReadyHandler(ready func() bool) http.Handler`. On GET return 200 with `ready\n` when
+    ready() is true, otherwise 503 with `not ready\n`. On every other method return 405, set `Allow:
+    GET`, and do not call ready. Evaluate ready on each request rather than capturing its first
+    value.
+
+
+    Add a DELETE request test and check that it does not evaluate readiness.
+  hints:
+    - http.HandlerFunc converts a function into a handler.
+    - WriteHeader must happen before writing the body.
+  solution: "Readiness is a current observation, not a value to memoize at startup. Checking the method first avoids calling the dependency for an unsupported operation. A readiness failure can remove traffic; making the same dependency check your liveness test could also trigger restarts during a downstream outage.\n\n```go\npackage exercise\n\nimport (\n\t\"io\"\n\t\"net/http\"\n)\n\nfunc ReadyHandler(ready func() bool) http.Handler {\n\treturn http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\tif r.Method != http.MethodGet {\n\t\t\tw.Header().Set(\"Allow\", \"GET\")\n\t\t\tw.WriteHeader(405)\n\t\t\treturn\n\t\t}\n\t\tif !ready() {\n\t\t\tw.WriteHeader(503)\n\t\t\t_, _ = io.WriteString(w, \"not ready\\n\")\n\t\t\treturn\n\t\t}\n\t\t_, _ = io.WriteString(w, \"ready\\n\")\n\t})\n}\n```\n"
+  starter: content/exercises/ready-handler/starter
+  checks: content/exercises/ready-handler/checks
+- id: cancel-send
+  moduleId: concurrency
+  title: Cancel a blocked send
+  language: go
+  instructions: >-
+    Implement `Send(ctx, out, value) error`. Send the value once, or return ctx.Err() if
+    cancellation prevents sending. A context canceled before entry must return its error without
+    sending. If cancellation races with a ready receiver, either result is allowed. The caller owns
+    the channel; never close it. Assume out is not closed.
+
+
+    Add a successful send to a waiting receiver, rather than only a buffered channel.
+  hints:
+    - Check ctx.Err before the select to handle an already-canceled context.
+    - Inside select, wait on both out <- value and ctx.Done().
+  solution: "A context does not interrupt a channel operation by magic. The blocked operation must explicitly select on Done. The initial check establishes the pre-canceled behavior; select alone chooses randomly among ready cases. The test uses a deadline only as a deadlock guard, not to infer that a goroutine has reached a particular line.\n\n```go\npackage exercise\n\nimport \"context\"\n\nfunc Send(ctx context.Context, out chan<- int, value int) error {\n\tif err := ctx.Err(); err != nil {\n\t\treturn err\n\t}\n\tselect {\n\tcase out <- value:\n\t\treturn nil\n\tcase <-ctx.Done():\n\t\treturn ctx.Err()\n\t}\n}\n```\n"
+  starter: content/exercises/cancel-send/starter
+  checks: content/exercises/cancel-send/checks
+- id: shared-counter
+  moduleId: concurrency
+  title: Protect a read-modify-write
+  language: go
+  instructions: >-
+    Implement a zero-value usable `Counter` with `Add(int)` and `Value() int`. Concurrent calls must
+    not lose increments or race with reads. Keep the public API; internal representation is yours.
+    Do not copy a Counter after use. Run the optional host `go test -race` check as well as normal
+    tests.
+
+
+    Add a test with concurrent negative increments.
+  hints:
+    - Protect the whole read-modify-write, not just the assignment.
+    - Reads need synchronization too. Use pointer receivers.
+  solution: "A mutex protects the invariant that each addition sees and updates the current count. Value uses the same lock, so reads and writes share the same synchronization rule. The test can reveal lost updates, but passing a normal test does not establish race freedom; that is why the separate race run matters.\n\n```go\npackage exercise\n\nimport \"sync\"\n\ntype Counter struct {\n\tmu sync.Mutex\n\tn  int\n}\n\nfunc (c *Counter) Add(n int)  { c.mu.Lock(); defer c.mu.Unlock(); c.n += n }\nfunc (c *Counter) Value() int { c.mu.Lock(); defer c.mu.Unlock(); return c.n }\n```\n"
+  starter: content/exercises/shared-counter/starter
+  checks: content/exercises/shared-counter/checks
+- id: bounded-checks
+  moduleId: concurrency
+  title: Bound concurrent work
+  language: go
+  instructions: >-
+    Implement `CheckAll(ctx, targets, limit, check) ([]Result, error)`. Call check once per target,
+    using at most limit concurrent calls. When there are enough targets, allow limit calls to be in
+    flight rather than processing the batch sequentially. Preserve input order in results.
+    Individual check errors belong in Result.Err and do not fail the whole batch. Reject limit < 1.
+    On cancellation, stop scheduling, wait for started calls, and return nil with ctx.Err(). A check
+    callback must respect its context; you cannot forcibly stop one that ignores it. Pre-canceled
+    input starts no checks.
+
+
+    Add tests for empty input and duplicate target strings; each occurrence is a separate job.
+  hints:
+    - Give each job an index so completion order does not control result order.
+    - >-
+      Use a fixed number of workers, an unbuffered job channel, and a WaitGroup. Each worker writes
+      only its own result index.
+  solution: "Workers bound concurrent calls, not just goroutine creation at one instant. Indices let independent workers write different result slots without appending to a shared slice. Wait ensures all writes finish before returning. Cancellation is cooperative; waiting for callbacks prevents background work from escaping the function, but a callback that ignores cancellation can still block it.\n\n```go\npackage exercise\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"sync\"\n)\n\ntype Result struct {\n\tTarget string\n\tCode   int\n\tErr    error\n}\n\nfunc CheckAll(ctx context.Context, targets []string, limit int, check func(context.Context, string) (int, error)) ([]Result, error) {\n\tif limit < 1 {\n\t\treturn nil, fmt.Errorf(\"limit must be positive\")\n\t}\n\tif err := ctx.Err(); err != nil {\n\t\treturn nil, err\n\t}\n\tresults := make([]Result, len(targets))\n\tjobs := make(chan int)\n\tvar wg sync.WaitGroup\n\tfor w := 0; w < min(limit, len(targets)); w++ {\n\t\twg.Add(1)\n\t\tgo func() {\n\t\t\tdefer wg.Done()\n\t\t\tfor i := range jobs {\n\t\t\t\tif ctx.Err() != nil {\n\t\t\t\t\tcontinue\n\t\t\t\t}\n\t\t\t\tcode, err := check(ctx, targets[i])\n\t\t\t\tresults[i] = Result{targets[i], code, err}\n\t\t\t}\n\t\t}()\n\t}\nschedule:\n\tfor i := range targets {\n\t\tselect {\n\t\tcase <-ctx.Done():\n\t\t\tbreak schedule\n\t\tcase jobs <- i:\n\t\t}\n\t}\n\tclose(jobs)\n\twg.Wait()\n\tif err := ctx.Err(); err != nil {\n\t\treturn nil, err\n\t}\n\treturn results, nil\n}\n```\n"
+  starter: content/exercises/bounded-checks/starter
+  checks: content/exercises/bounded-checks/checks
+- id: retry-budget
+  moduleId: concurrency
+  title: Limit retry attempts
+  language: go
+  instructions: >-
+    Implement `Retry(ctx, attempts, operation) error`. attempts counts the first call and must be >=
+    1. Stop on the first nil result; otherwise return the last error after that many calls. Check
+    cancellation before every attempt and return ctx.Err() when canceled, including when the last
+    failed attempt canceled it. Never call operation for a pre-canceled context or invalid attempts.
+    This exercise has no waiting: it isolates the attempt budget. Real network retries also need
+    backoff and an idempotency decision.
+
+
+    Add a test that succeeds on the last permitted attempt.
+  hints:
+    - Write the one-attempt case before adding a loop.
+    - Check ctx.Err after a failed operation too, so cancellation wins over its last failure.
+  solution: "The budget counts actual calls, so attempts=1 means no retry. Retrying every error immediately would be a poor network policy; this function deliberately handles only counting and cancellation. Classifying retryable failures, introducing bounded jittered backoff, and ensuring a repeated operation is safe are separate decisions.\n\n```go\npackage exercise\n\nimport (\n\t\"context\"\n\t\"fmt\"\n)\n\nfunc Retry(ctx context.Context, attempts int, operation func(context.Context) error) error {\n\tif attempts < 1 {\n\t\treturn fmt.Errorf(\"attempts must be positive\")\n\t}\n\tvar last error\n\tfor i := 0; i < attempts; i++ {\n\t\tif err := ctx.Err(); err != nil {\n\t\t\treturn err\n\t\t}\n\t\tlast = operation(ctx)\n\t\tif last == nil {\n\t\t\treturn nil\n\t\t}\n\t\tif err := ctx.Err(); err != nil {\n\t\t\treturn err\n\t\t}\n\t}\n\treturn last\n}\n```\n"
+  starter: content/exercises/retry-budget/starter
+  checks: content/exercises/retry-budget/checks
+- id: endpoint-report
+  moduleId: independent
+  title: Build an endpoint reporting CLI
+  language: go
+  instructions: >-
+    Implement the supplied Run(ctx, args, out, errOut) entry point and add helpers of your own. Run
+    with `-config FILE`; reject missing configuration, unknown flags, and positional arguments.
+
+
+    Configuration is exactly one JSON object:
+    `{"targets":["http://localhost:8080/ready"],"workers":2,"timeout_ms":1000}`. Reject unknown
+    fields. Require nonempty targets, workers 1–16, timeout_ms 1–60000. Targets must have an
+    http/https scheme and hostname, with no credentials. Preserve duplicate targets: they are
+    separate requests.
+
+
+    Make one GET per target, at most workers requests concurrently. Do not follow redirects or
+    retry. Apply the per-request timeout and the parent context. Close response bodies. Write a
+    single JSON array to stdout, in input order: `[{"target":"...","status":204}]`. Transport
+    failures have status 0 and a nonempty error string. Received HTTP failures retain their status
+    and have no error string. Do not include durations: they make reports harder to compare.
+
+
+    Exit 0 if every response is 2xx; 1 for endpoint failures, cancellation, or output failure; 2 for
+    usage/configuration errors. Diagnostics go to stderr. On parent cancellation wait for started
+    requests to stop and emit no partial JSON report. A failed output write may have emitted partial
+    bytes; report the error rather than claiming success.
+
+
+    Use only the standard library. Visible checks cover validation, response classification,
+    ordering, timeout/cancellation, and output errors. Add your own tests for the concurrency bound
+    and duplicate targets. The worked review in module 8 explains how to approach those tests. You
+    may reuse your earlier code, but assemble the program yourself before opening the solution.
+  hints:
+    - Write down the JSON input, JSON output, and exit-code rules before choosing packages.
+    - Implement a sequential version with a local httptest server before introducing workers.
+    - Assign each target an index. Wait for workers before encoding the result slice.
+  solution: "The solution keeps argument handling, configuration validation, one request, and orchestration separate. The fixed worker count bounds in-flight requests; writing distinct indexed results preserves order without locking an append. It intentionally has no retries or redirects, so one report entry describes one configured endpoint. Cancellation discards incomplete results. Limitations: configuration/result size is not bounded, URLs are trusted inputs, and arbitrary response bodies are closed without guaranteeing connection reuse. This is a diagnostic tool, not an availability monitor.\n\n```go\npackage main\n\nimport (\n\t\"context\"\n\t\"encoding/json\"\n\t\"flag\"\n\t\"fmt\"\n\t\"io\"\n\t\"net/http\"\n\t\"net/url\"\n\t\"os\"\n\t\"os/signal\"\n\t\"sync\"\n\t\"time\"\n)\n\ntype config struct {\n\tTargets   []string `json:\"targets\"`\n\tWorkers   int      `json:\"workers\"`\n\tTimeoutMS int      `json:\"timeout_ms\"`\n}\ntype result struct {\n\tTarget string `json:\"target\"`\n\tStatus int    `json:\"status\"`\n\tError  string `json:\"error,omitempty\"`\n}\n\nfunc readConfig(name string) (config, error) {\n\tvar c config\n\tf, err := os.Open(name)\n\tif err != nil {\n\t\treturn c, err\n\t}\n\tdefer f.Close()\n\td := json.NewDecoder(f)\n\td.DisallowUnknownFields()\n\tif err := d.Decode(&c); err != nil {\n\t\treturn config{}, err\n\t}\n\tvar extra any\n\tif err := d.Decode(&extra); err != io.EOF {\n\t\treturn config{}, fmt.Errorf(\"expected one JSON object\")\n\t}\n\tif len(c.Targets) == 0 || c.Workers < 1 || c.Workers > 16 || c.TimeoutMS < 1 || c.TimeoutMS > 60000 {\n\t\treturn config{}, fmt.Errorf(\"need targets, workers 1..16, timeout_ms 1..60000\")\n\t}\n\tfor _, s := range c.Targets {\n\t\tu, err := url.Parse(s)\n\t\tif err != nil || (u.Scheme != \"http\" && u.Scheme != \"https\") || u.Hostname() == \"\" || u.User != nil {\n\t\t\treturn config{}, fmt.Errorf(\"invalid target %q\", s)\n\t\t}\n\t}\n\treturn c, nil\n}\n\nfunc probe(ctx context.Context, client *http.Client, target string) result {\n\tr := result{Target: target}\n\trequest, err := http.NewRequestWithContext(ctx, http.MethodGet, target, nil)\n\tif err != nil {\n\t\tr.Error = err.Error()\n\t\treturn r\n\t}\n\tresponse, err := client.Do(request)\n\tif err != nil {\n\t\tr.Error = err.Error()\n\t\treturn r\n\t}\n\tdefer response.Body.Close()\n\tr.Status = response.StatusCode\n\treturn r\n}\n\nfunc Run(ctx context.Context, args []string, out, errOut io.Writer) int {\n\tflags := flag.NewFlagSet(\"endpoint-report\", flag.ContinueOnError)\n\tflags.SetOutput(errOut)\n\tname := flags.String(\"config\", \"\", \"JSON configuration path\")\n\tif err := flags.Parse(args); err != nil {\n\t\treturn 2\n\t}\n\tif *name == \"\" || flags.NArg() != 0 {\n\t\tfmt.Fprintln(errOut, \"usage: endpoint-report -config FILE\")\n\t\treturn 2\n\t}\n\tc, err := readConfig(*name)\n\tif err != nil {\n\t\tfmt.Fprintln(errOut, \"config:\", err)\n\t\treturn 2\n\t}\n\tif err := ctx.Err(); err != nil {\n\t\tfmt.Fprintln(errOut, err)\n\t\treturn 1\n\t}\n\t// Do not follow redirects: report the configured endpoint's response.\n\tclient := &http.Client{Timeout: time.Duration(c.TimeoutMS) * time.Millisecond, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}\n\tdefer client.CloseIdleConnections()\n\tresults := make([]result, len(c.Targets))\n\tjobs := make(chan int)\n\tvar wg sync.WaitGroup\n\tfor w := 0; w < min(c.Workers, len(c.Targets)); w++ {\n\t\twg.Add(1)\n\t\tgo func() {\n\t\t\tdefer wg.Done()\n\t\t\tfor i := range jobs {\n\t\t\t\tif ctx.Err() != nil {\n\t\t\t\t\tcontinue\n\t\t\t\t}\n\t\t\t\tresults[i] = probe(ctx, client, c.Targets[i])\n\t\t\t}\n\t\t}()\n\t}\nschedule:\n\tfor i := range c.Targets {\n\t\tselect {\n\t\tcase <-ctx.Done():\n\t\t\tbreak schedule\n\t\tcase jobs <- i:\n\t\t}\n\t}\n\tclose(jobs)\n\twg.Wait()\n\tif err := ctx.Err(); err != nil {\n\t\tfmt.Fprintln(errOut, err)\n\t\treturn 1\n\t}\n\tcode := 0\n\tfor _, r := range results {\n\t\tif r.Error != \"\" || r.Status < 200 || r.Status >= 300 {\n\t\t\tcode = 1\n\t\t}\n\t}\n\tif err := json.NewEncoder(out).Encode(results); err != nil {\n\t\tfmt.Fprintln(errOut, \"write report:\", err)\n\t\treturn 1\n\t}\n\treturn code\n}\n\nfunc main() {\n\tctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)\n\tcode := Run(ctx, os.Args[1:], os.Stdout, os.Stderr)\n\tstop()\n\tos.Exit(code)\n}\n```\n"
+  starter: content/exercises/endpoint-report/starter
+  checks: content/exercises/endpoint-report/checks
