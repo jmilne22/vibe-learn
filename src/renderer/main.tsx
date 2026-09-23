@@ -33,6 +33,10 @@ import {
 } from "../shared/model";
 import { CourseActivities, Decks, Learning } from "./learning";
 import styles from "./style.module.css";
+import {
+  ContentStatusSchema,
+  ContentUpdateResultSchema,
+} from "../shared/content-update";
 const client = new QueryClient({
   defaultOptions: {
     queries: {
@@ -99,8 +103,13 @@ function App() {
   const act = useCallback(
     async (command: Command): Promise<unknown> => {
       try {
+        if (command.type === "update-content") setNotice("");
         const result = await invoke(command);
         await query.invalidateQueries({ queryKey: ["state"] });
+        if (command.type === "update-content") {
+          await query.invalidateQueries({ queryKey: ["catalog"] });
+          await query.invalidateQueries({ queryKey: ["content-status"] });
+        }
         if (typeof result === "string" && command.type === "import")
           setNotice(result);
         return result;
@@ -1085,9 +1094,65 @@ function WorkspacePanel({
   );
 }
 function Settings({ act }: { act: Action }) {
+  const [updating, setUpdating] = useState(false);
+  const [updateMessage, setUpdateMessage] = useState("");
+  const content = useQuery({
+    queryKey: ["content-status"],
+    queryFn: async () =>
+      ContentStatusSchema.parse(await invoke({ type: "content-status" })),
+    enabled: desktop,
+  });
   return (
     <>
       <h1>Settings & backups</h1>
+      {desktop && (
+        <div className={styles.settings}>
+          <h2>Content</h2>
+          <p>Download the latest courses and projects for offline use.</p>
+          <button
+            disabled={updating}
+            onClick={async () => {
+              setUpdating(true);
+              setUpdateMessage("");
+              try {
+                const raw = await act({ type: "update-content" });
+                if (raw !== undefined) {
+                  const result = ContentUpdateResultSchema.parse(raw);
+                  setUpdateMessage(
+                    result.updated
+                      ? "Content updated."
+                      : "Content is up to date.",
+                  );
+                }
+              } finally {
+                setUpdating(false);
+              }
+            }}
+          >
+            {updating ? "Updating…" : "Update content"}
+          </button>
+          <p role="status">{updateMessage}</p>
+          {content.data?.warning && <p role="alert">{content.data.warning}</p>}
+          {content.data && (
+            <small>
+              {content.data.source === "bundled"
+                ? "Included with the app"
+                : "Downloaded content"}
+              {content.data.publishedAt &&
+                ` · ${new Date(content.data.publishedAt).toLocaleDateString()}`}
+            </small>
+          )}
+          <p>
+            <a
+              href="https://github.com/jmilne22/vibe-learn/releases/latest"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Download app updates
+            </a>
+          </p>
+        </div>
+      )}
       <div className={styles.settings}>
         <h2>Backup</h2>
         <p>

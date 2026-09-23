@@ -4,7 +4,7 @@ Use Node 24+, npm, Go and native build prerequisites for better-sqlite3 (Python 
 
 `npm run package:desktop` compiles the catalog, Electron main/preload/renderer and static website, prepares the current Go toolchain, then runs Electron Forge. `npm run make:desktop` produces Windows Squirrel, macOS DMG/ZIP, or Linux ZIP artifacts. Output is in `out/`.
 
-The ASAR contains only application bundles and production dependencies; better-sqlite3's native module is unpacked. `resources/learning` contains the catalog and Go toolchain (including its license). No user database, workspace, run artifact, old daemon or sync worker is bundled. Go caches and run artifacts live in the writable profile, never application resources. The bundling step makes copied toolchain files writable in its staging area, including toolchains sourced from read-only package stores.
+The ASAR contains only application bundles and production dependencies; better-sqlite3's native module is unpacked. `resources/learning` contains the catalog, update manifest, and Go toolchain (including its license). No user database, workspace, run artifact, old daemon or sync worker is bundled. Go caches and run artifacts live in the writable profile, never application resources. The bundling step makes copied toolchain files writable in its staging area, including toolchains sourced from read-only package stores.
 
 The app uses native window chrome. The default profile is `Vibe Learn 2`, development uses `Vibe Learn 2 Dev`, and `VIBE_USER_DATA_DIR` is available for tests. Both profiles are separate from the previous application. No local HTTP port is used in production.
 
@@ -21,3 +21,5 @@ Local successful packaging is not evidence that another OS build or signing succ
 On NixOS, generic downloaded Electron binaries need an FHS runtime or adjusted ELF loader/library paths. Local smoke tests can use `ELECTRON_PATH` for development; testing a packaged app must launch that package's executable. Such host-specific adjustments must not be included in a general Linux release artifact. Prefer the Ubuntu CI artifact for general distribution.
 
 `ELECTRON_PATH` selects the development smoke runtime only. Packaged smoke resolves the executable inside `out/` and asserts that Electron is running a packaged app; `VIBE_PACKAGED_EXECUTABLE` can point to a custom packaged location.
+
+The installer supplies an offline starting catalog. Version 2.0.2 and later can download published content updates into the user profile from Settings. Packaged smoke checks exercise the update IPC/UI path with fixture responses, preserve learner state, and reopen the cached catalog after restarting. The test never depends on the live update channel.

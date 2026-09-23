@@ -13,6 +13,7 @@ import {
   type Check,
 } from "../shared/model";
 import { activities } from "./activities";
+import { writeContentPackage } from "./publish";
 import { clean, escape, htmlText, markdown } from "./render";
 const root = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -404,11 +405,7 @@ if (
 ) {
   const catalog = compileCatalog();
   if (!process.argv.includes("--check")) {
-    fs.mkdirSync(path.join(root, "build/content"), { recursive: true });
-    fs.writeFileSync(
-      path.join(root, "build/content/catalog.json"),
-      JSON.stringify(catalog),
-    );
+    writeContentPackage(catalog, path.join(root, "build/content"), root);
   }
   console.log(
     `Validated ${catalog.items.length} items, ${catalog.items.reduce((n, i) => n + i.stages.length, 0)} sections.`,

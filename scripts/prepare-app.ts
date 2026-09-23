@@ -9,6 +9,11 @@ fs.copyFileSync(
   "build/content/catalog.json",
   path.join(destination, "catalog.json"),
 );
+fs.mkdirSync(path.join(destination, "updates"), { recursive: true });
+fs.copyFileSync(
+  "build/content/updates/latest.json",
+  path.join(destination, "updates/latest.json"),
+);
 const goRoot = execFileSync("go", ["env", "GOROOT"], {
   encoding: "utf8",
 }).trim();
