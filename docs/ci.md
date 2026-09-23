@@ -11,3 +11,5 @@ Before opening a PR, run `npm run verify`. For desktop changes, also run the dev
 To publish a release after testing, set the package version and lockfile version together, merge the change, then push a matching tag such as `v2.0.0`. The workflow rejects a tag that does not match `package.json`. After all installer builds and smoke checks pass, the release job creates a GitHub release with the installers. A manual workflow run produces downloadable artifacts without publishing a release. No release is created just by merging a PR.
 
 Current installer builds are unsigned. Signing and notarization require separate credentials and setup described in [desktop packaging](desktop-packaging.md). Neither is claimed to be configured by this workflow.
+
+Windows packaging uses the `windows-2022` runner with Visual Studio 2022. Electron's current native-module build tooling does not recognize Visual Studio 2026 on `windows-latest`.
