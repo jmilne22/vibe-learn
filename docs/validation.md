@@ -26,3 +26,7 @@ Not verified on this host: macOS/Windows execution and signing, or a live Maelst
 - Development and packaged Linux smoke tests passed update → new project visible → HTTP failure leaves content intact → restart with the downloaded catalog. SQLite records and learner source files were unchanged by the update. The packaged smoke also passed bundled offline Go execution.
 - The packaged binary was launched through an FHS wrapper with Electron libraries on NixOS. This did not modify the release binary. Tests used a temporary profile under the home directory so it was visible inside that environment.
 - The generated Pages artifact and installer both contain catalog bytes matching their manifests. Smoke tests use fixture update responses; the public update endpoint will be deployed when this change merges. Windows/macOS execution is left to the existing installer workflow.
+
+## Content update release check
+
+The live GitHub Pages URL redirects to the configured `vibe-learn.ai` domain. The updater intentionally rejects redirects, so its endpoint now uses that domain directly. Verified a real download through `ContentLibrary`, catalog validation, inclusion of Cloud Resource Reporter, and reopening the saved catalog with network access disabled. Type checks, lint, and all 28 platform tests passed. The v2.0.2 release workflow was cancelled before publication; v2.0.3 contains the corrected endpoint.

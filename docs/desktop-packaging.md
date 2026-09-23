@@ -22,4 +22,4 @@ On NixOS, generic downloaded Electron binaries need an FHS runtime or adjusted E
 
 `ELECTRON_PATH` selects the development smoke runtime only. Packaged smoke resolves the executable inside `out/` and asserts that Electron is running a packaged app; `VIBE_PACKAGED_EXECUTABLE` can point to a custom packaged location.
 
-The installer supplies an offline starting catalog. Version 2.0.2 and later can download published content updates into the user profile from Settings. Packaged smoke checks exercise the update IPC/UI path with fixture responses, preserve learner state, and reopen the cached catalog after restarting. The test never depends on the live update channel.
+The installer supplies an offline starting catalog. Version 2.0.3 and later can download published content updates into the user profile from Settings. Packaged smoke checks exercise the update IPC/UI path with fixture responses, preserve learner state, and reopen the cached catalog after restarting. The test never depends on the live update channel.
