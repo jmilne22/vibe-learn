@@ -387,7 +387,7 @@ function createWindow(): void {
     minWidth: 760,
     minHeight: 540,
     title: "Vibe Learn",
-    backgroundColor: "#f6f5f0",
+    backgroundColor: "#f5f2ea",
     webPreferences: {
       preload: path.join(__dirname, "../preload/index.js"),
       contextIsolation: true,

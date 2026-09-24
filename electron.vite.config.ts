@@ -30,6 +30,10 @@ export default defineConfig({
           html.replace(/<meta http-equiv="Content-Security-Policy"[^>]*>/, ""),
       },
     ],
-    build: { outDir: path.resolve("build/app/renderer") },
+    build: {
+      outDir: path.resolve("build/app/renderer"),
+      // The CSP has no font-src, so fonts must stay as files rather than data: URIs.
+      assetsInlineLimit: (file) => (/\.woff2?$/.test(file) ? false : undefined),
+    },
   },
 });
