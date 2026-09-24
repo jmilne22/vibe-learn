@@ -9,6 +9,8 @@ import os from "node:os";
 import crypto from "node:crypto";
 import { fixtureCourse } from "../tests/v2/fixtures/course";
 import type { Catalog, AppState, Command } from "../src/shared/model";
+import type { AppStatus } from "../src/shared/app-update";
+import { gitInfo, writeAppUpdate } from "./app-update-package";
 async function main(): Promise<void> {
   const packaged = process.argv.includes("--packaged");
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "vibe-smoke-"));
@@ -54,6 +56,12 @@ async function main(): Promise<void> {
     await fs.writeFile(env.VIBE_DEV_CATALOG, JSON.stringify(catalog));
   }
   delete env.ELECTRON_RUN_AS_NODE;
+  // Packaged runs trust a throwaway key so the smoke can sign its own app update.
+  const updateKeys = crypto.generateKeyPairSync("ed25519");
+  if (packaged)
+    env.VIBE_APP_UPDATE_PUBLIC_KEY = updateKeys.publicKey
+      .export({ type: "spki", format: "der" })
+      .toString("base64");
   // Empty PATH proves packaged basic Go checks use the bundled toolchain, not a host installation.
   if (packaged) {
     env.PATH = "";
@@ -303,9 +311,7 @@ async function main(): Promise<void> {
       (_electron, payload) => {
         globalThis.fetch = (async (input) => {
           const url = String(input);
-          if (
-            url === "https://vibe-learn.ai/updates/latest.json"
-          )
+          if (url === "https://vibe-learn.ai/updates/latest.json")
             return new Response(JSON.stringify(payload.manifest));
           if (
             url ===
@@ -353,6 +359,73 @@ async function main(): Promise<void> {
         (i) => i.id === "project:download-fixture",
       ),
     ).toBe(true);
+    if (packaged) {
+      // Publish this build's own code with a marker, then update through Settings.
+      const updateApp = path.join(root, "update-app");
+      await fs.cp("build/app", updateApp, { recursive: true });
+      const index = path.join(updateApp, "renderer/index.html");
+      await fs.writeFile(
+        index,
+        (await fs.readFile(index, "utf8")).replace(
+          "<head>",
+          '<head><meta name="vibe-smoke-update" content="downloaded">',
+        ),
+      );
+      const server = path.join(root, "update-server");
+      const manifest = writeAppUpdate({
+        appDir: updateApp,
+        lockRoot: ".",
+        destination: server,
+        privateKey: updateKeys.privateKey,
+        version: "9.9.9",
+        commit: gitInfo(".").commit,
+        publishedAt: new Date(Date.now() + 60000).toISOString(),
+      });
+      await app.evaluate(
+        (_electron, payload) => {
+          globalThis.fetch = (async (input) => {
+            const url = String(input);
+            if (url === "https://vibe-learn.ai/updates/app/latest.json")
+              return new Response(payload.latest);
+            if (
+              url ===
+              `https://vibe-learn.ai/updates/app/${payload.revision}.json`
+            )
+              return new Response(payload.bundle);
+            throw new Error(`Unexpected update URL: ${url}`);
+          }) as typeof fetch;
+        },
+        {
+          revision: manifest.revision,
+          latest: await fs.readFile(path.join(server, "latest.json"), "utf8"),
+          bundle: await fs.readFile(
+            path.join(server, `${manifest.revision}.json`),
+            "utf8",
+          ),
+        },
+      );
+      await page
+        .getByRole("button", { name: "Dismiss notification", exact: true })
+        .click();
+      const beforeAppUpdate = (await call({ type: "state" })) as AppState;
+      await page
+        .getByRole("button", { name: "Update app", exact: true })
+        .click();
+      await expect(
+        page.getByText("App update downloaded. Restart to use it.", {
+          exact: true,
+        }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "Restart now", exact: true }),
+      ).toBeVisible();
+      expect(await call({ type: "state" })).toEqual(beforeAppUpdate);
+      await page.screenshot({ path: "build/screenshots/app-updates.png" });
+    } else {
+      await expect(
+        page.getByRole("button", { name: "Update app", exact: true }),
+      ).toBeDisabled();
+    }
     await page.getByRole("button", { name: "Switch theme" }).click();
     await app.close();
     app = undefined;
@@ -379,8 +452,28 @@ async function main(): Promise<void> {
       restored.progress.find((p) => p.itemId === relay.id)?.scroll,
     ).toBeCloseTo(0.55, 1);
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+    if (packaged) {
+      // The restart ran the downloaded code and recorded it as healthy.
+      await expect(page.locator('meta[name="vibe-smoke-update"]')).toHaveCount(
+        1,
+      );
+      expect(((await call({ type: "app-status" })) as AppStatus).source).toBe(
+        "downloaded",
+      );
+      await expect
+        .poll(() =>
+          fs.access(path.join(root, "profile/app-update/launching.json")).then(
+            () => true,
+            () => false,
+          ),
+        )
+        .toBe(false);
+      await page.getByRole("link", { name: "Settings & backups" }).click();
+      await expect(page.getByText(/Version 9\.9\.9 · updated/)).toBeVisible();
+      await page.screenshot({ path: "build/screenshots/app-updated.png" });
+    }
     console.log(
-      `${packaged ? "Packaged" : "Development"} desktop smoke passed: SQLite restart, content update/recovery, notes, bookmarks, validated IPC, clipboard, untouched learner code, ${packaged ? "bundled offline" : "local"} Go execution.`,
+      `${packaged ? "Packaged" : "Development"} desktop smoke passed: SQLite restart, content update/recovery, ${packaged ? "signed app update and restart, " : ""}notes, bookmarks, validated IPC, clipboard, untouched learner code, ${packaged ? "bundled offline" : "local"} Go execution.`,
     );
   } finally {
     await app?.close();

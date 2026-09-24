@@ -1,12 +1,12 @@
 {
   "name": "vibe-learn",
   "productName": "Vibe Learn",
-  "version": "2.0.3",
+  "version": "2.1.0",
   "private": true,
   "description": "Offline courses and projects, with learner-owned workspaces.",
   "author": "James Milne",
   "license": "MIT",
-  "main": "build/app/main/index.js",
+  "main": "build/app/main/bootstrap.js",
   "scripts": {
     "dev": "npm run content && electron-vite dev",
     "app": "npm run dev",
@@ -23,7 +23,8 @@
     "package:desktop": "npm run prepare:desktop && electron-forge package",
     "make:desktop": "npm run prepare:desktop && electron-forge make",
     "smoke:desktop": "tsx scripts/smoke-desktop.ts",
-    "new-course": "tsx scripts/create-course.ts"
+    "new-course": "tsx scripts/create-course.ts",
+    "publish:app-update": "tsx scripts/publish-app-update.ts"
   },
   "dependencies": {
     "@fontsource-variable/source-serif-4": "^5.3.0",

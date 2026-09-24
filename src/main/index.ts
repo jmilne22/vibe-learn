@@ -23,12 +23,11 @@ import { reviewCard } from "./review";
 import { Store } from "./store";
 import { Runner } from "./runner";
 import { ContentLibrary } from "./content-library";
-const profile =
-  process.env.VIBE_USER_DATA_DIR ||
-  path.join(
-    app.getPath("appData"),
-    app.isPackaged ? "Vibe Learn 2" : "Vibe Learn 2 Dev",
-  );
+import { AppUpdater, boot, readShell } from "./app-update";
+import { profileDir } from "./profile";
+const profile = profileDir();
+const started = boot();
+const appVersion = started.version ?? app.getVersion();
 app.setPath("userData", profile);
 protocol.registerSchemesAsPrivileged([
   {
@@ -50,6 +49,13 @@ else {
     .whenReady()
     .then(start)
     .catch((error) => {
+      if (started.revision) {
+        // Fall back to the installed version instead of failing on every launch.
+        started.fail();
+        app.relaunch();
+        app.exit(0);
+        return;
+      }
       dialog.showErrorBox("Vibe Learn could not start", String(error));
       app.exit(1);
     });
@@ -67,12 +73,18 @@ async function start(): Promise<void> {
   const library = await ContentLibrary.open({
     bundled,
     directory: path.join(profile, "content"),
-    appVersion: app.getVersion(),
+    appVersion,
     bundledManifest: fs.existsSync(manifestPath)
       ? JSON.parse(fs.readFileSync(manifestPath, "utf8"))
       : undefined,
   });
   let catalog = library.catalog;
+  const appUpdater = new AppUpdater({
+    directory: path.join(profile, "app-update"),
+    shell: app.isPackaged ? readShell(resources) : undefined,
+    version: appVersion,
+    boot: started,
+  });
   let updatingContent = false;
   store = await Store.open(path.join(profile, "learning.sqlite"));
   const changed = () => window?.webContents.send("learning:changed");
@@ -123,6 +135,17 @@ async function start(): Promise<void> {
     if (input.type === "catalog") return catalog;
     if (input.type === "state") return store.state();
     if (input.type === "content-status") return library.status;
+    if (input.type === "app-status") return appUpdater.status;
+    if (input.type === "update-app") return appUpdater.update();
+    if (input.type === "restart-app") {
+      if (store.state().runs.some((run) => run.status === "running"))
+        throw new Error(
+          "Wait for the current run to finish before restarting.",
+        );
+      app.relaunch();
+      app.quit();
+      return null;
+    }
     if (input.type === "update-content") {
       if (updatingContent)
         throw new Error("A content update is already in progress.");
@@ -409,6 +432,7 @@ function createWindow(): void {
     if (/^https?:\/\//.test(url)) void shell.openExternal(url);
     return { action: "deny" };
   });
+  window.webContents.once("did-finish-load", () => started.healthy());
   window.on("closed", () => {
     window = null;
   });
