@@ -40,6 +40,11 @@ jobs:
             test-results/
           if-no-files-found: ignore
           retention-days: 7
+      - name: Publish signed app update
+        if: github.event_name == 'push'
+        run: npm run publish:app-update
+        env:
+          APP_UPDATE_SIGNING_KEY: ${{ secrets.APP_UPDATE_SIGNING_KEY }}
       - name: Upload website
         if: github.event_name == 'push'
         uses: actions/upload-pages-artifact@v4

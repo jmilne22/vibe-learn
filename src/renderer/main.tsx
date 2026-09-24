@@ -44,6 +44,11 @@ import {
   ContentStatusSchema,
   ContentUpdateResultSchema,
 } from "../shared/content-update";
+import {
+  AppStatusSchema,
+  AppUpdateResultSchema,
+  type AppStatus,
+} from "../shared/app-update";
 const client = new QueryClient({
   defaultOptions: {
     queries: {
@@ -1149,17 +1154,9 @@ function Settings({ act }: { act: Action }) {
                 ` · ${new Date(content.data.publishedAt).toLocaleDateString()}`}
             </small>
           )}
-          <p>
-            <a
-              href="https://github.com/jmilne22/vibe-learn/releases/latest"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Download app updates
-            </a>
-          </p>
         </div>
       )}
+      {desktop && <AppUpdates act={act} />}
       <div className={styles.settings}>
         <h2>Backup</h2>
         <p>
@@ -1191,6 +1188,81 @@ function Settings({ act }: { act: Action }) {
         )}
       </div>
     </>
+  );
+}
+function AppUpdates({ act }: { act: Action }) {
+  const queryClient = useQueryClient();
+  const [updating, setUpdating] = useState(false);
+  const [message, setMessage] = useState("");
+  const status = useQuery({
+    queryKey: ["app-status"],
+    queryFn: async () =>
+      AppStatusSchema.parse(await invoke({ type: "app-status" })),
+  });
+  const app: AppStatus | undefined = status.data;
+  return (
+    <div className={styles.settings}>
+      <h2>App</h2>
+      <p>
+        Download the latest app changes without reinstalling. They apply when
+        you restart.
+      </p>
+      <div className={styles.actions}>
+        <button
+          disabled={updating || !app || app.source === "development"}
+          onClick={async () => {
+            setUpdating(true);
+            setMessage("");
+            try {
+              const raw = await act({ type: "update-app" });
+              if (raw === undefined) return;
+              const result = AppUpdateResultSchema.parse(raw);
+              queryClient.setQueryData(["app-status"], result.status);
+              setMessage(
+                result.result === "updated"
+                  ? "App update downloaded. Restart to use it."
+                  : result.result === "installer"
+                    ? "This update changes built-in components. Download the latest installer below."
+                    : "The app is up to date.",
+              );
+            } finally {
+              setUpdating(false);
+            }
+          }}
+        >
+          {updating ? "Updating…" : "Update app"}
+        </button>
+        {app?.pending && (
+          <button
+            className={styles.primary}
+            onClick={() => void act({ type: "restart-app" })}
+          >
+            Restart now
+          </button>
+        )}
+      </div>
+      <p role="status">{message}</p>
+      {app?.warning && <p role="alert">{app.warning}</p>}
+      {app && (
+        <small>
+          {app.source === "development"
+            ? "Development build. Pull the latest code with git."
+            : `Version ${app.version}${app.source === "downloaded" ? " · updated" : " · installed"}`}
+          {app.publishedAt &&
+            ` · ${new Date(app.publishedAt).toLocaleDateString()}`}
+          {app.commit && ` · ${app.commit.slice(0, 7)}`}
+        </small>
+      )}
+      <p>
+        <a
+          href="https://github.com/jmilne22/vibe-learn/releases/latest"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Download app updates
+        </a>
+      </p>
+    </div>
   );
 }
 createRoot(document.getElementById("root")!).render(

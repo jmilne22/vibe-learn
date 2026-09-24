@@ -6,7 +6,12 @@ export default defineConfig({
     plugins: [externalizeDepsPlugin()],
     build: {
       outDir: "build/app/main",
-      rollupOptions: { input: "src/main/index.ts" },
+      rollupOptions: {
+        input: {
+          index: "src/main/index.ts",
+          bootstrap: "src/main/bootstrap.ts",
+        },
+      },
     },
   },
   preload: {

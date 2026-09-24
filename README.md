@@ -28,21 +28,12 @@ npm run preview        # Local read-only preview
 npm run new-course -- my-topic
 ```
 
-### Updating from git
-
-To run the latest app code without downloading an installer, keep a clone of this repository and run:
-
-```sh
-npm run update:app              # on NixOS: nix-shell --run "npm run update:app"
-```
-
-The updater fast-forwards the current branch to its remote, runs `npm ci` only when `package-lock.json` changed, and repackages the app into the same `out/` folder, so a shortcut to it keeps working. It stops without changing anything if the checkout has uncommitted changes, local commits, or no remote branch. Close the app first. Your profile, notes and workspaces live outside the checkout and are not touched. Use `npm run update:app -- --rebuild` to repackage when nothing new was pulled.
-
 Linux headless desktop testing needs an X server (`xvfb-run -a npm run smoke:desktop`). `ELECTRON_PATH` and `CHROMIUM_PATH` can select system-compatible test executables. On NixOS, enter `nix-shell` first, then run the npm commands; the included shell selects a Nix-compatible Electron and native SQLite libraries. Generic Electron downloads need an FHS environment or the Nix Electron runtime; manual and release-tag builds package on standard Linux, Windows, and macOS runners.
 
 ## What's included
 
 - Download content updates from Settings and keep them locally for offline reading.
+- Update the app itself from Settings (**Update app**, then restart). Changes merged to `main` arrive without a new installer unless they change Electron or native packages.
 - Independent Courses and Projects libraries, Continue, offline search, collapsible navigation and keyboard access.
 - Five standalone projects with stages, examples and resource links. The old courses and samples were removed; the Courses library is intentionally empty.
 - Course framework: Go/Rust starter-file exercises with visible tests, hints, solutions and explicit runs; optional flashcard browsing and local spaced review. New courses must supply their own content.

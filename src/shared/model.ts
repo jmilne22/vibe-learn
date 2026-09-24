@@ -206,6 +206,9 @@ export const CommandSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("catalog") }),
   z.object({ type: z.literal("content-status") }),
   z.object({ type: z.literal("update-content") }),
+  z.object({ type: z.literal("app-status") }),
+  z.object({ type: z.literal("update-app") }),
+  z.object({ type: z.literal("restart-app") }),
   z.object({ type: z.literal("state") }),
   z.object({
     type: z.literal("progress"),

@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
+import { appRuntime, gitInfo } from "./app-update-package";
 const destination = path.resolve("build/learning");
 writable(destination);
 fs.rmSync(destination, { recursive: true, force: true });
@@ -29,6 +30,9 @@ fs.writeFileSync(
     go: execFileSync("go", ["version"], { encoding: "utf8" }).trim(),
     platform: process.platform,
     arch: process.arch,
+    // Lets the installed app accept downloaded code built for the same runtime.
+    appRuntime: appRuntime(path.resolve("build/app"), path.resolve(".")),
+    ...gitInfo(path.resolve(".")),
   }),
 );
 console.log(
