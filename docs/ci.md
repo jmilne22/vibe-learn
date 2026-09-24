@@ -22,4 +22,4 @@ App code changes also reach installed apps without a release: on pushes to `main
 
 Native dependencies or built-in runner changes still require a desktop release. Set `MINIMUM_CONTENT_APP_VERSION` in `src/shared/content-update.ts` to the first app version that supports newly required content behaviour. Update the supported built-in check versions in `src/content/validate-catalog.ts` when changing a suite. Keep course/project/section/activity IDs stable across edits.
 
-Version 2.0.3 introduces the content updater; 2.0.1 installations need that one-time app upgrade. The app updater arrives in the release after 2.0.3, which likewise needs one manual install. Publishing the Pages catalog alone cannot add the updater to an old binary.
+Version 2.0.3 introduces the content updater; 2.0.1 installations need that one-time app upgrade. Version 2.1.0 introduces the app updater; earlier installations need that one manual install, after which app code updates arrive from Settings. Publishing the Pages catalog alone cannot add the updater to an old binary.

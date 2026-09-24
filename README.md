@@ -4,7 +4,7 @@ A desktop app for your learning material. Author courses and project briefs, wor
 
 The desktop app stores reading positions, bookmarks, notes, and flashcard reviews in SQLite. Code and learner-written tests stay in ordinary folders opened in your own editor. Copy a project or stage's context into an external AI tool when useful; the app does not send code anywhere.
 
-The [website](https://vibe-learn.ai/) is a read-only preview with a [desktop download link](https://github.com/jmilne22/vibe-learn/releases/latest). Vibe Learn 2.0.3 adds content updates from Settings; earlier installations need an app upgrade first.
+The [website](https://vibe-learn.ai/) is a read-only preview with a [desktop download link](https://github.com/jmilne22/vibe-learn/releases/latest). Vibe Learn 2.0.3 adds content updates from Settings, and 2.1.0 adds app updates; earlier installations need an app upgrade first.
 
 ## Development
 
