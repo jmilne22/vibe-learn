@@ -38,7 +38,7 @@ Linux headless desktop testing needs an X server (`xvfb-run -a npm run smoke:des
 - Five standalone projects with stages, examples and resource links. The old courses and samples were removed; the Courses library is intentionally empty.
 - Course framework: Go/Rust starter-file exercises with visible tests, hints, solutions and explicit runs; optional flashcard browsing and local spaced review. New courses must supply their own content.
 - Optional project reference examples, per-item notes with Markdown export, bookmarks and JSON backup/import. Future courses can use the Markdown/YAML authoring framework.
-- Create or attach workspaces on demand, with a minimal Go module for new Go activities. Explicit runs stream output, support cancellation and timeouts, and retain logs and artifacts.
+- Create or attach workspaces on demand. A created project workspace contains the brief as numbered Markdown steps, a notes file and AGENTS.md instructions for an external AI assistant (Mentor: hints only, or Pair: may edit), plus a minimal Go module for Go projects. **Add AI assistant files** adds any missing ones to an attached folder without overwriting. Explicit runs stream output, support cancellation and timeouts, and retain logs and artifacts.
 - Ingest Relay: optional HTTP/storage checkpoints and final public-behavior checks.
 - Tiny TSDB: optional HTTP/recovery/final checks, with internal design and storage invariants left to learner tests and review.
 - Gossip Glomers: integration with the existing Maelstrom harness and saved reports. Install its additional tools separately.

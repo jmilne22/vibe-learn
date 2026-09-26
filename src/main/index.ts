@@ -19,6 +19,7 @@ import {
   type Run,
 } from "../shared/model";
 import { prepareExercise } from "./exercises";
+import { addMissingFiles, createWorkspace } from "./workspace";
 import { reviewCard } from "./review";
 import { Store } from "./store";
 import { Runner } from "./runner";
@@ -201,6 +202,10 @@ async function start(): Promise<void> {
           if (error) throw new Error(error);
           return existing;
         }
+        if (input.action === "assistant-files") {
+          if (!existing) throw new Error("Attach a workspace first");
+          return addMissingFiles(existing.path, item!, input.mode);
+        }
         const selected = await dialog.showOpenDialog(window, {
           title:
             input.action === "create"
@@ -209,23 +214,11 @@ async function start(): Promise<void> {
           properties: ["openDirectory", "createDirectory"],
         });
         if (selected.canceled || !selected.filePaths[0]) return null;
-        let folder = fs.realpathSync(selected.filePaths[0]);
-        if (input.action === "create") {
-          folder = path.join(
-            folder,
-            item!.id.replace(/[^a-zA-Z0-9-]/g, "-") + "-" + Date.now(),
-          );
-          fs.mkdirSync(folder); // New folders only; never replace files in an attached repository.
-          if (item!.checks.length)
-            fs.writeFileSync(
-              path.join(folder, "go.mod"),
-              "module vibe.local/workspace\n\ngo 1.22\n",
-            );
-          fs.writeFileSync(
-            path.join(folder, "VIBE-PROJECT.md"),
-            `# ${item!.title}\n\n${item!.description}\n\n${item!.stages[0]!.text}\n`,
-          );
-        }
+        // Attaching never writes; creating always makes a new folder.
+        const folder =
+          input.action === "create"
+            ? createWorkspace(selected.filePaths[0], item!, input.mode)
+            : fs.realpathSync(selected.filePaths[0]);
         const workspace: Workspace = {
           itemId: input.itemId,
           path: folder,

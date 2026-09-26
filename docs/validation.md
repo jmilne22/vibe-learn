@@ -5,7 +5,7 @@ Verified on Linux/NixOS on 2026-09-23, including a fresh source copy and `npm ci
 - `npm run verify`: strict TypeScript, ESLint, 18 platform tests, content validation (4 projects / 38 sections), production builds, and four Playwright browser tests.
 - Linux ZIP generation through Electron Forge succeeds; the Nix shell includes the required `zip` utility.
 - `actionlint` accepts both workflows, documentation links resolve locally, and `git diff --check` passes. Automatic CI is one Linux job; desktop builds are manual/tag-triggered.
-- Packaged Linux Electron smoke: SQLite restart, notes, bookmarks, source preservation, clipboard, validated IPC, workspace UI execution, reading-position retention through navigation/restart, and saved appearance.
+- Packaged Linux Electron smoke: SQLite restart, notes, bookmarks, source preservation, clipboard, validated IPC, workspace UI execution, project workspace creation with step files, reading-position retention through navigation/restart, and saved appearance.
 - Packaged Go test runs with an empty host tool PATH and module downloads disabled.
 - Relay/TSDB public-interface fixture servers, deliberate contract failures, missing tools, empty tests, source changes, cancellation, timeouts and interrupted-run recovery.
 - Browser preview with external network blocked, keyboard skip navigation, narrow layout, independent course/project access.

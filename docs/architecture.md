@@ -24,7 +24,11 @@ Source fingerprints cover source/config files, excluding dependency/build/cache/
 
 `npm run verify` checks strict types, UI/backend import boundaries, validated content and internal routes, transactional migrations, backup round-tripping, process failures/cancellation, actual Go tasks, harness fixtures, independent navigation, offline reading/search and keyboard/mobile usability.
 
-`npm run smoke:desktop -- --packaged` additionally launches the real packaged executable with a temporary profile and empty tool PATH, saves notes/bookmarks, copies context, attaches a fixture workspace, runs bundled Go without network module access, exports a backup and verifies persistence after restart. It also rejects invalid IPC and operator check requests. The manual/release-tag installer workflow runs this on Linux, macOS and Windows; local testing establishes only the current host's results.
+`npm run smoke:desktop -- --packaged` additionally launches the real packaged executable with a temporary profile and empty tool PATH, saves notes/bookmarks, copies context, attaches a fixture workspace, creates a project workspace with step files, runs bundled Go without network module access, exports a backup and verifies persistence after restart. It also rejects invalid IPC and operator check requests. The manual/release-tag installer workflow runs this on Linux, macOS and Windows; local testing establishes only the current host's results.
+
+## Project workspaces
+
+**Create workspace** makes a new folder named after the project (with a numeric suffix if one exists) in the parent the learner chooses. It never reuses a folder, and removes it again if writing fails. `src/main/workspace.ts` converts each sanitised stage into Markdown (`src/content/markdown-out.ts`): the overview becomes README.md and each later stage `steps/NN-<stageId>.md`, numbered as in the sidebar, with hints kept as folded `<details>` blocks and links between stages mapped to the files. AGENTS.md (read directly or through the `@AGENTS.md` pointers in CLAUDE.md and GEMINI.md) tells an external assistant to work only on the step the learner names. Mentor mode also writes a Claude Code settings file that denies edits. Attaching writes nothing; **Add AI assistant files** creates only missing files and never overwrites or adds a Go module.
 
 ## Optional course activities
 

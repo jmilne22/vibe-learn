@@ -188,6 +188,9 @@ export const emptyState = (): AppState => ({
   reviews: [],
   exerciseWorkspaces: [],
 });
+// Mentor: the assistant gives hints and never edits. Pair: it may edit in small reviewed steps.
+export const AssistantModeSchema = z.enum(["mentor", "pair"]);
+export type AssistantMode = z.infer<typeof AssistantModeSchema>;
 export const CommandSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("exercise"),
@@ -225,7 +228,8 @@ export const CommandSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("workspace"),
     itemId: Id,
-    action: z.enum(["attach", "create", "open"]),
+    action: z.enum(["attach", "create", "open", "assistant-files"]),
+    mode: AssistantModeSchema.default("mentor"),
   }),
   z.object({
     type: z.literal("configure"),
