@@ -26,6 +26,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { desktop, getCatalog, getState, invoke } from "./api";
 import {
   emptyState,
+  type AssistantMode,
   type Item,
   type Stage,
   type Command,
@@ -954,41 +955,87 @@ function WorkspacePanel({
   const workspace = state.workspaces.find((w) => w.itemId === item.id);
   const [target, setTarget] = useState(workspace?.buildTarget || ".");
   const [maelstrom, setMaelstrom] = useState(workspace?.maelstromPath || "");
+  const [mode, setMode] = useState<AssistantMode>(() => {
+    try {
+      return localStorage.getItem("vibe-assistant-mode") === "pair"
+        ? "pair"
+        : "mentor";
+    } catch {
+      return "mentor";
+    }
+  });
+  const [added, setAdded] = useState("");
   const runs = state.runs.filter((r) => r.itemId === item.id).reverse();
   const active = state.runs.some((r) => r.status === "running");
+  const workspaceAction = (
+    action: "attach" | "create" | "open" | "assistant-files",
+  ) => act({ type: "workspace", itemId: item.id, action, mode });
+  const chooseMode = (next: AssistantMode) => {
+    setMode(next);
+    try {
+      localStorage.setItem("vibe-assistant-mode", next);
+    } catch {
+      /* Preference storage may be unavailable in previews. */
+    }
+  };
   return (
     <>
       <h3>Local workspace</h3>
       <p>
         {workspace
           ? workspace.path
-          : "Attach a project folder or create a new workspace."}
+          : "Attach a project folder, or create a new workspace with the brief as step files for an AI assistant."}
       </p>
+      <fieldset className={styles.modes}>
+        <legend>AI assistant</legend>
+        <label>
+          <input
+            type="radio"
+            name="assistant-mode"
+            checked={mode === "mentor"}
+            onChange={() => chooseMode("mentor")}
+          />
+          Mentor: hints only, I write the code
+        </label>
+        <label>
+          <input
+            type="radio"
+            name="assistant-mode"
+            checked={mode === "pair"}
+            onChange={() => chooseMode("pair")}
+          />
+          Pair: the assistant can edit
+        </label>
+      </fieldset>
       <div className={styles.actions}>
-        <button
-          onClick={() =>
-            void act({ type: "workspace", itemId: item.id, action: "attach" })
-          }
-        >
+        <button onClick={() => void workspaceAction("attach")}>
           Attach folder
         </button>
-        <button
-          onClick={() =>
-            void act({ type: "workspace", itemId: item.id, action: "create" })
-          }
-        >
+        <button onClick={() => void workspaceAction("create")}>
           Create workspace
         </button>
         {workspace && (
-          <button
-            onClick={() =>
-              void act({ type: "workspace", itemId: item.id, action: "open" })
-            }
-          >
+          <button onClick={() => void workspaceAction("open")}>
             Open folder
           </button>
         )}
+        {workspace && (
+          <button
+            onClick={async () => {
+              const result = (await workspaceAction("assistant-files")) as
+                { written: string[]; skipped: string[] } | undefined;
+              if (!result) return setAdded("");
+              const count = result.written.length;
+              setAdded(
+                `${count ? `Added ${count} file${count === 1 ? "" : "s"}.` : "All assistant files were already there."}${result.skipped.length ? ` Kept your existing ${result.skipped.join(", ")}.` : ""}`,
+              );
+            }}
+          >
+            Add AI assistant files
+          </button>
+        )}
       </div>
+      {added && <p role="status">{added}</p>}
       {workspace && item.checks.length > 0 && (
         <details>
           <summary>Execution settings</summary>

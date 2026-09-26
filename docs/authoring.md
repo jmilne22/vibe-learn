@@ -20,7 +20,7 @@ Author ordinary Markdown with fenced examples, links and optional hints/solution
 
 Courses can include prepared-file exercises and optional flashcards using the schemas below. These features do not require restoring any retired course content.
 
-Course-linked Markdown projects may be declared with `id`, `title`, `file` (a lesson-folder stem), optional `description` and `afterModule` for a related lesson link. Standalone project documents live in `content/projects`; the compiler maps their HTML sections into stable stages with project-specific prerequisites and checks. Relay Operator remains guided.
+Course-linked Markdown projects may be declared with `id`, `title`, `file` (a lesson-folder stem), optional `description` and `afterModule` for a related lesson link. Standalone project documents live in `content/projects`; the compiler maps their HTML sections into stable stages with project-specific prerequisites and checks. Created workspaces write each stage to `steps/NN-<stageId>.md`, so keep stage ids stable, put hints and answers inside `<details><summary>`, and prefer ordinary HTML (headings, paragraphs, lists, tables, `pre > code`) that converts cleanly to Markdown. Relay Operator remains guided.
 
 ## Course exercises
 

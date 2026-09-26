@@ -118,7 +118,12 @@ async function main(): Promise<void> {
         filePaths: [folder],
       })) as typeof dialog.showOpenDialog;
     }, workspace);
-    await call({ type: "workspace", itemId: relay.id, action: "attach" });
+    await call({
+      type: "workspace",
+      itemId: relay.id,
+      action: "attach",
+      mode: "mentor",
+    });
     await page.getByRole("button", { name: "Workspace", exact: true }).click();
     await page
       .getByRole("button", { name: "Run your tests", exact: true })
@@ -146,6 +151,40 @@ async function main(): Promise<void> {
     expect(
       await fs.readFile(path.join(workspace, "addition_test.go"), "utf8"),
     ).toBe(source);
+    const reporter = catalog.items.find(
+      (i) => i.id === "project:cloud-reporter",
+    )!;
+    const parent = path.join(root, "projects");
+    await fs.mkdir(parent);
+    await app.evaluate(({ dialog }, folder) => {
+      dialog.showOpenDialog = (async () => ({
+        canceled: false,
+        filePaths: [folder],
+      })) as typeof dialog.showOpenDialog;
+    }, parent);
+    const created = (await call({
+      type: "workspace",
+      itemId: reporter.id,
+      action: "create",
+      mode: "mentor",
+    })) as { path: string };
+    expect(created.path).toBe(
+      path.join(await fs.realpath(parent), "cloud-reporter"),
+    );
+    expect(
+      await fs.readFile(
+        path.join(created.path, "steps/02-fetch-page.md"),
+        "utf8",
+      ),
+    ).toContain("<details>");
+    for (const file of [
+      "README.md",
+      "AGENTS.md",
+      "NOTES.md",
+      "go.mod",
+      ".claude/settings.local.json",
+    ])
+      await fs.access(path.join(created.path, file));
     await expect(
       call({ type: "run", itemId: operator.id, checkId: "go-test" }),
     ).rejects.toThrow();
