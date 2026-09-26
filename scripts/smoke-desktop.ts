@@ -168,14 +168,12 @@ async function main(): Promise<void> {
       action: "create",
       mode: "mentor",
     })) as { path: string };
-    expect(created.path).toBe(
-      path.join(await fs.realpath(parent), "cloud-reporter"),
-    );
+    // Compare names, not full paths: Windows may report the temp directory in
+    // its 8.3 short form (RUNNER~1) on one side and long form on the other.
+    expect(path.basename(created.path)).toBe("cloud-reporter");
+    const folder = path.join(parent, "cloud-reporter");
     expect(
-      await fs.readFile(
-        path.join(created.path, "steps/02-fetch-page.md"),
-        "utf8",
-      ),
+      await fs.readFile(path.join(folder, "steps/02-fetch-page.md"), "utf8"),
     ).toContain("<details>");
     for (const file of [
       "README.md",
@@ -184,7 +182,7 @@ async function main(): Promise<void> {
       "go.mod",
       ".claude/settings.local.json",
     ])
-      await fs.access(path.join(created.path, file));
+      await fs.access(path.join(folder, file));
     await expect(
       call({ type: "run", itemId: operator.id, checkId: "go-test" }),
     ).rejects.toThrow();
