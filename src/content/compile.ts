@@ -156,16 +156,22 @@ export function compileCatalog(base = root): Catalog {
     "kubernetes-admission-lab",
   ];
   for (const file of projectFiles) {
-    const document = read(path.join(base, "content/projects", file + ".html"));
+    const location = path.join(base, "content/projects", file + ".html");
+    const document = read(location);
     const $ = load(document);
     const main = $("main").first();
     main.find("script,style,nav,footer,.toolbar").remove();
     const title = main.find("h1").first().text();
     const supportFiles = ProjectSupportFilesSchema.parse(
-      main.find("pre[data-workspace-file]").toArray().map((el) => ({
-        path: $(el).attr("data-workspace-file"),
-        contents: $(el).children("code").text().trimEnd() + "\n",
-      })),
+      main.find("pre[data-workspace-file]").toArray().map((el) => {
+        const name = $(el).attr("data-workspace-file");
+        const contents = $(el).children("code").text().trimEnd();
+        if (!contents.trim())
+          throw new Error(
+            `Supplied file ${name} in ${location} needs a non-empty <code> block`,
+          );
+        return { path: name, contents: contents + "\n" };
+      }),
     );
     const stages: Stage[] = [];
     const sessions = main.find("section.session");
@@ -184,7 +190,7 @@ export function compileCatalog(base = root): Catalog {
       );
       section.remove();
     });
-    stages.unshift(stage("overview", file === "kubernetes-admission-lab" ? "Step 0 — Read the assigned article" : "Overview & setup", main.html() || ""));
+    stages.unshift(stage("overview", "Overview & setup", main.html() || ""));
     const id = `project:${file === "go-telemetry-ingest-take-home" ? "ingest-relay" : file}`;
     if (file === "go-telemetry-ingest-take-home") {
       const reference = load(
@@ -215,12 +221,13 @@ export function compileCatalog(base = root): Catalog {
       source: `take-home/${file}.html`,
       version: "",
     };
-    if (file === "kubernetes-admission-lab")
+    if (file === "kubernetes-admission-lab") {
+      stages[0]!.title = "Step 0 — Read the assigned article";
       item.prerequisites = [
         "Read the assigned article first. Then use Python, Docker, k3d, kubectl, k9s, Go Task, OpenSSL, and curl. Workspace creation includes the Taskfile and diagnostic doctor.",
         "Guided local-cluster experiments and learner-run Python tests; no app-owned automated suite.",
       ];
-    else if (file === "relay-operator")
+    } else if (file === "relay-operator")
       item.prerequisites = [
         "A working Ingest Relay workspace",
         "Go, container runtime, kind, kubectl, Kubebuilder, and Helm. Perform the guided checks in your own local cluster.",

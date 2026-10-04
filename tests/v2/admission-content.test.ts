@@ -18,7 +18,7 @@ describe("admission lab content and offline illustrations", () => {
   it("starts with reading, stays guided, and exports useful text and support files", () => {
     expect(project.checks).toEqual([]);
     expect(project.stages.map((s) => s.id)).toEqual([
-      "overview", "doctor", "first-pod", "mutation", "admission", "diagnosis", "rehearsal", "readiness",
+      "overview", "doctor", "first-pod", "upstream", "mutation", "admission", "diagnosis", "rehearsal", "readiness",
     ]);
     const $ = load(project.stages[0]!.html);
     expect($("h2").first().text()).toBe("Step 0 — Read the assigned article");

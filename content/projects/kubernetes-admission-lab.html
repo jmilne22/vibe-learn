@@ -1,25 +1,26 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><title>Kubernetes Admission Lab</title></head><body><main>
-<header><h1>Kubernetes Admission Lab</h1><p>Build, explain, and troubleshoot a Python admission webhook. Eight hours across two days, with diagrams, short animations, hints and optional solutions.</p></header>
+<header><h1>Kubernetes Admission Lab</h1><p>Build, explain, and troubleshoot a Python admission webhook. About nine hours across two days, with diagrams, short animations, hints and optional solutions.</p></header>
 <h2>Step 0 — Read the assigned article</h2>
 <p><strong>Before installing tools, running task doctor, creating a cluster, or writing code, read <a href="https://kmitevski.com/kubernetes-mutating-webhook-with-python-and-fastapi/">Kubernetes Mutating Webhook with Python and FastAPI</a> from beginning to end.</strong> Assume this is your first reading. Allow about 30 minutes. Note unfamiliar terms without stopping to resolve everything.</p>
 <ol><li>Trace the request from the API server to the webhook and back. What changes, and who stores the result?</li><li>Identify the job of the Deployment, Service, Secret and MutatingWebhookConfiguration.</li><li>Write down what you think the certificate and base64 patch are for.</li></ol>
-<p>Expected observation: the example modifies a workload's Pod template, not a running container. You do not need to understand every line yet. All stages and hints are accessible; nothing is locked.</p>
+<p>You do not need to understand every line yet. All stages and hints are accessible; nothing is locked.</p>
 <details><summary>Reading hint — identify the caller</summary><p>The API server calls the webhook. The webhook returns a decision and possibly a patch; it does not call kubectl or directly store the workload.</p></details>
-<details><summary>Compare your explanation</summary><p>After authentication and authorization, admission can change or reject a write. A successful mutation response carries the original request UID and an encoded JSON Patch. The API server applies that patch, finishes admission/validation, and only then persists an accepted object. Controllers subsequently create Pods, whose scheduling is a separate step.</p></details>
+<details><summary>Compare your explanation</summary><p>The example modifies a workload's Pod template, not a running container. After authentication and authorization, admission can change or reject a write. A successful mutation response carries the original request UID and an encoded JSON Patch. The API server applies that patch, finishes admission/validation, and only then persists an accepted object. Controllers subsequently create Pods, whose scheduling is a separate step.</p></details>
 <h3>AI mentor prompt</h3><blockquote>I have finished reading the article. Ask me to explain the request flow, then help with my recorded questions one at a time. Give one hint at a time. Do not edit files or reveal the solution unless I ask. After a solution, ask me to explain it and change one requirement.</blockquote>
 <h3>The assignment</h3><p>An infrastructure team wants selected workloads on an observability node pool. Build a webhook enforcing <code>lab.example.com/pool=observability</code>, while preserving unrelated placement constraints. Practice the Kubernetes, networking, programming and reliability skills relevant to the <a href="https://www.comeet.com/jobs/groundcover/88.008/infra-engineer/AB.A47">groundcover Infra Engineer role</a>.</p>
 <table><thead><tr><th>Step</th><th>Budget</th><th>Evidence</th></tr></thead><tbody>
 <tr><td>0 · Read</td><td>30 minutes</td><td>Explain the article and record questions</td></tr>
 <tr><td>1 · Doctor</td><td>30 minutes</td><td>Tool and laptop diagnostics</td></tr>
 <tr><td>2 · First Pod</td><td>60 minutes</td><td>Built image serving health on Kubernetes</td></tr>
+<tr><td>Optional · Upstream</td><td>60 minutes</td><td>The article's repository run unchanged, and its problems found in k9s</td></tr>
 <tr><td>3 · Mutation</td><td>90 minutes</td><td>Python tests and valid patches</td></tr>
 <tr><td>4 · Admission</td><td>60 minutes</td><td>TLS, mutation and placement evidence</td></tr>
-<tr><td>5 · Diagnose</td><td>60 minutes</td><td>Five reproduced and repaired failures</td></tr>
+<tr><td>5 · Diagnose</td><td>90 minutes</td><td>Nine reproduced and repaired failures</td></tr>
 <tr><td>6 · Rehearse</td><td>120 minutes</td><td>Coding variation, deployment and explanation</td></tr>
 <tr><td>7 · Ready</td><td>30 minutes</td><td>Restart and rebuild on the interview laptop</td></tr></tbody></table>
-<p>Day one: steps 0–4 (4½ hours). Day two: steps 5–7 (3½ hours). The budgets are planning guidance, not timers or scores. If stuck, use a folded solution, explain it, then implement a variation. Work in your own editor; Python tests and cluster commands run explicitly in your terminal. Vibe Learn has no automated checker for this project.</p>
+<p>Day one: steps 0–4, plus the optional upstream stage (5½ hours). Day two: steps 5–7 (4 hours). The budgets are planning guidance, not timers or scores. If stuck, use a folded solution, explain it, then implement a variation. Work in your own editor; Python tests and cluster commands run explicitly in your terminal. Vibe Learn has no automated checker for this project.</p>
 <h3>Source map — after your first reading</h3>
-<p>The eight technical destinations in the article were reviewed, including the actual source and manifests. Follow these links to answer a specific question; you do not need to read the entire Kubernetes manual.</p>
+<p>Follow these links to answer a specific question; you do not need to read the entire Kubernetes manual.</p>
 <ul>
 <li><a href="https://kmitevski.com/writing-a-kubernetes-validating-webhook-using-python/">Earlier validating webhook article</a>: allowed versus denied responses and TLS setup. Its <a href="https://github.com/k-mitevski/kubernetes-validating-webhook">source</a> and <a href="https://github.com/k-mitevski/kubernetes-validating-webhook/blob/master/requirements.txt">requirements</a> use Flask/Gunicorn. Its <a href="https://en.wikipedia.org/wiki/Gunicorn">Gunicorn</a> and <a href="https://en.wikipedia.org/wiki/Web_Server_Gateway_Interface">WSGI</a> background links explain the older server stack; this lab uses FastAPI/Uvicorn and <a href="https://asgi.readthedocs.io/en/latest/introduction.html">ASGI</a>.</li>
 <li><a href="https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/#mutatingadmissionwebhook">Admission controllers</a>: where admission sits in the request lifecycle; the article's phase illustration motivates our admission diagram.</li>
@@ -30,8 +31,7 @@
 <li><a href="https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#response">Admission responses</a>: UID, allowed, patchType and encoded patch.</li>
 <li><a href="https://certificatetools.com/">CertificateTools</a>: SAN, CA and server certificate fields. We generate the keys locally with OpenSSL.</li>
 </ul>
-<p>Site menus, categories, tags, archives, author/privacy/theme links and decorative images are navigation rather than lab prerequisites. Technical references above are the study path; this is not an exhaustive recursive crawl of every linked website.</p>
-<h3>What we change from the example</h3><p>The original patch replaces the entire selector map and can discard existing constraints. Its registration matches CREATE only, uses Ignore with a 20-second timeout, and assumes a shared workload-template path. Here we preserve unrelated keys, handle UPDATE, test idempotence and diagnose Fail/Ignore. The historical image and dependency pins are not reused. JSON Patch is the mutation response format; <a href="https://kubernetes.io/docs/tasks/manage-kubernetes-objects/update-api-object-kubectl-patch/">other Kubernetes patch operations</a> also support other formats.</p>
+<h3>The article's code is a starting point, not a model</h3><p>The repository behind the article runs, but not cleanly on your cluster. The optional stage after Step 2 has you run it unchanged and find out why before you write your own. Expect that to be how an interview opens: "here's the code, get it running."</p>
 <p>Optional later discussion: Helm packaging, certificate rotation, availability, observability, and mutation versus reconciliation. A webhook changes a request; an operator repeatedly reconciles state. Building Terraform infrastructure, eBPF, an operator or a full telemetry stack is outside this eight-hour project.</p>
 <section class="session" id="doctor"><h2>Step 1 — Check your laptop</h2>
 <p>After reading the article, choose <strong>Workspace → Create workspace</strong> in the desktop app. It creates <code>Taskfile.yml</code> and <code>doctor.py</code> alongside the brief and assistant instructions. For an existing folder, attach it and choose <strong>Add missing workspace files</strong>; your existing files are kept. Choose Mentor for hints. Exported files are numbered from 01 by the app; their headings retain this lab's Step 0–7 numbering. Name the heading when asking AI for help.</p><p>Run the supplied diagnostics from the workspace root. The two files below are included for reference and for manual setup when using only the browser preview. <code>task doctor</code> never installs tools, changes kubeconfig, or creates cluster objects. It exits nonzero for blocking problems and continues reporting other checks. An absent cluster is NEXT during setup and FAIL under <code>--ready</code>.</p>
@@ -61,7 +61,7 @@ from pathlib import Path
 TOOLS = {
     &#x27;docker&#x27;: [&#x27;--version&#x27;],
     &#x27;k3d&#x27;: [&#x27;version&#x27;],
-    &#x27;kubectl&#x27;: [&#x27;version&#x27;, &#x27;--client&#x27;, &#x27;-o&#x27;, &#x27;json&#x27;],
+    &#x27;kubectl&#x27;: [&#x27;version&#x27;, &#x27;--client&#x27;],
     &#x27;k9s&#x27;: [&#x27;version&#x27;, &#x27;--short&#x27;],
     &#x27;task&#x27;: [&#x27;--version&#x27;],
     &#x27;python3&#x27;: [&#x27;--version&#x27;],
@@ -224,24 +224,75 @@ __pycache__/
 certs/
 .kubeconfig
 webhook.yaml
-webhook.json</code></pre>
+webhook.json
+workloads.json
+bad-ca.json
+upstream/</code></pre>
 <pre><code class="language-sh">docker build -t admission-lab:health-v1 .
 k3d image import admission-lab:health-v1 --cluster admission-lab
 kubectl create namespace admission-demo
 kubectl -n admission-demo create deployment hello --image=admission-lab:health-v1
 kubectl -n admission-demo rollout status deployment/hello --timeout=90s
 kubectl -n admission-demo port-forward deployment/hello 8080:8080</code></pre>
-<p>Keep the port-forward running. In a second terminal, <code>curl --fail http://127.0.0.1:8080/healthz</code> should return the expected JSON. Stop the port-forward with Ctrl+C afterward. A non-latest tag defaults to IfNotPresent on a newly created Pod; later manifests make that policy explicit.</p>
+<p>Keep the port-forward running. In a second terminal, <code>curl --fail http://127.0.0.1:8080/healthz</code> should return the expected JSON. Stop the port-forward with Ctrl+C afterward. A non-latest tag defaults to IfNotPresent on a newly created Pod; later manifests make that policy explicit. A <code>:latest</code> tag, or no tag at all, defaults to <code>Always</code>: the kubelet then tries Docker Hub, and the Pod fails with ErrImagePull even though you imported the image.</p>
 <pre><code class="language-sh">k9s --context k3d-admission-lab -n admission-demo</code></pre>
-<p>In k9s, open <code>:deploy</code>, then <code>:pods</code>, filter with <code>/hello</code>, inspect description with <code>d</code>, and logs with <code>l</code>. Use <code>?</code> for your installed version's keys. Compare with <code>kubectl -n admission-demo describe pod -l app=hello</code> and <code>kubectl -n admission-demo logs deployment/hello</code>. <a href="https://k9scli.io/topics/commands/">k9s commands</a>.</p>
+<p>In k9s, open <code>:deploy</code>, then <code>:pods</code>, filter with <code>/hello</code>, inspect description with <code>d</code>, and logs with <code>l</code>. Use <code>?</code> for your installed version's keys. Also try <code>:rs</code> (ReplicaSets), <code>:xray deploy admission-demo</code> (the Deployment → ReplicaSet → Pod tree), <code>:pulses</code>, and starting k9s with <code>--readonly</code> while you explore, so a stray key can't delete anything. Compare with <code>kubectl -n admission-demo describe pod -l app=hello</code> and <code>kubectl -n admission-demo logs deployment/hello</code>. <a href="https://k9scli.io/topics/commands/">k9s commands</a>.</p>
+<details><summary>Optional — two official k9s plugins</summary><p>k9s publishes <a href="https://github.com/derailed/k9s/tree/master/plugins">community plugins</a> in its own repository. Two help in this lab: <code>openssl.yaml</code> (Shift-O on a TLS Secret shows its subject, issuer, SANs and expiry) and <code>watch-events.yaml</code> (Shift-E watches events for the selected resource). Read each file first. k9s loads single plugin files from <code>~/.local/share/k9s/plugins/</code>:</p><pre><code class="language-sh">mkdir -p ~/.local/share/k9s/plugins
+curl -fsSLo ~/.local/share/k9s/plugins/openssl.yaml https://raw.githubusercontent.com/derailed/k9s/master/plugins/openssl.yaml
+curl -fsSLo ~/.local/share/k9s/plugins/watch-events.yaml https://raw.githubusercontent.com/derailed/k9s/master/plugins/watch-events.yaml</code></pre></details>
 <details><summary>Review answer and variation</summary><p>Build alone does not load a k3d node. A Ready Pod plus a successful curl proves more than “deployment created.” Change the returned JSON, build a new tag, import it, and update the Deployment image. Predict when a new ReplicaSet appears. Use new tags instead of reusing a cached tag.</p></details>
 <h3>AI mentor prompt</h3><blockquote>I am on Step 2. Ask me to explain the image stores, Deployment ownership and why a running Pod may not be reachable. Give one hint at a time. Do not edit files or reveal the solution unless I ask. After a solution, ask me to explain it and change one requirement.</blockquote>
+</section>
+<section class="session" id="upstream"><h2>Optional — Run the article's code unchanged</h2>
+<p>An interview built on this article will probably open with the author's repository: "get this running on your cluster." The code runs, but it was written for one laptop. Run it exactly as written first, so you know which problems belong to the code and which are yours. This stage needs internet: the manifests pull the author's image and <code>nginx:1.14.2</code> from Docker Hub.</p>
+<p>Before applying anything, read <code>main.py</code>, <code>models.py</code> and every file in <code>kubernetes_files/</code>. In your notes, predict what will happen on <em>your</em> cluster. Everything goes into the <code>default</code> namespace, as the author intended.</p>
+<pre><code class="language-sh">export KUBECONFIG="$PWD/.kubeconfig"
+git clone https://github.com/k-mitevski/kubernetes-mutating-webhook upstream
+kubectl apply -f upstream/kubernetes_files/secret.yaml -f upstream/kubernetes_files/deployment.yaml -f upstream/kubernetes_files/service.yaml
+kubectl rollout status deployment/mutating-webhook --timeout=120s
+kubectl apply -f upstream/kubernetes_files/mutate-config.yaml
+kubectl apply -f upstream/kubernetes_files/test.yaml</code></pre>
+<p>If the workloads look untouched rather than broken, that is a finding too. Read the API server log before anything else (first hint below), then delete and reapply <code>test.yaml</code>.</p>
+<p>Now find everything that is wrong, from k9s alone. There are at least four problems you can see in the cluster and more you can see in the code. Places to look: the Pods' NODE and STATUS columns, the DaemonSet's DESIRED count, <code>d</code> on a Pending Pod, <code>y</code> on <code>nginx-deployment-with-label</code>, <code>l</code> on the webhook, and the image the webhook Pod runs.</p>
+<p>Then try the move you would naturally make next: give the webhook its own namespace.</p>
+<pre><code class="language-sh">kubectl create namespace upstream-system
+kubectl -n upstream-system apply -f upstream/kubernetes_files/secret.yaml -f upstream/kubernetes_files/deployment.yaml -f upstream/kubernetes_files/service.yaml
+kubectl -n upstream-system get pods -o wide</code></pre>
+<p>Work out why the new Pod is in that state before opening a hint. Then retire the original, unstick the copy, point the registration at it and make failures visible:</p>
+<pre><code class="language-sh">kubectl delete deployment mutating-webhook
+kubectl -n upstream-system patch deployment mutating-webhook --type=json -p '[{"op":"remove","path":"/spec/template/spec/nodeSelector"}]'
+kubectl -n upstream-system rollout status deployment/mutating-webhook --timeout=90s
+kubectl patch mutatingwebhookconfiguration mutating-webhook --type=json -p '[{"op":"replace","path":"/webhooks/0/clientConfig/service/namespace","value":"upstream-system"},{"op":"replace","path":"/webhooks/0/failurePolicy","value":"Fail"}]'
+kubectl create deployment probe --image=nginx:1.14.2</code></pre>
+<p>Last, try the code itself the way a test would. From your Step 2 virtual environment:</p>
+<pre><code class="language-sh">(cd upstream &amp;&amp; NODE_POOL='a: b' python3 -c 'import main')</code></pre>
+<p>Clean up in this order. The registration goes first: it intercepts Deployment creation in every namespace.</p>
+<pre><code class="language-sh">kubectl delete mutatingwebhookconfiguration mutating-webhook
+kubectl delete -f upstream/kubernetes_files/test.yaml --ignore-not-found
+kubectl delete deployment probe --ignore-not-found
+kubectl delete namespace upstream-system
+kubectl delete -f upstream/kubernetes_files/service.yaml -f upstream/kubernetes_files/secret.yaml --ignore-not-found</code></pre>
+<details><summary>Hint — where to start</summary><p>Start from the user's view: did the workloads end up where they should? Then the controllers' view (Deployment and DaemonSet status), the scheduler's view (Pod events), the webhook's view (its logs), and last the API server's view: <code>docker logs k3d-admission-lab-server-0 2>&amp;1 | grep -iE 'calling webhook|failing open|x509'</code>.</p></details>
+<details><summary>Hint — the Pod in upstream-system</summary><p>Open its YAML and find <code>nodeSelector</code>. Who put it there? Which registration rules match a Deployment created in any namespace?</p></details>
+<details><summary>Review answer — what is wrong with the original</summary><table><thead><tr><th>Problem</th><th>What you see</th></tr></thead><tbody>
+<tr><td><code>NODE_POOL</code> is <code>kubernetes.io/hostname: docker-desktop</code>, a node that exists only on Docker Desktop</td><td>Mutated Pods stay Pending: <code>0/2 nodes are available: 2 node(s) didn't match Pod's node affinity/selector</code>. The DaemonSet shows DESIRED 0, which is not an error at all, so nothing complains.</td></tr>
+<tr><td>The Deployment runs <code>kmitevski/mutating-webhook:v1</code> from Docker Hub</td><td>You built nothing, which was the assignment, and it cannot run offline.</td></tr>
+<tr><td>The certificate, <strong>private key</strong>, Secret and caBundle are committed to git; the only SAN is <code>mutating-webhook.default.svc</code></td><td>It works only in <code>default</code> under that exact Service name, and anyone can impersonate the webhook.</td></tr>
+<tr><td><code>failurePolicy: Ignore</code>, <code>timeoutSeconds: 20</code></td><td>When the call fails, objects are created unmutated and nothing reports it. Only the API server log says <code>failing open</code>.</td></tr>
+<tr><td>The patch <code>replace</code>s the whole <code>nodeSelector</code></td><td><code>nginx-deployment-with-label</code> loses <code>test: test</code>.</td></tr>
+<tr><td>The handler reads <code>object.spec.template.spec</code> directly</td><td>Any object shaped differently, such as a Pod or CronJob, raises KeyError, so HTTP 500, which Ignore hides.</td></tr>
+<tr><td>No <code>namespaceSelector</code></td><td>It mutates every namespace, including its own copy in <code>upstream-system</code>, which goes Pending on a node that does not exist.</td></tr>
+<tr><td>At import, <code>main.py</code> removes <code>uvicorn_logger.handlers[0]</code> and exits if <code>NODE_POOL</code> is unset</td><td><code>IndexError: list index out of range</code>: no test can import it.</td></tr>
+<tr><td><code>requirements.txt</code> is UTF-16 (a Windows <code>pip freeze</code>), pins 2022 versions, and uses an end-of-life Debian base image</td><td>pip still copes with UTF-16 today. It is a smell, not a failure.</td></tr>
+<tr><td><code>node_pool.split(":")</code></td><td>Breaks on any value that contains a colon.</td></tr>
+<tr><td>No readiness probe</td><td><code>rollout status</code> succeeds as soon as the container starts, before Uvicorn listens. Writes in that window fail with a <code>proxy error … 502</code>, and Ignore admits them unmutated. On a first run, <code>test.yaml</code> can land in exactly that window.</td></tr>
+</tbody></table><p>After the namespace move and the switch to Fail, <code>probe</code> is rejected with <code>tls: failed to verify certificate: x509: certificate is valid for mutating-webhook.default.svc, not mutating-webhook.upstream-system.svc</code>. The API server checks the certificate against the name it dials, and a new namespace means a new name.</p></details>
+<details><summary>Review answer — what you would fix first</summary><p>Build your own image from a current base. Generate a CA and serving certificate per environment and never commit keys. Add a namespaceSelector that excludes the webhook's own namespace. Patch one selector key instead of replacing the map. Allow unknown kinds instead of failing. Make failures visible. That list is Steps 3 and 4 of this lab.</p></details>
+<h3>AI mentor prompt</h3><blockquote>I am on the optional upstream stage. Ask me what I predicted before I applied the manifests, then help me find each problem from k9s evidence. Give one hint at a time. Do not edit files or reveal the solution unless I ask. After a solution, ask me to explain it and change one requirement.</blockquote>
 </section>
 <section class="session" id="mutation"><h2>Step 3 — Implement and test mutation</h2>
 <p>Keep /healthz and add POST /mutate. Separate a pure <code>build_patch(object)</code> function from HTTP response handling. Do not import a Kubernetes client: the API server supplies the object and applies your returned patch.</p>
 <ul><li>For apps/v1 Deployment, StatefulSet and DaemonSet CREATE/UPDATE requests, enforce <code>lab.example.com/pool=observability</code> at <code>spec.template.spec.nodeSelector</code>.</li><li>Preserve unrelated selectors and all other fields. Replace only the policy-owned key if conflicting. An already-compliant object returns no patch.</li><li>Use v1 AdmissionReview, echo request.uid, and encode the JSON operation array as UTF-8 then base64. Include patchType JSONPatch only when returning a patch.</li><li>Allow unsupported kinds, operations and subresources unchanged. Return HTTP 400 for a malformed envelope; FastAPI returns 422 for invalid JSON. A supported object missing the required template yields HTTP 200 with allowed:false and a useful status message. Unexpected server faults remain HTTP failures.</li><li>Log UID, kind, namespace, operation, result and elapsed milliseconds. Do not log the entire submitted object.</li></ul>
-<figure><img src="assets/kubernetes-admission-lab/patch-map.svg" alt="JSON Patch changes only the owned pool key; the linux selector survives, and a second evaluation needs no patch." width="340"><figcaption>JSON Patch changes only the owned pool key; the linux selector survives, and a second evaluation needs no patch.</figcaption></figure>
-<p><code>add</code> on an existing object member replaces its value. When the map is absent, add the map first; when it exists, address the individual key. Escape <code>~</code> to <code>~0</code>, then <code>/</code> to <code>~1</code>. A returned patch is a recipe, not the full modified object.</p>
 <h3>Tests to write</h3><p>Use pytest, FastAPI TestClient/httpx and jsonpatch. Check missing/empty selector maps, an unrelated selector, a conflicting owned key, all three kinds, CREATE/UPDATE, unsupported requests, malformed envelopes, explicit denial, UID equality, valid base64, dry-run, and no-op idempotence. Apply the patch to a copy and assert that the input was not changed.</p>
 <p>Save as <code>requirements-dev.txt</code>:</p><pre data-file="requirements-dev.txt"><code class="language-text">-r requirements.txt
 pytest==8.3.5
@@ -251,6 +302,7 @@ jsonpatch==1.33</code></pre>
 <pre><code class="language-sh">python3 -m pytest -q</code></pre>
 <details><summary>Hint 1 — separate responsibilities</summary><p>Have the pure function return a list of operations. Test that list independently before adding base64 or an HTTP endpoint.</p></details>
 <details><summary>Hint 2 — response envelope</summary><pre><code class="language-json">{&quot;apiVersion&quot;:&quot;admission.k8s.io/v1&quot;,&quot;kind&quot;:&quot;AdmissionReview&quot;,&quot;response&quot;:{&quot;uid&quot;:&quot;copy-from-request&quot;,&quot;allowed&quot;:true}}</code></pre><p>For mutation add patchType and patch inside response. A denial is still HTTP 200; it is a successful webhook call reporting a negative decision.</p></details>
+<details><summary>Review answer — the shape of a good patch</summary><figure><img src="assets/kubernetes-admission-lab/patch-map.svg" alt="JSON Patch changes only the owned pool key; the linux selector survives, and a second evaluation needs no patch." width="340"><figcaption>JSON Patch changes only the owned pool key; the linux selector survives, and a second evaluation needs no patch.</figcaption></figure><p><code>add</code> on an existing object member replaces its value. When the map is absent, add the map first; when it exists, address the individual key. Escape <code>~</code> to <code>~0</code>, then <code>/</code> to <code>~1</code>. A returned patch is a recipe, not the full modified object.</p></details>
 <details><summary>Optional reference solution — main.py</summary><p>Save as <code>main.py</code>:</p><pre data-file="main.py"><code class="language-python">import base64
 import json
 import logging
@@ -453,14 +505,14 @@ def test_malformed_envelope_is_logged(caplog):
 <figure><img class="motion-animated" src="assets/kubernetes-admission-lab/admission-flow-animated.svg" alt="Admission sequence: authenticate and authorize, mutate, validate, persist, then reconcile and schedule. Highlights stop after 4.8 seconds." width="340"><img class="motion-static" src="assets/kubernetes-admission-lab/admission-flow.svg" alt="Admission sequence: authenticate and authorize, mutate, validate, persist, then reconcile and schedule. Highlights stop after 4.8 seconds." width="340"><figcaption>Admission sequence: authenticate and authorize, mutate, validate, persist, then reconcile and schedule. Highlights stop after 4.8 seconds. A static counterpart is shown when reduced motion is enabled.</figcaption></figure>
 <ol><li>The API server authenticates and authorizes a write.</li><li>Matching admission rules call the HTTPS webhook with an AdmissionReview.</li><li>The API server applies the returned patch and completes validation.</li><li>Only an accepted write is persisted. Server-side dry-run traverses admission without this persistence step.</li><li>Controllers and the scheduler act afterward. New Pods have their own admission; this lab registers workload-template mutation only.</li></ol>
 <figure><img src="assets/kubernetes-admission-lab/tls-wiring.svg" alt="CA trust, Service DNS identity, endpoint routing and mounted certificate files are separate links to verify." width="340"><figcaption>CA trust, Service DNS identity, endpoint routing and mounted certificate files are separate links to verify.</figcaption></figure>
-<p>The webhook's namespace must stay outside its own policy. A TLS probe can be healthy while the API server rejects the certificate; Kubernetes HTTPS probes do not establish this CA/SAN trust for you. Registration should be the last deployment step.</p>
+<p>The webhook's namespace must stay outside its own policy. A TLS probe can be healthy while the API server rejects the certificate; Kubernetes HTTPS probes do not establish this CA/SAN trust for you. Registration should be the last deployment step.</p><p>The API server does not send the request through the Service's ClusterIP. It looks up the Service's ready endpoints itself and dials a Pod IP on the targetPort, checking the certificate against <code>placement-webhook.admission-system.svc</code>. It also keeps those connections open between requests.</p>
 <h3>Write the configuration</h3><p>Create a locally signed server certificate for <code>placement-webhook.admission-system.svc</code>. Mount it from placement-tls. Serve HTTPS on 8443, expose Service port 443, select only namespaces labeled <code>lab.example.com/admission=enabled</code>, and register apps/v1 deployments/statefulsets/daemonsets CREATE and UPDATE. Use v1 reviews, sideEffects None, timeoutSeconds 3 and failurePolicy Fail.</p>
 <details><summary>Hint — distinguish the two certificates</summary><p>The API server needs the CA certificate in caBundle. The serving Pod needs the server certificate and its private key. The CA private key is only used locally for signing. The server certificate SAN must match the Service identity.</p></details>
 <details><summary>Supplied certificate helper — certificates.sh</summary><p>Save as <code>certificates.sh</code>:</p><pre data-file="certificates.sh"><code class="language-sh">#!/usr/bin/env bash
 set -euo pipefail
 mkdir -p certs
 umask 077
-openssl req -x509 -newkey rsa:2048 -nodes -days 7 \
+openssl req -x509 -newkey rsa:2048 -nodes -days 90 \
   -keyout certs/ca.key -out certs/ca.crt -subj &#x27;/CN=Admission Lab CA&#x27; \
   -addext &#x27;basicConstraints=critical,CA:TRUE&#x27; \
   -addext &#x27;keyUsage=critical,keyCertSign,cRLSign&#x27;
@@ -473,7 +525,7 @@ extendedKeyUsage=serverAuth
 subjectAltName=DNS:placement-webhook.admission-system.svc
 EXT
 openssl x509 -req -in certs/tls.csr -CA certs/ca.crt -CAkey certs/ca.key \
-  -CAcreateserial -out certs/tls.crt -days 7 -sha256 -extfile certs/server.ext
+  -CAcreateserial -out certs/tls.crt -days 90 -sha256 -extfile certs/server.ext
 openssl verify -CAfile certs/ca.crt -verify_hostname placement-webhook.admission-system.svc certs/tls.crt</code></pre></details>
 <details><summary>Optional serving manifests — serving.yaml</summary><p>Save as <code>serving.yaml</code>:</p><pre data-file="serving.yaml"><code class="language-yaml">apiVersion: v1
 kind: Namespace
@@ -618,8 +670,9 @@ kubectl get namespace admission-system --show-labels</code></pre>
 <details><summary>Review answer — idempotence is broader than reinvocation</summary><p>Even with default reinvocationPolicy Never, users can submit an already-mutated object and UPDATE calls can repeat. The pure patch tests establish the no-op property. An admission webhook cannot guarantee the final policy against all later mutations; production enforcement may also require validation. See <a href="https://kubernetes.io/docs/concepts/cluster-administration/admission-webhooks-good-practices/">webhook good practices</a>.</p></details>
 <h3>AI mentor prompt</h3><blockquote>I am on Step 4. Ask me to trace the TLS and admission diagrams, then help verify evidence rather than just checking that kubectl apply succeeded. Give one hint at a time. Do not edit files or reveal the solution unless I ask. After a solution, ask me to explain it and change one requirement.</blockquote>
 </section>
-<section class="session" id="diagnosis"><h2>Step 5 — Investigate five failures</h2>
+<section class="session" id="diagnosis"><h2>Step 5 — Investigate nine failures</h2>
 <p>Run one experiment at a time in the dedicated lab and restore it before the next. Predict the symptom, name the layer, gather evidence, then change one thing. Admission failure may mean the object never exists; there may be no Pod and no Pod events.</p>
+<p>Each card's heading names only the symptom. The commands that cause it, the hints and the answer are folded. For a real drill, ask your AI mentor or a friend to pick a card at random and run its <em>Break it</em> block, telling you only the heading. Diagnose from k9s before you open anything else.</p>
 <figure><img src="assets/kubernetes-admission-lab/failure-map.svg" alt="Find the boundary: admission decision or transport, scheduling, image retrieval, then application health." width="340"><figcaption>Find the boundary: admission decision or transport, scheduling, image retrieval, then application health.</figcaption></figure>
 <table><thead><tr><th>k9s view/action</th><th>kubectl equivalent</th><th>Evidence</th></tr></thead><tbody>
 <tr><td>:ns, :ctx</td><td>config current-context; get namespaces</td><td>Correct cluster and scope</td></tr>
@@ -627,28 +680,26 @@ kubectl get namespace admission-system --show-labels</code></pre>
 <tr><td>d on Pod; :events</td><td>describe pod; get events --sort-by=.metadata.creationTimestamp</td><td>Scheduler and image errors</td></tr>
 <tr><td>:svc; :endpointslices</td><td>-n admission-system get svc,endpointslices</td><td>Selectors, ports, ready backends</td></tr>
 <tr><td>l on webhook Pod</td><td>-n admission-system logs deployment/placement-webhook</td><td>Did a request arrive?</td></tr>
-<tr><td>Manifest view (see ?)</td><td>get deployment demo-deploy -o yaml</td><td>Persisted selector, not local YAML</td></tr></tbody></table>
-<h3>1 · Image present only on the laptop</h3><p>Make a new local tag and deliberately omit import. With imagePullPolicy Never, the node must use its cache, making this failure deterministic.</p>
-<pre><code class="language-sh">docker tag admission-lab:v1 admission-lab:missing-import
-kubectl -n admission-demo run image-fault --image=admission-lab:missing-import --image-pull-policy=Never
-kubectl -n admission-demo describe pod image-fault</code></pre>
-<details><summary>Hint — compare stores</summary><p>Expect ErrImageNeverPull: the laptop has the tag, but the node does not. With IfNotPresent an attempted registry pull can instead produce ImagePullBackOff.</p></details>
-<details><summary>Repair image import</summary><pre><code class="language-sh">k3d image import admission-lab:missing-import --cluster admission-lab
+<tr><td>Manifest view (see ?)</td><td>get deployment demo-deploy -o yaml</td><td>Persisted selector, not local YAML</td></tr><tr><td>No view: the API server runs outside the cluster</td><td><code>docker logs k3d-admission-lab-server-0 2&gt;&amp;1 | grep -iE &#x27;calling webhook|failing open|x509&#x27;</code></td><td>What the API server said about the call, including failures that were ignored</td></tr></tbody></table>
+<h3>1 · A new Pod never becomes Ready</h3><p>A Pod is created from a freshly tagged image.</p>
+<details><summary>Break it</summary><pre><code class="language-sh">docker tag admission-lab:v1 admission-lab:missing-import
+kubectl -n admission-demo run image-fault --image=admission-lab:missing-import --image-pull-policy=Never</code></pre></details>
+<details><summary>Hint — compare stores</summary><p>Where does the image exist, and where does the kubelet look for it? Describe the Pod.</p></details>
+<details><summary>Answer and repair</summary><p><code>ErrImageNeverPull</code>: the laptop's Docker has the tag, but the node's runtime does not. With <code>IfNotPresent</code> the kubelet would instead try a registry and end in <code>ErrImagePull</code> / <code>ImagePullBackOff</code>.</p><pre><code class="language-sh">k3d image import admission-lab:missing-import --cluster admission-lab
 kubectl -n admission-demo delete pod image-fault
 kubectl -n admission-demo run image-fault --image=admission-lab:missing-import --image-pull-policy=Never
 kubectl -n admission-demo wait --for=condition=Ready pod/image-fault --timeout=90s
 kubectl -n admission-demo delete pod image-fault</code></pre></details>
-<h3>2 · Service with no endpoints</h3><p>Break only the Service selector, then issue an admission-triggering write:</p>
-<pre><code class="language-sh">kubectl -n admission-system patch service placement-webhook --type=merge -p &#x27;{&quot;spec&quot;:{&quot;selector&quot;:{&quot;app&quot;:&quot;missing&quot;}}}&#x27;
-kubectl -n admission-system get endpointslices -l kubernetes.io/service-name=placement-webhook
-kubectl -n admission-demo create deployment service-fault --image=admission-lab:v1</code></pre>
-<details><summary>Hint — healthy Pod, unreachable service</summary><p>The webhook Pod can stay Ready while its Service selects no endpoints. Wait for EndpointSlice updates before interpreting the write. Expect an admission call failure; service-fault should not exist.</p></details>
-<details><summary>Repair Service selector</summary><pre><code class="language-sh">kubectl -n admission-system patch service placement-webhook --type=merge -p &#x27;{&quot;spec&quot;:{&quot;selector&quot;:{&quot;app&quot;:&quot;placement-webhook&quot;}}}&#x27;
+<h3>2 · Workload creates fail after a change in admission-system</h3><p>Creating a Deployment in <code>admission-demo</code> is rejected. The webhook Pod still shows Ready.</p>
+<details><summary>Break it</summary><pre><code class="language-sh">kubectl -n admission-system patch service placement-webhook --type=merge -p &#x27;{&quot;spec&quot;:{&quot;selector&quot;:{&quot;app&quot;:&quot;missing&quot;}}}&#x27;
+kubectl -n admission-demo create deployment service-fault --image=admission-lab:v1</code></pre></details>
+<details><summary>Hint — healthy Pod, unreachable webhook</summary><p>Read the end of the error message. Then compare the Service's selector with the webhook Pod's labels, and look at its EndpointSlices.</p></details>
+<details><summary>Answer and repair</summary><p><code>failed calling webhook &quot;placement.lab.example.com&quot;: ... no endpoints available for service &quot;placement-webhook&quot;</code>. The Service selects no Pods, so it has no endpoints, and with Fail the write is refused. Wait for the EndpointSlice to update before trusting a retry.</p><pre><code class="language-sh">kubectl -n admission-system patch service placement-webhook --type=merge -p &#x27;{&quot;spec&quot;:{&quot;selector&quot;:{&quot;app&quot;:&quot;placement-webhook&quot;}}}&#x27;
 kubectl -n admission-system get endpointslices -l kubernetes.io/service-name=placement-webhook
 kubectl -n admission-demo create deployment service-fault --image=admission-lab:v1
-kubectl -n admission-demo delete deployment service-fault</code></pre><p>Retry the create after a ready endpoint is visible. If the initial test raced propagation and created the object, delete that lab object first.</p></details>
-<h3>3 · Wrong CA trust</h3><p>Create an unrelated CA and replace caBundle. The server certificate and running Pod remain unchanged.</p>
-<pre><code class="language-sh">openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj &#x27;/CN=Wrong Lab CA&#x27;   -keyout certs/wrong.key -out certs/wrong.crt
+kubectl -n admission-demo delete deployment service-fault</code></pre><p>If the first create raced the change and succeeded, delete it before retrying.</p></details>
+<h3>3 · Workload creates fail with a certificate error</h3><p>The webhook Pod, its Secret and the Service are unchanged.</p>
+<details><summary>Break it</summary><pre><code class="language-sh">openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj &#x27;/CN=Wrong Lab CA&#x27; -keyout certs/wrong.key -out certs/wrong.crt
 python3 - &lt;&lt;&#x27;PATCH&#x27;
 import base64, json
 from pathlib import Path
@@ -656,43 +707,92 @@ Path(&#x27;bad-ca.json&#x27;).write_text(json.dumps([{&#x27;op&#x27;:&#x27;repla
  &#x27;value&#x27;:base64.b64encode(Path(&#x27;certs/wrong.crt&#x27;).read_bytes()).decode()}]))
 PATCH
 kubectl patch mutatingwebhookconfiguration placement-webhook --type=json --patch-file=bad-ca.json
-kubectl -n admission-demo create deployment tls-fault --image=admission-lab:v1</code></pre>
-<details><summary>Hint — certificate identity versus trust</summary><p>Expect a certificate verification error, not an application admission log. A wrong SAN causes a hostname error; a wrong CA causes an issuer/trust error. Both happen before the HTTP handler.</p></details>
-<details><summary>Repair TLS trust</summary><pre><code class="language-sh">kubectl apply -f webhook.json
+kubectl -n admission-demo create deployment tls-fault --image=admission-lab:v1</code></pre></details>
+<details><summary>Hint — identity versus trust</summary><p>A TLS failure happens before your handler runs, so the webhook log is empty. Which part of the certificate check failed: the name, or who signed it?</p></details>
+<details><summary>Answer and repair</summary><p><code>tls: failed to verify certificate: x509: certificate signed by unknown authority</code>. The caBundle names a CA that did not sign the serving certificate.</p><pre><code class="language-sh">kubectl apply -f webhook.json
 openssl verify -CAfile certs/ca.crt -verify_hostname placement-webhook.admission-system.svc certs/tls.crt
 kubectl -n admission-demo create deployment tls-fault --image=admission-lab:v1
-kubectl -n admission-demo delete deployment tls-fault</code></pre><p>Allow registration propagation and retry if needed. Never use curl -k as evidence that API-server trust works.</p></details>
-<h3>4 · Unavailable webhook: Fail versus Ignore</h3>
+kubectl -n admission-demo delete deployment tls-fault</code></pre><p>Allow registration to propagate and retry if needed. Never treat <code>curl -k</code> as evidence that API-server trust works.</p></details>
+<h3>4 · Workload creates fail with a different certificate error</h3><p>Again the webhook Pod and its Secret are unchanged.</p>
+<details><summary>Break it</summary><pre><code class="language-sh">kubectl -n admission-system expose deployment placement-webhook --name=placement-webhook-v2 --port=443 --target-port=https
+kubectl patch mutatingwebhookconfiguration placement-webhook --type=json -p &#x27;[{&quot;op&quot;:&quot;replace&quot;,&quot;path&quot;:&quot;/webhooks/0/clientConfig/service/name&quot;,&quot;value&quot;:&quot;placement-webhook-v2&quot;}]&#x27;
+kubectl -n admission-demo create deployment san-fault --image=admission-lab:v1</code></pre></details>
+<details><summary>Hint — which name was dialed?</summary><p>The error names two things. Compare the hostname in the URL with the names the certificate lists.</p></details>
+<details><summary>Answer and repair</summary><p><code>x509: certificate is valid for placement-webhook.admission-system.svc, not placement-webhook-v2.admission-system.svc</code>. The registration now points at a second Service. It reaches the same Pod, but the API server checks the certificate against the name it dialed. Go checks the name before the signer, so if the name and the CA were both wrong, this is the only error you would see.</p><pre><code class="language-sh">kubectl apply -f webhook.json
+kubectl -n admission-system delete service placement-webhook-v2
+kubectl -n admission-demo create deployment san-fault --image=admission-lab:v1
+kubectl -n admission-demo delete deployment san-fault</code></pre></details>
+<h3>5 · Workload creates fail with a proxy error</h3><p>The webhook was restarted recently, and creates now fail with a message about a proxy.</p>
+<details><summary>Break it</summary><pre><code class="language-sh">kubectl -n admission-system patch service placement-webhook --type=json -p &#x27;[{&quot;op&quot;:&quot;replace&quot;,&quot;path&quot;:&quot;/spec/ports/0/targetPort&quot;,&quot;value&quot;:9443}]&#x27;
+kubectl -n admission-system rollout restart deployment/placement-webhook
+kubectl -n admission-system rollout status deployment/placement-webhook --timeout=90s
+kubectl -n admission-demo create deployment port-fault --image=admission-lab:v1</code></pre></details>
+<details><summary>Hint — the address in the message</summary><p>Look at the IP and port the API server tried. Whose IP is it, and does anything listen on that port?</p></details>
+<details><summary>Answer and repair</summary><p><code>proxy error from 127.0.0.1:6443 while dialing 10.42.x.y:9443, code 502: 502 Bad Gateway</code>. The Service's targetPort points where nothing listens. k3s routes API-server traffic to Pods through its own tunnel, so a refused connection reads as a proxy 502; on EKS or GKE you would see <code>connect: connection refused</code>. The address is a Pod IP: the API server dials endpoints directly. The restart in the break matters, because the API server keeps connections alive and would otherwise keep using the old, working ones.</p><pre><code class="language-sh">kubectl -n admission-system patch service placement-webhook --type=json -p &#x27;[{&quot;op&quot;:&quot;replace&quot;,&quot;path&quot;:&quot;/spec/ports/0/targetPort&quot;,&quot;value&quot;:&quot;https&quot;}]&#x27;
+kubectl -n admission-demo create deployment port-fault --image=admission-lab:v1
+kubectl -n admission-demo delete deployment port-fault</code></pre></details>
+<h3>6 · Workloads are created, but nothing is mutated</h3><p>A new Deployment in <code>admission-demo</code> is created without errors, but without the pool selector.</p>
+<details><summary>Break it</summary><pre><code class="language-sh">kubectl patch mutatingwebhookconfiguration placement-webhook --type=json -p &#x27;[{&quot;op&quot;:&quot;replace&quot;,&quot;path&quot;:&quot;/webhooks/0/namespaceSelector/matchLabels&quot;,&quot;value&quot;:{&quot;lab.example.com/admission&quot;:&quot;enable&quot;}}]&#x27;
+kubectl -n admission-demo create deployment silent-fault --image=admission-lab:v1
+kubectl -n admission-demo get deployment silent-fault -o jsonpath=&#x27;{.spec.template.spec.nodeSelector}&#x27;</code></pre></details>
+<details><summary>Hint — did the request arrive?</summary><p>Check the webhook's log for this request, then the API server log. If neither mentions it, the API server never decided to call the webhook. What decides that?</p></details>
+<details><summary>Answer and repair</summary><p>The namespaceSelector now wants <code>lab.example.com/admission: enable</code>, and the namespace says <code>enabled</code>. No request matches, so nothing is called and nothing reports an error anywhere. The empty webhook log is the clue. Compare the registration's selector with the namespace's labels.</p><pre><code class="language-sh">kubectl apply -f webhook.json
+kubectl -n admission-demo delete deployment silent-fault</code></pre></details>
+<h3>7 · The webhook is down: compare Fail and Ignore</h3><p>This card is an experiment, not a mystery. Stop the webhook, then try a write under each failure policy.</p>
 <pre><code class="language-sh">kubectl -n admission-system scale deployment placement-webhook --replicas=0
 kubectl -n admission-system wait --for=delete pod -l app=placement-webhook --timeout=60s
 kubectl -n admission-demo create deployment fail-closed --image=admission-lab:v1
-# Expect failure. Now change the failure policy.
-kubectl patch mutatingwebhookconfiguration placement-webhook --type=json   -p &#x27;[{&quot;op&quot;:&quot;replace&quot;,&quot;path&quot;:&quot;/webhooks/0/failurePolicy&quot;,&quot;value&quot;:&quot;Ignore&quot;}]&#x27;
+kubectl patch mutatingwebhookconfiguration placement-webhook --type=json -p &#x27;[{&quot;op&quot;:&quot;replace&quot;,&quot;path&quot;:&quot;/webhooks/0/failurePolicy&quot;,&quot;value&quot;:&quot;Ignore&quot;}]&#x27;
 kubectl -n admission-demo create deployment fail-open --image=admission-lab:v1
-kubectl -n admission-demo get deployment fail-open -o jsonpath=&#x27;{.spec.template.spec.nodeSelector}&#x27;</code></pre>
-<details><summary>Hint — Ignore is not an override for denial</summary><p>Ignore skips webhook call failures. It does not override a valid allowed:false response. Fail-open should exist without the injected selector; retry after configuration propagation if initially rejected.</p></details>
-<details><summary>Restore serving and policy</summary><pre><code class="language-sh">kubectl -n admission-system scale deployment placement-webhook --replicas=1
+kubectl -n admission-demo get deployment fail-open -o jsonpath=&#x27;{.spec.template.spec.nodeSelector}&#x27;
+docker logs k3d-admission-lab-server-0 2&gt;&amp;1 | grep -i &#x27;failing open&#x27; | tail -3</code></pre>
+<details><summary>Hint — Ignore is not an override for denial</summary><p>Ignore skips webhook <em>call failures</em>. It does not override a valid <code>allowed:false</code> response. Retry after configuration propagation if the first create is still rejected.</p></details>
+<details><summary>Answer and restore</summary><p>Under Fail, <code>fail-closed</code> is refused with <code>no endpoints available</code>. Under Ignore, <code>fail-open</code> is created without the selector, and kubectl, events and the webhook all stay quiet. The only witness is the API server log: <code>Failed calling webhook, failing open placement.lab.example.com: ...</code>, plus the <code>apiserver_admission_webhook_*</code> metrics. Failing open without monitoring is just failing quietly.</p><pre><code class="language-sh">kubectl -n admission-system scale deployment placement-webhook --replicas=1
 kubectl -n admission-system rollout status deployment/placement-webhook --timeout=90s
 kubectl apply -f webhook.json
-kubectl -n admission-demo delete deployment fail-open --ignore-not-found</code></pre><p>Discuss availability versus enforcement. A production mutation default may fail open and rely on separate validation; the lab uses Fail to expose wiring errors.</p></details>
-<h3>5 · Admitted, but no eligible node</h3><p>Removing a node label does not evict already-running Pods. Create a new Deployment to expose the scheduling failure.</p>
-<pre><code class="language-sh">kubectl label node k3d-admission-lab-agent-0 lab.example.com/pool-
+kubectl -n admission-demo delete deployment fail-open fail-closed --ignore-not-found</code></pre><p>Discuss availability versus enforcement. A production mutation may fail open and rely on separate validation; the lab uses Fail to expose wiring errors.</p></details>
+<h3>8 · You can't redeploy the webhook</h3><p>The webhook was deleted for a clean redeploy, and now <code>serving.yaml</code> won't apply.</p>
+<details><summary>Break it</summary><pre><code class="language-sh">kubectl label namespace admission-system lab.example.com/admission=enabled
+kubectl -n admission-system delete deployment placement-webhook
+kubectl apply -f serving.yaml</code></pre></details>
+<details><summary>Hint — who admits the webhook?</summary><p>Creating the webhook's Deployment is itself a write. Which registration matches it, and what has to be running to answer?</p></details>
+<details><summary>Answer and repair</summary><p><code>no endpoints available for service &quot;placement-webhook&quot;</code> on the webhook's own Deployment. Its namespace now matches its own registration, so creating the webhook requires the webhook, and with Fail the API server refuses. This is the deadlock that the namespaceSelector exclusion in Step 4 exists to prevent. The emergency exit is deleting the registration.</p><pre><code class="language-sh">kubectl label namespace admission-system lab.example.com/admission-
+kubectl apply -f serving.yaml
+kubectl -n admission-system rollout status deployment/placement-webhook --timeout=90s
+kubectl apply -f webhook.json</code></pre></details>
+<h3>9 · Admitted, but Pods never start</h3><p>A node label was removed. Create a new Deployment and watch what happens to it, and to the existing workloads.</p>
+<details><summary>Break it</summary><pre><code class="language-sh">kubectl label node k3d-admission-lab-agent-0 lab.example.com/pool-
 kubectl -n admission-demo create deployment scheduling-fault --image=admission-lab:v1
-kubectl -n admission-demo get deployment scheduling-fault -o jsonpath=&#x27;{.spec.template.spec.nodeSelector}&#x27;
-kubectl -n admission-demo describe pod -l app=scheduling-fault</code></pre>
-<details><summary>Hint — inspect the persisted selector</summary><p>The Deployment exists and contains observability. Its Pod remains Pending with node-selector mismatch evidence. Admission worked; scheduling cannot satisfy the policy.</p></details>
-<details><summary>Restore the label and verify recovery</summary><pre><code class="language-sh">kubectl label node k3d-admission-lab-agent-0 lab.example.com/pool=observability --overwrite
+kubectl -n admission-demo get deploy,ds,pods -o wide</code></pre></details>
+<details><summary>Hint — inspect the persisted selector</summary><p>The Deployment exists and contains the observability selector. Read its Pod's events. Then compare the existing Deployment Pods with the DaemonSet.</p></details>
+<details><summary>Answer and repair</summary><p>The new Pod stays Pending: <code>0/2 nodes are available: 2 node(s) didn't match Pod's node affinity/selector</code>. Admission worked; scheduling cannot satisfy the policy. Already-running Deployment Pods keep running, because the scheduler only places new Pods. The DaemonSet is different: its controller removes <code>demo-daemon</code>'s Pod from the node that no longer matches, and DESIRED drops to 0 without any error.</p><pre><code class="language-sh">kubectl label node k3d-admission-lab-agent-0 lab.example.com/pool=observability --overwrite
 kubectl -n admission-demo rollout status deployment/scheduling-fault --timeout=90s
-kubectl -n admission-demo get pods -l app=scheduling-fault -o wide
+kubectl -n admission-demo rollout status daemonset/demo-daemon --timeout=90s
+kubectl -n admission-demo get ds demo-daemon
 kubectl -n admission-demo delete deployment scheduling-fault</code></pre></details>
-<p>Emergency recovery for this named lab only: <code>kubectl delete mutatingwebhookconfiguration placement-webhook</code> stops interception; fix serving and reapply webhook.json afterward. Never delete unrelated webhooks. Expected finish: all experiments restored, two Ready nodes, healthy serving Pod and Fail policy.</p>
-<h3>AI mentor prompt</h3><blockquote>I am on Step 5. Give me one failure card and ask for a prediction before I run it. Use my k9s evidence to guide diagnosis; do not reveal the repair first. Give one hint at a time. Do not edit files or reveal the solution unless I ask. After a solution, ask me to explain it and change one requirement.</blockquote>
+<p>Emergency recovery for this named lab only: <code>kubectl delete mutatingwebhookconfiguration placement-webhook</code> stops interception; fix serving and reapply webhook.json afterward. Never delete unrelated webhooks. Expected finish: all experiments restored, two Ready nodes, a healthy serving Pod and the Fail policy.</p>
+<h3>AI mentor prompt</h3><blockquote>I am on Step 5. If I ask for a blind drill, pick one card at random, run only its Break it block, and tell me only the card's heading. Otherwise give me one card and ask for a prediction before I run it. Use my k9s evidence to guide diagnosis; do not reveal the repair first. Give one hint at a time. Do not edit files or reveal the solution unless I ask. After a solution, ask me to explain it and change one requirement.</blockquote>
 </section>
 <section class="session" id="rehearsal"><h2>Step 6 — Rehearse the two-hour interview</h2>
 <p>Use your prepared laptop and cached dependencies. Keep documentation available, but set generative AI aside for this rehearsal; interview permission is unknown. Save the working version in your own Git history before making the variation.</p><ol><li><strong>15 minutes — clarify.</strong> Explain the policy and ask which resources/operations are in scope. Draw the admission flow from memory.</li><li><strong>35 minutes — code.</strong> Extend the webhook to direct v1 Pods on CREATE only. Use /spec/nodeSelector for Pods while retaining template paths for the three apps/v1 kinds. Add tests for both paths, supported API groups and unchanged Pod UPDATE.</li><li><strong>30 minutes — deploy.</strong> Build a fresh tag, import it, update serving and registration, and prove the Pod variation with server-side dry-run and a real Pod.</li><li><strong>25 minutes — diagnose.</strong> Choose two Step 5 faults. State a hypothesis, collect evidence, repair, and prove recovery.</li><li><strong>15 minutes — explain.</strong> Discuss TLS, base64, idempotence, Fail/Ignore, namespace scope, resource ownership and why admission is not scheduling.</li></ol>
 <details><summary>Hint — two changes are necessary</summary><p>Code support alone is not enough. Add a separate registration rule with apiGroups [""] / apiVersions ["v1"] / resources ["pods"] / operations ["CREATE"]. Keep apps resources in their own rule. The existing namespace selector must continue excluding the webhook itself.</p></details>
-<details><summary>Review solution outline</summary><p>Select the Pod spec path from request.kind.group/version/kind and operation; use a shared selector patch helper taking that path. Direct Pods use /spec; controllers use /spec/template/spec. A Pod created from an already-mutated template should yield no patch. Test a standalone Pod, controller-created Pod, unsupported Pod UPDATE and no-op repeated evaluation. Restore the original registration when finished.</p></details>
+<details><summary>Review solution outline</summary><p>Select the Pod spec path from request.kind.group/version/kind and operation; use a shared selector patch helper taking that path. Direct Pods use /spec; controllers use /spec/template/spec. A Pod created from an already-mutated template should yield no patch. Test a standalone Pod, controller-created Pod, unsupported Pod UPDATE and no-op repeated evaluation. Restore the original registration when finished.</p><p>Know where failures surface once Pods are in scope. A standalone Pod's rejection prints in kubectl. A Pod created by a ReplicaSet is rejected for the ReplicaSet controller, not for you: <code>kubectl apply</code> of the Deployment succeeds, the rollout stalls, and the error appears as a <code>FailedCreate</code> event on the ReplicaSet (<code>:rs</code>, then <code>d</code> in k9s).</p></details>
 <h3>Success criteria</h3><p>You can explain every field you changed, produce observable mutation, recover a broken deployment, and describe an unfinished part honestly. This is not a speed score. If time runs out, prioritize a working path and explain your next diagnostic step.</p><p>Optional discussion only: how Helm would package these objects, how to rotate CA/server certs without an outage, multiple replicas and latency, why validation may be needed after mutation, and when a controller is the right tool instead.</p>
+<h3>Talking points — answer out loud, then check</h3>
+<details><summary>Where do admission webhooks sit in a request?</summary><p>After authentication and authorization, before the object is stored. Mutating admission runs first, then schema validation, then validating admission. Webhooks are external HTTPS services the API server calls during those phases.</p></details>
+<details><summary>What must a response contain?</summary><p><code>apiVersion: admission.k8s.io/v1</code>, <code>kind: AdmissionReview</code>, <code>response.uid</code> echoing the request, and <code>response.allowed</code>. A mutation adds <code>patchType: JSONPatch</code> and a base64 <code>patch</code>. A denial adds <code>status</code> with a code and message, and is still HTTP 200.</p></details>
+<details><summary>Why base64, and why TLS?</summary><p><code>patch</code> is a byte array in the API, and JSON encodes bytes as base64. The API server only calls webhooks over HTTPS and verifies the certificate against the caBundle; the SAN must match <code>&lt;service&gt;.&lt;namespace&gt;.svc</code>. Go checks the name before the signer.</p></details>
+<details><summary>How does the API server reach the webhook?</summary><p>It resolves the Service's ready endpoints and dials a Pod IP on the targetPort, not the ClusterIP, and keeps connections alive. k3s sends that traffic through its own tunnel, which is why refused connections read as a proxy 502.</p></details>
+<details><summary>Fail or Ignore?</summary><p>Fail refuses the write when the call fails; Ignore admits it unmutated. Choose by what is worse for this mutation. Placement is correctness, so Fail with a tight namespaceSelector. Either way, monitor failing open: it only appears in the API server log and the <code>apiserver_admission_webhook_*</code> metrics.</p></details>
+<details><summary>How do you stop a webhook from taking the cluster down?</summary><p>Exclude its own namespace and kube-system with a namespaceSelector; narrow the scope with rules, objectSelector and matchConditions (CEL that can skip a request before any call); keep timeoutSeconds small; run more than one replica with a PodDisruptionBudget and a readiness probe. This lab's webhook runs one replica with no PDB, which is fine for a lab and not for production. Keep a runbook: delete the registration or switch to Ignore.</p></details>
+<details><summary>Why sideEffects: None?</summary><p>It declares the webhook changes nothing beyond its response. That is what allows <code>kubectl --dry-run=server</code> to call it; webhooks with side effects are skipped and the dry run rejected.</p></details>
+<details><summary>What is reinvocationPolicy for?</summary><p><code>IfNeeded</code> calls the webhook again if a later mutating webhook changed the object. It only works if the patch is idempotent: run twice, change once.</p></details>
+<details><summary>Mutate workloads or Pods?</summary><p>Workload templates (this lab) keep the stored object honest and fail loudly in kubectl, but miss Pods that other controllers create and cause drift for GitOps tools. Pods catch everything, at the cost of a hotter path and errors that surface on ReplicaSets.</p></details>
+<details><summary>Could this be done without a webhook?</summary><p>Yes, on this cluster. <code>kubectl api-resources | grep -i admissionpolicy</code> shows MutatingAdmissionPolicy at <code>admissionregistration.k8s.io/v1</code>: CEL inside the API server, no TLS, no Deployment. One gotcha: <code>nodeSelector</code> is an atomic map, so <code>patchType: ApplyConfiguration</code> fails with <code>may not mutate atomic arrays, maps or structs: .spec.nodeSelector</code>. Use <code>patchType: JSONPatch</code> with <code>jsonpatch.escapeKey("lab.example.com/pool")</code>. ValidatingAdmissionPolicy is the validating equivalent.</p></details>
+<details><summary>How would cert-manager change Step 4?</summary><p>It issues and renews the serving certificate, and the annotation <code>cert-manager.io/inject-ca-from: admission-system/&lt;certificate&gt;</code> keeps the caBundle in sync. Uvicorn still loads the certificate only at startup, so a renewal needs a restart or a reload.</p></details>
+<details><summary>Why did the DaemonSet show no error?</summary><p>A DaemonSet only targets nodes its Pods could run on. With no such node, DESIRED is 0: a valid state, not a failure.</p></details>
+<details><summary>Why k3d for this?</summary><p>It is real, conformant Kubernetes in Docker, up in seconds and easy to recreate. It runs several nodes on one laptop, so placement is visible, and <code>k3d image import</code> loads local images with no registry. The API server's log is a <code>docker logs</code> away.</p></details>
+<details><summary>How does groundcover's approach differ from webhook injection?</summary><p>groundcover's sensor is an eBPF DaemonSet: one privileged Pod per node observing every process from the kernel. Nothing is injected per Pod, no restarts, no language SDKs. Webhooks still fit policy and placement, defaults, and ownership labels.</p></details>
 <h3>AI mentor prompt</h3><blockquote>Act as my interviewer for Step 6 only if I choose an AI-assisted practice round. Ask one question at a time, avoid hints unless requested, and save feedback for the end. Give one hint at a time. Do not edit files or reveal the solution unless I ask. After a solution, ask me to explain it and change one requirement.</blockquote>
 </section>
 <section class="session" id="readiness"><h2>Step 7 — Prove the laptop is ready</h2>
@@ -710,6 +810,8 @@ kubectl -n admission-demo create deployment laptop-check --image=admission-lab:i
 kubectl -n admission-demo rollout status deployment/laptop-check --timeout=90s
 kubectl -n admission-demo port-forward deployment/laptop-check 8080:8080</code></pre>
 <p>In another terminal run <code>curl --fail http://127.0.0.1:8080/healthz</code>. Stop the forward afterward. This rebuild reuses cached base and dependency layers when available; it is not proof of a fully disconnected build. Changing requirements or the RUN network mode can invalidate that cache. In particular, adding --network=none to an ordinary warmed build can force pip to rerun without network access. Rehearse with the network conditions you expect at the interview, and keep connectivity available for dependency downloads.</p>
+<p>Check the certificates still have time left. If either expires before the interview, rerun <code>certificates.sh</code>, recreate the placement-tls Secret, restart the webhook and reapply <code>python3 register.py</code> and <code>webhook.json</code>.</p><pre><code class="language-sh">openssl x509 -in certs/ca.crt -noout -enddate
+openssl x509 -in certs/tls.crt -noout -enddate</code></pre>
 <details><summary>Hint — readiness is evidence, not a tool list</summary><p>Installed Docker and a green doctor do not prove your application image runs. Keep the build output, Ready Pod evidence, health response and selector inspection together.</p></details>
 <details><summary>Review answer and optional cleanup</summary><p>You should be able to restart, rebuild a changed source file using cached dependencies, import, deploy and request health. Keep this cluster for the interview. When you no longer need this lab, remove its registration before deleting workloads:</p><pre><code class="language-sh">kubectl delete mutatingwebhookconfiguration placement-webhook --ignore-not-found
 kubectl delete namespace admission-demo admission-system admission-outside --ignore-not-found

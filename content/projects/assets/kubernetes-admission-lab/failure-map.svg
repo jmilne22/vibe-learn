@@ -1,8 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="340" height="632" viewBox="0 0 340 632" role="img" aria-labelledby="title desc">
-<title id="title">Find the failing boundary</title><desc id="desc">Apply fails: explicit denial Read the admission status message. There may be no object or Pod.. Apply fails: webhook call Inspect Service, EndpointSlices, logs, SAN, CA bundle and policy.. Apply succeeds: Pod Pending Read scheduling events. Do node labels match selectors?. ImagePullBackOff / pull error Check image tag, node cache and imagePullPolicy.. Container starts, not healthy Read logs, args and probe settings. Verify HTTP versus HTTPS.</desc>
-<style>.box{fill:#fff;stroke:#bdc9d8}.title{font:600 18px sans-serif;fill:#16304b}.label{font:600 16px sans-serif;fill:#16304b}.note{font:14px sans-serif;fill:#334c63}.arrow{stroke:#587289;stroke-width:2;fill:none}.highlight{fill:#c8efe4;opacity:0}</style>
-<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#587289"/></marker></defs>
-<rect width="340" height="632" rx="8" fill="#f4f7fb"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="340" height="732" viewBox="0 0 340 732" role="img" aria-labelledby="title desc">
+<title id="title">Find the failing boundary</title><desc id="desc">Apply fails: explicit denial Read the admission status message. There may be no object or Pod.. Apply fails: webhook call Inspect Service, EndpointSlices, logs, SAN, CA bundle and policy.. Apply succeeds, not mutated: failing open, or rules didn't match. Check the API server log and selectors.. Apply succeeds: Pod Pending Read scheduling events. Do node labels match selectors?. ImagePullBackOff / pull error Check image tag, node cache and imagePullPolicy.. Container starts, not healthy Read logs, args and probe settings. Verify HTTP versus HTTPS.</desc>
+<style>.box{fill:#fbf9f4;stroke:#d8d1c3}.title{font:600 18px sans-serif;fill:#1c1a16}.label{font:600 16px sans-serif;fill:#1c1a16}.note{font:14px sans-serif;fill:#3f3b34}.arrow{stroke:#66615a;stroke-width:2;fill:none}.highlight{fill:#cfe0d2;opacity:0}@media (prefers-color-scheme:dark){[fill="#f5f2ea"]{fill:#1b1a17}.box{fill:#22201c;stroke:#57524a}text,.title,.label{fill:#ebe6da}.note{fill:#cfc9bc}.arrow,.wire{stroke:#a29c8f}[fill="#66615a"]{fill:#a29c8f}[stroke="#66615a"]{stroke:#a29c8f}.highlight{fill:#34493b}[fill="#ede8dd"]{fill:#2a2823}[stroke="#d8d1c3"]{stroke:#57524a}[fill="#e3eae1"]{fill:#26332c}[stroke="#9bb5a3"]{stroke:#4f6b5a}.call{stroke:#9bc4a8}[fill="#23523e"]{fill:#9bc4a8}[fill="#f3e6cc"]{fill:#3a3022}[stroke="#b9975a"]{stroke:#8a7346}}</style>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#66615a"/></marker></defs>
+<rect width="340" height="732" rx="8" fill="#f5f2ea"/>
 <text x="20" y="32" class="title">Find the failing boundary</text>
 <rect x="18" y="52" width="304" height="76" rx="7" class="box"/>
 <text x="30" y="77" class="label">Apply fails: explicit denial</text>
@@ -13,17 +13,21 @@
 <text x="30" y="197" class="note">Inspect Service, EndpointSlices,</text>
 <text x="30" y="217" class="note">logs, SAN, CA bundle and policy.</text>
 <rect x="18" y="252" width="304" height="76" rx="7" class="box"/>
-<text x="30" y="277" class="label">Apply succeeds: Pod Pending</text>
-<text x="30" y="297" class="note">Read scheduling events.</text>
-<text x="30" y="317" class="note">Do node labels match selectors?</text>
+<text x="30" y="277" class="label">Apply succeeds, not mutated</text>
+<text x="30" y="297" class="note">Failing open, or rules didn't match.</text>
+<text x="30" y="317" class="note">Check API server log and selectors.</text>
 <rect x="18" y="352" width="304" height="76" rx="7" class="box"/>
-<text x="30" y="377" class="label">ImagePullBackOff / pull error</text>
-<text x="30" y="397" class="note">Check image tag, node cache</text>
-<text x="30" y="417" class="note">and imagePullPolicy.</text>
+<text x="30" y="377" class="label">Apply succeeds: Pod Pending</text>
+<text x="30" y="397" class="note">Read scheduling events.</text>
+<text x="30" y="417" class="note">Do node labels match selectors?</text>
 <rect x="18" y="452" width="304" height="76" rx="7" class="box"/>
-<text x="30" y="477" class="label">Container starts, not healthy</text>
-<text x="30" y="497" class="note">Read logs, args and probe settings.</text>
-<text x="30" y="517" class="note">Verify HTTP versus HTTPS.</text>
-<text x="20" y="562" class="note">Inspect evidence before changing it.</text>
-<text x="20" y="585" class="note">k9s and kubectl show the same API.</text>
+<text x="30" y="477" class="label">ImagePullBackOff / pull error</text>
+<text x="30" y="497" class="note">Check image tag, node cache</text>
+<text x="30" y="517" class="note">and imagePullPolicy.</text>
+<rect x="18" y="552" width="304" height="76" rx="7" class="box"/>
+<text x="30" y="577" class="label">Container starts, not healthy</text>
+<text x="30" y="597" class="note">Read logs, args and probe settings.</text>
+<text x="30" y="617" class="note">Verify HTTP versus HTTPS.</text>
+<text x="20" y="662" class="note">Inspect evidence before changing it.</text>
+<text x="20" y="685" class="note">k9s and kubectl show the same API.</text>
 </svg>
