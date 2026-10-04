@@ -133,10 +133,26 @@ describe("creating and extending workspaces", () => {
     expect(fs.readFileSync(outside, "utf8")).toBe("my doctor\n");
   });
   it("rejects unsafe or conflicting helper names in downloaded catalogs", () => {
-    for (const name of ["../outside.py", "/tmp/out.py", "nested/file.py", "C:\\out.py", "README.md", "AGENTS.md", "go.mod", ".env", "CON.txt", "file."]) {
+    const plain = "Use a plain, non-hidden root filename";
+    const reserved = "not reserved by the workspace";
+    for (const [name, message] of [
+      ["../outside.py", plain], ["/tmp/out.py", plain], ["nested/file.py", plain],
+      ["C:\\out.py", plain], [".env", plain], ["file.", plain],
+      ["README.md", reserved], ["AGENTS.md", reserved], ["go.mod", reserved],
+      ["CON.txt", reserved], ["conftest.py", "do not run or load automatically"],
+      ["run.exe", "Use a .py, .yml"],
+    ] as const) {
       const item = { ...admission, supportFiles: [{ path: name, contents: "bad" }] };
-      expect(() => validateDownloadedCatalog(JSON.stringify({ formatVersion: 2, items: [item] }))).toThrow();
-      expect(() => createWorkspace(temp(), item, "mentor")).toThrow();
+      expect(() => validateDownloadedCatalog(JSON.stringify({ formatVersion: 2, items: [item] }))).toThrow(message);
+      const parent = temp();
+      const mkdir = vi.spyOn(fs, "mkdirSync");
+      try {
+        expect(() => createWorkspace(parent, item, "mentor")).toThrow(message);
+        expect(mkdir).not.toHaveBeenCalled();
+      } finally {
+        mkdir.mockRestore();
+      }
+      expect(fs.readdirSync(parent)).toEqual([]);
     }
     const item = { ...admission, supportFiles: [
       { path: "doctor.py", contents: "one" },
@@ -144,6 +160,45 @@ describe("creating and extending workspaces", () => {
     ] };
     expect(() => validateDownloadedCatalog(JSON.stringify({ formatVersion: 2, items: [item] })))
       .toThrow("Duplicate project support filename");
+  });
+  it("keeps a learner taskfile under any Task spelling and reports it by its own name", () => {
+    const item = { ...operator, supportFiles: [
+      { path: "Taskfile.yml", contents: "version: '3'\n" },
+      { path: "doctor.py", contents: "print('ok')\n" },
+    ] };
+    for (const name of ["Taskfile.yaml", "taskfile.dist.yml"]) {
+      const folder = temp();
+      fs.writeFileSync(path.join(folder, name), "my tasks\n");
+      const result = addMissingFiles(folder, item, "mentor");
+      expect(result.skipped).toEqual([name]);
+      expect(result.written).toContain("doctor.py");
+      expect(result.written).not.toContain("Taskfile.yml");
+      expect(fs.readdirSync(folder).filter((f) => /^taskfile/i.test(f))).toEqual([name]);
+      expect(fs.readFileSync(path.join(folder, name), "utf8")).toBe("my tasks\n");
+    }
+  });
+  it("describes supplied helpers in README.md and AGENTS.md only when there are some", () => {
+    const item = { ...operator, supportFiles: [
+      { path: "Taskfile.yml", contents: "version: '3'\n" },
+      { path: "doctor.py", contents: "print('ok')\n" },
+    ] };
+    const contents = (files: ReturnType<typeof workspaceFiles>, name: string) =>
+      files.find((f) => f.path === name)!.contents;
+    for (const mode of ["mentor", "pair"] as const) {
+      const files = workspaceFiles(item, mode);
+      expect(contents(files, "README.md")).toContain(
+        "## Supplied files\n\nSetup helpers from the project. Read them before you run them; Vibe Learn never runs them.\n\n- `Taskfile.yml`\n- `doctor.py`\n\nRun `task --list` to see the supplied tasks.\n\n## Working with an AI assistant",
+      );
+      expect(contents(files, "AGENTS.md")).toContain("README.md lists the helper files supplied with this project.");
+      expect(contents(files, "AGENTS.md")).toContain("(for Go: `go build`");
+      const plain = workspaceFiles(operator, mode);
+      expect(contents(plain, "README.md")).not.toContain("Supplied files");
+      expect(contents(plain, "AGENTS.md")).not.toContain("helper files");
+    }
+    const single = { ...operator, supportFiles: [{ path: "notes.txt", contents: "x\n" }] };
+    const notes = workspaceFiles(single, "pair");
+    expect(contents(notes, "README.md")).toContain("- `notes.txt`\n\n## Working");
+    expect(contents(notes, "README.md")).not.toContain("task --list");
   });
   it("creates a new named folder each time and never reuses one", () => {
     const parent = temp();

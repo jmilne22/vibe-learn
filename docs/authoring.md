@@ -26,7 +26,11 @@ Course-linked Markdown projects may be declared with `id`, `title`, `file` (a le
 
 For standalone projects, mark a supplied helper's code block as `<pre data-workspace-file="Taskfile.yml"><code>…</code></pre>`. The compiler reads its text before HTML sanitization, validates it, and includes it in the project's optional `supportFiles` catalog field. Keep the block in a folded reference section so the learner can inspect it. Only mark setup helpers; leave exercise implementations and solutions as ordinary code blocks.
 
-**Create workspace** writes supplied files automatically; **Add missing workspace files** adds missing files to an attached folder and preserves existing files, including symlinks. Neither action executes the helpers. Filenames must be non-hidden root-level names, unique ignoring case, and must not collide with generated workspace files or Windows device names. Each project can supply up to 20 files of 100,000 characters each. Downloaded catalogs and workspace creation enforce the same validation.
+**Create workspace** writes supplied files automatically; **Add missing workspace files** adds missing files to an attached folder and never overwrites existing files, including symlinks. Neither action executes the helpers, and the generated README.md lists them. A supplied `Taskfile.yml` is also skipped when the folder already has any spelling Task would load instead (`Taskfile.yaml`, `taskfile.dist.yml` and so on); the learner's taskfile wins.
+
+Filenames must be non-hidden root-level names ending in `.py`, `.yml`, `.yaml`, `.md`, `.txt`, `.json` or `.sh`, unique ignoring case, and must not collide with generated workspace files or Windows device names. Names that other tools run or load on their own are rejected in any case: `conftest.py`, `setup.py`, `pyproject.toml`, `Makefile`, `GNUmakefile`, `package.json`, `Dockerfile`, `build.rs`, `AGENT.md`, `CONVENTIONS.md` and `opencode.json`. A marked block needs a non-empty `<code>` child. Each project can supply up to 20 files of 100,000 characters each. Downloaded catalogs and workspace creation enforce the same validation.
+
+Learners and their assistants run these helpers, and content updates are hash-checked but not signed, so review supplied files as code: keep them short, readable and read-only where possible.
 
 This requires Vibe Learn 2.2.2 or newer. The published content manifest specifies that minimum; users update the app before downloading this catalog. The admission lab supplies Taskfile.yml and doctor.py while leaving main.py to the learner.
 

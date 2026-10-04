@@ -70,14 +70,16 @@ Conversational and short. No lectures, no walls of text. Ask one question at a t
 - Keep spoken replies usually under a minute, unless I ask for a deeper explanation.
 - These guidelines also apply in text-only sessions.
 `;
-const MENTOR = `## Your role
+const HELPERS =
+  "- README.md lists the helper files supplied with this project. You may read them and run their read-only checks, such as diagnostics, to see where I am.\n";
+const mentor = (helpers: string) => `## Your role
 
 You are a patient, friendly senior engineer pairing with me. I am learning by building. I write every line of code; you never write or edit my project files.
 
 ### How to help
 
 - Read my code and run the build and tests (for Go: \`go build\`, \`go vet\`, \`go test ./...\`) to see where I am, but don't fix anything. When you run a command, show it so I learn it too.
-- Lead with questions: what do I expect to happen, what did I try, what is the error telling me?
+${helpers}- Lead with questions: what do I expect to happen, what did I try, what is the error telling me?
 - Give the smallest hint that gets me unstuck, and escalate only if I'm still stuck:
   1. name the concept or the part of the error to look at
   2. point to where in my code, or which doc or package to read
@@ -92,7 +94,7 @@ You are a patient, friendly senior engineer pairing with me. I am learning by bu
 - If I ask "is this good?", be honest the way a good friend is: specific, kind, no flattery.
 - Prefer the standard library and simple code. Don't push patterns I haven't needed yet.
 `;
-const PAIR = `## Your role
+const pair = (helpers: string) => `## Your role
 
 You are a patient senior engineer pair-programming with me. I am learning by building, so the goal is my understanding, not just working code.
 
@@ -100,7 +102,7 @@ You are a patient senior engineer pair-programming with me. I am learning by bui
 
 - Before you change code, say in a sentence or two what you plan to change and why, and wait for my OK.
 - Make small changes, one idea at a time. Run the build and tests after each (for Go: \`go build\`, \`go vet\`, \`go test ./...\`) and show the commands.
-- Explain each change briefly: what it does and why it's the idiomatic choice.
+${helpers}- Explain each change briefly: what it does and why it's the idiomatic choice.
 - When a step is teaching a concept, offer to let me write that part while you give hints instead.
 - Don't write code for later steps, and don't add features the step doesn't ask for.
 - Link official sources when useful, such as go.dev/doc, pkg.go.dev, and the docs the step references.
@@ -110,7 +112,7 @@ You are a patient senior engineer pair-programming with me. I am learning by bui
 - If I ask "is this good?", be honest the way a good friend is: specific, kind, no flattery.
 - Prefer the standard library and simple code. Don't introduce patterns the project hasn't needed yet.
 `;
-function agents(item: Item, mode: AssistantMode): string {
+function agents(item: Item, mode: AssistantMode, helpers: string): string {
   const intro =
     mode === "mentor"
       ? "I'm building this project myself, step by step. These instructions apply to any AI assistant helping in this folder."
@@ -120,13 +122,37 @@ function agents(item: Item, mode: AssistantMode): string {
 ${intro}
 
 ${STEPS_SECTION}
-${mode === "mentor" ? MENTOR : PAIR}
+${(mode === "mentor" ? mentor : pair)(helpers)}
 ${TONE}`;
+}
+// Task loads the first of these it finds, so a learner's own taskfile wins
+// over a supplied one whatever its spelling. Keyed by lowercase name.
+const TASKFILES = [
+  "taskfile.yml",
+  "taskfile.yaml",
+  "taskfile.dist.yml",
+  "taskfile.dist.yaml",
+];
+const ALIASES: Record<string, string[]> = Object.fromEntries(
+  TASKFILES.map((name) => [name, TASKFILES]),
+);
+function suppliedSection(files: WorkspaceFile[]): string {
+  const task = files.some((f) => TASKFILES.includes(f.path.toLowerCase()));
+  return `
+## Supplied files
+
+Setup helpers from the project. Read them before you run them; Vibe Learn never runs them.
+
+${files.map((f) => `- \`${f.path}\``).join("\n")}
+${task ? "\nRun `task --list` to see the supplied tasks.\n" : ""}`;
 }
 export function workspaceFiles(
   item: Item,
   mode: AssistantMode,
 ): WorkspaceFile[] {
+  const supplied = ProjectSupportFilesSchema.parse(
+    item.kind === "project" ? item.supportFiles ?? [] : [],
+  );
   const steps = layout(item);
   const md = (step: Step) =>
     htmlToMarkdown(step.stage.html, resolver(item, steps, step.file));
@@ -146,7 +172,7 @@ export function workspaceFiles(
 ## Steps
 
 ${list}
-
+${supplied.length ? suppliedSection(supplied) : ""}
 ## Working with an AI assistant
 
 AGENTS.md tells coding assistants such as Claude Code, Codex, Gemini CLI, OpenCode and Zed how to help. Tell yours which step you're on, for example "I'm on step 02". Aider needs \`aider --read AGENTS.md\`.
@@ -171,12 +197,13 @@ ${steps.map((s) => `- [ ] ${s.number} ${s.stage.title}`).join("\n")}
       .filter((s) => s !== overview)
       .map((s) => ({ path: s.file, contents: md(s) })),
     { path: "NOTES.md", contents: notes },
-    { path: "AGENTS.md", contents: agents(item, mode) },
+    {
+      path: "AGENTS.md",
+      contents: agents(item, mode, supplied.length ? HELPERS : ""),
+    },
     { path: "CLAUDE.md", contents: "@AGENTS.md\n" },
     { path: "GEMINI.md", contents: "@AGENTS.md\n" },
-    ...ProjectSupportFilesSchema.parse(
-      item.kind === "project" ? item.supportFiles ?? [] : [],
-    ),
+    ...supplied,
   ];
   if (mode === "mentor")
     files.push({
@@ -201,12 +228,33 @@ function write(folder: string, file: WorkspaceFile): boolean {
     throw error;
   }
 }
+// Skips a file when it, or a learner file standing in for it, was already
+// there, and reports the learner's name for it.
+function writeAll(folder: string, files: WorkspaceFile[]): AddedFiles {
+  const present = fs.readdirSync(folder);
+  const result: AddedFiles = { written: [], skipped: [] };
+  for (const file of files) {
+    const aliases = ALIASES[file.path.toLowerCase()];
+    const kept =
+      aliases && present.find((name) => aliases.includes(name.toLowerCase()));
+    if (kept) result.skipped.push(kept);
+    else (write(folder, file) ? result.written : result.skipped).push(file.path);
+  }
+  return result;
+}
 export function createWorkspace(
   parent: string,
   item: Item,
   mode: AssistantMode,
 ): string {
   const slug = workspaceSlug(item);
+  // Build and validate everything first so bad content never creates a folder.
+  const files = workspaceFiles(item, mode);
+  if (item.checks.length)
+    files.push({
+      path: "go.mod",
+      contents: `module example.com/${slug}\n\ngo 1.22\n`,
+    });
   const base = fs.realpathSync(parent);
   let folder = "";
   for (let n = 1; !folder; n++) {
@@ -220,13 +268,7 @@ export function createWorkspace(
     }
   }
   try {
-    const files = workspaceFiles(item, mode);
-    if (item.checks.length)
-      files.push({
-        path: "go.mod",
-        contents: `module example.com/${slug}\n\ngo 1.22\n`,
-      });
-    for (const file of files) write(folder, file);
+    writeAll(folder, files);
   } catch (error) {
     fs.rmSync(folder, { recursive: true, force: true });
     throw error;
@@ -239,8 +281,5 @@ export function addMissingFiles(
   item: Item,
   mode: AssistantMode,
 ): AddedFiles {
-  const result: AddedFiles = { written: [], skipped: [] };
-  for (const file of workspaceFiles(item, mode))
-    (write(folder, file) ? result.written : result.skipped).push(file.path);
-  return result;
+  return writeAll(folder, workspaceFiles(item, mode));
 }

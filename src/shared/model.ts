@@ -38,13 +38,32 @@ export const SourceFileSchema = z.object({
   path: FilePath,
   contents: z.string().max(1_000_000),
 });
+// Names that test runners, build tools and coding assistants run or load on
+// their own when they meet them in a folder.
+const AUTOLOADED_NAMES = [
+  "conftest.py", "setup.py", "pyproject.toml", "makefile", "gnumakefile",
+  "package.json", "dockerfile", "build.rs", "agent.md", "conventions.md",
+  "opencode.json",
+];
 // Supplied project helpers live at the workspace root. Reserve files generated
 // by the app, and reject aliases that collide on case-insensitive filesystems.
+// Helpers are runnable, so only plain script and data types are allowed.
 export const ProjectSupportFilesSchema = z
   .array(
     z.object({
       path: z.string().max(100)
-        .regex(/^[A-Za-z0-9](?:[A-Za-z0-9_.-]*[A-Za-z0-9])?$/)
+        .regex(
+          /^[A-Za-z0-9](?:[A-Za-z0-9_.-]*[A-Za-z0-9])?$/,
+          "Use a plain, non-hidden root filename for a project support file",
+        )
+        .regex(
+          /\.(py|ya?ml|md|txt|json|sh)$/i,
+          "Use a .py, .yml, .yaml, .md, .txt, .json or .sh project support file",
+        )
+        .refine(
+          (name) => !AUTOLOADED_NAMES.includes(name.toLowerCase()),
+          "Use a project support filename that other tools do not run or load automatically",
+        )
         .refine(
           (name) =>
             !/^(con|prn|aux|nul|com[0-9]|lpt[0-9])(?:\.|$)/i.test(name) &&
