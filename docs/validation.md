@@ -1,5 +1,16 @@
 # Rebuild validation
 
+## Kubernetes Admission Lab — 4 October 2026
+
+- `nix-shell --run 'npm run verify'`: types, lint, content validation (6 projects / 53 sections), 55 platform tests, production builds, and 7 browser tests passed.
+- The authored Python reference passed 19 pytest cases both with the local Nix Python environment and inside the pinned FastAPI container. Doctor fixtures cover missing tools, denied Docker access, absent cluster, version skew, node readiness, and bounded command timeouts; the real readiness check also passed.
+- A disposable two-node k3d cluster using `rancher/k3s:v1.37.1-k3s1` verified image build/import, health requests, TLS admission, all three workload kinds, CREATE/UPDATE, preserved selectors, dry-run without persistence, and namespace isolation. All five fault cards produced the expected symptoms and recovered. Cluster restart and a changed-source image rebuild/import/deployment also succeeded.
+- The browser preview passed with external requests blocked. Both animations were checked at start/middle/end and stopped; narrow layouts and reduced motion passed. An isolated development Electron profile also verified reading-first entry, image rendering, and the static motion fallback. Existing course-image behavior and downloaded-catalog sanitization remain covered.
+- Workspace exports retain support code, captions, numbered explanations, and hints. The catalog remains below the existing 30 MB download limit. No app-owned Kubernetes evaluation suite was added.
+- A trial build with `--network=none` invalidated the dependency RUN cache and failed to download packages. The readiness instructions use a normal cached rebuild and do not promise a fully disconnected image build. Packaged installers and other operating systems were not revalidated for this content change.
+
+## Earlier rebuild checks
+
 Verified on Linux/NixOS on 2026-09-23, including a fresh source copy and `npm ci`:
 
 - `npm run verify`: strict TypeScript, ESLint, 18 platform tests, content validation (4 projects / 38 sections), production builds, and four Playwright browser tests.

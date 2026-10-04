@@ -152,6 +152,7 @@ export function compileCatalog(base = root): Catalog {
     "gossip-glomers",
     "tiny-tsdb",
     "cloud-reporter",
+    "kubernetes-admission-lab",
   ];
   for (const file of projectFiles) {
     const document = read(path.join(base, "content/projects", file + ".html"));
@@ -176,7 +177,7 @@ export function compileCatalog(base = root): Catalog {
       );
       section.remove();
     });
-    stages.unshift(stage("overview", "Overview & setup", main.html() || ""));
+    stages.unshift(stage("overview", file === "kubernetes-admission-lab" ? "Step 0 — Read the assigned article" : "Overview & setup", main.html() || ""));
     const id = `project:${file === "go-telemetry-ingest-take-home" ? "ingest-relay" : file}`;
     if (file === "go-telemetry-ingest-take-home") {
       const reference = load(
@@ -206,7 +207,12 @@ export function compileCatalog(base = root): Catalog {
       source: `take-home/${file}.html`,
       version: "",
     };
-    if (file === "relay-operator")
+    if (file === "kubernetes-admission-lab")
+      item.prerequisites = [
+        "Read the assigned article first. Then use Python, Docker, k3d, kubectl, k9s, Go Task, OpenSSL, and curl. NixOS setup and a diagnostic doctor are included.",
+        "Guided local-cluster experiments and learner-run Python tests; no app-owned automated suite.",
+      ];
+    else if (file === "relay-operator")
       item.prerequisites = [
         "A working Ingest Relay workspace",
         "Go, container runtime, kind, kubectl, Kubebuilder, and Helm. Perform the guided checks in your own local cluster.",
@@ -287,6 +293,43 @@ export function compileCatalog(base = root): Catalog {
         if (/^https?:/.test(src)) {
           img.replaceWith(
             `<p>${escape(img.attr("alt") || "External illustration")}</p>`,
+          );
+          return;
+        }
+        if (namespace === "take-home") {
+          const stem = path.basename(item.source, ".html");
+          const assetRoot = path.resolve(base, "content/projects/assets", stem);
+          const asset = path.resolve(base, "content/projects", src);
+          const within = (root: string, file: string) => {
+            const relative = path.relative(root, file);
+            return (
+              relative !== "" &&
+              !relative.startsWith(".." + path.sep) &&
+              relative !== ".." &&
+              !path.isAbsolute(relative)
+            );
+          };
+          if (src.includes("\\") || !within(assetRoot, asset))
+            throw new Error(`Project illustration escapes its asset directory: ${src}`);
+          if (!fs.existsSync(asset))
+            throw new Error(`Missing project illustration: ${src}`);
+          if (
+            !within(
+              path.join(fs.realpathSync(base), "content/projects/assets", stem),
+              fs.realpathSync(asset),
+            )
+          )
+            throw new Error(`Project illustration escapes its asset directory: ${src}`);
+          const mime = {
+            ".svg": "image/svg+xml",
+            ".png": "image/png",
+            ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg",
+          }[path.extname(asset).toLowerCase()];
+          if (!mime) throw new Error(`Unsupported project illustration: ${src}`);
+          img.attr(
+            "src",
+            `data:${mime};base64,${fs.readFileSync(asset).toString("base64")}`,
           );
           return;
         }
