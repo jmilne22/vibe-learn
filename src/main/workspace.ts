@@ -1,6 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { AssistantMode, Item, Stage } from "../shared/model";
+import {
+  ProjectSupportFilesSchema,
+  type AssistantMode,
+  type Item,
+  type Stage,
+} from "../shared/model";
 import { htmlToMarkdown } from "../content/markdown-out";
 // Project workspaces carry the brief as Markdown steps plus instructions for
 // external coding assistants, which only see the folder.
@@ -169,6 +174,9 @@ ${steps.map((s) => `- [ ] ${s.number} ${s.stage.title}`).join("\n")}
     { path: "AGENTS.md", contents: agents(item, mode) },
     { path: "CLAUDE.md", contents: "@AGENTS.md\n" },
     { path: "GEMINI.md", contents: "@AGENTS.md\n" },
+    ...ProjectSupportFilesSchema.parse(
+      item.kind === "project" ? item.supportFiles ?? [] : [],
+    ),
   ];
   if (mode === "mentor")
     files.push({

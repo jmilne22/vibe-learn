@@ -38,6 +38,30 @@ export const SourceFileSchema = z.object({
   path: FilePath,
   contents: z.string().max(1_000_000),
 });
+// Supplied project helpers live at the workspace root. Reserve files generated
+// by the app, and reject aliases that collide on case-insensitive filesystems.
+export const ProjectSupportFilesSchema = z
+  .array(
+    z.object({
+      path: z.string().max(100)
+        .regex(/^[A-Za-z0-9](?:[A-Za-z0-9_.-]*[A-Za-z0-9])?$/)
+        .refine(
+          (name) =>
+            !/^(con|prn|aux|nul|com[0-9]|lpt[0-9])(?:\.|$)/i.test(name) &&
+            ![
+              "readme.md", "notes.md", "agents.md", "claude.md",
+              "gemini.md", "go.mod", "steps",
+            ].includes(name.toLowerCase()),
+          "Use a root filename that is not reserved by the workspace",
+        ),
+      contents: z.string().max(100_000),
+    }),
+  )
+  .max(20)
+  .refine(
+    (files) => new Set(files.map((f) => f.path.toLowerCase())).size === files.length,
+    "Duplicate project support filename",
+  );
 export const ExerciseSchema = z.object({
   id: Id,
   title: z.string(),
@@ -79,7 +103,11 @@ export const ItemSchema = z.discriminatedUnion("kind", [
     exercises: z.array(ExerciseSchema).default([]),
     flashcards: z.array(FlashcardSchema).default([]),
   }),
-  z.object({ ...common, kind: z.literal("project") }),
+  z.object({
+    ...common,
+    kind: z.literal("project"),
+    supportFiles: ProjectSupportFilesSchema.optional(),
+  }),
 ]);
 export const CatalogSchema = z.object({
   formatVersion: z.literal(2),

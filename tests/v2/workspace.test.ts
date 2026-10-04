@@ -4,6 +4,7 @@ import path from "node:path";
 import { afterEach, describe, it, expect, vi } from "vitest";
 import { compileCatalog } from "../../src/content/compile";
 import { htmlToMarkdown } from "../../src/content/markdown-out";
+import { validateDownloadedCatalog } from "../../src/content/validate-catalog";
 import {
   addMissingFiles,
   createWorkspace,
@@ -13,6 +14,7 @@ const catalog = compileCatalog();
 const projects = catalog.items.filter((i) => i.kind === "project");
 const reporter = catalog.items.find((i) => i.id === "project:cloud-reporter")!;
 const operator = catalog.items.find((i) => i.id === "project:relay-operator")!;
+const admission = catalog.items.find((i) => i.id === "project:kubernetes-admission-lab")!;
 const temps: string[] = [];
 const temp = () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "vibe-workspace-"));
@@ -106,6 +108,43 @@ describe("project workspace files", () => {
   });
 });
 describe("creating and extending workspaces", () => {
+  it("creates supplied helpers but leaves the learner implementation unwritten", () => {
+    const folder = createWorkspace(temp(), admission, "mentor");
+    expect(fs.readFileSync(path.join(folder, "Taskfile.yml"), "utf8")).toContain("python3 doctor.py");
+    expect(fs.readFileSync(path.join(folder, "doctor.py"), "utf8")).toContain("def main(argv=None)");
+    expect(fs.existsSync(path.join(folder, "main.py"))).toBe(false);
+    expect(fs.existsSync(path.join(folder, "go.mod"))).toBe(false);
+    expect(fs.readFileSync(path.join(folder, "README.md"), "utf8")).toContain("Step 0 — Read the assigned article");
+  });
+  it("adds absent helpers while preserving edited files and symlink targets", () => {
+    const folder = temp();
+    fs.writeFileSync(path.join(folder, "Taskfile.yml"), "my tasks\n");
+    let result = addMissingFiles(folder, admission, "mentor");
+    expect(result.written).toContain("doctor.py");
+    expect(result.skipped).toContain("Taskfile.yml");
+    expect(fs.readFileSync(path.join(folder, "Taskfile.yml"), "utf8")).toBe("my tasks\n");
+    fs.unlinkSync(path.join(folder, "doctor.py"));
+    const outside = path.join(temp(), "mine.py");
+    fs.writeFileSync(outside, "my doctor\n");
+    fs.symlinkSync(outside, path.join(folder, "doctor.py"));
+    result = addMissingFiles(folder, admission, "pair");
+    expect(result.skipped).toContain("doctor.py");
+    expect(result.written).toEqual([]);
+    expect(fs.readFileSync(outside, "utf8")).toBe("my doctor\n");
+  });
+  it("rejects unsafe or conflicting helper names in downloaded catalogs", () => {
+    for (const name of ["../outside.py", "/tmp/out.py", "nested/file.py", "C:\\out.py", "README.md", "AGENTS.md", "go.mod", ".env", "CON.txt", "file."]) {
+      const item = { ...admission, supportFiles: [{ path: name, contents: "bad" }] };
+      expect(() => validateDownloadedCatalog(JSON.stringify({ formatVersion: 2, items: [item] }))).toThrow();
+      expect(() => createWorkspace(temp(), item, "mentor")).toThrow();
+    }
+    const item = { ...admission, supportFiles: [
+      { path: "doctor.py", contents: "one" },
+      { path: "DOCTOR.PY", contents: "two" },
+    ] };
+    expect(() => validateDownloadedCatalog(JSON.stringify({ formatVersion: 2, items: [item] })))
+      .toThrow("Duplicate project support filename");
+  });
   it("creates a new named folder each time and never reuses one", () => {
     const parent = temp();
     const first = createWorkspace(parent, reporter, "mentor");

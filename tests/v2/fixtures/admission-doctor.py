@@ -30,10 +30,10 @@ class DoctorTests(unittest.TestCase):
         return result,out.getvalue()
     def test_missing_tools_continues(self):
         status,text=self.check(missing=('task','openssl'))
-        self.assertEqual(status,1);self.assertIn('nix-shell -p go-task',text);self.assertIn('openssl missing',text);self.assertIn('nodes Ready',text)
+        self.assertEqual(status,1);self.assertIn('task missing from PATH',text);self.assertIn('openssl missing',text);self.assertIn('nodes Ready',text)
     def test_docker_access(self):
         status,text=self.check(broken_docker=True)
-        self.assertEqual(status,1);self.assertIn('virtualisation.docker.enable',text)
+        self.assertEqual(status,1);self.assertIn('daemon is running',text);self.assertIn('socket',text)
     def test_absent_is_next(self):
         self.assertEqual(self.check(absent=True)[0],0)
         self.assertEqual(self.check(flags=('--ready',),absent=True)[0],1)

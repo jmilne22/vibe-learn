@@ -22,6 +22,14 @@ Courses can include prepared-file exercises and optional flashcards using the sc
 
 Course-linked Markdown projects may be declared with `id`, `title`, `file` (a lesson-folder stem), optional `description` and `afterModule` for a related lesson link. Standalone project documents live in `content/projects`; the compiler maps their HTML sections into stable stages with project-specific prerequisites and checks. Created workspaces write each stage to `steps/NN-<stageId>.md`, so keep stage ids stable, put hints and answers inside `<details><summary>`, and prefer ordinary HTML (headings, paragraphs, lists, tables, `pre > code`) that converts cleanly to Markdown. Relay Operator remains guided.
 
+## Supplied project files
+
+For standalone projects, mark a supplied helper's code block as `<pre data-workspace-file="Taskfile.yml"><code>…</code></pre>`. The compiler reads its text before HTML sanitization, validates it, and includes it in the project's optional `supportFiles` catalog field. Keep the block in a folded reference section so the learner can inspect it. Only mark setup helpers; leave exercise implementations and solutions as ordinary code blocks.
+
+**Create workspace** writes supplied files automatically; **Add missing workspace files** adds missing files to an attached folder and preserves existing files, including symlinks. Neither action executes the helpers. Filenames must be non-hidden root-level names, unique ignoring case, and must not collide with generated workspace files or Windows device names. Each project can supply up to 20 files of 100,000 characters each. Downloaded catalogs and workspace creation enforce the same validation.
+
+This requires Vibe Learn 2.2.2 or newer. The published content manifest specifies that minimum; users update the app before downloading this catalog. The admission lab supplies Taskfile.yml and doctor.py while leaving main.py to the learner.
+
 ## Course exercises
 
 Add `content/exercises.yaml`. These optional exercises are distinct from project checks. Any exercise can be opened at any time; hints and solutions never lock.
