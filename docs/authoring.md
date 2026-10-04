@@ -1,6 +1,6 @@
 # Content authoring
 
-Content is authored in this repository, bundled with the application, and published to the content update channel by the existing Pages workflow. Desktop users can download the current catalog from Settings after deployment. `courses/` is intentionally empty; the bundled catalog currently contains five standalone projects.
+Content is authored in this repository, bundled with the application, and published to the content update channel by the existing Pages workflow. Desktop users can download the current catalog from Settings after deployment. `courses/` is intentionally empty; the bundled catalog currently contains six standalone projects.
 
 Run `npm run new-course -- my-topic`. Edit `courses/<slug>/course.yaml` and Markdown under `content/lessons`. Run `npm run validate:content`, then `npm run build` or `npm run app`.
 
@@ -69,3 +69,11 @@ Use stable card IDs, concise questions and explanatory answers in Markdown. `mod
 The deck supports unrestricted browsing and optional FSRS review with Again, Hard, Good and Easy ratings. Review state is local SQLite data and is included in backups. Edited cards start fresh on their next review. There are no streaks, scores, daily requirements, reminders or navigation gates. The website allows browsing, while scheduling and task execution require the desktop app.
 
 Ordinary content edits need no desktop release. New runtime features or built-in check implementations require an app release and a corresponding minimum content app version; see [CI and releases](ci.md#updating-content-without-an-installer).
+
+## Standalone project illustrations
+
+Store SVG/PNG/JPEG images in `content/projects/assets/<source-file-stem>/` and reference them as `assets/<source-file-stem>/diagram.svg` from the project HTML. The compiler embeds local images for offline reading, rejects paths outside that project asset directory (including symlink escapes), and reports missing/unsupported assets. Course image handling is unchanged. Keep SVG images self-contained, without scripts or external resources. For short CSS animations, use a finite duration of at most five seconds, include `prefers-reduced-motion` inside the SVG, and supply a static counterpart.
+
+Pair animated and static images with the `motion-animated` and `motion-static` classes. The reader stylesheet selects the static image under reduced motion as an additional fallback for browsers that do not propagate this preference into SVG image documents. Both images need useful alt text; keep captions and numbered explanations outside the images so workspace Markdown retains them.
+
+Always include descriptive alt text, captions and numbered prose equivalents. Workspace Markdown exports retain image descriptions and captions, not the images themselves. The Kubernetes Admission Lab demonstrates this pattern. Its Python and cluster checks run in the learner terminal; do not register Go checks or create an app-owned runner for it.

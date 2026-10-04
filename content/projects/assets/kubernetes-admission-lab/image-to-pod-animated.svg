@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="340" height="632" viewBox="0 0 340 632" role="img" aria-labelledby="title desc">
+<title id="title">Source → running Pod</title><desc id="desc">1  Write main.py + Dockerfile Source lives on your laptop.. 2  docker build Creates admission-lab:v1 in the laptop image store.. 3  k3d image import Copies that image into the cluster node runtimes.. 4  Apply a Deployment Deployment → ReplicaSet → Pod describes the desired workload.. 5  Schedule, then start Scheduler assigns a node. Kubelet starts the container.</desc>
+<style>.box{fill:#fff;stroke:#bdc9d8}.title{font:600 18px sans-serif;fill:#16304b}.label{font:600 16px sans-serif;fill:#16304b}.note{font:14px sans-serif;fill:#334c63}.arrow{stroke:#587289;stroke-width:2;fill:none}.highlight{fill:#c8efe4;opacity:0}@keyframes phase0{0%,0.0%{opacity:0}0.1%,17.0%{opacity:1}17.1%,100%{opacity:0}}.p0{animation:phase0 4.8s linear 1;}@keyframes phase1{0%,18.0%{opacity:0}18.1%,35.0%{opacity:1}35.1%,100%{opacity:0}}.p1{animation:phase1 4.8s linear 1;}@keyframes phase2{0%,36.0%{opacity:0}36.1%,53.0%{opacity:1}53.1%,100%{opacity:0}}.p2{animation:phase2 4.8s linear 1;}@keyframes phase3{0%,54.0%{opacity:0}54.1%,71.0%{opacity:1}71.1%,100%{opacity:0}}.p3{animation:phase3 4.8s linear 1;}@keyframes phase4{0%,72.0%{opacity:0}72.1%,89.0%{opacity:1}89.1%,100%{opacity:0}}.p4{animation:phase4 4.8s linear 1;}@media(prefers-reduced-motion:reduce){.highlight{animation:none!important;opacity:0!important}}</style>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#587289"/></marker></defs>
+<rect width="340" height="632" rx="8" fill="#f4f7fb"/>
+<text x="20" y="32" class="title">Source → running Pod</text>
+<rect x="18" y="52" width="304" height="76" rx="7" class="box"/>
+<rect x="19" y="53" width="302" height="74" rx="7" class="highlight p0"/>
+<text x="30" y="77" class="label">1  Write main.py + Dockerfile</text>
+<text x="30" y="97" class="note">Source lives on your laptop.</text>
+<path d="M170 131 V148" class="arrow" marker-end="url(#arrow)"/>
+<rect x="18" y="152" width="304" height="76" rx="7" class="box"/>
+<rect x="19" y="153" width="302" height="74" rx="7" class="highlight p1"/>
+<text x="30" y="177" class="label">2  docker build</text>
+<text x="30" y="197" class="note">Creates admission-lab:v1</text>
+<text x="30" y="217" class="note">in the laptop image store.</text>
+<path d="M170 231 V248" class="arrow" marker-end="url(#arrow)"/>
+<rect x="18" y="252" width="304" height="76" rx="7" class="box"/>
+<rect x="19" y="253" width="302" height="74" rx="7" class="highlight p2"/>
+<text x="30" y="277" class="label">3  k3d image import</text>
+<text x="30" y="297" class="note">Copies that image into</text>
+<text x="30" y="317" class="note">the cluster node runtimes.</text>
+<path d="M170 331 V348" class="arrow" marker-end="url(#arrow)"/>
+<rect x="18" y="352" width="304" height="76" rx="7" class="box"/>
+<rect x="19" y="353" width="302" height="74" rx="7" class="highlight p3"/>
+<text x="30" y="377" class="label">4  Apply a Deployment</text>
+<text x="30" y="397" class="note">Deployment → ReplicaSet → Pod</text>
+<text x="30" y="417" class="note">describes the desired workload.</text>
+<path d="M170 431 V448" class="arrow" marker-end="url(#arrow)"/>
+<rect x="18" y="452" width="304" height="76" rx="7" class="box"/>
+<rect x="19" y="453" width="302" height="74" rx="7" class="highlight p4"/>
+<text x="30" y="477" class="label">5  Schedule, then start</text>
+<text x="30" y="497" class="note">Scheduler assigns a node.</text>
+<text x="30" y="517" class="note">Kubelet starts the container.</text>
+<text x="20" y="562" class="note">Image import ≠ Pod creation.</text>
+<text x="20" y="585" class="note">A created Pod ≠ a Ready container.</text>
+</svg>

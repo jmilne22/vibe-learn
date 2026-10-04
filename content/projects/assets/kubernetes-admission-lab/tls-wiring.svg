@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="340" height="632" viewBox="0 0 340 632" role="img" aria-labelledby="title desc">
+<title id="title">TLS and routing</title><desc id="desc">API server caBundle contains the CA cert. Verify identity before HTTP.. Service identity / certificate placement-webhook. admission-system.svc = SAN. ClusterIP Service placement-webhook, port 443 selector: app=placement-webhook. Ready Pod endpoint targetPort: https → 8443 Uvicorn serves /mutate over TLS.. Mounted Secret placement-tls → /certs tls.crt + tls.key; never in image.</desc>
+<style>.box{fill:#fff;stroke:#bdc9d8}.title{font:600 18px sans-serif;fill:#16304b}.label{font:600 16px sans-serif;fill:#16304b}.note{font:14px sans-serif;fill:#334c63}.arrow{stroke:#587289;stroke-width:2;fill:none}.highlight{fill:#c8efe4;opacity:0}</style>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#587289"/></marker></defs>
+<rect width="340" height="632" rx="8" fill="#f4f7fb"/>
+<text x="20" y="32" class="title">TLS and routing</text>
+<rect x="18" y="52" width="304" height="76" rx="7" class="box"/>
+<text x="30" y="77" class="label">API server</text>
+<text x="30" y="97" class="note">caBundle contains the CA cert.</text>
+<text x="30" y="117" class="note">Verify identity before HTTP.</text>
+<path d="M170 131 V148" class="arrow" marker-end="url(#arrow)"/>
+<rect x="18" y="152" width="304" height="76" rx="7" class="box"/>
+<text x="30" y="177" class="label">Service identity / certificate</text>
+<text x="30" y="197" class="note">placement-webhook.</text>
+<text x="30" y="217" class="note">admission-system.svc = SAN</text>
+<path d="M170 231 V248" class="arrow" marker-end="url(#arrow)"/>
+<rect x="18" y="252" width="304" height="76" rx="7" class="box"/>
+<text x="30" y="277" class="label">ClusterIP Service</text>
+<text x="30" y="297" class="note">placement-webhook, port 443</text>
+<text x="30" y="317" class="note">selector: app=placement-webhook</text>
+<path d="M170 331 V348" class="arrow" marker-end="url(#arrow)"/>
+<rect x="18" y="352" width="304" height="76" rx="7" class="box"/>
+<text x="30" y="377" class="label">Ready Pod endpoint</text>
+<text x="30" y="397" class="note">targetPort: https → 8443</text>
+<text x="30" y="417" class="note">Uvicorn serves /mutate over TLS.</text>
+<path d="M170 448 V431" class="arrow" marker-end="url(#arrow)"/>
+<rect x="18" y="452" width="304" height="76" rx="7" class="box"/>
+<text x="30" y="477" class="label">Mounted Secret</text>
+<text x="30" y="497" class="note">placement-tls → /certs</text>
+<text x="30" y="517" class="note">tls.crt + tls.key; never in image.</text>
+<text x="20" y="562" class="note">CA private key stays on your laptop.</text>
+<text x="20" y="585" class="note">Readiness ≠ proof of API TLS trust.</text>
+</svg>

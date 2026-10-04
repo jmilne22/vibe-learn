@@ -827,6 +827,18 @@
   max-width: 100%;
   height: auto;
 }
+/* SVG image documents do not consistently inherit emulated motion preferences. */
+.prose :global(.motion-static) {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .prose :global(.motion-animated) {
+    display: none;
+  }
+  .prose :global(.motion-static) {
+    display: block;
+  }
+}
 .prose blockquote {
   border-left: 2px solid var(--green);
   margin: 1.4em 0;
