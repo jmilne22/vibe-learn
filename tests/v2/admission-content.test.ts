@@ -25,6 +25,9 @@ describe("admission lab content and offline illustrations", () => {
     expect($("pre,img")).toHaveLength(0);
     expect(project.stages[0]!.title).toBe("Step 0 — Read the assigned article");
     const files = workspaceFiles(project, "mentor");
+    expect(files.find((f) => f.path === "Taskfile.yml")?.contents).toContain("python3 doctor.py");
+    expect(files.find((f) => f.path === "doctor.py")?.contents).toContain("def main(argv=None)");
+    expect(files.some((f) => f.path === "main.py")).toBe(false);
     expect(files.some((f) => f.path === "go.mod")).toBe(false);
     const text = files.map((f) => f.contents).join("\n");
     expect(text).toContain("def main(argv=None)");
@@ -32,11 +35,11 @@ describe("admission lab content and offline illustrations", () => {
     expect(text).toContain("Import it into the k3d node runtimes");
     expect(text).toContain("<details>");
     expect(text).not.toContain("data:image/");
+    expect(text).not.toMatch(/NixOS|nix-shell|pacman/);
   });
 
   it("exercises the shipped doctor against missing tools, faults, and ready clusters", () => {
-    const $ = load(fs.readFileSync(source, "utf8"));
-    const doctor = $('pre[data-file="doctor.py"] code').text();
+    const doctor = workspaceFiles(project, "mentor").find((f) => f.path === "doctor.py")!.contents;
     expect(doctor).toContain("def main");
     execFileSync("python3", ["tests/v2/fixtures/admission-doctor.py"], {
       input: doctor,
@@ -49,6 +52,8 @@ describe("admission lab content and offline illustrations", () => {
     const data = JSON.stringify(catalog);
     expect(Buffer.byteLength(data)).toBeLessThan(MAX_CATALOG_BYTES);
     const downloaded = validateDownloadedCatalog(data).items.find((i) => i.id === projectId)!;
+    expect(workspaceFiles(downloaded, "mentor").find((f) => f.path === "Taskfile.yml")?.contents)
+      .toContain("python3 doctor.py");
     const $ = load(downloaded.stages.map((s) => s.html).join(""));
     expect($("img")).toHaveLength(8);
     $("img").each((_, el) => {

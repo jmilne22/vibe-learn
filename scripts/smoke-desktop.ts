@@ -183,6 +183,25 @@ async function main(): Promise<void> {
       ".claude/settings.local.json",
     ])
       await fs.access(path.join(folder, file));
+    const admission = catalog.items.find((i) => i.id === "project:kubernetes-admission-lab")!;
+    const lab = (await call({
+      type: "workspace", itemId: admission.id, action: "create", mode: "mentor",
+    })) as { path: string };
+    expect(await fs.readFile(path.join(lab.path, "Taskfile.yml"), "utf8"))
+      .toContain("python3 doctor.py");
+    expect(await fs.readFile(path.join(lab.path, "doctor.py"), "utf8"))
+      .toContain("def main(argv=None)");
+    await expect(fs.access(path.join(lab.path, "main.py"))).rejects.toThrow();
+    await fs.writeFile(path.join(lab.path, "Taskfile.yml"), "# My tasks\n");
+    await fs.unlink(path.join(lab.path, "doctor.py"));
+    const restoredHelpers = (await call({
+      type: "workspace", itemId: admission.id, action: "assistant-files", mode: "mentor",
+    })) as { written: string[]; skipped: string[] };
+    expect(restoredHelpers.written).toEqual(["doctor.py"]);
+    expect(restoredHelpers.skipped).toContain("Taskfile.yml");
+    expect(await fs.readFile(path.join(lab.path, "Taskfile.yml"), "utf8"))
+      .toBe("# My tasks\n");
+    expect(((await call({ type: "state" })) as AppState).runs).toHaveLength(1);
     await expect(
       call({ type: "run", itemId: operator.id, checkId: "go-test" }),
     ).rejects.toThrow();

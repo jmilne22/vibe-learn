@@ -7,6 +7,7 @@ import { load } from "cheerio";
 import { z } from "zod";
 import {
   CatalogSchema,
+  ProjectSupportFilesSchema,
   type Catalog,
   type Item,
   type Stage,
@@ -160,6 +161,12 @@ export function compileCatalog(base = root): Catalog {
     const main = $("main").first();
     main.find("script,style,nav,footer,.toolbar").remove();
     const title = main.find("h1").first().text();
+    const supportFiles = ProjectSupportFilesSchema.parse(
+      main.find("pre[data-workspace-file]").toArray().map((el) => ({
+        path: $(el).attr("data-workspace-file"),
+        contents: $(el).children("code").text().trimEnd() + "\n",
+      })),
+    );
     const stages: Stage[] = [];
     const sessions = main.find("section.session");
     sessions.each((index, el) => {
@@ -197,6 +204,7 @@ export function compileCatalog(base = root): Catalog {
       id,
       kind: "project",
       title,
+      ...(supportFiles.length ? { supportFiles } : {}),
       description:
         main.find("header p").not(".eyebrow,.meta").first().text() ||
         "Build, experiment, and understand the result.",
@@ -209,7 +217,7 @@ export function compileCatalog(base = root): Catalog {
     };
     if (file === "kubernetes-admission-lab")
       item.prerequisites = [
-        "Read the assigned article first. Then use Python, Docker, k3d, kubectl, k9s, Go Task, OpenSSL, and curl. NixOS setup and a diagnostic doctor are included.",
+        "Read the assigned article first. Then use Python, Docker, k3d, kubectl, k9s, Go Task, OpenSSL, and curl. Workspace creation includes the Taskfile and diagnostic doctor.",
         "Guided local-cluster experiments and learner-run Python tests; no app-owned automated suite.",
       ];
     else if (file === "relay-operator")

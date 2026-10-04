@@ -1027,11 +1027,11 @@ function WorkspacePanel({
               if (!result) return setAdded("");
               const count = result.written.length;
               setAdded(
-                `${count ? `Added ${count} file${count === 1 ? "" : "s"}.` : "All assistant files were already there."}${result.skipped.length ? ` Kept your existing ${result.skipped.join(", ")}.` : ""}`,
+                `${count ? `Added ${count} file${count === 1 ? "" : "s"}.` : "All workspace files were already there."}${result.skipped.length ? ` Kept your existing ${result.skipped.join(", ")}.` : ""}`,
               );
             }}
           >
-            Add AI assistant files
+            Add missing workspace files
           </button>
         )}
       </div>

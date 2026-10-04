@@ -1,5 +1,12 @@
 # Rebuild validation
 
+## Supplied workspace helpers — 4 October 2026
+
+- `npm run verify` inside the repository shell passed: 58 platform tests, 7 browser tests, types, lint, catalog validation and production builds.
+- Development and packaged Linux desktop smoke tests passed creation of the admission workspace with Taskfile.yml and doctor.py, restoration of a missing doctor, preservation of an edited Taskfile, and confirmation that preparing files starts no runs. The packaged smoke also passed signed app update/restart and bundled offline Go execution.
+- Downloaded-catalog tests preserve helper contents and reject traversal, nested or reserved names, and case-insensitive collisions. Workspace tests also verify that existing symlink targets remain untouched.
+- App and minimum content versions are 2.2.2 because the catalog now carries optional project support files. The lab's instructions and diagnostics no longer assume a distribution. macOS and Windows were not run locally.
+
 ## Kubernetes Admission Lab — 4 October 2026
 
 - `nix-shell --run 'npm run verify'`: types, lint, content validation (6 projects / 53 sections), 55 platform tests, production builds, and 7 browser tests passed.

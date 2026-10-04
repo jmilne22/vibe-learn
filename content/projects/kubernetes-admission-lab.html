@@ -34,8 +34,8 @@
 <h3>What we change from the example</h3><p>The original patch replaces the entire selector map and can discard existing constraints. Its registration matches CREATE only, uses Ignore with a 20-second timeout, and assumes a shared workload-template path. Here we preserve unrelated keys, handle UPDATE, test idempotence and diagnose Fail/Ignore. The historical image and dependency pins are not reused. JSON Patch is the mutation response format; <a href="https://kubernetes.io/docs/tasks/manage-kubernetes-objects/update-api-object-kubectl-patch/">other Kubernetes patch operations</a> also support other formats.</p>
 <p>Optional later discussion: Helm packaging, certificate rotation, availability, observability, and mutation versus reconciliation. A webhook changes a request; an operator repeatedly reconciles state. Building Terraform infrastructure, eBPF, an operator or a full telemetry stack is outside this eight-hour project.</p>
 <section class="session" id="doctor"><h2>Step 1 — Check your laptop</h2>
-<p>Now that you have read the article, create or attach a workspace using Vibe Learn. Choose Mentor for hints. Exported files are numbered from 01 by the app; their headings retain this lab's Step 0–7 numbering. Name the heading when asking AI for help.</p><p>Copy the two support files below into the workspace root. These are supplied diagnostics, not the webhook you will write. <code>task doctor</code> never installs tools, changes kubeconfig, or creates cluster objects. It exits nonzero for blocking problems and continues reporting other checks. An absent cluster is NEXT during setup and FAIL under <code>--ready</code>.</p>
-<p>Save as <code>Taskfile.yml</code>:</p><pre data-file="Taskfile.yml"><code class="language-yaml">version: &#x27;3&#x27;
+<p>After reading the article, choose <strong>Workspace → Create workspace</strong> in the desktop app. It creates <code>Taskfile.yml</code> and <code>doctor.py</code> alongside the brief and assistant instructions. For an existing folder, attach it and choose <strong>Add missing workspace files</strong>; your existing files are kept. Choose Mentor for hints. Exported files are numbered from 01 by the app; their headings retain this lab's Step 0–7 numbering. Name the heading when asking AI for help.</p><p>Run the supplied diagnostics from the workspace root. The two files below are included for reference and for manual setup when using only the browser preview. <code>task doctor</code> never installs tools, changes kubeconfig, or creates cluster objects. It exits nonzero for blocking problems and continues reporting other checks. An absent cluster is NEXT during setup and FAIL under <code>--ready</code>.</p>
+<details><summary>Included file — Taskfile.yml</summary><pre data-file="Taskfile.yml" data-workspace-file="Taskfile.yml"><code class="language-yaml">version: &#x27;3&#x27;
 tasks:
   doctor:
     desc: Read-only setup diagnostics
@@ -48,11 +48,10 @@ tasks:
   test:
     desc: Run learner-written Python tests
     cmds:
-      - python3 -m pytest -q</code></pre>
-<details><summary>Supplied support file — doctor.py</summary><p>Save as <code>doctor.py</code>:</p><pre data-file="doctor.py"><code class="language-python">&quot;&quot;&quot;Read-only laptop diagnostics. No packages, files, or cluster objects are changed.&quot;&quot;&quot;
+      - python3 -m pytest -q</code></pre></details>
+<details><summary>Included file — doctor.py</summary><pre data-file="doctor.py" data-workspace-file="doctor.py"><code class="language-python">&quot;&quot;&quot;Read-only laptop diagnostics. No packages, files, or cluster objects are changed.&quot;&quot;&quot;
 import argparse
 import json
-import os
 import re
 import shutil
 import subprocess
@@ -60,14 +59,14 @@ import sys
 from pathlib import Path
 
 TOOLS = {
-    &#x27;docker&#x27;: ([&#x27;--version&#x27;], &#x27;docker&#x27;),
-    &#x27;k3d&#x27;: ([&#x27;version&#x27;], &#x27;k3d&#x27;),
-    &#x27;kubectl&#x27;: ([&#x27;version&#x27;, &#x27;--client&#x27;, &#x27;-o&#x27;, &#x27;json&#x27;], &#x27;kubectl&#x27;),
-    &#x27;k9s&#x27;: ([&#x27;version&#x27;, &#x27;--short&#x27;], &#x27;k9s&#x27;),
-    &#x27;task&#x27;: ([&#x27;--version&#x27;], &#x27;go-task&#x27;),
-    &#x27;python3&#x27;: ([&#x27;--version&#x27;], &#x27;python312&#x27;),
-    &#x27;openssl&#x27;: ([&#x27;version&#x27;], &#x27;openssl&#x27;),
-    &#x27;curl&#x27;: ([&#x27;--version&#x27;], &#x27;curl&#x27;),
+    &#x27;docker&#x27;: [&#x27;--version&#x27;],
+    &#x27;k3d&#x27;: [&#x27;version&#x27;],
+    &#x27;kubectl&#x27;: [&#x27;version&#x27;, &#x27;--client&#x27;, &#x27;-o&#x27;, &#x27;json&#x27;],
+    &#x27;k9s&#x27;: [&#x27;version&#x27;, &#x27;--short&#x27;],
+    &#x27;task&#x27;: [&#x27;--version&#x27;],
+    &#x27;python3&#x27;: [&#x27;--version&#x27;],
+    &#x27;openssl&#x27;: [&#x27;version&#x27;],
+    &#x27;curl&#x27;: [&#x27;--version&#x27;],
 }
 
 def run(args):
@@ -98,9 +97,9 @@ def main(argv=None):
             failures.append(message)
 
     present = set()
-    for name, (flags, package) in TOOLS.items():
+    for name, flags in TOOLS.items():
         if not shutil.which(name):
-            report(&#x27;FAIL&#x27;, f&#x27;{name} missing. NixOS: nix-shell -p {package}&#x27;)
+            report(&#x27;FAIL&#x27;, f&#x27;{name} missing from PATH.&#x27;)
             continue
         code, out, err = run([name, *flags])
         if code:
@@ -116,9 +115,7 @@ def main(argv=None):
         code, out, err = run([&#x27;docker&#x27;, &#x27;info&#x27;, &#x27;--format&#x27;, &#x27;{{.ServerVersion}}&#x27;])
         if code:
             report(&#x27;FAIL&#x27;, &#x27;Docker daemon unavailable: &#x27; + (err or out)[:160])
-            print(&#x27;HINT: NixOS needs virtualisation.docker.enable = true; &#x27;
-                  &#x27;check systemctl status docker and your Docker socket access. &#x27;
-                  &#x27;A nix-shell supplies the CLI, not the daemon. Re-login after a group change.&#x27;)
+            print(&#x27;HINT: Check that the Docker daemon is running and your user can access its socket.&#x27;)
         else:
             report(&#x27;OK&#x27;, &#x27;Docker daemon: &#x27; + out)
 
@@ -178,10 +175,7 @@ if __name__ == &#x27;__main__&#x27;:
 <pre><code class="language-sh">python3 doctor.py
 # Once Task is available:
 task doctor</code></pre>
-<p>On NixOS a shell supplies commands, not the Docker daemon. If tools are missing, use this temporary shell for the rest of the lab. It also supplies Python dependencies without installing arbitrary downloaded Python executables on NixOS:</p>
-<pre><code class="language-sh">nix-shell -p docker k3d kubectl k9s go-task openssl curl \
-  &#x27;python312.withPackages (ps: with ps; [ fastapi uvicorn pytest httpx jsonpatch ])&#x27;</code></pre>
-<p>If Docker is unavailable, inspect <code>systemctl status docker</code> and enable <code>virtualisation.docker.enable = true;</code> in your own NixOS configuration. Configure socket access for your user and re-login after group changes. Do not make the socket world-writable. Record actual versions; the Nix Python packages may be newer than the explicitly pinned container dependencies.</p><p>Expected: installed tools and a reachable Docker daemon. Cluster absence is normal at this stage. At authoring time the inspected machine had Docker, k3d, kubectl, k9s, Task and Python; OpenSSL was missing, and k3d's default Kubernetes version did not match kubectl. Always rerun on the laptop you bring.</p>
+<p>Required commands: <code>docker</code>, <code>k3d</code>, <code>kubectl</code>, <code>k9s</code>, Go Task (<code>task</code>), <code>python3</code>, <code>openssl</code> and <code>curl</code>. Docker must be reachable. The doctor reports command versions, client/server compatibility and cluster readiness. An absent lab cluster is expected before Step 2.</p>
 <details><summary>Hint — daemon versus client</summary><p><code>docker --version</code> only proves the CLI exists. <code>docker info</code> checks that it can reach the daemon. A FAIL with a socket message is different from a missing command.</p></details>
 <details><summary>Review answer and variation</summary><p>A clean preflight may still say NEXT for the cluster. After Step 2, <code>task ready</code> must report two Ready nodes. For practice, explain what doctor should print on a fresh laptop with no Task and no cluster; run it directly with Python.</p></details>
 <h3>AI mentor prompt</h3><blockquote>I am on Step 1. Read my doctor output and help distinguish missing commands, daemon access, and an expected absent cluster. Give one hint at a time. Do not edit files or reveal the solution unless I ask. After a solution, ask me to explain it and change one requirement.</blockquote>
@@ -189,8 +183,8 @@ task doctor</code></pre>
 <section class="session" id="first-pod"><h2>Step 2 — Build an image and run a Pod</h2>
 <p>Read this workflow before running commands. A Deployment describes desired state, its ReplicaSet creates Pods, the scheduler chooses a node, and that node's kubelet starts containers. A Service selects ready endpoints; it does not start containers.</p>
 <figure><img class="motion-animated" src="assets/kubernetes-admission-lab/image-to-pod-animated.svg" alt="Image workflow: build on the laptop, import to node runtimes, then create and schedule a Pod. Highlights stop after 4.8 seconds." width="340"><img class="motion-static" src="assets/kubernetes-admission-lab/image-to-pod.svg" alt="Image workflow: build on the laptop, import to node runtimes, then create and schedule a Pod. Highlights stop after 4.8 seconds." width="340"><figcaption>Image workflow: build on the laptop, import to node runtimes, then create and schedule a Pod. Highlights stop after 4.8 seconds. A static counterpart is shown when reduced motion is enabled.</figcaption></figure>
-<ol><li>Build an image in the laptop Docker store.</li><li>Import it into the k3d node runtimes.</li><li>Create a Deployment; its controller creates a ReplicaSet and Pods.</li><li>The scheduler assigns a node; the kubelet starts the image there.</li><li>Observe readiness and make an HTTP request.</li></ol><p>Use k3d because it is lightweight K3s in Docker, already available here, and has direct image import. Minikube and kind can also do this; k3d avoids introducing another setup workflow two days before an interview. Pin the node image rather than relying on k3d's installed default. <a href="https://k3d.io/stable/">k3d documentation</a>.</p>
-<p>Use a dedicated cluster named admission-lab. If it already exists, inspect it instead of deleting or recreating it. Save a workspace-local kubeconfig so other cluster contexts are not changed. In every new terminal, enter the workspace, re-enter your Nix shell, and export KUBECONFIG again.</p>
+<ol><li>Build an image in the laptop Docker store.</li><li>Import it into the k3d node runtimes.</li><li>Create a Deployment; its controller creates a ReplicaSet and Pods.</li><li>The scheduler assigns a node; the kubelet starts the image there.</li><li>Observe readiness and make an HTTP request.</li></ol><p>Use k3d for lightweight K3s in Docker and direct image import. Minikube and kind can also do this; k3d avoids introducing another setup workflow two days before an interview. Pin the node image rather than relying on k3d's installed default. <a href="https://k3d.io/stable/">k3d documentation</a>.</p>
+<p>Use a dedicated cluster named admission-lab. If it already exists, inspect it instead of deleting or recreating it. Save a workspace-local kubeconfig so other cluster contexts are not changed. In every new terminal, enter the workspace, activate your Python environment when needed, and export KUBECONFIG again.</p>
 <pre><code class="language-sh">k3d cluster create admission-lab --image rancher/k3s:v1.37.1-k3s1 --agents 1   --kubeconfig-update-default=false --kubeconfig-switch-context=false   --k3s-arg &#x27;--disable=traefik@server:0&#x27; --timeout 120s
 k3d kubeconfig get admission-lab &gt; .kubeconfig
 chmod 600 .kubeconfig
@@ -199,7 +193,7 @@ kubectl config current-context
 kubectl wait --for=condition=Ready nodes --all --timeout=120s
 kubectl label node k3d-admission-lab-agent-0 lab.example.com/pool=observability --overwrite
 task ready</code></pre>
-<p>Expect context <code>k3d-admission-lab</code> and two Ready nodes. kubectl should be within one minor of the server. The pinned K3s 1.37 image matches the inspected 1.37 client. On another machine, follow doctor's compatibility hint before proceeding. Create a small FastAPI app exposing <code>GET /healthz</code> with JSON <code>{"status":"ok"}</code>, and run it locally on port 8080.</p>
+<p>Expect context <code>k3d-admission-lab</code> and two Ready nodes. kubectl should be within one minor of the server. Check your own client version with doctor before proceeding. Create a small FastAPI app exposing <code>GET /healthz</code> with JSON <code>{"status":"ok"}</code>, and run it locally on port 8080.</p>
 <details><summary>Hint — smallest endpoint</summary><p>Instantiate FastAPI, decorate a function with <code>@app.get("/healthz")</code>, and return a dictionary. Start it with <code>python3 -m uvicorn main:app --port 8080</code>. In another terminal request <code>curl --fail http://127.0.0.1:8080/healthz</code>.</p></details>
 <details><summary>Optional baseline solution — main.py</summary><pre data-file="baseline-main.py"><code class="language-python">from fastapi import FastAPI
 app = FastAPI()
@@ -207,7 +201,9 @@ app = FastAPI()
 @app.get(&quot;/healthz&quot;)
 def healthz():
     return {&quot;status&quot;: &quot;ok&quot;}</code></pre></details>
-<p>Use these container support files. The allowlist in .dockerignore prevents later certificates or kubeconfig from entering the build context. The Python process runs without root.</p>
+<p>Use these container support files. The allowlist in .dockerignore prevents later certificates or kubeconfig from entering the build context. The Python process runs without root.</p><p>For local endpoint testing, save requirements.txt below and create a Python environment:</p><pre><code class="language-sh">python3 -m venv .venv
+. .venv/bin/activate
+python3 -m pip install -r requirements.txt</code></pre>
 <p>Save as <code>requirements.txt</code>:</p><pre data-file="requirements.txt"><code class="language-text">fastapi==0.115.12
 uvicorn==0.34.2</code></pre>
 <p>Save as <code>Dockerfile</code>:</p><pre data-file="Dockerfile"><code class="language-dockerfile">FROM python:3.12-slim-bookworm
@@ -251,7 +247,7 @@ kubectl -n admission-demo port-forward deployment/hello 8080:8080</code></pre>
 pytest==8.3.5
 httpx==0.28.1
 jsonpatch==1.33</code></pre>
-<p>The Step 1 Nix shell already includes test packages. On ordinary Linux with Python 3.12, use a virtual environment and <code>python3 -m pip install -r requirements-dev.txt</code>. Do not run pip against the Nix-managed interpreter. The Docker runtime uses requirements.txt; record the local environment versions too.</p>
+<p>In your Python virtual environment, run <code>python3 -m pip install -r requirements-dev.txt</code>. The Docker runtime uses requirements.txt; record the local environment versions too.</p>
 <pre><code class="language-sh">python3 -m pytest -q</code></pre>
 <details><summary>Hint 1 — separate responsibilities</summary><p>Have the pure function return a list of operations. Test that list independently before adding base64 or an HTTP endpoint.</p></details>
 <details><summary>Hint 2 — response envelope</summary><pre><code class="language-json">{&quot;apiVersion&quot;:&quot;admission.k8s.io/v1&quot;,&quot;kind&quot;:&quot;AdmissionReview&quot;,&quot;response&quot;:{&quot;uid&quot;:&quot;copy-from-request&quot;,&quot;allowed&quot;:true}}</code></pre><p>For mutation add patchType and patch inside response. A denial is still HTTP 200; it is a successful webhook call reporting a negative decision.</p></details>
@@ -700,7 +696,7 @@ kubectl -n admission-demo delete deployment scheduling-fault</code></pre></detai
 <h3>AI mentor prompt</h3><blockquote>Act as my interviewer for Step 6 only if I choose an AI-assisted practice round. Ask one question at a time, avoid hints unless requested, and save feedback for the end. Give one hint at a time. Do not edit files or reveal the solution unless I ask. After a solution, ask me to explain it and change one requirement.</blockquote>
 </section>
 <section class="session" id="readiness"><h2>Step 7 — Prove the laptop is ready</h2>
-<p>Use the actual laptop you will bring. Run the doctor, restart the dedicated cluster, and repeat the employer's concrete request: build your own image and have it running as a Pod. Download/cache the Nix shell and base/dependency images beforehand; the first setup requires internet. Record successful commands, actual versions and any limitations in your own notes.</p>
+<p>Use the actual laptop you will bring. Run the doctor, restart the dedicated cluster, and repeat the employer's concrete request: build your own image and have it running as a Pod. Cache the container base image and Python dependencies beforehand; the first setup requires internet. Record successful commands, actual versions and any limitations in your own notes.</p>
 <pre><code class="language-sh">export KUBECONFIG=&quot;$PWD/.kubeconfig&quot;
 task ready
 k3d cluster stop admission-lab
