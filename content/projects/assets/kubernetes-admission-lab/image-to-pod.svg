@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="340" height="632" viewBox="0 0 340 632" role="img" aria-labelledby="title desc">
-<title id="title">Source → running Pod</title><desc id="desc">1  Write main.py + Dockerfile Source lives on your laptop.. 2  docker build Creates admission-lab:v1 in the laptop image store.. 3  k3d image import Copies that image into the cluster node runtimes.. 4  Apply a Deployment Deployment → ReplicaSet → Pod describes the desired workload.. 5  Schedule, then start Scheduler assigns a node. Kubelet starts the container.</desc>
-<style>.box{fill:#fff;stroke:#bdc9d8}.title{font:600 18px sans-serif;fill:#16304b}.label{font:600 16px sans-serif;fill:#16304b}.note{font:14px sans-serif;fill:#334c63}.arrow{stroke:#587289;stroke-width:2;fill:none}.highlight{fill:#c8efe4;opacity:0}</style>
-<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#587289"/></marker></defs>
-<rect width="340" height="632" rx="8" fill="#f4f7fb"/>
+<title id="title">Source → running Pod</title><desc id="desc">1  Write main.py + Dockerfile Source lives on your laptop.. 2  docker build Creates admission-lab:health-v1 in the laptop image store.. 3  k3d image import Copies that image into the cluster node runtimes.. 4  Apply a Deployment Deployment → ReplicaSet → Pod describes the desired workload.. 5  Schedule, then start Scheduler assigns a node. Kubelet starts the container.</desc>
+<style>.box{fill:#fbf9f4;stroke:#d8d1c3}.title{font:600 18px sans-serif;fill:#1c1a16}.label{font:600 16px sans-serif;fill:#1c1a16}.note{font:14px sans-serif;fill:#3f3b34}.arrow{stroke:#66615a;stroke-width:2;fill:none}.highlight{fill:#cfe0d2;opacity:0}@media (prefers-color-scheme:dark){[fill="#f5f2ea"]{fill:#1b1a17}.box{fill:#22201c;stroke:#57524a}text,.title,.label{fill:#ebe6da}.note{fill:#cfc9bc}.arrow,.wire{stroke:#a29c8f}[fill="#66615a"]{fill:#a29c8f}[stroke="#66615a"]{stroke:#a29c8f}.highlight{fill:#34493b}[fill="#ede8dd"]{fill:#2a2823}[stroke="#d8d1c3"]{stroke:#57524a}[fill="#e3eae1"]{fill:#26332c}[stroke="#9bb5a3"]{stroke:#4f6b5a}.call{stroke:#9bc4a8}[fill="#23523e"]{fill:#9bc4a8}[fill="#f3e6cc"]{fill:#3a3022}[stroke="#b9975a"]{stroke:#8a7346}}</style>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#66615a"/></marker></defs>
+<rect width="340" height="632" rx="8" fill="#f5f2ea"/>
 <text x="20" y="32" class="title">Source → running Pod</text>
 <rect x="18" y="52" width="304" height="76" rx="7" class="box"/>
 <text x="30" y="77" class="label">1  Write main.py + Dockerfile</text>
@@ -10,7 +10,7 @@
 <path d="M170 131 V148" class="arrow" marker-end="url(#arrow)"/>
 <rect x="18" y="152" width="304" height="76" rx="7" class="box"/>
 <text x="30" y="177" class="label">2  docker build</text>
-<text x="30" y="197" class="note">Creates admission-lab:v1</text>
+<text x="30" y="197" class="note">Creates admission-lab:health-v1</text>
 <text x="30" y="217" class="note">in the laptop image store.</text>
 <path d="M170 231 V248" class="arrow" marker-end="url(#arrow)"/>
 <rect x="18" y="252" width="304" height="76" rx="7" class="box"/>
