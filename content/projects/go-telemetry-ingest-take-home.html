@@ -128,8 +128,28 @@
 <header>
   <p class="eyebrow">Go · Infrastructure · Build and learn</p>
   <h1>Build an ingest relay</h1>
-  <p class="intro">Receive log events over HTTP and write them to a file. Then make your service handle bursts, batch its writes, and shut down without losing accepted work.</p>
-  <p class="meta">Seven steps for pairing with AI. Allow 14–18 hours to implement them, plus time to learn.</p>
+  <p class="intro">Receive log events over HTTP and write them to a file. Then make your service handle bursts, write in batches and stop without losing accepted work.</p>
+  <p class="meta">Seven steps to do with an AI pair. Plan 14–18 hours to implement them, plus time to learn.</p>
+  <h3>Glossary</h3>
+  <p>This brief uses each term below with one meaning only.</p>
+  <ul>
+  <li><strong>Event</strong>: one JSON object with the four string fields <code>id</code>, <code>service</code>, <code>level</code> and <code>message</code>.</li>
+  <li><strong>Event POST</strong>: one <code>POST /events</code> request.</li>
+  <li><strong>Read slot</strong>: permission to read and validate one request body. The relay has 16 read slots.</li>
+  <li><strong>Receive time</strong>: the UTC time that the relay assigns to an event while it handles the request, before admission.</li>
+  <li><strong>Admission</strong>: a handler puts a valid event into the queue. Admission order is the order of these puts.</li>
+  <li><strong>Queue</strong>: the bounded memory buffer for admitted events that wait for the worker. <code>-queue-size</code> sets its capacity.</li>
+  <li><strong>Worker</strong>: the one background worker. It performs all file writes.</li>
+  <li><strong>Batch</strong>: the events that the worker took from the queue for one write.</li>
+  <li><strong>Writer</strong>: the code that appends records to the output file.</li>
+  <li><strong>Record</strong>: one line in the output file. It holds the four event fields and the receive time.</li>
+  <li><strong>Flush</strong>: write the current batch to the output file in a single write.</li>
+  <li><strong>Exported</strong>: an event in a batch whose write completed fully without error.</li>
+  <li><strong>Overload</strong>: events arrive faster than the disk can write them. When the queue is full, the relay rejects new events with <code>503</code>.</li>
+  <li><strong>Drain</strong>: the worker writes the events that are still in the queue.</li>
+  <li><strong>Storage failure</strong>: a write error or a short write.</li>
+  <li><strong>Pair</strong>: the AI assistant that you work with.</li>
+  </ul>
 </header>
 <nav class="contents" aria-label="Contents">
   <a href="#brief">The challenge</a>
@@ -145,103 +165,158 @@
 
 <section aria-labelledby="brief">
 <h2 id="brief">The challenge</h2>
-<p>Imagine a small service running beside an application. It receives the application’s logs and appends them to a local file for another process to collect. That service is your ingest relay.</p>
-<p>The interesting part starts when events arrive faster than the disk can write them. How much can you keep in memory? When should you reject a request? What happens to accepted events when the process stops? You’ll answer these questions as you build.</p>
-<p>Use Go 1.22 or later and the standard library only, including for tests. Declare the Go version in <code>go.mod</code>. Deployment, Kubernetes, authentication, TLS, databases, retries, persistent queues, rotation, crash recovery, and throughput tuning are outside this challenge. You do not need to build the downstream collector.</p>
+<p>Imagine a small service that runs beside an application. It receives the application’s logs and appends them to a local file for another process to collect. That service is your ingest relay.</p>
+<p>The interesting part starts when events arrive faster than the disk can write them. How much can you keep in memory? When should you reject a request? What happens to accepted events when the process stops? You answer these questions as you build.</p>
+<p>Use Go 1.22 or later. Use only the standard library, also for tests. Declare the Go version in <code>go.mod</code>. These topics are outside this challenge:</p>
+<ul>
+<li>Deployment, Kubernetes, authentication and TLS.</li>
+<li>Databases, retries and persistent queues.</li>
+<li>Rotation, crash recovery and throughput tuning.</li>
+</ul>
+<p>You do not need to build the downstream collector.</p>
 </section>
 
 <section aria-labelledby="setup">
 <h2 id="setup">Before you start</h2>
-<p>Create an empty project and initialize a module:</p>
+<p>Create an empty project. Initialize a module:</p>
 <pre><code>go mod init example.com/relay</code></pre>
-<p id="working-with-ai">Pair with AI throughout: ask it to explain unfamiliar concepts, write code with you, and help investigate failures. Work in small changes. Predict what a test will do before running it, and ask why when the result surprises you. No AI transcript or proof of unaided authorship is required.</p>
-<p>Examples assume a main package at the module root and bash or zsh with <code>curl</code>. Adjust the build path if you choose another layout. Once you have a server, build it with <code>go build -o relay .</code>, run it in one terminal, and send requests from another.</p>
-<p>Each step includes a result to aim for. Outputs are examples, not results from an existing implementation. Test names, timings, JSON member order, and error wording may differ; statuses and behavior must match. Use a fresh process and a new output file for each independent example unless stated otherwise.</p>
+<p id="working-with-ai">Work with your AI pair through all steps. Ask it to do these things:</p>
+<ul>
+<li>Explain concepts that are new to you.</li>
+<li>Write code with you.</li>
+<li>Help you investigate failures.</li>
+</ul>
+<p>Make small changes. Before you run a test, predict what it will do. When the result surprises you, ask why. You do not need an AI transcript or proof of unaided authorship.</p>
+<p>The examples assume a main package at the module root. They also assume bash or zsh with <code>curl</code>. If you choose another layout, adjust the build path. When you have a server, build it with <code>go build -o relay .</code>. Run it in one terminal. Send requests from another terminal.</p>
+<p>Each step gives a result to aim for. The outputs are examples, not results from an existing implementation. Test names, timings, JSON member order and error wording may differ. Statuses and behavior must match. Use a fresh process and a new output file for each independent example, unless the brief says otherwise.</p>
 <p class="small">Optional warm-ups: <a href="go-scratch-exercises.html">Go Scratch Exercises</a>.</p>
 </section>
 
 <section aria-labelledby="requirements" id="sessions">
 <h2 id="requirements">Build it one step at a time</h2>
-<p>Work through each step with your pair, and split it when you need more time. Keep the tests from earlier steps as you add behavior. The requirements live here alongside the examples.</p>
+<p>Do each step with your pair. If you need more time, split the step. Keep the tests from earlier steps when you add behavior. The requirements are here, next to the examples.</p>
 
 <section class="session" aria-labelledby="session-1">
 <h3 id="session-1">Step 1 — Read an event</h3>
-<p>Start with code that turns JSON into a validated event. You don’t need HTTP yet. Use this as your first input:</p>
+<p>Start with code that converts JSON into a validated event. You do not need HTTP yet. Use this as your first input:</p>
 <pre><code>{"id":"evt-0001","service":"checkout","level":"info","message":"order placed"}</code></pre>
 <h4 id="validation">What to accept</h4>
-<p>Require exactly one object with four string fields: <code>id</code>, <code>service</code>, <code>level</code>, and <code>message</code>. Reject empty strings and strings containing only Unicode whitespace. Preserve valid values exactly. The level must be precisely <code>debug</code>, <code>info</code>, <code>warn</code>, or <code>error</code>.</p>
-<p>Reject missing or unknown fields, non-string values including <code>null</code>, malformed JSON, empty input, and non-object top-level values. Trailing whitespace is fine; another value or other trailing text is not. Choose and document your handling of repeated member names. Event IDs need not be unique; do not deduplicate them.</p>
-<p>Turn the input above into tests. Change one thing at a time. For example:</p>
+<p>Require exactly one object with four string fields: <code>id</code>, <code>service</code>, <code>level</code> and <code>message</code>. Reject empty strings and strings that contain only Unicode whitespace. Preserve valid values exactly. The level must be precisely <code>debug</code>, <code>info</code>, <code>warn</code> or <code>error</code>.</p>
+<p>Reject these inputs:</p>
+<ul>
+<li>Missing fields or unknown fields.</li>
+<li>Non-string values, including <code>null</code>.</li>
+<li>Malformed JSON.</li>
+<li>Empty input.</li>
+<li>Non-object top-level values.</li>
+</ul>
+<p>Allow trailing whitespace. Reject another value or other trailing text. Choose how to handle repeated member names, and document your choice. Event IDs need not be unique. Do not deduplicate them.</p>
+<p>Make tests from the input above. Change one thing at a time. For example:</p>
 <div class="table-wrap"><table>
 <caption>Input change → expected result</caption>
 <thead><tr><th scope="col">Change</th><th scope="col">Result</th></tr></thead>
 <tbody>
 <tr><td>None</td><td>Valid event, all four values unchanged</td></tr>
-<tr><td><code>"message":"  order placed  "</code></td><td>Valid; surrounding spaces preserved</td></tr>
-<tr><td><code>"level":"INFO"</code></td><td>Error identifying the invalid level</td></tr>
-<tr><td>Remove <code>id</code></td><td>Error identifying the missing field</td></tr>
-<tr><td>Append another object</td><td>Error identifying trailing data</td></tr>
+<tr><td><code>"message":"  order placed  "</code></td><td>Valid, surrounding spaces preserved</td></tr>
+<tr><td><code>"level":"INFO"</code></td><td>Error that identifies the invalid level</td></tr>
+<tr><td>Remove <code>id</code></td><td>Error that identifies the missing field</td></tr>
+<tr><td>Append another object</td><td>Error that identifies trailing data</td></tr>
 </tbody></table></div>
-<p>Run <code>go test -v ./...</code>. With tests named for those cases, part of the output might look like:</p>
+<p>Run <code>go test -v ./...</code>. If your tests have names for those cases, part of the output might look like this:</p>
 <pre class="output"><code>--- PASS: TestValidate/valid
 --- PASS: TestValidate/preserve_spaces
 --- PASS: TestValidate/invalid_level
 --- PASS: TestValidate/missing_id
 --- PASS: TestValidate/trailing_data
 PASS</code></pre>
-<p>Before moving on, cover every validation rule and accepted edge case. Explain to your pair the difference between malformed JSON and a well-formed event with invalid values.</p>
+<p>Before you continue, cover every validation rule and every accepted edge case. Explain to your pair the difference between malformed JSON and a well-formed event with invalid values.</p>
+<h3>AI mentor prompt</h3>
+<blockquote>I am on Step 1, reading an event. Ask me to list the inputs that my validation must reject. Then ask me how malformed JSON differs from a well-formed event with invalid values. Give one hint at a time. Do not edit files. Do not show the solution unless I ask for it.</blockquote>
 </section>
 
 <section class="session" aria-labelledby="session-2">
 <h3 id="session-2">Step 2 — Put it behind HTTP</h3>
-<p>Add <code>POST /events</code> and <code>GET /healthz</code>. Support <code>-listen</code>, a non-empty TCP <code>host:port</code> address defaulting to <code>127.0.0.1:8080</code>. Test successful admission with a test double for now; you’ll connect the actual queue in Step 4.</p>
+<p>Add <code>POST /events</code> and <code>GET /healthz</code>. Support <code>-listen</code>: a non-empty TCP <code>host:port</code> address, default <code>127.0.0.1:8080</code>. For now, test successful admission with a test double. You connect the actual queue in Step 4.</p>
 <h4 id="ingestion">Handle a request</h4>
-<p>Check read capacity, body size, validation, and admission in that order. Stop at the first rejection:</p>
+<p>Check read capacity, body size, validation and admission, in that order. Stop at the first rejection:</p>
 <ul>
-<li>Allow at most 16 requests to read or validate bodies concurrently. If all slots are occupied, return <code>503</code> immediately without reading the body or waiting. Release a slot when reading and validation finish, including on error.</li>
-<li>Limit bodies to 16,384 bytes after transfer decoding, counting trailing whitespace. Enforce bytes actually read, not just <code>Content-Length</code>; an oversized declared length may be rejected early. Exactly the limit is allowed. Larger bodies get <code>413</code>, or <code>400</code> if invalid input was already detected within the limit. Never admit an oversized body.</li>
-<li>Invalid events get <code>400</code>. Do not check <code>Content-Type</code>: valid bodies work regardless of its value or absence.</li>
-<li>Successful admission gets <code>202</code>. A full queue or closed admission gets <code>503</code>, without waiting for space. Handlers never write to the file or wait for storage.</li>
+<li><strong>Read capacity.</strong> Allow at most 16 requests to read or validate bodies at the same time. If all read slots are in use, return <code>503</code> immediately. Do not read the body. Do not wait. Release the slot when reading and validation finish, also on error.</li>
+<li><strong>Body size.</strong> Limit bodies to 16,384 bytes after transfer decoding, and count trailing whitespace. Enforce the limit on the bytes actually read, not only on <code>Content-Length</code>. You may reject an oversized declared length early. Allow a body of exactly the limit. A larger body gets <code>413</code>, or <code>400</code> if you already detected invalid input within the limit. Never admit an oversized body.</li>
+<li><strong>Validation.</strong> Invalid events get <code>400</code>. Do not check <code>Content-Type</code>. Valid bodies work with any value of this header, and also without it.</li>
+<li><strong>Admission.</strong> Successful admission gets <code>202</code>. A full queue or closed admission gets <code>503</code>, without waiting for space. Handlers never write to the file. Handlers never wait for the writer.</li>
 </ul>
-<p>Every rejected event POST must explain the problem. A <code>400</code> identifies the field or body error and why it failed; a <code>503</code> identifies read capacity, queue capacity, or closed admission. Choose and document response formats, including the success body.</p>
-<p>Health returns <code>200</code> during normal operation; choose the body. It may return <code>503</code> or be unreachable after shutdown begins or storage fails. Other methods on <code>/events</code> return <code>405</code>; unknown paths return <code>404</code>.</p>
+<p>Every rejected event POST must explain the problem:</p>
+<ul>
+<li>A <code>400</code> identifies the field or body error and why it failed.</li>
+<li>A <code>503</code> identifies read capacity, queue capacity or closed admission.</li>
+</ul>
+<p>Choose the response formats, including the success body. Document them.</p>
+<p>Health returns <code>200</code> during normal operation. Choose its body. After shutdown starts or a storage failure occurs, health may return <code>503</code> or be unreachable. Other methods on <code>/events</code> return <code>405</code>. Unknown paths return <code>404</code>.</p>
 <h4>Try it</h4>
-<p>Run <code>./relay</code>, then send an invalid event from the other terminal:</p>
+<p>Run <code>./relay</code>. Then send an invalid event from the other terminal:</p>
 <pre><code>curl -sS -w '\n%{http_code}\n' \
   --data-binary '{"id":"evt-0001","service":"checkout","level":"INFO","message":"order placed"}' \
   http://127.0.0.1:8080/events</code></pre>
 <p class="example-label">Expected: an explanation and status 400</p>
 <pre class="output"><code>{"error":"level must be debug, info, warn, or error"}
 400</code></pre>
-<p>Also test both size boundaries (16,384 and 16,385 bytes), success, wrong methods, and unknown paths. Hold 16 requests mid-body in a test; the next must get <code>503</code> without its body being read.</p>
+<p>Also test these cases:</p>
+<ul>
+<li>Both size boundaries: 16,384 and 16,385 bytes.</li>
+<li>Success.</li>
+<li>Wrong methods.</li>
+<li>Unknown paths.</li>
+</ul>
+<p>In a test, hold 16 requests in the middle of their bodies. The next request must get <code>503</code>. The relay must not read its body.</p>
+<h3>AI mentor prompt</h3>
+<blockquote>I am on Step 2, the HTTP handler. Ask me to list the four checks in their order. Then ask me which status each rejection gets. Then ask me how my test holds 16 requests in the middle of their bodies. Give one hint at a time. Do not edit files. Do not show the solution unless I ask for it.</blockquote>
 </section>
 
 <section class="session" aria-labelledby="session-3">
 <h3 id="session-3">Step 3 — Write a record</h3>
-<p>Now build the file-writing part independently. Support <code>-out</code>, a non-empty path defaulting to <code>events.jsonl</code>. Open the file at startup in append mode, creating it if needed. Never truncate or rewrite existing content.</p>
+<p>Now build the writer independently. Support <code>-out</code>: a non-empty path, default <code>events.jsonl</code>. At startup, open the file in append mode. Create the file if needed. Never truncate or rewrite existing content.</p>
 <h4 id="storage">The output format</h4>
-<p>Write one complete JSON object followed by a newline per event. Each record has exactly the four original fields plus a server-assigned receive time. The time must come from the UTC clock while handling the request, before admission; use an RFC 3339 string ending in <code>Z</code>. Choose and document its field name and precision.</p>
-<p>For a writer test, supply the event from Step 1 and a fixed receive time. With the field name <code>received_at</code>, the appended line should look like:</p>
+<p>For each event, write one complete JSON object followed by a newline. Each record has exactly the four original fields plus a receive time that the server assigns. The time must come from the UTC clock while the relay handles the request, before admission. Use an RFC 3339 string that ends in <code>Z</code>. Choose the field name and the precision of the time. Document both.</p>
+<p>For a writer test, supply the event from Step 1 and a fixed receive time. With the field name <code>received_at</code>, the appended line should look like this:</p>
 <pre class="output"><code>{"id":"evt-0001","service":"checkout","level":"info","message":"order placed","received_at":"2026-09-23T10:15:30.123Z"}</code></pre>
-<p>The real service uses its clock, so real timestamps will differ. JSON member order does not matter. Preserve the event’s string values even when encoding changes how characters are escaped.</p>
-<p>Test append behavior with one existing line, then write two records. The result should be <strong>three complete lines</strong>, with the original line unchanged. Decode the new lines to check their values. Make a write fail and verify that the error reaches the caller. You’ll handle it at service level in Step 6.</p>
+<p>The real service uses its clock, so real timestamps will differ. JSON member order does not matter. Preserve the string values of the event, even when the encoding escapes characters differently.</p>
+<p>Test append behavior:</p>
+<ol>
+<li>Start with a file that has one existing line.</li>
+<li>Write two records.</li>
+<li>Check the result. It should be <strong>three complete lines</strong>, with the original line unchanged.</li>
+<li>Decode the new lines to check their values.</li>
+</ol>
+<p>Make a write fail. Check that the error reaches the caller. You handle it at service level in Step 6.</p>
+<h3>AI mentor prompt</h3>
+<blockquote>I am on Step 3, writing a record. Ask me which fields each record has. Then ask me where the receive time comes from. Then ask me how my test proves that the original line stays unchanged. Give one hint at a time. Do not edit files. Do not show the solution unless I ask for it.</blockquote>
 </section>
 
 <section class="session" aria-labelledby="session-4">
 <h3 id="session-4">Step 4 — Connect the queue</h3>
-<p>Join the pieces: a handler validates an event, assigns its receive time, and admits it to a bounded queue. Exactly one background worker performs all file writes, in admission order. Concurrent requests need not follow connection arrival order.</p>
-<p>Support <code>-queue-size</code>, an integer ≥ 1 defaulting to <code>128</code>. Queue capacity counts events waiting for the worker, excluding its current batch. Start with one event per write. Keep memory bounded by the 16 read/validation slots, the queue, and one batch. Do not create per-request background work that outlives the request.</p>
+<p>Join the pieces. A handler validates an event, assigns its receive time and admits the event to a bounded queue. Exactly one background worker performs all file writes, in admission order. Concurrent requests need not follow connection arrival order.</p>
+<p>Support <code>-queue-size</code>: an integer ≥ 1, default <code>128</code>. Queue capacity counts the events that wait for the worker. It excludes the current batch of the worker. Start with one event per write. Keep memory bounded by the 16 read slots, the queue and one batch. Do not create per-request background work that outlives the request.</p>
+<figure><img class="motion-animated" src="assets/go-telemetry-ingest-take-home/event-path-animated.svg" alt="Path of one event: a handler gets a read slot, reads the body, validates the event and admits it to the queue. Each check has its rejection status: 503, 413, 400 and 503. The one worker takes a batch and writes it to the output file. The highlights stop after 4.9 seconds." width="340"><img class="motion-static" src="assets/go-telemetry-ingest-take-home/event-path.svg" alt="Path of one event: a handler gets a read slot, reads the body, validates the event and admits it to the queue. Each check has its rejection status: 503, 413, 400 and 503. The one worker takes a batch and writes it to the output file." width="340"><figcaption>Path of one event: four handler checks, each with its rejection status, then the queue, the one worker and the output file. The highlights stop after 4.9 seconds. If reduced motion is on, a static diagram shows instead.</figcaption></figure>
+<ol>
+<li>A handler gets one of the 16 read slots. If no read slot is free, the handler returns <code>503</code>.</li>
+<li>The handler reads the body. A body larger than 16,384 bytes gets <code>413</code>, or <code>400</code> if the handler already detected invalid input within the limit.</li>
+<li>The handler validates the event. An invalid event gets <code>400</code>. Then the handler assigns the receive time.</li>
+<li>The handler admits the event to the queue and returns <code>202</code>. A full queue or closed admission gets <code>503</code>.</li>
+<li>The one worker takes a batch from the queue. In this step, each write has one event. Step 5 adds batches of up to <code>-batch-size</code> events.</li>
+<li>The worker passes the batch to the writer in one write, in admission order.</li>
+<li>The writer appends one record per event to the output file.</li>
+</ol>
 <h4 id="observability">See where the events are</h4>
-<p>Add <code>GET /stats</code>, returning <code>200</code> and a JSON object with at least these integers:</p>
+<p>Add <code>GET /stats</code>. It returns <code>200</code> and a JSON object with at least these integers:</p>
 <div class="table-wrap"><table>
 <thead><tr><th scope="col">Field</th><th scope="col">Meaning</th></tr></thead>
 <tbody>
 <tr><td><code>accepted_total</code></td><td>Event POSTs answered 202</td></tr>
-<tr><td><code>rejected_total</code></td><td>Event POSTs answered 400, 413, or 503, each counted once; other paths and methods never count</td></tr>
-<tr><td><code>exported_total</code></td><td>Events in batches whose write completed fully without error; failed or partial writes count as zero</td></tr>
-<tr><td><code>queue_depth</code></td><td>Events not yet taken by the worker; excludes the current batch, even while being written</td></tr>
+<tr><td><code>rejected_total</code></td><td>Event POSTs answered 400, 413 or 503, each counted once. Other paths and methods never count.</td></tr>
+<tr><td><code>exported_total</code></td><td>Events in batches whose write completed fully without error. Failed or partial writes count as zero.</td></tr>
+<tr><td><code>queue_depth</code></td><td>Events that the worker did not take yet. It excludes the current batch, even while the worker writes it.</td></tr>
 </tbody></table></div>
-<p>Counters start at zero for each process and are not persisted. A statistics request after a client receives its response must reflect that response. The values need not be an atomic snapshot.</p>
+<p>Counters start at zero for each process. The relay does not persist them. A statistics request after a client receives its response must reflect that response. The values need not be an atomic snapshot.</p>
 <h4 id="examples">Try the whole path</h4>
 <p>Start a fresh process with <code>./relay -out step4.jsonl</code>. Send one event:</p>
 <pre><code>curl -sS -o /dev/null -w '%{http_code}\n' \
@@ -249,20 +324,42 @@ PASS</code></pre>
   http://127.0.0.1:8080/events</code></pre>
 <p class="example-label">Expected</p>
 <pre class="output"><code>202</code></pre>
-<p>Run <code>curl -sS http://127.0.0.1:8080/stats</code>. Once the write completes, the values should be:</p>
+<p>Run <code>curl -sS http://127.0.0.1:8080/stats</code>. When the write completes, the values should be:</p>
 <pre class="output"><code>{"accepted_total":1,"rejected_total":0,"exported_total":1,"queue_depth":0}</code></pre>
-<p><code>cat step4.jsonl</code> should show one record like Step 3’s. An immediate stats request can still show work pending; wait for the write before comparing these values.</p>
-<p>For a deterministic overload test, use queue capacity 2 and wait until the worker is blocked inside its first write. Submit two more events, then a fourth. Expect three <code>202</code> responses, one <code>503</code>, and:</p>
+<p><code>cat step4.jsonl</code> should show one record like the record in Step 3. An immediate stats request can still show pending work. Wait for the write before you compare these values.</p>
+<p>For a deterministic overload test, do these steps:</p>
+<ol>
+<li>Use queue capacity 2.</li>
+<li>Wait until the worker is blocked inside its first write.</li>
+<li>Submit two more events.</li>
+<li>Submit a fourth event.</li>
+<li>Expect three <code>202</code> responses, one <code>503</code> and these statistics:</li>
+</ol>
 <pre class="output"><code>{"accepted_total":3,"rejected_total":1,"exported_total":0,"queue_depth":2}</code></pre>
-<p>Release the write: eventually exported becomes 3 and queue depth becomes 0. Check other rejection counters too, including that 404 and 405 do not affect them.</p>
+<p>Release the write. Eventually, exported becomes 3 and queue depth becomes 0. Also check the other rejection counters. Check that 404 and 405 do not change them.</p>
+<h3>AI mentor prompt</h3>
+<blockquote>I am on Step 4, connecting the queue. Ask me to trace one event from the handler to the file. Then ask me what the overload test expects, and why. Give one hint at a time. Do not edit files. Do not show the solution unless I ask for it.</blockquote>
 </section>
 
 <section class="session" aria-labelledby="session-5">
 <h3 id="session-5">Step 5 — Write in batches</h3>
-<p>Replace one-event writes with batches of at most <code>-batch-size</code> events: an integer ≥ 1, default 16. Add <code>-flush-interval</code>: a positive Go duration, default <code>1s</code>. Queue and batch sizes are independent.</p>
-<p>Flush when the batch fills, on each periodic flush opportunity if it is non-empty, and when worker input ends. Never write an empty batch. Pass each batch to storage in a single write. A partial batch waits at most about one interval for a flush opportunity; disk completion time is not guaranteed.</p>
+<p>Replace one-event writes with batches of at most <code>-batch-size</code> events. This flag is an integer ≥ 1, default 16. Add <code>-flush-interval</code>: a positive Go duration, default <code>1s</code>. Queue size and batch size are independent.</p>
+<p>Flush the batch at these times:</p>
+<ul>
+<li>When the batch fills.</li>
+<li>On each periodic flush opportunity, if the batch is non-empty.</li>
+<li>When worker input ends.</li>
+</ul>
+<p>Never write an empty batch. Write each batch to the output file in a single write. A partial batch waits at most about one interval for a flush opportunity. Disk completion time is not guaranteed.</p>
 <h4>Try it in a controlled test</h4>
-<p>Use batch size 3 and a writer that records each call. Feed five events and wait until all five have been consumed, holding off the periodic flush. Then trigger one flush opportunity:</p>
+<ol>
+<li>Use batch size 3.</li>
+<li>Use a writer that records each call.</li>
+<li>Do not allow a periodic flush yet.</li>
+<li>Feed five events.</li>
+<li>Wait until the worker consumes all five events.</li>
+<li>Trigger one flush opportunity.</li>
+</ol>
 <div class="table-wrap"><table>
 <caption>Expected write calls</caption>
 <thead><tr><th scope="col">Point in the test</th><th scope="col">Writes so far</th><th scope="col">Events in each write</th></tr></thead>
@@ -271,37 +368,70 @@ PASS</code></pre>
 <tr><td>After the tick</td><td>2</td><td>3, 2</td></tr>
 <tr><td>Another tick, no new events</td><td>2</td><td>3, 2</td></tr>
 </tbody></table></div>
-<p>Repeat with input ending instead of a tick: the remaining two events must still be written. Choose your test design; do not rely on racing a real timer. Check write counts and contents, not just how many lines eventually appear in a file.</p>
+<p>Repeat the test, but end the input instead of a tick. The worker must still write the remaining two events. Choose your test design. Do not rely on racing a real timer. Check write counts and contents, not only how many lines eventually appear in a file.</p>
+<h3>AI mentor prompt</h3>
+<blockquote>I am on Step 5, writing in batches. Ask me to name the three times when the worker flushes a batch. Then ask me how my test triggers a flush opportunity without a race against a real timer. Give one hint at a time. Do not edit files. Do not show the solution unless I ask for it.</blockquote>
 </section>
 
 <section class="session" aria-labelledby="session-6">
 <h3 id="session-6">Step 6 — Stop without losing work</h3>
-<p>Now make the relay safe to stop. Work out who waits for whom with your pair before wiring the shutdown together.</p>
+<p>Now make the relay safe to stop. Before you connect the shutdown parts, decide with your pair which part waits for which.</p>
 <!-- Intentional correction: normal signal shutdown permits existing handlers to
      finish admission; storage failure stops all admission immediately. -->
 <h4 id="lifecycle">Shutdown and failure</h4>
-<p>On the first <code>SIGINT</code> or <code>SIGTERM</code>, stop new connections and requests. Let already-running handlers finish their normal checks and admission; they may return <code>202</code>. Once they finish, close worker input. No event may be admitted after that. Drain the queue, flush the partial batch, then close the file.</p>
-<p>Allow one five-second budget from the signal for the whole shutdown. If it expires, report what did not finish and exit nonzero. Choose and document second-signal behavior.</p>
-<p>A write error or short write must immediately stop all admission, including from in-flight handlers. Log the failure, shut down HTTP, and exit nonzero within five seconds of failure. An earlier signal-shutdown deadline still applies. No retries are required; unwritten events may be lost and the file may end with an incomplete line. Document that limitation.</p>
-<p>Every controlled exit after startup logs final accepted, exported, and rejected totals. Exit 0 only after timely, complete shutdown without storage failure. A crash or forced kill cannot promise final logs.</p>
+<p>On the first <code>SIGINT</code> or <code>SIGTERM</code>, the relay stops in the order below. One five-second budget from the signal covers the whole shutdown.</p>
+<figure><img src="assets/go-telemetry-ingest-take-home/shutdown.svg" alt="Signal shutdown in eight steps: stop new connections and requests, let running handlers finish, close worker input, drain the queue, flush the partial batch, close the file, log final totals, exit 0. If the five-second budget expires, report what did not finish and exit nonzero." width="340"><figcaption>Signal shutdown: one five-second budget from the signal covers all steps. If it expires, the relay reports what did not finish and exits nonzero.</figcaption></figure>
+<ol>
+<li>Stop new connections and requests.</li>
+<li>Let already-running handlers finish their normal checks and admission. They may return <code>202</code>.</li>
+<li>When they finish, close worker input. No event may be admitted after that.</li>
+<li>Drain the queue.</li>
+<li>Flush the partial batch.</li>
+<li>Close the file.</li>
+<li>Log the final accepted, exported and rejected totals.</li>
+<li>Exit 0 only after timely, complete shutdown without storage failure.</li>
+</ol>
+<p>If the budget expires, report what did not finish and exit nonzero. Choose the behavior for a second signal, and document it.</p>
+<p>A write error or a short write must immediately stop all admission, including from in-flight handlers. Then do these steps:</p>
+<ol>
+<li>Log the failure.</li>
+<li>Stop the HTTP server.</li>
+<li>Exit nonzero within five seconds of the failure.</li>
+</ol>
+<p>An earlier signal-shutdown deadline still applies. You do not need to add retries. Unwritten events may be lost, and the file may end with an incomplete line. Document that limitation.</p>
+<p>Every controlled exit after startup logs final accepted, exported and rejected totals. Exit 0 only after timely, complete shutdown without storage failure. A crash or forced kill cannot promise final logs.</p>
 <h4>Try it</h4>
 <p>Use an output path that does not exist yet. In terminal 1, run <code>./relay -out step6.jsonl -batch-size 16 -flush-interval 1h</code>. In terminal 2, send an event:</p>
 <pre><code>curl -sS -o /dev/null -w '%{http_code}\n' \
   --data-binary '{"id":"evt-0001","service":"checkout","level":"info","message":"order placed"}' \
   http://127.0.0.1:8080/events</code></pre>
-<p>After it prints <code>202</code>, press Ctrl+C in terminal 1, then run there:</p>
+<p>When it prints <code>202</code>, press Ctrl+C in terminal 1. Then run this in terminal 1:</p>
 <pre><code>echo $?
 wc -l &lt; step6.jsonl</code></pre>
 <p class="example-label">Expected: successful exit, one stored event</p>
 <pre class="output"><code>0
 1</code></pre>
-<p>The long interval leaves the event in a partial batch; shutdown must flush it. Final logs should report accepted 1, exported 1, rejected 0. Log formatting is yours.</p>
+<p>The long interval leaves the event in a partial batch. Shutdown must flush it. The final logs should report accepted 1, exported 1, rejected 0. You choose the log format.</p>
 <h4 id="configuration">Finish startup checks</h4>
-<p>Empty, unparseable, or out-of-range flags must report the flag name on standard error and exit nonzero without serving. File-open or address-bind failures must report the cause and exit nonzero. Announce readiness only after both succeed. Log the address and effective configuration, or explain a departure in the README.</p>
-<p>For example, <code>./relay -queue-size 0</code> should report something like <code>-queue-size must be at least 1</code> and fail. Also automate draining a nonempty queue, final flushing, stalled shutdown, and no admission after input closes. For write errors and short writes, assert that exported totals do not increase, the failure is reported, and no later event is admitted.</p>
+<p>An empty, unparseable or out-of-range flag must report the flag name on standard error. The relay must then exit nonzero without serving. A file-open or address-bind failure must report the cause and exit nonzero. Announce readiness only after both succeed. Log the address and the effective configuration, or explain a departure in the README.</p>
+<p>For example, <code>./relay -queue-size 0</code> should report something like <code>-queue-size must be at least 1</code> and fail. Also automate tests for these cases:</p>
+<ul>
+<li>Draining a nonempty queue.</li>
+<li>Final flushing.</li>
+<li>Stalled shutdown.</li>
+<li>No admission after input closes.</li>
+</ul>
+<p>For write errors and short writes, assert these results:</p>
+<ul>
+<li>Exported totals do not increase.</li>
+<li>The relay reports the failure.</li>
+<li>The relay admits no later event.</li>
+</ul>
 <h4 id="guarantees">Be precise about success</h4>
-<p><code>202</code> means accepted into memory, not persisted. Exported means a complete successful write handed bytes to the OS. After exit 0, each accepted event appears exactly once in admission order after earlier file content; this is per admission, not per unique ID.</p>
-<p>No <code>fsync</code> is required. Power loss, crashes, out-of-memory kills, and <code>SIGKILL</code> may lose data. After a failed write, counters show the gap in fully successful writes, not the exact number of intact records on disk.</p>
+<p><code>202</code> means accepted into memory, not persisted. Exported means that a complete successful write handed bytes to the OS. After exit 0, each accepted event appears exactly once, in admission order, after earlier file content. This rule applies per admission, not per unique ID.</p>
+<p>You do not need to call <code>fsync</code>. Power loss, crashes, out-of-memory kills and <code>SIGKILL</code> may lose data. After a failed write, the counters show the gap in fully successful writes. They do not show the exact number of intact records on disk.</p>
+<h3>AI mentor prompt</h3>
+<blockquote>I am on Step 6, shutdown and failure. Ask me to list the shutdown order from the signal to the closed file. Then ask me what changes after a write error or a short write. Give one hint at a time. Do not edit files. Do not show the solution unless I ask for it.</blockquote>
 </section>
 
 <section class="session" aria-labelledby="session-7">
@@ -310,13 +440,30 @@ wc -l &lt; step6.jsonl</code></pre>
 <pre id="tests"><code>go build ./...
 go vet ./...
 go test -race ./...</code></pre>
-<p class="example-label">Expected: build and vet succeed silently; the test command reports success</p>
+<p class="example-label">Expected: build and vet succeed silently. The test command reports success.</p>
 <pre class="output"><code>ok   example.com/relay   1.024s</code></pre>
-<p>The package name, timing, and number of lines depend on your layout. Format with <code>gofmt</code>; tests must also pass with plain <code>go test ./...</code> and on repeated runs. Use observable conditions rather than fixed sleeps, and avoid depending on a particular port being free.</p>
+<p>The package name, timing and number of lines depend on your layout. Format the code with <code>gofmt</code>. Tests must also pass with plain <code>go test ./...</code> and on repeated runs. Use observable conditions, not fixed sleeps. Avoid depending on a particular port being free.</p>
 <h4 id="deliverables">Keep the result runnable</h4>
-<p>Provide source, <code>go.mod</code>, tests, and a README in a repository or archive. Exclude binaries and event output files.</p>
-<p id="readme">In the README, include run and test commands, the event’s path, ownership of shared state and the file, shutdown order, documented choices, guarantees, and limitations. Note unfinished work and one unfamiliar concept you investigated.</p>
-<p>Review correctness, bounded and race-free concurrency, meaningful tests, and clarity. Trace an event with your pair, explain what happens under overload, and predict the effect of changing a limit. If you cannot explain part of the code yet, explore it next with your pair.</p>
+<p>Provide source, <code>go.mod</code>, tests and a README in a repository or archive. Exclude binaries and event output files.</p>
+<p id="readme">Include these items in the README:</p>
+<ul>
+<li>Run and test commands.</li>
+<li>The path of an event.</li>
+<li>Ownership of shared state and of the file.</li>
+<li>Shutdown order.</li>
+<li>Documented choices, guarantees and limitations.</li>
+<li>Unfinished work.</li>
+<li>One unfamiliar concept that you investigated.</li>
+</ul>
+<p>Review these qualities: correctness, bounded and race-free concurrency, meaningful tests and clarity. Do these things with your pair:</p>
+<ol>
+<li>Trace an event.</li>
+<li>Explain what happens under overload.</li>
+<li>Predict the effect of a changed limit.</li>
+</ol>
+<p>If you cannot explain part of the code yet, explore it next with your pair.</p>
+<h3>AI mentor prompt</h3>
+<blockquote>I am on Step 7, the final review. Ask me to trace one event through my relay. Then ask me to explain what happens under overload. Then ask me to predict the effect of a changed limit. Give one hint at a time. Do not edit files. Do not show the solution unless I ask for it.</blockquote>
 </section>
 </section>
 <footer>Independent practice material, not issued by any company. Part of the <a href="index.html">Go Infra Track</a>. Step-and-example format inspired by <a href="https://codingchallenges.fyi/challenges/challenge-wc/">Coding Challenges: Build Your Own wc Tool</a>.</footer>
