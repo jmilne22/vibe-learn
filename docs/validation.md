@@ -1,5 +1,14 @@
 # Rebuild validation
 
+## Admission lab in Go, STE100 wording — 8 October 2026
+
+- `nix-shell --run 'npm run verify'` passed: types, lint, content validation (6 items / 54 sections), 69 platform tests, production builds and 7 browser tests. `npm run smoke:desktop` passed with doctor.go as the supplied helper. Outside the Nix shell, the Rust exercise test needs a default rustup toolchain.
+- The lab webhook, its tests and the helpers are Go. The content test extracts `main.go`, `main_test.go`, `baseline-main.go`, `doctor.go`, `register.go` and `workloads.go` from the HTML and runs gofmt, vet and the 9 reference tests. The Go doctor fixture covers missing tools, Docker access, an absent cluster, version skew, an old Go, node readiness and the command timeout. The real `task doctor` passed in a folder without go.mod.
+- App and minimum content versions are 2.3.0, because older apps reject supplied `.go` files. A `.go` helper must start with `//go:build ignore`, and `*_test.go` names are rejected.
+- The two-stage Dockerfile built a 22 MB distroless image, and a changed-source rebuild passed with `--network=none`. A disposable two-node k3d cluster (`rancher/k3s:v1.37.1-k3s1`) verified TLS serving as user 65532, registration, dry-run without persistence, mutation of all three workload kinds with the linux selector kept, placement on the agent, UPDATE, namespace isolation, slog request lines, and fault card 3 with its new shell-only `base64` command.
+- Every project workspace now gets MENTOR-NOTES.md, a handoff log with a fixed format, and AGENTS.md guidance on reading it, offering updates at the end of a step, ticking NOTES.md on request and how to talk to the learner. Mentor mode now asks for approval on each edit instead of denying edits, so the notes files can be written. Verify and the desktop smoke passed again with these changes.
+- The brief text was rewritten to ASD-STE100 rules (structural rules strict for procedures, hints and mentor prompts) and checked with an STE linter. It adds a glossary, one duration (9½ hours, 8½ without the optional stage) and separate labels for files the app writes and files the learner copies.
+
 ## Supplied workspace helpers — 4 October 2026
 
 - `npm run verify` inside the repository shell passed: 58 platform tests, 7 browser tests, types, lint, catalog validation and production builds.

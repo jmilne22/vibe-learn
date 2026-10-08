@@ -14,6 +14,28 @@ const source = "content/projects/kubernetes-admission-lab.html";
 const catalog = compileCatalog();
 const project = catalog.items.find((item) => item.id === projectId)!;
 
+function go(dir: string, command: string, args: string[]): string {
+  return execFileSync(command, args, {
+    cwd: dir,
+    env: { ...process.env, CGO_ENABLED: "0", GOFLAGS: "-mod=mod", GOTOOLCHAIN: "local" },
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+    timeout: 120000,
+  });
+}
+
+// Runs check in a temporary Go module that holds files, then removes the module.
+function withModule(files: Record<string, string>, check: (dir: string) => void) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "vibe-admission-go-"));
+  try {
+    fs.writeFileSync(path.join(dir, "go.mod"), "module example.com/admission-lab\n\ngo 1.22\n");
+    for (const [name, contents] of Object.entries(files)) fs.writeFileSync(path.join(dir, name), contents);
+    check(dir);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+}
+
 describe("admission lab content and offline illustrations", () => {
   it("starts with reading, stays guided, and exports useful text and support files", () => {
     expect(project.checks).toEqual([]);
@@ -25,27 +47,54 @@ describe("admission lab content and offline illustrations", () => {
     expect($("pre,img")).toHaveLength(0);
     expect(project.stages[0]!.title).toBe("Step 0 — Read the assigned article");
     const files = workspaceFiles(project, "mentor");
-    expect(files.find((f) => f.path === "Taskfile.yml")?.contents).toContain("python3 doctor.py");
-    expect(files.find((f) => f.path === "doctor.py")?.contents).toContain("def main(argv=None)");
-    expect(files.some((f) => f.path === "main.py")).toBe(false);
-    expect(files.some((f) => f.path === "go.mod")).toBe(false);
+    expect(files.find((f) => f.path === "Taskfile.yml")?.contents).toContain("go run doctor.go");
+    const doctor = files.find((f) => f.path === "doctor.go")?.contents;
+    expect(doctor).toMatch(/^\/\/go:build ignore\n/);
+    expect(doctor).toContain("func doctorMain(");
+    for (const name of ["doctor.py", "main.go", "main.py", "go.mod"])
+      expect(files.some((f) => f.path === name), name).toBe(false);
     const text = files.map((f) => f.contents).join("\n");
-    expect(text).toContain("def main(argv=None)");
-    expect(text).toContain("python3 doctor.py");
     expect(text).toContain("Import it into the k3d node runtimes");
     expect(text).toContain("<details>");
     expect(text).not.toContain("data:image/");
     expect(text).not.toMatch(/NixOS|nix-shell|pacman/);
+    // The article and the upstream stage are Python; everything the learner runs is Go.
+    const learnerRuns = [
+      ...(project.kind === "project" ? project.supportFiles ?? [] : []).map((f) => f.contents),
+      ...project.stages.filter((s) => !["overview", "upstream"].includes(s.id)).map((s) => s.html),
+    ].join("\n");
+    expect(learnerRuns).not.toMatch(/python3?\b|pytest|pip install|FastAPI|uvicorn/i);
   });
 
   it("exercises the shipped doctor against missing tools, faults, and ready clusters", () => {
-    const doctor = workspaceFiles(project, "mentor").find((f) => f.path === "doctor.py")!.contents;
-    expect(doctor).toContain("def main");
-    execFileSync("python3", ["tests/v2/fixtures/admission-doctor.py"], {
-      input: doctor,
-      stdio: ["pipe", "pipe", "pipe"],
-      timeout: 10000,
+    const doctor = workspaceFiles(project, "mentor").find((f) => f.path === "doctor.go")!.contents;
+    const fixture = fs.readFileSync("tests/v2/fixtures/admission_doctor_test.go", "utf8");
+    // Drop the tag that keeps the helper out of a module, so the fixture can test it.
+    const untag = (text: string) => text.replace(/^\/\/go:build ignore\n/, "");
+    withModule({ "doctor.go": untag(doctor), "admission_doctor_test.go": untag(fixture) }, (dir) =>
+      go(dir, "go", ["test", "./..."]));
+  });
+
+  it("ships reference Go solutions and helpers that build, vet and pass their tests", () => {
+    const $ = load(fs.readFileSync(source, "utf8"));
+    const code = (name: string) => {
+      const block = $(`pre[data-file="${name}"] code`);
+      expect(block, name).toHaveLength(1);
+      return block.text() + "\n";
+    };
+    const helpers = ["doctor.go", "register.go", "workloads.go"];
+    const files = Object.fromEntries(
+      ["main.go", "main_test.go", ...helpers].map((name) => [name, code(name)]),
+    );
+    for (const name of helpers) expect(files[name], name).toMatch(/^\/\/go:build ignore\n/);
+    // The ignore tag keeps the helpers out of the learner's module. Vet checks them by name.
+    withModule(files, (dir) => {
+      expect(go(dir, "gofmt", ["-l", "."]).trim()).toBe("");
+      go(dir, "go", ["vet", "./..."]);
+      go(dir, "go", ["test", "./..."]);
+      for (const name of helpers) go(dir, "go", ["vet", name]);
     });
+    withModule({ "main.go": code("baseline-main.go") }, (dir) => go(dir, "go", ["vet", "./..."]));
   });
 
   it("embeds all images and preserves them through downloaded-content sanitization", () => {
@@ -53,7 +102,7 @@ describe("admission lab content and offline illustrations", () => {
     expect(Buffer.byteLength(data)).toBeLessThan(MAX_CATALOG_BYTES);
     const downloaded = validateDownloadedCatalog(data).items.find((i) => i.id === projectId)!;
     expect(workspaceFiles(downloaded, "mentor").find((f) => f.path === "Taskfile.yml")?.contents)
-      .toContain("python3 doctor.py");
+      .toContain("go run doctor.go");
     const $ = load(downloaded.stages.map((s) => s.html).join(""));
     expect($("img")).toHaveLength(8);
     $("img").each((_, el) => {

@@ -57,12 +57,25 @@ The brief is README.md (step 01) and the files in steps/. They are numbered as i
 - Work only on the step I name. If I haven't said which step I'm on, ask.
 - Read that step's file before helping. Don't read ahead or bring up requirements from later steps.
 - The \`<details>\` blocks in each step are hints and review answers. Never reveal them unprompted. When I'm stuck, give the smallest nudge first, and use a hint only after that, one at a time.
-- NOTES.md is my own log. Read it if it's there, but don't edit it.
-- A step is done when its "tests to write" pass and I'm happy with the code. Passing the checks in Vibe Learn doesn't prove every requirement, so review against the step's text too.
+- NOTES.md is my own log. Read it if it's there. Don't edit it, except to tick a step or copy in my own words when I ask.
+- MENTOR-NOTES.md is your handoff log for the next session: where I am, what I understand, my weak spots and how I like to be helped. Read it at the start of every session and build on it instead of starting again from scratch. At the end of a step or a session, offer to update it, and write only after I say yes. Follow the format at the top of the file.
+- A step is done when its "tests to write" pass and I'm happy with the code. Passing the checks in Vibe Learn doesn't prove every requirement, so review against the step's text too. When a step is done, ask whether to tick it in NOTES.md.
 `;
 const TONE = `### Tone
 
-Conversational and short. No lectures, no walls of text. Ask one question at a time. If I seem frustrated, take smaller steps.
+Conversational and short. No lectures, no walls of text.
+
+- One question or one action per message. Wait for my answer before the next one.
+- Name the exact thing: the file, line, field, object or command. Avoid words such as "it" or "the gap" when they could mean two things, and don't use one word for two meanings.
+- When you ask me to improve an earlier answer, show it to me. Don't ask me to repeat it from memory.
+- If a question is meant to be easy, say so. Don't ask about something that the last output already shows.
+- If I say I don't know, give one small nudge from my last correct answer. Don't give the answer plus a long recap.
+- When you ask for a change or a variation, spell out the exact change and the commands to run.
+- Run read-only checks yourself instead of asking me to paste output. Say in a few words why before you run one.
+- Say when you change topic. Say up front when a step asks me only to find problems, not to fix them.
+- Prefer concrete before-and-after values and the running system over abstract explanations. Reuse an analogy that worked (MENTOR-NOTES.md records them) instead of a new one.
+- At the start of a session, ask how much energy I have. If it's low, suggest one small task.
+- If I seem frustrated or tired, take smaller steps and keep the same calm tone.
 
 ### Voice-friendly
 
@@ -74,7 +87,7 @@ const HELPERS =
   "- README.md lists the helper files supplied with this project. You may read them and run their read-only checks, such as diagnostics, to see where I am.\n";
 const mentor = (helpers: string) => `## Your role
 
-You are a patient, friendly senior engineer pairing with me. I am learning by building. I write every line of code; you never write or edit my project files.
+You are a patient, friendly senior engineer pairing with me. I am learning by building. I write every line of code; you never write or edit my project files. The only exceptions are NOTES.md and MENTOR-NOTES.md, as described above, and only after I agree.
 
 ### How to help
 
@@ -86,6 +99,7 @@ ${helpers}- Lead with questions: what do I expect to happen, what did I try, wha
   3. describe what to try, in words
   4. a short snippet of a *different*, analogous example
 - Never paste the code I'm meant to write unless I explicitly say "show me". Even then, show the smallest piece and have me type it in.
+- If I'm stuck at an empty file, offer guided edits: one exact action at a time (the file, the place and a short fragment for me to type), then check the file before the next one.
 - Link official sources when useful, such as go.dev/doc, pkg.go.dev, and the docs the step references.
 
 ### Reviewing my work
@@ -176,6 +190,8 @@ ${supplied.length ? suppliedSection(supplied) : ""}
 ## Working with an AI assistant
 
 AGENTS.md tells coding assistants such as Claude Code, Codex, Gemini CLI, OpenCode and Zed how to help. Tell yours which step you're on, for example "I'm on step 02". Aider needs \`aider --read AGENTS.md\`.
+
+NOTES.md is your own log and step checklist. MENTOR-NOTES.md is where the assistant keeps notes for its next session. It offers to update them at the end of a step, and asks before it writes.
 `;
   const notes = `# Notes
 
@@ -191,12 +207,28 @@ ${steps.map((s) => `- [ ] ${s.number} ${s.stage.title}`).join("\n")}
 
 ## Learned
 `;
+  const mentorNotes = `# Mentor notes
+
+The assistant's handoff log, so that the next session continues where this one stopped. NOTES.md is my own log; this file is the assistant's view. The assistant offers to update it at the end of a step or a session, and writes only after I agree.
+
+Add one section for each step, headed with the step number and title from NOTES.md and the date. Use these parts:
+
+- **Status**: done or in progress, and what is left.
+- **What happened**: anything that differs from the step text, such as my own layout, tools or shortcuts.
+- **Did well**
+- **Weak spots to revisit**
+- **What helped and what didn't**: explanations, analogies and ways of asking that worked or didn't.
+- **Advice for the next session**
+
+Record what I understand and how I learn. Leave out personal remarks, and don't quote how I expressed frustration.
+`;
   const files: WorkspaceFile[] = [
     { path: "README.md", contents: readme },
     ...steps
       .filter((s) => s !== overview)
       .map((s) => ({ path: s.file, contents: md(s) })),
     { path: "NOTES.md", contents: notes },
+    { path: "MENTOR-NOTES.md", contents: mentorNotes },
     {
       path: "AGENTS.md",
       contents: agents(item, mode, supplied.length ? HELPERS : ""),
@@ -205,12 +237,14 @@ ${steps.map((s) => `- [ ] ${s.number} ${s.stage.title}`).join("\n")}
     { path: "GEMINI.md", contents: "@AGENTS.md\n" },
     ...supplied,
   ];
+  // Claude Code cannot allow the two notes files while denying other edits,
+  // because a deny rule always wins. So the learner approves each edit.
   if (mode === "mentor")
     files.push({
       path: ".claude/settings.local.json",
       contents:
         JSON.stringify(
-          { permissions: { deny: ["Edit", "Write", "NotebookEdit"] } },
+          { permissions: { ask: ["Edit", "Write", "NotebookEdit"] } },
           null,
           2,
         ) + "\n",

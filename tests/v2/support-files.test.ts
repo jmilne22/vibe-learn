@@ -16,7 +16,7 @@ describe("project support file names", () => {
       expect(parse(name).success, name).toBe(true);
   });
   it("rejects names other tools run or load automatically, whatever the case", () => {
-    for (const name of ["conftest.py", "Makefile", "package.json", "SETUP.PY", "AGENT.md", "opencode.json"]) {
+    for (const name of ["conftest.py", "Makefile", "package.json", "SETUP.PY", "AGENT.md", "opencode.json", "doctor_test.go", "Main_TEST.GO"]) {
       const result = parse(name);
       expect(result.success, name).toBe(false);
       expect(result.error?.message, name).toMatch(
@@ -24,10 +24,20 @@ describe("project support file names", () => {
       );
     }
   });
+  it("accepts a Go helper only when an ignore build tag keeps it out of the learner's module", () => {
+    const go = (contents: string) =>
+      ProjectSupportFilesSchema.safeParse([{ path: "doctor.go", contents }]);
+    expect(go("//go:build ignore\n\npackage main\n").success).toBe(true);
+    expect(go("//go:build ignore\r\n\r\npackage main\r\n").success).toBe(true);
+    for (const contents of ["package main\n", "// doctor\n//go:build ignore\n", "//go:build linux\n"])
+      expect(go(contents).error?.message, contents).toContain(
+        "Start a .go project support file with the line //go:build ignore",
+      );
+  });
   it("rejects other extensions and hidden names", () => {
     for (const name of ["run.exe", "script.rb", "pyproject.toml", "Dockerfile"])
       expect(parse(name).error?.message, name).toContain(
-        "Use a .py, .yml, .yaml, .md, .txt, .json or .sh project support file",
+        "Use a .py, .yml, .yaml, .md, .txt, .json, .sh or .go project support file",
       );
     for (const name of [".cursorrules", ".env.json"])
       expect(parse(name).error?.message, name).toContain("non-hidden");

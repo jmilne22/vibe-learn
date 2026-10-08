@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="340" height="632" viewBox="0 0 340 632" role="img" aria-labelledby="title desc">
-<title id="title">TLS and routing</title><desc id="desc">API server: caBundle contains the CA cert; it checks the name, then the CA, before any HTTP. Service identity: placement-webhook.admission-system.svc must be a SAN. Service: the API server reads its ready endpoints (selector app=placement-webhook). Pod IP and targetPort: the API server dials the Pod directly on https, 8443, where Uvicorn serves /mutate over TLS. Mounted Secret placement-tls → /certs tls.crt + tls.key; never in image.</desc>
+<title id="title">TLS and routing</title><desc id="desc">API server: caBundle contains the CA cert; it checks the name, then the CA, before any HTTP. Service identity: placement-webhook.admission-system.svc must be a SAN. Service: the API server reads its ready endpoints (selector app=placement-webhook). Pod IP and targetPort: the API server dials the Pod directly on https, 8443, where the Go server serves /mutate over TLS. Mounted Secret placement-tls → /certs tls.crt + tls.key; never in image.</desc>
 <style>.box{fill:#fbf9f4;stroke:#d8d1c3}.title{font:600 18px sans-serif;fill:#1c1a16}.label{font:600 16px sans-serif;fill:#1c1a16}.note{font:14px sans-serif;fill:#3f3b34}.arrow{stroke:#66615a;stroke-width:2;fill:none}.highlight{fill:#cfe0d2;opacity:0}@media (prefers-color-scheme:dark){[fill="#f5f2ea"]{fill:#1b1a17}.box{fill:#22201c;stroke:#57524a}text,.title,.label{fill:#ebe6da}.note{fill:#cfc9bc}.arrow,.wire{stroke:#a29c8f}[fill="#66615a"]{fill:#a29c8f}[stroke="#66615a"]{stroke:#a29c8f}.highlight{fill:#34493b}[fill="#ede8dd"]{fill:#2a2823}[stroke="#d8d1c3"]{stroke:#57524a}[fill="#e3eae1"]{fill:#26332c}[stroke="#9bb5a3"]{stroke:#4f6b5a}.call{stroke:#9bc4a8}[fill="#23523e"]{fill:#9bc4a8}[fill="#f3e6cc"]{fill:#3a3022}[stroke="#b9975a"]{stroke:#8a7346}}</style>
 <defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#66615a"/></marker></defs>
 <rect width="340" height="632" rx="8" fill="#f5f2ea"/>
@@ -22,7 +22,7 @@
 <rect x="18" y="352" width="304" height="76" rx="7" class="box"/>
 <text x="30" y="377" class="label">Pod IP : targetPort</text>
 <text x="30" y="397" class="note">Dialed directly: https → 8443</text>
-<text x="30" y="417" class="note">Uvicorn serves /mutate over TLS.</text>
+<text x="30" y="417" class="note">The Go server serves /mutate over TLS.</text>
 <path d="M170 448 V431" class="arrow" marker-end="url(#arrow)"/>
 <rect x="18" y="452" width="304" height="76" rx="7" class="box"/>
 <text x="30" y="477" class="label">Mounted Secret</text>

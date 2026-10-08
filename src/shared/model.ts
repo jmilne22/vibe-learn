@@ -47,7 +47,9 @@ const AUTOLOADED_NAMES = [
 ];
 // Supplied project helpers live at the workspace root. Reserve files generated
 // by the app, and reject aliases that collide on case-insensitive filesystems.
-// Helpers are runnable, so only plain script and data types are allowed.
+// Helpers are runnable, so only plain script and data types are allowed. A Go
+// helper must carry an ignore build tag so that the learner's own module never
+// compiles it: `go run doctor.go` names the file and still runs it.
 export const ProjectSupportFilesSchema = z
   .array(
     z.object({
@@ -57,24 +59,30 @@ export const ProjectSupportFilesSchema = z
           "Use a plain, non-hidden root filename for a project support file",
         )
         .regex(
-          /\.(py|ya?ml|md|txt|json|sh)$/i,
-          "Use a .py, .yml, .yaml, .md, .txt, .json or .sh project support file",
+          /\.(py|ya?ml|md|txt|json|sh|go)$/i,
+          "Use a .py, .yml, .yaml, .md, .txt, .json, .sh or .go project support file",
         )
         .refine(
-          (name) => !AUTOLOADED_NAMES.includes(name.toLowerCase()),
+          (name) =>
+            !AUTOLOADED_NAMES.includes(name.toLowerCase()) &&
+            !/_test\.go$/i.test(name),
           "Use a project support filename that other tools do not run or load automatically",
         )
         .refine(
           (name) =>
             !/^(con|prn|aux|nul|com[0-9]|lpt[0-9])(?:\.|$)/i.test(name) &&
             ![
-              "readme.md", "notes.md", "agents.md", "claude.md",
-              "gemini.md", "go.mod", "steps",
+              "readme.md", "notes.md", "mentor-notes.md", "agents.md",
+              "claude.md", "gemini.md", "go.mod", "steps",
             ].includes(name.toLowerCase()),
           "Use a root filename that is not reserved by the workspace",
         ),
       contents: z.string().max(100_000),
-    }),
+    }).refine(
+      (file) =>
+        !/\.go$/i.test(file.path) || /^\/\/go:build ignore\r?\n/.test(file.contents),
+      "Start a .go project support file with the line //go:build ignore",
+    ),
   )
   .max(20)
   .refine(
@@ -235,7 +243,8 @@ export const emptyState = (): AppState => ({
   reviews: [],
   exerciseWorkspaces: [],
 });
-// Mentor: the assistant gives hints and never edits. Pair: it may edit in small reviewed steps.
+// Mentor: the assistant gives hints and never edits code; it may update the two notes files
+// after the learner agrees. Pair: it may edit in small reviewed steps.
 export const AssistantModeSchema = z.enum(["mentor", "pair"]);
 export type AssistantMode = z.infer<typeof AssistantModeSchema>;
 export const CommandSchema = z.discriminatedUnion("type", [
