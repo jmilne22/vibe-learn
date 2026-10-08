@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="340" height="756" viewBox="0 0 340 756" role="img" aria-labelledby="title desc">
+<title id="title">Path of one event</title><desc id="desc">In a request handler: 1, get one of at most 16 read slots, or reply 503. 2, read a body of at most 16,384 bytes, or reply 413. 3, validate the event, or reply 400, then set the receive time. 4, admit the event to the queue and reply 202, or reply 503 when the queue is full or closed. In the one worker: 5, take a batch of at most -batch-size events. 6, write the batch in one write, in append mode. 7, the output file gets one JSON line per event. Queue size is -queue-size, default 128. The worker writes in admission order. The highlights move through the seven steps once and stop after 4.9 seconds.</desc>
+<style>.box{fill:#fbf9f4;stroke:#d8d1c3}.reject{fill:#f3e6cc;stroke:#b9975a}.title{font:600 18px sans-serif;fill:#1c1a16}.label{font:600 15px sans-serif;fill:#1c1a16}.code{font:600 15px sans-serif;fill:#6b4a12}.note{font:14px sans-serif;fill:#3f3b34}.group{font:italic 14px sans-serif;fill:#58534b}.arrow{stroke:#66615a;stroke-width:2;fill:none}.highlight{fill:#cfe0d2;opacity:0}@keyframes phase0{0%,0.0%{opacity:0}0.1%,12.8%{opacity:1}12.9%,100%{opacity:0}}.p0{animation:phase0 4.9s linear 1;}@keyframes phase1{0%,14.3%{opacity:0}14.4%,27.1%{opacity:1}27.2%,100%{opacity:0}}.p1{animation:phase1 4.9s linear 1;}@keyframes phase2{0%,28.6%{opacity:0}28.7%,41.4%{opacity:1}41.5%,100%{opacity:0}}.p2{animation:phase2 4.9s linear 1;}@keyframes phase3{0%,42.9%{opacity:0}43.0%,55.6%{opacity:1}55.7%,100%{opacity:0}}.p3{animation:phase3 4.9s linear 1;}@keyframes phase4{0%,57.1%{opacity:0}57.2%,69.9%{opacity:1}70.0%,100%{opacity:0}}.p4{animation:phase4 4.9s linear 1;}@keyframes phase5{0%,71.4%{opacity:0}71.5%,84.2%{opacity:1}84.3%,100%{opacity:0}}.p5{animation:phase5 4.9s linear 1;}@keyframes phase6{0%,85.7%{opacity:0}85.8%,98.5%{opacity:1}98.6%,100%{opacity:0}}.p6{animation:phase6 4.9s linear 1;}@media(prefers-reduced-motion:reduce){.highlight{animation:none!important;opacity:0!important}}@media (prefers-color-scheme:dark){[fill="#f5f2ea"]{fill:#1b1a17}.box{fill:#22201c;stroke:#57524a}.reject{fill:#3a3022;stroke:#8a7346}text,.title,.label{fill:#ebe6da}.code{fill:#e8c98a}.note{fill:#cfc9bc}.group{fill:#b8b2a5}.arrow{stroke:#a29c8f}[fill="#66615a"]{fill:#a29c8f}.highlight{fill:#34493b}}</style>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#66615a"/></marker></defs>
+<rect width="340" height="756" rx="8" fill="#f5f2ea"/>
+<text x="20" y="32" class="title">Path of one event</text>
+<text x="14" y="60" class="group">In a request handler</text>
+<text x="72" y="426" class="group">In the one worker</text>
+<rect x="14" y="72" width="190" height="64" rx="7" class="box"/>
+<rect x="15" y="73" width="188" height="62" rx="7" class="highlight p0"/>
+<text x="26" y="98" class="label">1  Get a read slot</text>
+<text x="26" y="120" class="note">At most 16 at once</text>
+<path d="M206 104 H222" class="arrow" marker-end="url(#arrow)"/>
+<rect x="226" y="72" width="100" height="64" rx="7" class="reject"/>
+<text x="236" y="93" class="code">503</text>
+<text x="236" y="111" class="note">no free</text>
+<text x="236" y="128" class="note">read slot</text>
+<path d="M60 139 V154" class="arrow" marker-end="url(#arrow)"/>
+<rect x="14" y="158" width="190" height="64" rx="7" class="box"/>
+<rect x="15" y="159" width="188" height="62" rx="7" class="highlight p1"/>
+<text x="26" y="184" class="label">2  Read the body</text>
+<text x="26" y="206" class="note">16,384 bytes at most</text>
+<path d="M206 190 H222" class="arrow" marker-end="url(#arrow)"/>
+<rect x="226" y="158" width="100" height="64" rx="7" class="reject"/>
+<text x="236" y="179" class="code">413</text>
+<text x="236" y="197" class="note">body too</text>
+<text x="236" y="214" class="note">large</text>
+<path d="M60 225 V240" class="arrow" marker-end="url(#arrow)"/>
+<rect x="14" y="244" width="190" height="64" rx="7" class="box"/>
+<rect x="15" y="245" width="188" height="62" rx="7" class="highlight p2"/>
+<text x="26" y="270" class="label">3  Validate</text>
+<text x="26" y="292" class="note">Then set receive time</text>
+<path d="M206 276 H222" class="arrow" marker-end="url(#arrow)"/>
+<rect x="226" y="244" width="100" height="64" rx="7" class="reject"/>
+<text x="236" y="265" class="code">400</text>
+<text x="236" y="283" class="note">invalid</text>
+<text x="236" y="300" class="note">event</text>
+<path d="M60 311 V326" class="arrow" marker-end="url(#arrow)"/>
+<rect x="14" y="330" width="190" height="64" rx="7" class="box"/>
+<rect x="15" y="331" width="188" height="62" rx="7" class="highlight p3"/>
+<text x="26" y="356" class="label">4  Admit to queue</text>
+<text x="26" y="378" class="note">Then reply 202</text>
+<path d="M206 362 H222" class="arrow" marker-end="url(#arrow)"/>
+<rect x="226" y="330" width="100" height="64" rx="7" class="reject"/>
+<text x="236" y="351" class="code">503</text>
+<text x="236" y="369" class="note">queue full</text>
+<text x="236" y="386" class="note">or closed</text>
+<path d="M60 397 V442" class="arrow" marker-end="url(#arrow)"/>
+<rect x="14" y="446" width="190" height="64" rx="7" class="box"/>
+<rect x="15" y="447" width="188" height="62" rx="7" class="highlight p4"/>
+<text x="26" y="472" class="label">5  Take a batch</text>
+<text x="26" y="494" class="note">At most -batch-size</text>
+<path d="M60 513 V528" class="arrow" marker-end="url(#arrow)"/>
+<rect x="14" y="532" width="190" height="64" rx="7" class="box"/>
+<rect x="15" y="533" width="188" height="62" rx="7" class="highlight p5"/>
+<text x="26" y="558" class="label">6  Write the batch</text>
+<text x="26" y="580" class="note">One write, append mode</text>
+<path d="M60 599 V614" class="arrow" marker-end="url(#arrow)"/>
+<rect x="14" y="618" width="190" height="64" rx="7" class="box"/>
+<rect x="15" y="619" width="188" height="62" rx="7" class="highlight p6"/>
+<text x="26" y="644" class="label">7  Output file</text>
+<text x="26" y="666" class="note">One JSON line per event</text>
+<text x="14" y="712" class="note">Queue size: -queue-size, default 128.</text>
+<text x="14" y="734" class="note">The worker writes in admission order.</text>
+</svg>

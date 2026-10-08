@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Four infrastructure challenges for learning Go by building with AI.">
+<meta name="description" content="Five infrastructure challenges. You learn Go when you build them with an AI partner.">
 <title>Go Infra Track — Build and Learn</title>
 <script>
 (function () {
@@ -142,45 +142,47 @@
 <header id="brief">
 <p class="eyebrow">Go Infra Track</p>
 <h1>Build something.<br>Understand how it works.</h1>
-<p class="lede">Four infrastructure challenges for learning Go by building with AI.</p>
-<p>Add one capability, run it, compare the result with the example, then continue. Each challenge gives you a concrete destination and checks along the way. You choose how to structure the code.</p>
-<p>Pair with AI freely. Ask for explanations, predict what a change will do, and use tests to check your understanding. The aim is working software you can explain and modify. Estimates cover implementation; allow extra time for learning.</p>
+<p class="lede">Five infrastructure challenges. You learn Go when you build them with an AI partner.</p>
+<p>Work in small steps:</p>
+<ol><li>Add one capability.</li><li>Run it.</li><li>Compare the result with the example.</li><li>Go to the next capability.</li></ol>
+<p>Each challenge gives you a clear result to build and checks for each step. You choose the structure of the code.</p>
+<p>Use AI as much as you want. Ask it to explain ideas. Predict what a change does before you run it. Use tests to check your understanding. The goal is working software that you can explain and change. The time estimates are for the implementation only. Add more time for learning.</p>
 </header>
 <section id="roadmap">
 <h2>Start with the relay</h2>
-<p>Build the <strong>Ingest Relay</strong> first. The <strong>Relay Operator</strong> deploys that service, so it depends on a working relay. <strong>Gossip Glomers</strong> and <strong>Tiny TSDB</strong> are independent projects: after the relay, follow either in whichever order interests you.</p>
+<p>Build the <strong>Ingest Relay</strong> first. The <strong>Relay Operator</strong> deploys the relay, so you need a working relay for it. <strong>Gossip Glomers</strong> and <strong>Tiny TSDB</strong> are independent projects. After the relay, do them in the order that you prefer.</p>
 </section>
 <section id="assignments" aria-label="Challenges">
 <div class="cards">
 <article class="card">
 <p class="eyebrow">01 · HTTP and concurrency</p>
 <h3>Ingest Relay</h3>
-<p>Build a service that accepts events, buffers them in a bounded queue, writes batches to disk, and drains safely on shutdown.</p>
-<p><strong>Bring:</strong> a Go toolchain and basic familiarity with functions and structs. Learn HTTP and concurrency as you go.</p>
+<p>Build a service that accepts events and holds them in a bounded queue. It writes batches to disk and drains the queue safely when it stops.</p>
+<p><strong>Bring:</strong> a Go toolchain and basic knowledge of functions and structs. You learn HTTP and concurrency while you build.</p>
 <p class="meta">7 steps · 14–18 hours</p>
 <p><a href="go-telemetry-ingest-take-home.html">Build the relay →</a></p>
 </article>
 <article class="card">
 <p class="eyebrow">02 · Kubernetes</p>
 <h3>Relay Operator</h3>
-<p>Turn the relay into a container, then build an operator that maintains its deployment, rolls out changes, and reports status.</p>
-<p><strong>Bring:</strong> your working relay, a container runtime, and room to run a local Kubernetes cluster. Setup is included.</p>
+<p>Put the relay in a container. Then build an operator that keeps its deployment correct, rolls out changes and reports status.</p>
+<p><strong>Bring:</strong> your working relay, a container runtime and enough resources for a local Kubernetes cluster. The brief includes the setup.</p>
 <p class="meta">6 steps · 14–18 hours</p>
 <p><a href="relay-operator.html">Build the operator →</a></p>
 </article>
 <article class="card">
 <p class="eyebrow">03 · Distributed systems</p>
 <h3>Gossip Glomers</h3>
-<p>Build six Go programs across Fly.io's 14 stages: messaging, unique IDs, broadcast, counters, logs, and transactions.</p>
-<p><strong>Bring:</strong> Go and the Java-based Maelstrom test harness. The guide includes its setup and test commands.</p>
+<p>Build six Go programs for the 14 stages of Fly.io's challenges: messaging, unique IDs, broadcast, counters, logs and transactions.</p>
+<p><strong>Bring:</strong> Go and the Maelstrom test harness, which runs on Java. The guide gives the setup and test commands.</p>
 <p class="meta">14 stages · 14–20 hours</p>
 <p><a href="gossip-glomers.html">Take on the distributed systems challenges →</a></p>
 </article>
 <article class="card">
 <p class="eyebrow">04 · Storage</p>
 <h3>Tiny TSDB</h3>
-<p>Build a time-series database with an HTTP API, crash recovery, compressed chunks, immutable blocks, and retention.</p>
-<p><strong>Bring:</strong> Go and experience from the relay. No existing database code or external Go libraries are needed.</p>
+<p>Build a time-series database with an HTTP API, crash recovery, compressed chunks, immutable blocks and retention.</p>
+<p><strong>Bring:</strong> Go and what you learned from the relay. You do not need database code or external Go libraries.</p>
 <p class="meta">6 steps · 16–20 hours</p>
 <p><a href="tiny-tsdb.html">Build the database →</a></p>
 </article>
@@ -194,10 +196,10 @@
 </article>
 </div>
 </section>
-<p class="caption">Want a smaller experiment first? Try the optional <a href="go-scratch-exercises.html">five Go warm-ups</a> on pointers, copies, channels, slices, and resource ownership. About 10–20 minutes each.</p>
+<p class="caption">To start with a smaller experiment, try the optional <a href="go-scratch-exercises.html">five Go warm-ups</a>. They cover pointers, copies, channels, slices and resource ownership. Each one takes about 10–20 minutes.</p>
 <details id="beyond">
 <summary>More project ideas</summary>
-<p>Other directions to explore whenever one interests you. This is an unranked list of ideas and starting references, not additional required work.</p>
+<p>These are other directions to explore when one interests you. The list has no ranking. It gives ideas and first references. It is not more required work.</p>
 <ul id="ideas">
 <li><strong>Time-series database in Go</strong> — <a href="tiny-tsdb.html">04 Tiny TSDB</a></li>
 <li><strong>Gossip Glomers</strong> — <a href="gossip-glomers.html">03 guide</a></li>

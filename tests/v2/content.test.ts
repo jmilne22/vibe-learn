@@ -74,6 +74,28 @@ describe("content compatibility and independent paths", () => {
     )!;
     expect(operator.stages.map((s) => s.html).join("")).toContain('id="REC-7"');
   });
+  it("gives every project brief a glossary, embedded diagrams and a mentor prompt per step", () => {
+    for (const item of catalog.items) {
+      const [overview, ...steps] = item.stages;
+      expect(overview!.html, item.id).toContain("<h3>Glossary</h3>");
+      for (const step of steps)
+        expect(step.html, `${item.id}/${step.id}`).toContain(
+          "<h3>AI mentor prompt</h3>",
+        );
+      const images = load(item.stages.map((s) => s.html).join(""))("img");
+      expect(images.length, item.id).toBeGreaterThan(0);
+      images.each((_, el) => {
+        expect(el.attribs.src, item.id).toMatch(
+          /^data:image\/svg\+xml;base64,/,
+        );
+        expect(el.attribs.alt?.trim(), item.id).toBeTruthy();
+      });
+    }
+    const experiments = catalog.items
+      .find((i) => i.id === "project:ingest-relay")!
+      .stages.find((s) => s.id === "go-experiments")!;
+    expect(experiments.html).toContain('src="data:image/svg+xml;base64,');
+  });
   it("can compile a new Markdown course without any retired course content", () => {
     const base = fs.mkdtempSync(path.join(os.tmpdir(), "vibe-content-"));
     try {

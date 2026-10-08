@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="340" height="578" viewBox="0 0 340 578" role="img" aria-labelledby="title desc">
+<title id="title">Summary first, then rows</title><desc id="desc">1 Collected repositories: alpha, beta and gamma from the fixed example. 2 The summary uses all 3: 3 repositories, 19 stars, Go: 2, Unknown: 1, 2 recently updated. 3 Sort and limit the rows with --sort stars --limit 2. alpha and beta have 8 stars. The full name breaks the tie. gamma is not displayed. 4 Write one format. Table, JSON and CSV all use the same rows: alpha, beta. The limit never changes the summary.</desc>
+<style>.box{fill:#fbf9f4;stroke:#d8d1c3}.fail{fill:#f3e6cc;stroke:#b9975a}.title{font:600 18px sans-serif;fill:#1c1a16}.label{font:600 16px sans-serif;fill:#1c1a16}.note{font:14px sans-serif;fill:#3f3b34}.code{font:14px monospace;fill:#3f3b34}.arrow{stroke:#66615a;stroke-width:2;fill:none}.dash{stroke:#b9975a;stroke-width:2;fill:none;stroke-dasharray:5 4}.highlight{fill:#cfe0d2;opacity:0}.loophl{stroke:#23523e;stroke-width:3;fill:none;opacity:0}.page{opacity:0}@media (prefers-color-scheme:dark){[fill="#f5f2ea"]{fill:#1b1a17}.box{fill:#22201c;stroke:#57524a}.fail{fill:#3a3022;stroke:#8a7346}text,.title,.label{fill:#ebe6da}.note,.code{fill:#cfc9bc}.arrow{stroke:#a29c8f}.dash{stroke:#8a7346}[fill="#66615a"]{fill:#a29c8f}[fill="#b9975a"]{fill:#8a7346}.highlight{fill:#34493b}.loophl{stroke:#9bc4a8}}</style>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#66615a"/></marker><marker id="arrowfail" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#b9975a"/></marker></defs>
+<rect width="340" height="578" rx="8" fill="#f5f2ea"/>
+<text x="20" y="32" class="title">Summary first, then rows</text>
+<rect x="18" y="52" width="304" height="79" rx="7" class="box"/>
+<text x="30" y="77" class="label">1  Collected repositories</text>
+<text x="30" y="97" class="note">alpha, beta and gamma from</text>
+<text x="30" y="117" class="note">the fixed example.</text>
+<path d="M170 134 V157" class="arrow" marker-end="url(#arrow)"/>
+<rect x="18" y="161" width="304" height="99" rx="7" class="box"/>
+<text x="30" y="186" class="label">2  Summary uses all 3</text>
+<text x="30" y="206" class="note">3 repositories, 19 stars</text>
+<text x="30" y="226" class="note">Go: 2, Unknown: 1</text>
+<text x="30" y="246" class="note">2 recently updated</text>
+<path d="M170 263 V286" class="arrow" marker-end="url(#arrow)"/>
+<rect x="18" y="290" width="304" height="119" rx="7" class="box"/>
+<text x="30" y="315" class="label">3  Sort and limit the rows</text>
+<text x="30" y="335" class="code">--sort stars --limit 2</text>
+<text x="30" y="355" class="note">alpha and beta have 8 stars.</text>
+<text x="30" y="375" class="note">The full name breaks the tie.</text>
+<text x="30" y="395" class="note">gamma is not displayed.</text>
+<path d="M170 412 V435" class="arrow" marker-end="url(#arrow)"/>
+<rect x="18" y="439" width="304" height="79" rx="7" class="box"/>
+<text x="30" y="464" class="label">4  Write one format</text>
+<text x="30" y="484" class="note">Table, JSON and CSV all use</text>
+<text x="30" y="504" class="note">the same rows: alpha, beta.</text>
+<text x="20" y="554" class="note">The limit never changes the summary.</text>
+</svg>

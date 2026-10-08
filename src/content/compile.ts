@@ -229,22 +229,22 @@ export function compileCatalog(base = root): Catalog {
       ];
     } else if (file === "relay-operator")
       item.prerequisites = [
-        "A working Ingest Relay workspace",
-        "Go, container runtime, kind, kubectl, Kubebuilder, and Helm. Perform the guided checks in your own local cluster.",
+        "A workspace with a working Ingest Relay.",
+        "Go, a container runtime, kind, kubectl, Kubebuilder and Helm. Do the guided checks on your own local cluster.",
       ];
     else if (file === "gossip-glomers") {
       item.prerequisites = [
-        "Go, a compatible JDK, Maelstrom, Graphviz, and gnuplot. See setup commands in the overview.",
+        "Go, a compatible JDK, Maelstrom, Graphviz and gnuplot. The overview gives the setup commands.",
       ];
       item.checks = maelstromChecks(stages);
     } else if (file === "cloud-reporter") {
       item.prerequisites = [
-        "Go. Internet access for live GitHub requests; local HTTP tests work offline.",
+        "Go. Live GitHub requests need internet access. The local HTTP tests work offline.",
       ];
       item.checks = [learnerCheck()];
     } else {
       item.prerequisites = [
-        "Go. Race-enabled learner tests also need a supported C compiler.",
+        "Go. Learner tests with the race detector also need a supported C compiler.",
       ];
       item.checks = [
         learnerCheck(),
@@ -312,7 +312,11 @@ export function compileCatalog(base = root): Catalog {
           return;
         }
         if (namespace === "take-home") {
-          const stem = path.basename(item.source, ".html");
+          // The Go experiments stage comes from its own source file.
+          const stem =
+            s.id === "go-experiments"
+              ? "go-scratch-exercises"
+              : path.basename(item.source, ".html");
           const assetRoot = path.resolve(base, "content/projects/assets", stem);
           const asset = path.resolve(base, "content/projects", src);
           const within = (root: string, file: string) => {

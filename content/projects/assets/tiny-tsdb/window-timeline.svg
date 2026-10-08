@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="340" height="640" viewBox="0 0 340 640" role="img" aria-labelledby="title desc">
+<title id="title">Window, seal threshold and retention cutoff</title><desc id="desc">Panel A, Step 5 fixture with 1m blocks (60000 ms). Samples at 0, 60000 and 90000. The window [0, 60000) is half-open, so 60000 belongs to the next window. The seal threshold is end + block-duration / 2 = 60000 + 30000 = 90000. The sample at 90000 seals [0, 60000). Result: 1 block and 2 head samples. Panel B, Step 6 boundary test with 2m retention (120000 ms). Blocks [0, 60000) and [60000, 120000), then the head. The newest timestamp is 180000. The cutoff is newest minus retention = 180000 - 120000 = 60000. Block [0, 60000) has end 60000, which is at or before 60000, so retention deletes it and the sample at 0. Block [60000, 120000) has end 120000, after 60000, so it stays. Retention never deletes the head.</desc>
+<style>.title{font:600 18px sans-serif;fill:#1c1a16}.label{font:600 16px sans-serif;fill:#1c1a16}.note{font:14px sans-serif;fill:#3f3b34}.axis{stroke:#66615a;stroke-width:2;fill:none}.mark{stroke:#9a5b1e;stroke-width:2;stroke-dasharray:5 4;fill:none}.marktext{font:600 14px sans-serif;fill:#9a5b1e}.win{fill:#cfe0d2;stroke:#6f927a}.block{fill:#e3eae1;stroke:#6f927a}.gone{fill:#f5f2ea;stroke:#a7a092;stroke-dasharray:4 3}.head{fill:#f3e6cc;stroke:#b9975a}.dot{fill:#1c1a16}.open{fill:#f5f2ea;stroke:#1c1a16;stroke-width:2}.rule{stroke:#d8d1c3}@media (prefers-color-scheme:dark){[fill="#f5f2ea"]{fill:#1b1a17}text,.title,.label{fill:#ebe6da}.note{fill:#cfc9bc}.axis{stroke:#a29c8f}.mark{stroke:#e0a564}.marktext{fill:#e0a564}.win{fill:#34493b;stroke:#6f927a}.block{fill:#26332c;stroke:#4f6b5a}.gone{fill:#1b1a17;stroke:#6d675c}.head{fill:#3a3022;stroke:#8a7346}.dot{fill:#ebe6da}.open{fill:#1b1a17;stroke:#ebe6da}.rule{stroke:#57524a}}</style>
+<rect width="340" height="640" rx="8" fill="#f5f2ea"/>
+<text x="20" y="32" class="title">Windows, seal and retention</text>
+
+<text x="20" y="66" class="label">A  Seal (Step 5 fixture)</text>
+<text x="20" y="88" class="note">-block-duration 1m = 60000 ms</text>
+<text x="170" y="114" class="marktext" text-anchor="middle">seal at 90000</text>
+<rect x="35" y="124" width="90" height="26" class="win"/>
+<text x="80" y="142" class="note" text-anchor="middle">[0, 60000)</text>
+<path d="M170 120 V168" class="mark"/>
+<path d="M30 160 H310" class="axis"/>
+<circle cx="35" cy="160" r="5" class="dot"/>
+<circle cx="125" cy="160" r="5" class="open"/>
+<circle cx="170" cy="160" r="5" class="dot"/>
+<text x="35" y="184" class="note" text-anchor="middle">0</text>
+<text x="125" y="184" class="note" text-anchor="middle">60000</text>
+<text x="215" y="184" class="note" text-anchor="middle">120000</text>
+<text x="305" y="184" class="note" text-anchor="middle">180000</text>
+<text x="20" y="212" class="note">Threshold = end + block-duration / 2</text>
+<text x="20" y="232" class="note">= 60000 + 30000 = 90000.</text>
+<text x="20" y="252" class="note">60000 belongs to the next window.</text>
+<text x="20" y="272" class="note">Sample at 90000 seals [0, 60000).</text>
+<text x="20" y="292" class="note">Result: 1 block, 2 head samples.</text>
+
+<path d="M20 314 H320" class="rule"/>
+
+<text x="20" y="344" class="label">B  Retention (Step 6 test)</text>
+<text x="20" y="366" class="note">-retention 2m = 120000 ms</text>
+<text x="125" y="394" class="marktext" text-anchor="middle">cutoff 60000</text>
+<text x="310" y="394" class="marktext" text-anchor="end">newest 180000</text>
+<rect x="35" y="404" width="90" height="26" class="gone"/>
+<text x="80" y="422" class="note" text-anchor="middle">deleted</text>
+<rect x="125" y="404" width="90" height="26" class="block"/>
+<text x="170" y="422" class="note" text-anchor="middle">block</text>
+<rect x="215" y="404" width="90" height="26" class="head"/>
+<text x="260" y="422" class="note" text-anchor="middle">head</text>
+<path d="M125 400 V448" class="mark"/>
+<path d="M305 400 V448" class="mark"/>
+<path d="M30 440 H310" class="axis"/>
+<circle cx="35" cy="440" r="5" class="open"/>
+<circle cx="170" cy="440" r="5" class="dot"/>
+<circle cx="305" cy="440" r="5" class="dot"/>
+<text x="35" y="464" class="note" text-anchor="middle">0</text>
+<text x="125" y="464" class="note" text-anchor="middle">60000</text>
+<text x="215" y="464" class="note" text-anchor="middle">120000</text>
+<text x="305" y="464" class="note" text-anchor="middle">180000</text>
+<text x="20" y="492" class="note">Cutoff = newest − retention</text>
+<text x="20" y="512" class="note">= 180000 − 120000 = 60000.</text>
+<text x="20" y="538" class="note">Block [0, 60000): end 60000 ≤ 60000.</text>
+<text x="20" y="558" class="note">Delete it. The sample at 0 goes too.</text>
+<text x="20" y="584" class="note">Block [60000, 120000): end 120000</text>
+<text x="20" y="604" class="note">is after 60000. Keep it.</text>
+<text x="20" y="628" class="note">Retention never deletes the head.</text>
+</svg>

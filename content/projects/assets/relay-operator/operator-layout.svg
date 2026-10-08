@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="340" height="612" viewBox="0 0 340 612" role="img" aria-labelledby="title desc">
+<title id="title">What the operator maintains</title>
+<desc id="desc">The controller reads the IngestRelay CR relay and writes the owned objects in the default namespace: DaemonSet relay and Service relay, type ClusterIP, with internalTrafficPolicy Local. In the kind cluster relay-lab, relay-lab-worker and relay-lab-worker2 each run one relay pod. Each relay pod writes /var/lib/ingest-relay/events.jsonl on its node. The control-plane node runs no relay pod. The relay pods have no control-plane toleration.</desc>
+<style>.box{fill:#fbf9f4;stroke:#d8d1c3}.dash{fill:none;stroke:#9a9384;stroke-dasharray:6 4}.title{font:600 18px sans-serif;fill:#1c1a16}.label{font:600 16px sans-serif;fill:#1c1a16}.note{font:14px sans-serif;fill:#3f3b34}.arrow{stroke:#66615a;stroke-width:2;fill:none}.highlight{fill:#cfe0d2;opacity:0}@media (prefers-color-scheme:dark){[fill="#f5f2ea"]{fill:#1b1a17}.box{fill:#22201c;stroke:#57524a}.dash{stroke:#8a8476}text,.title,.label{fill:#ebe6da}.note{fill:#cfc9bc}.arrow{stroke:#a29c8f}[fill="#66615a"]{fill:#a29c8f}.highlight{fill:#34493b}}</style>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#66615a"/></marker></defs>
+<rect width="340" height="612" rx="8" fill="#f5f2ea"/>
+<text x="20" y="32" class="title">What the operator maintains</text>
+<rect x="18" y="52" width="304" height="76" rx="7" class="box"/>
+<text x="30" y="76" class="label">Controller</text>
+<text x="30" y="96" class="note">Reads the IngestRelay CR relay.</text>
+<text x="30" y="116" class="note">Writes the owned objects.</text>
+<path d="M170 131 V148" class="arrow" marker-end="url(#arrow)"/>
+<rect x="18" y="152" width="304" height="116" rx="7" class="box"/>
+<text x="30" y="176" class="label">Owned objects</text>
+<text x="30" y="196" class="note">Namespace: default</text>
+<text x="30" y="216" class="note">DaemonSet relay</text>
+<text x="30" y="236" class="note">Service relay: ClusterIP,</text>
+<text x="30" y="256" class="note">internalTrafficPolicy: Local</text>
+<path d="M170 271 V288" class="arrow" marker-end="url(#arrow)"/>
+<rect x="18" y="292" width="304" height="300" rx="7" class="dash"/>
+<text x="30" y="316" class="label">kind cluster relay-lab</text>
+<rect x="30" y="328" width="280" height="76" rx="7" class="box"/>
+<text x="42" y="352" class="label">relay-lab-worker</text>
+<text x="42" y="372" class="note">One relay pod. It writes to</text>
+<text x="42" y="392" class="note">/var/lib/ingest-relay/events.jsonl</text>
+<rect x="30" y="414" width="280" height="76" rx="7" class="box"/>
+<text x="42" y="438" class="label">relay-lab-worker2</text>
+<text x="42" y="458" class="note">One relay pod. It writes to</text>
+<text x="42" y="478" class="note">/var/lib/ingest-relay/events.jsonl</text>
+<rect x="30" y="500" width="280" height="80" rx="7" class="box"/>
+<text x="42" y="524" class="label">Control-plane node</text>
+<text x="42" y="544" class="note">No relay pod. The relay pods have</text>
+<text x="42" y="564" class="note">no control-plane toleration.</text>
+</svg>

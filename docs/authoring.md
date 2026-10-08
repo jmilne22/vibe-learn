@@ -89,3 +89,9 @@ Store SVG/PNG/JPEG images in `content/projects/assets/<source-file-stem>/` and r
 Pair animated and static images with the `motion-animated` and `motion-static` classes. The reader stylesheet selects the static image under reduced motion as an additional fallback for browsers that do not propagate this preference into SVG image documents. Both images need useful alt text; keep captions and numbered explanations outside the images so workspace Markdown retains them.
 
 Always include descriptive alt text, captions and numbered prose equivalents. Workspace Markdown exports retain image descriptions and captions, not the images themselves. The Kubernetes Admission Lab demonstrates this pattern. Its Go tests and cluster checks run in the learner terminal; do not register app checks or create an app-owned runner for it. `tests/v2/admission-content.test.ts` extracts the reference `main.go`, `main_test.go` and helpers from the HTML and runs gofmt, vet and the tests, so keep those blocks complete.
+
+## Writing style for project briefs
+
+Write project briefs about 80% of the way to ASD-STE100 Simplified Technical English. Steps that the learner does use the strict rules: one instruction per sentence, the imperative, and 20 words or fewer. Explanations use active voice, simple tenses and 25 words or fewer per sentence, with no semicolons or phrasal verbs. Keep commands, output blocks, contract values and hedges exactly as they are.
+
+Each brief has a Glossary that gives each term one meaning, an "AI mentor prompt" at the end of each step, and at least one diagram of the main mechanism. The diagrams follow the illustration rules above.

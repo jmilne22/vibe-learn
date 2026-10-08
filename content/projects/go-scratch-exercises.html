@@ -143,21 +143,51 @@
 <p class="eyebrow">Go Infra Track · Optional warm-ups</p>
 <h1>Predict it. Run it. Explain it.</h1>
 <p class="lede">Five small Go experiments about copies, shared memory, queues, and ownership.</p>
-<p>Use these when a concept in a challenge feels unfamiliar. Each takes roughly 10–20 minutes, with extra time to explore. They are optional and are not part of your submission. Pair with AI: describe your prediction before asking it to help write the experiment, then explain any mismatch together.</p>
-<p>Keep the programs in a scratch directory outside your challenge code. These are tasks to implement, followed by commands to run your programs and expected output. They deliberately leave function names and program structure to you.</p>
+<p>Use these experiments when a concept in a challenge feels unfamiliar. Each experiment takes roughly 10–20 minutes, with extra time to explore. The experiments are optional. They are not part of your submission.</p>
+<p>Work with your AI partner. Tell it your prediction before you ask it to help write the experiment. Then explain any mismatch together.</p>
+<p>Keep the programs in a scratch directory outside your challenge code. Each experiment gives a task to implement. Then it gives commands that run your programs, and the expected output. The experiments deliberately leave function names and program structure to you.</p>
 <pre data-lang="sh"><code>mkdir go-warmups
 cd go-warmups
 go mod init example.com/go-warmups
 mkdir values copies channels slices ownership</code></pre>
-<p>Give each folder a <code>main.go</code>. Print only the values requested, using <code>fmt.Println</code>, to compare with the output blocks. Predict first, run second, and change one thing at a time.</p>
+<p>Give each folder a <code>main.go</code>. Print only the requested values with <code>fmt.Println</code>. Then you can compare them with the output blocks. Predict first. Run second. Change one thing at a time.</p>
 </header>
 <nav class="contents" aria-label="Contents"><a href="#ex-1">1. Values</a><a href="#ex-2">2. Copies</a><a href="#ex-3">3. Channels</a><a href="#ex-4">4. Slices</a><a href="#ex-5">5. Ownership</a></nav>
+<h3>Glossary</h3>
+<p>These experiments use each term below with one meaning only.</p>
+<ul>
+<li><strong>Value copy</strong>: a separate copy of a value. A change to the copy does not change the original.</li>
+<li><strong>Pointer</strong>: the address of a variable. A change through a pointer changes the original variable.</li>
+<li><strong>Receiver</strong>: the value or the pointer that a method acts on. A value receiver is a value copy. A pointer receiver points to the original.</li>
+<li><strong>Slice header</strong>: the small value that a slice holds. It contains a pointer to a backing array, a length and a capacity.</li>
+<li><strong>Backing array</strong>: the array that stores the elements of a slice. Two slice headers can point to the same backing array.</li>
+<li><strong>Channel</strong>: a queue that goroutines use to send and receive values. A buffered channel holds values up to its capacity.</li>
+<li><strong>Close</strong>: the operation that ends the use of a channel or a file. A send on a closed channel panics. A write to a closed file returns an error.</li>
+<li><strong>Gate</strong>: a channel that a goroutine waits on. When you release the gate, the goroutine continues.</li>
+<li><strong>Owner</strong>: the part of the program that decides when to close a channel or a resource, such as a file.</li>
+<li><strong>AI partner</strong>: the AI assistant that you work with.</li>
+</ul>
 <section class="session" id="ex-1"><span id="ex-pointers" aria-hidden="true"></span>
 <h2>Experiment 1: Which counter changes?</h2>
-<p>Make a struct containing one integer counter. Write a function that takes the struct by value and increments its field. Call it with a variable initialized to zero, then print the caller's counter. Add another function that takes a pointer; call it with the same variable's address and print again.</p>
-<p>Next, give the type two increment methods: one with a value receiver and one with a pointer receiver. Starting with a fresh zero counter, call the value method twice, then the pointer method twice. Print the caller's counter after each call.</p>
+<p>Build the first part:</p>
+<ol>
+<li>Make a struct that contains one integer counter.</li>
+<li>Write a function that takes the struct by value and increments its field.</li>
+<li>Initialize a variable to zero. Call the function with this variable.</li>
+<li>Print the caller's counter.</li>
+<li>Add another function that takes a pointer.</li>
+<li>Call it with the address of the same variable.</li>
+<li>Print the counter again.</li>
+</ol>
+<p>Next, add methods:</p>
+<ol>
+<li>Give the type two increment methods. Give one method a value receiver. Give the other method a pointer receiver.</li>
+<li>Start with a fresh zero counter.</li>
+<li>Call the value method twice. Then call the pointer method twice.</li>
+<li>Print the caller's counter after each call.</li>
+</ol>
 <h3>Try it</h3>
-<p>Predict all six lines before running:</p>
+<p>Predict all six lines before you run the program:</p>
 <pre data-lang="sh"><code>go run ./values</code></pre>
 <pre class="output"><code>0
 1
@@ -165,30 +195,68 @@ mkdir values copies channels slices ownership</code></pre>
 0
 1
 2</code></pre>
-<p>The value function and value method change their own copies. The pointer versions change the original variable. When a variable is addressable, Go can take its address for a pointer-method call; that convenience does not turn a value receiver into a pointer receiver.</p>
-<p>Move the print inside the value function, after its increment, and predict the extra output. Seeing 1 inside and 0 outside is a useful clue when a handler appears to update a shared counter but the next request sees no change. Ask your AI partner to trace which variable each line reads.</p>
+<p>The value function and the value method change their own value copies. The pointer versions change the original variable. When a variable is addressable, Go can take its address for a call to a pointer method. This convenience does not turn a value receiver into a pointer receiver.</p>
+<p>Move the print inside the value function, after its increment. Predict the extra output. The result 1 inside and 0 outside is a useful clue. It helps when a handler appears to update a shared counter but the next request sees no change. Ask your AI partner to trace which variable each line reads.</p>
+<h3>AI mentor prompt</h3>
+<blockquote>I am on Experiment 1, values and pointers. Ask me to predict each output line and to say which variable it reads. Give one hint at a time. Do not edit files. Do not show the answer unless I ask for it.</blockquote>
 </section>
 <section class="session" id="ex-2"><span id="ex-copying" aria-hidden="true"></span>
 <h2>Experiment 2: What did the copy share?</h2>
-<p>Make a struct with a string and an integer slice. Initialize it with <code>"a"</code> and <code>[]int{1, 2, 3}</code>, whose length and capacity are both three. Assign the struct to a second variable. Through the second variable, change the string to <code>"b"</code> and slice element zero to 99. Print the first variable's string and slice.</p>
-<p>Append 4 to the second variable's slice, storing the returned slice back into that field. Then change its element one to 42. Print the original slice, the second slice, and the original slice's capacity, each on its own line.</p>
+<p>Build the first part:</p>
+<ol>
+<li>Make a struct with a string and an integer slice.</li>
+<li>Initialize it with <code>"a"</code> and <code>[]int{1, 2, 3}</code>. The length and the capacity of this slice are both three.</li>
+<li>Assign the struct to a second variable.</li>
+<li>Through the second variable, change the string to <code>"b"</code>.</li>
+<li>Through the second variable, change slice element zero to 99.</li>
+<li>Print the string and the slice of the first variable.</li>
+</ol>
+<p>Next, change the second slice:</p>
+<ol>
+<li>Append 4 to the slice of the second variable. Store the returned slice back into that field.</li>
+<li>Change element one of that slice to 42.</li>
+<li>Print the original slice, the second slice and the capacity of the original slice. Print each on its own line.</li>
+</ol>
 <h3>Try it</h3>
 <pre data-lang="sh"><code>go run ./copies</code></pre>
 <pre class="output"><code>a [99 2 3]
 [99 2 3]
 [99 42 3 4]
 3</code></pre>
-<p>Copying a slice copies a descriptor pointing to an array, so both structs initially share elements. Assigning a new string field changes only that struct's field. The append needs a larger array because the slice was full; later element changes in the second slice no longer affect the first.</p>
-<p>For a separate check in this folder, add a struct containing <code>sync.Mutex</code> and a counter, plus a function that accepts it by value, locks, increments, and unlocks. Call it once, without adding prints or concurrency. Predict what this command reports:</p>
+<p>Copying a slice copies its slice header, and the slice header points to a backing array. Thus both structs share elements at first. Assigning a new string field changes only the field of that struct. The append needs a larger backing array because the slice was full. Later element changes in the second slice no longer affect the first slice.</p>
+<p>Next, do a separate check in this folder:</p>
+<ol>
+<li>Add a struct that contains a <code>sync.Mutex</code> and a counter.</li>
+<li>Add a function that accepts this struct by value. The function locks, increments and unlocks.</li>
+<li>Call the function once. Do not add prints or concurrency.</li>
+<li>Predict what this command reports:</li>
+</ol>
 <pre data-lang="sh"><code>go vet ./copies</code></pre>
 <pre class="output"><code>… passes lock by value …
 … copies lock value …</code></pre>
-<p>These are diagnostic fragments; filenames, positions, and wording depend on your code and Go version. Expect a nonzero exit status. Each call receives a different lock, so the lock cannot coordinate access between copies. A <a href="https://pkg.go.dev/sync#Mutex">Mutex must not be copied after first use</a>; passing the containing state by pointer avoids this mistake. Fix the example and rerun vet: it should succeed with no diagnostics.</p>
+<p>These lines are diagnostic fragments. Filenames, positions and wording depend on your code and your Go version. Expect a nonzero exit status. Each call receives a different lock, so the lock cannot coordinate access between copies.</p>
+<p>A <a href="https://pkg.go.dev/sync#Mutex">Mutex must not be copied after first use</a>. If you pass the containing state by pointer, you avoid this mistake. Fix the example. Run vet again. It should succeed with no diagnostics.</p>
+<h3>AI mentor prompt</h3>
+<blockquote>I am on Experiment 2, what a copy shares. Ask me to predict each output line and the vet result before I run the commands. Give one hint at a time. Do not edit files. Do not show the answer unless I ask for it.</blockquote>
 </section>
 <section class="session" id="ex-3"><span id="ex-channels" aria-hidden="true"></span>
 <h2>Experiment 3: Fill, drain, and close a queue</h2>
-<p>Create an integer channel with capacity two. Send 10 and 20, then print its length and capacity. With no receiver running, use a <code>select</code> to try sending 30, and a <code>default</code> case that prints <code>full</code>.</p>
-<p>Close the channel, range over it while printing received values, then perform one more receive using the two-value form and print both results. Keep this version in a single goroutine so another receiver cannot change which case is ready.</p>
+<p>Build the first part:</p>
+<ol>
+<li>Create an integer channel with capacity two.</li>
+<li>Send 10 and 20.</li>
+<li>Print the length and the capacity of the channel.</li>
+<li>While no goroutine receives from the channel, use a <code>select</code> to try to send 30.</li>
+<li>Give the select a <code>default</code> case that prints <code>full</code>.</li>
+</ol>
+<p>Next, close the channel:</p>
+<ol>
+<li>Close the channel.</li>
+<li>Range over the channel and print each received value.</li>
+<li>Do one more receive with the two-value form.</li>
+<li>Print both results of that receive.</li>
+</ol>
+<p>Keep this version in a single goroutine. Then no other goroutine can receive and change which case is ready.</p>
 <h3>Try it</h3>
 <pre data-lang="sh"><code>go run ./channels</code></pre>
 <pre class="output"><code>2 2
@@ -196,15 +264,37 @@ full
 10
 20
 0 false</code></pre>
-<p>The default case makes the send attempt nonblocking. Closing preserves buffered values: the range drains 10 and 20 before it ends. Receiving from the closed, empty channel returns immediately with the element type's zero value and <code>false</code>.</p>
-<p>Now add a final send on the closed channel and run the command again. After the same five lines, expect a panic containing <code>send on closed channel</code> and a nonzero exit status. Stack traces vary. Remove that final send when finished.</p>
-<p>Predict what happens if you remove the default case instead. With the buffer full and no possible receiver, this version cannot make progress. In a concurrent service, checking <code>len</code> before sending is not a reservation: another sender could fill the space. Arrange ownership so the channel closes exactly once, after every sender has stopped.</p>
+<p>The default case makes the send attempt nonblocking. A close keeps the buffered values. The range drains 10 and 20 before it ends. A receive from the closed, empty channel returns immediately. It returns the zero value of the element type and <code>false</code>.</p>
+<p>Now add a final send on the closed channel. Run the command again. After the same five lines, expect a panic that contains <code>send on closed channel</code>. Also expect a nonzero exit status. Stack traces vary. Remove that final send when you finish.</p>
+<p>Predict what happens if you remove the default case instead. With a full buffer and no goroutine that can receive, this version cannot make progress. In a concurrent service, a check of <code>len</code> before you send is not a reservation. Another sender could fill the space. Arrange ownership so that the channel closes exactly once, after every sender stops.</p>
+<h3>AI mentor prompt</h3>
+<blockquote>I am on Experiment 3, a channel as a queue. Ask me to predict the five output lines and the result of each change. Give one hint at a time. Do not edit files. Do not show the answer unless I ask for it.</blockquote>
 </section>
 <section class="session" id="ex-4"><span id="ex-slices" aria-hidden="true"></span>
 <h2>Experiment 4: Reuse a batch buffer</h2>
-<p>Create a string slice with length zero and capacity four, then append <code>"a", "b", "c"</code>. Print its length and capacity. Make a second slice using <code>first[:0]</code>, append <code>"x"</code> to it, and print the first slice.</p>
-<p>Start a separate case with a fresh length-zero, capacity-four slice containing a, b, c. Set <code>u</code> to the result of appending d to that slice. Set <code>v</code> to the result of appending e to the same original three-element slice. Print u and v.</p>
-<p>Finally, start with the literal <code>[]string{"a", "b", "c", "d"}</code>, whose capacity is four. Append e to make w, change w's first element to z, and print the original and w.</p>
+<p>Build the first case:</p>
+<ol>
+<li>Create a string slice with length zero and capacity four.</li>
+<li>Append <code>"a", "b", "c"</code>.</li>
+<li>Print its length and capacity.</li>
+<li>Make a second slice with <code>first[:0]</code>.</li>
+<li>Append <code>"x"</code> to the second slice.</li>
+<li>Print the first slice.</li>
+</ol>
+<p>Build a separate case:</p>
+<ol>
+<li>Make a fresh slice with length zero and capacity four. Append a, b, c to it.</li>
+<li>Set <code>u</code> to the result of appending d to that slice.</li>
+<li>Set <code>v</code> to the result of appending e to the same original three-element slice.</li>
+<li>Print u and v.</li>
+</ol>
+<p>Build the final case:</p>
+<ol>
+<li>Start with the literal <code>[]string{"a", "b", "c", "d"}</code>. Its capacity is four.</li>
+<li>Append e to make w.</li>
+<li>Change the first element of w to z.</li>
+<li>Print the original and w.</li>
+</ol>
 <h3>Try it</h3>
 <pre data-lang="sh"><code>go run ./slices</code></pre>
 <pre class="output"><code>3 4
@@ -213,31 +303,50 @@ full
 [a b c e]
 [a b c d]
 [z b c d e]</code></pre>
-<p>The first three appends that fit in spare capacity reuse existing storage. In the u/v case, both appends target the same fourth slot; the second overwrites d. The final case forces a new array because the original is full. The new capacity may vary; none of these expected results depends on its exact growth factor.</p>
-<p>This is the batching hazard: resetting a slice's length does not detach its array. Before reusing it, establish that no other operation still needs the old contents. Ask your AI partner to help add a version that deliberately copies the elements, then explain the changed output using the <a href="https://go.dev/ref/spec#Appending_and_copying_slices">append and copy rules</a>.</p>
+<p>The first three appends that fit in spare capacity reuse the existing backing array. In the u/v case, both appends target the same fourth slot. The second append overwrites d. The final case forces a new backing array because the original is full. The new capacity may vary. None of these expected results depends on its exact growth factor.</p>
+<figure><img src="assets/go-scratch-exercises/shared-append.svg" alt="The original slice, u and v all point to one backing array of capacity 4. Slot 3 held d, and then e replaced it, so u and v both show a, b, c, e." width="340"><figcaption>In the u/v case, three slice headers point to one backing array. Both appends write to slot 3.</figcaption></figure>
+<ol>
+<li>The original slice has length 3 and capacity 4. Slot 3 is spare.</li>
+<li>Appending d to the original slice writes d into slot 3. The result u has length 4 and uses the same backing array.</li>
+<li>Appending e to the same original slice writes e into slot 3. The result v also uses the same backing array.</li>
+<li>u and v both show [a b c e].</li>
+</ol>
+<p>This is the batching hazard. When you reset the length of a slice, the slice still uses the same backing array. Before you reuse the slice, make sure that no other operation still needs the old contents. Ask your AI partner to help you add a version that deliberately copies the elements. Then explain the changed output with the <a href="https://go.dev/ref/spec#Appending_and_copying_slices">append and copy rules</a>.</p>
+<h3>AI mentor prompt</h3>
+<blockquote>I am on Experiment 4, a reused batch buffer. Ask me to predict the six output lines and which slices share a backing array. Give one hint at a time. Do not edit files. Do not show the answer unless I ask for it.</blockquote>
 </section>
 <section class="session" id="ex-5"><span id="ex-ownership" aria-hidden="true"></span>
 <h2>Experiment 5: Who waits, and who closes?</h2>
-<p>Build a program that creates or truncates <code>out.txt</code>, writes three newline-terminated lines synchronously, and starts a goroutine for a fourth line. Give the goroutine an <code>allowWrite</code> channel: it must wait for a receive before touching the file. Have it signal a separate <code>done</code> channel after its write attempt. Check all file errors.</p>
-<p>Use these explicit gates rather than sleeps. They establish an order even on a slow machine. For each variant, rerun the program from scratch so the file starts empty.</p>
+<p>Build the program:</p>
+<ol>
+<li>Make a program that creates or truncates <code>out.txt</code>.</li>
+<li>Make it write three lines synchronously. Each line ends with a newline.</li>
+<li>Make it start a goroutine for a fourth line.</li>
+<li>Give the goroutine an <code>allowWrite</code> channel. The goroutine must wait for a receive on this channel before it touches the file.</li>
+<li>Make the goroutine signal a separate <code>done</code> channel after its write attempt.</li>
+<li>Check all file errors.</li>
+</ol>
+<p>Use these explicit gates, not sleeps. The gates establish an order even on a slow machine. For each variant, run the program again from scratch, so that the file starts empty.</p>
 <h3>Try it</h3>
-<p>First, defer the file close and let main return without opening the gate or waiting. The goroutine cannot write its fourth line.</p>
+<p>First, defer the file close. Let main return without releasing the gate and without waiting. The goroutine cannot write its fourth line.</p>
 <pre data-lang="sh"><code>go run ./ownership
 wc -l &lt; out.txt</code></pre>
 <pre class="output"><code>3</code></pre>
-<p>Second, close <code>allowWrite</code> to release the goroutine, then wait for <code>done</code> before returning and letting the deferred close run. Repeat those commands: expect 4 lines and no write error.</p>
-<p>Third, explicitly close the file before releasing the gate, then release it and wait for done. Print the write error. Expect a message containing <code>file already closed</code> and a three-line file. Waiting for completion cannot repair a resource closed too early.</p>
-<p>For two final variants, replace the file experiment. Register three deferred prints, labeled <code>defer 1</code>, <code>defer 2</code>, and <code>defer 3</code>, in that order, then return normally:</p>
+<p>Second, close <code>allowWrite</code> to release the goroutine. Then wait for <code>done</code>. After that, return and let the deferred close run. Repeat those commands. Expect 4 lines and no write error.</p>
+<p>Third, explicitly close the file before you release the gate. Then release the gate and wait for done. Print the write error. Expect a message that contains <code>file already closed</code>, and a three-line file. Waiting for completion cannot fix a resource that you closed too early.</p>
+<p>For two final variants, replace the file experiment. Register three deferred prints with the labels <code>defer 1</code>, <code>defer 2</code>, and <code>defer 3</code>, in that order. Then return normally:</p>
 <pre data-lang="sh"><code>go run ./ownership</code></pre>
 <pre class="output"><code>defer 3
 defer 2
 defer 1</code></pre>
-<p>Replace these with one deferred print followed by <code>os.Exit(1)</code>. Run the built binary in a shell without <code>set -e</code> so you can inspect its exit code:</p>
+<p>Replace these prints with one deferred print, followed by <code>os.Exit(1)</code>. Run the built binary in a shell without <code>set -e</code>, so that you can examine its exit code:</p>
 <pre data-lang="sh"><code>go build -o ownership-demo ./ownership
 ./ownership-demo
 printf 'exit=%s\n' "$?"</code></pre>
 <pre class="output"><code>exit=1</code></pre>
-<p><a href="https://pkg.go.dev/os#Exit">os.Exit</a> skips deferred calls. No deferred message should appear. In your service, keep resources alive until their users finish, and complete cleanup before exiting. Explain who owns each close and what makes it safe; that explanation matters more than memorizing the output.</p>
+<p><a href="https://pkg.go.dev/os#Exit">os.Exit</a> skips deferred calls. No deferred message should appear. In your service, keep resources alive until their users finish. Complete cleanup before the service exits. Explain who owns each close and what makes it safe. That explanation matters more than memorizing the output.</p>
+<h3>AI mentor prompt</h3>
+<blockquote>I am on Experiment 5, who waits and who closes. Ask me to predict the result of each variant and to explain who owns each close. Give one hint at a time. Do not edit files. Do not show the answer unless I ask for it.</blockquote>
 </section>
 <footer>Go warm-ups · <a href="index.html">Go Infra Track</a> · Independent practice material, not issued by any company.</footer>
 
