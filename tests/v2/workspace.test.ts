@@ -110,9 +110,9 @@ describe("project workspace files", () => {
 describe("creating and extending workspaces", () => {
   it("creates supplied helpers but leaves the learner implementation unwritten", () => {
     const folder = createWorkspace(temp(), admission, "mentor");
-    expect(fs.readFileSync(path.join(folder, "Taskfile.yml"), "utf8")).toContain("python3 doctor.py");
-    expect(fs.readFileSync(path.join(folder, "doctor.py"), "utf8")).toContain("def main(argv=None)");
-    expect(fs.existsSync(path.join(folder, "main.py"))).toBe(false);
+    expect(fs.readFileSync(path.join(folder, "Taskfile.yml"), "utf8")).toContain("go run doctor.go");
+    expect(fs.readFileSync(path.join(folder, "doctor.go"), "utf8")).toContain("func doctorMain(");
+    expect(fs.existsSync(path.join(folder, "main.go"))).toBe(false);
     expect(fs.existsSync(path.join(folder, "go.mod"))).toBe(false);
     expect(fs.readFileSync(path.join(folder, "README.md"), "utf8")).toContain("Step 0 — Read the assigned article");
   });
@@ -120,15 +120,15 @@ describe("creating and extending workspaces", () => {
     const folder = temp();
     fs.writeFileSync(path.join(folder, "Taskfile.yml"), "my tasks\n");
     let result = addMissingFiles(folder, admission, "mentor");
-    expect(result.written).toContain("doctor.py");
+    expect(result.written).toContain("doctor.go");
     expect(result.skipped).toContain("Taskfile.yml");
     expect(fs.readFileSync(path.join(folder, "Taskfile.yml"), "utf8")).toBe("my tasks\n");
-    fs.unlinkSync(path.join(folder, "doctor.py"));
-    const outside = path.join(temp(), "mine.py");
+    fs.unlinkSync(path.join(folder, "doctor.go"));
+    const outside = path.join(temp(), "mine.go");
     fs.writeFileSync(outside, "my doctor\n");
-    fs.symlinkSync(outside, path.join(folder, "doctor.py"));
+    fs.symlinkSync(outside, path.join(folder, "doctor.go"));
     result = addMissingFiles(folder, admission, "pair");
-    expect(result.skipped).toContain("doctor.py");
+    expect(result.skipped).toContain("doctor.go");
     expect(result.written).toEqual([]);
     expect(fs.readFileSync(outside, "utf8")).toBe("my doctor\n");
   });

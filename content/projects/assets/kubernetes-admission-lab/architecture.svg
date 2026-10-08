@@ -56,7 +56,7 @@
   <text x="190" y="770" class="note">dials Pod IP:8443</text>
   <rect x="64" y="795" width="230" height="64" rx="6" class="box"/>
   <text x="78" y="820" class="label">Webhook Pod</text>
-  <text x="78" y="843" class="note">FastAPI /mutate · Uvicorn TLS</text>
+  <text x="78" y="843" class="note">Go net/http /mutate · TLS</text>
   <path d="M178 910 V867" class="wire"/>
   <text x="190" y="894" class="note">/certs</text>
   <rect x="64" y="914" width="230" height="46" rx="6" class="box"/>

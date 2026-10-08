@@ -188,16 +188,16 @@ async function main(): Promise<void> {
       type: "workspace", itemId: admission.id, action: "create", mode: "mentor",
     })) as { path: string };
     expect(await fs.readFile(path.join(lab.path, "Taskfile.yml"), "utf8"))
-      .toContain("python3 doctor.py");
-    expect(await fs.readFile(path.join(lab.path, "doctor.py"), "utf8"))
-      .toContain("def main(argv=None)");
-    await expect(fs.access(path.join(lab.path, "main.py"))).rejects.toThrow();
+      .toContain("go run doctor.go");
+    expect(await fs.readFile(path.join(lab.path, "doctor.go"), "utf8"))
+      .toContain("func doctorMain(");
+    await expect(fs.access(path.join(lab.path, "main.go"))).rejects.toThrow();
     await fs.writeFile(path.join(lab.path, "Taskfile.yml"), "# My tasks\n");
-    await fs.unlink(path.join(lab.path, "doctor.py"));
+    await fs.unlink(path.join(lab.path, "doctor.go"));
     const restoredHelpers = (await call({
       type: "workspace", itemId: admission.id, action: "assistant-files", mode: "mentor",
     })) as { written: string[]; skipped: string[] };
-    expect(restoredHelpers.written).toEqual(["doctor.py"]);
+    expect(restoredHelpers.written).toEqual(["doctor.go"]);
     expect(restoredHelpers.skipped).toContain("Taskfile.yml");
     expect(await fs.readFile(path.join(lab.path, "Taskfile.yml"), "utf8"))
       .toBe("# My tasks\n");

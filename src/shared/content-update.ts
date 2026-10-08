@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 // Raise this when authored content starts requiring new runtime behaviour.
-export const MINIMUM_CONTENT_APP_VERSION = "2.2.2";
+export const MINIMUM_CONTENT_APP_VERSION = "2.3.0";
 export const CONTENT_UPDATE_URL =
   "https://vibe-learn.ai/updates/latest.json";
 export const MAX_CATALOG_BYTES = 30_000_000;

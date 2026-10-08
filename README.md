@@ -43,7 +43,7 @@ Linux headless desktop testing needs an X server (`xvfb-run -a npm run smoke:des
 - Tiny TSDB: optional HTTP/recovery/final checks, with internal design and storage invariants left to learner tests and review.
 - Gossip Glomers: integration with the existing Maelstrom harness and saved reports. Install its additional tools separately.
 - Cloud Resource Reporter: a GitHub API CLI project with pagination, summaries, table/JSON/CSV output, and learner-written HTTP tests.
-- Kubernetes Admission Lab: read the assigned article first, then build a Python webhook with k3d, k9s, offline diagrams, short animations, laptop diagnostics and failure drills. Guided terminal verification.
+- Kubernetes Admission Lab: read the assigned article first, then build a Go webhook with k3d, k9s, offline diagrams, short animations, laptop diagnostics and failure drills. Guided terminal verification.
 - Relay Operator: guided experiments and expected observations. **No app-owned automated suite.**
 
 Provided checks and learner tests are separate. A passing run records exactly what was checked, the source fingerprint, content version, suite version, and unchecked requirements. It never gates navigation or claims to verify later edits.

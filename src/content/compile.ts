@@ -224,8 +224,8 @@ export function compileCatalog(base = root): Catalog {
     if (file === "kubernetes-admission-lab") {
       stages[0]!.title = "Step 0 — Read the assigned article";
       item.prerequisites = [
-        "Read the assigned article first. Then use Python, Docker, k3d, kubectl, k9s, Go Task, OpenSSL, and curl. Workspace creation includes the Taskfile and diagnostic doctor.",
-        "Guided local-cluster experiments and learner-run Python tests; no app-owned automated suite.",
+        "Read the assigned article first. Then use Go, Docker, k3d, kubectl, k9s, Go Task, OpenSSL and curl. Workspace creation adds the Taskfile and the doctor.go diagnostics.",
+        "Guided experiments on a local cluster, and Go tests that you run yourself. The app has no automated suite for this project.",
       ];
     } else if (file === "relay-operator")
       item.prerequisites = [
