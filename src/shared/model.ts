@@ -72,8 +72,8 @@ export const ProjectSupportFilesSchema = z
           (name) =>
             !/^(con|prn|aux|nul|com[0-9]|lpt[0-9])(?:\.|$)/i.test(name) &&
             ![
-              "readme.md", "notes.md", "agents.md", "claude.md",
-              "gemini.md", "go.mod", "steps",
+              "readme.md", "notes.md", "mentor-notes.md", "agents.md",
+              "claude.md", "gemini.md", "go.mod", "steps",
             ].includes(name.toLowerCase()),
           "Use a root filename that is not reserved by the workspace",
         ),
@@ -243,7 +243,8 @@ export const emptyState = (): AppState => ({
   reviews: [],
   exerciseWorkspaces: [],
 });
-// Mentor: the assistant gives hints and never edits. Pair: it may edit in small reviewed steps.
+// Mentor: the assistant gives hints and never edits code; it may update the two notes files
+// after the learner agrees. Pair: it may edit in small reviewed steps.
 export const AssistantModeSchema = z.enum(["mentor", "pair"]);
 export type AssistantMode = z.infer<typeof AssistantModeSchema>;
 export const CommandSchema = z.discriminatedUnion("type", [

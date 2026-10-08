@@ -179,6 +179,7 @@ async function main(): Promise<void> {
       "README.md",
       "AGENTS.md",
       "NOTES.md",
+      "MENTOR-NOTES.md",
       "go.mod",
       ".claude/settings.local.json",
     ])

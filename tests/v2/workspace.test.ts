@@ -83,18 +83,21 @@ describe("project workspace files", () => {
       /\]\((\.\.\/)?(README\.md|steps\/\d\d-[\w-]+\.md|\d\d-[\w-]+\.md)\)/,
     );
   });
-  it("blocks assistant edits only in mentor mode", () => {
+  it("makes the learner approve assistant edits only in mentor mode", () => {
     const mentor = workspaceFiles(reporter, "mentor");
     const pair = workspaceFiles(reporter, "pair");
     const settings = mentor.find(
       (f) => f.path === ".claude/settings.local.json",
     )!;
-    expect(JSON.parse(settings.contents).permissions.deny).toContain("Edit");
+    // A deny rule would also block the notes files the mentor may update.
+    expect(JSON.parse(settings.contents).permissions).toEqual({
+      ask: ["Edit", "Write", "NotebookEdit"],
+    });
     expect(pair.some((f) => f.path.startsWith(".claude/"))).toBe(false);
     const agents = (files: typeof mentor) =>
       files.find((f) => f.path === "AGENTS.md")!.contents;
     expect(agents(mentor)).toContain(
-      "you never write or edit my project files",
+      "you never write or edit my project files. The only exceptions are NOTES.md and MENTOR-NOTES.md",
     );
     expect(agents(pair)).toContain("wait for my OK");
     for (const files of [mentor, pair]) {
@@ -104,6 +107,12 @@ describe("project workspace files", () => {
       expect(files.find((f) => f.path === "CLAUDE.md")!.contents).toBe(
         "@AGENTS.md\n",
       );
+      expect(agents(files)).toContain("offer to update it, and write only after I say yes");
+      expect(agents(files)).toContain("ask whether to tick it in NOTES.md");
+      expect(agents(files)).toContain("One question or one action per message.");
+      const notes = files.find((f) => f.path === "MENTOR-NOTES.md")!.contents;
+      expect(notes).toContain("- **Weak spots to revisit**");
+      expect(notes).toContain("don't quote how I expressed frustration");
     }
   });
 });
@@ -138,7 +147,7 @@ describe("creating and extending workspaces", () => {
     for (const [name, message] of [
       ["../outside.py", plain], ["/tmp/out.py", plain], ["nested/file.py", plain],
       ["C:\\out.py", plain], [".env", plain], ["file.", plain],
-      ["README.md", reserved], ["AGENTS.md", reserved], ["go.mod", reserved],
+      ["README.md", reserved], ["AGENTS.md", reserved], ["MENTOR-NOTES.md", reserved], ["go.mod", reserved],
       ["CON.txt", reserved], ["conftest.py", "do not run or load automatically"],
       ["run.exe", "Use a .py, .yml"],
     ] as const) {
