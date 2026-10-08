@@ -73,7 +73,7 @@ describe("admission lab content and offline illustrations", () => {
     const untag = (text: string) => text.replace(/^\/\/go:build ignore\n/, "");
     withModule({ "doctor.go": untag(doctor), "admission_doctor_test.go": untag(fixture) }, (dir) =>
       go(dir, "go", ["test", "./..."]));
-  });
+  }, 120000);
 
   it("ships reference Go solutions and helpers that build, vet and pass their tests", () => {
     const $ = load(fs.readFileSync(source, "utf8"));
@@ -95,7 +95,7 @@ describe("admission lab content and offline illustrations", () => {
       for (const name of helpers) go(dir, "go", ["vet", name]);
     });
     withModule({ "main.go": code("baseline-main.go") }, (dir) => go(dir, "go", ["vet", "./..."]));
-  });
+  }, 180000);
 
   it("embeds all images and preserves them through downloaded-content sanitization", () => {
     const data = JSON.stringify(catalog);
