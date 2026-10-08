@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="340" height="788" viewBox="0 0 340 788" role="img" aria-labelledby="title desc">
+<title id="title">Write path of the Tiny TSDB</title><desc id="desc">1  POST /api/v1/write: One JSON Lines batch per body. Body over 1 MiB: 413. 2  Validate every line: Invalid line: 400. Nothing is stored. 3  Append batch to the WAL: Sync when -wal-fsync=true. Return 204 only after this. WAL failure: 5xx, nothing stored. 4  Head (in memory): Recent samples, not yet in blocks. Compressed chunks of at most 120 samples, one series each. 5  Seal a window into a block: Newest head sample reaches end + block-duration / 2. The block appears atomically. Delete WAL data only after blocks persist all that it covers. 6  Retention: Delete a block if window end is ≤ newest − retention. After every seal and at startup. Never delete the head.</desc>
+<style>.box{fill:#fbf9f4;stroke:#d8d1c3}.title{font:600 18px sans-serif;fill:#1c1a16}.label{font:600 16px sans-serif;fill:#1c1a16}.note{font:14px sans-serif;fill:#3f3b34}.arrow{stroke:#66615a;stroke-width:2;fill:none}.highlight{fill:#cfe0d2;opacity:0}@media (prefers-color-scheme:dark){[fill="#f5f2ea"]{fill:#1b1a17}.box{fill:#22201c;stroke:#57524a}text,.title,.label{fill:#ebe6da}.note{fill:#cfc9bc}.arrow{stroke:#a29c8f}[fill="#66615a"]{fill:#a29c8f}.highlight{fill:#34493b}}</style>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#66615a"/></marker></defs>
+<rect width="340" height="788" rx="8" fill="#f5f2ea"/>
+<text x="20" y="32" class="title">Write path of the Tiny TSDB</text>
+<rect x="18" y="52" width="304" height="76" rx="7" class="box"/>
+<rect x="19" y="53" width="302" height="74" rx="7" class="highlight p0"/>
+<text x="30" y="77" class="label">1  POST /api/v1/write</text>
+<text x="30" y="97" class="note">One JSON Lines batch per body.</text>
+<text x="30" y="117" class="note">Body over 1 MiB: 413.</text>
+<path d="M170 131 V148" class="arrow" marker-end="url(#arrow)"/>
+<rect x="18" y="152" width="304" height="76" rx="7" class="box"/>
+<rect x="19" y="153" width="302" height="74" rx="7" class="highlight p1"/>
+<text x="30" y="177" class="label">2  Validate every line</text>
+<text x="30" y="197" class="note">Invalid line: 400.</text>
+<text x="30" y="217" class="note">Nothing is stored.</text>
+<path d="M170 231 V248" class="arrow" marker-end="url(#arrow)"/>
+<rect x="18" y="252" width="304" height="96" rx="7" class="box"/>
+<rect x="19" y="253" width="302" height="94" rx="7" class="highlight p2"/>
+<text x="30" y="277" class="label">3  Append batch to the WAL</text>
+<text x="30" y="297" class="note">Sync when -wal-fsync=true.</text>
+<text x="30" y="317" class="note">Return 204 only after this.</text>
+<text x="30" y="337" class="note">WAL failure: 5xx, nothing stored.</text>
+<path d="M170 351 V368" class="arrow" marker-end="url(#arrow)"/>
+<rect x="18" y="372" width="304" height="96" rx="7" class="box"/>
+<rect x="19" y="373" width="302" height="94" rx="7" class="highlight p3"/>
+<text x="30" y="397" class="label">4  Head (in memory)</text>
+<text x="30" y="417" class="note">Recent samples, not yet in blocks.</text>
+<text x="30" y="437" class="note">Compressed chunks of at most</text>
+<text x="30" y="457" class="note">120 samples, one series each.</text>
+<path d="M170 471 V488" class="arrow" marker-end="url(#arrow)"/>
+<rect x="18" y="492" width="304" height="136" rx="7" class="box"/>
+<rect x="19" y="493" width="302" height="134" rx="7" class="highlight p4"/>
+<text x="30" y="517" class="label">5  Seal a window into a block</text>
+<text x="30" y="537" class="note">Newest head sample reaches</text>
+<text x="30" y="557" class="note">end + block-duration / 2.</text>
+<text x="30" y="577" class="note">The block appears atomically.</text>
+<text x="30" y="597" class="note">Delete WAL data only after</text>
+<text x="30" y="617" class="note">blocks persist all that it covers.</text>
+<path d="M170 631 V648" class="arrow" marker-end="url(#arrow)"/>
+<rect x="18" y="652" width="304" height="116" rx="7" class="box"/>
+<rect x="19" y="653" width="302" height="114" rx="7" class="highlight p5"/>
+<text x="30" y="677" class="label">6  Retention</text>
+<text x="30" y="697" class="note">Delete a block if window end</text>
+<text x="30" y="717" class="note">is ≤ newest − retention.</text>
+<text x="30" y="737" class="note">After every seal and at startup.</text>
+<text x="30" y="757" class="note">Never delete the head.</text>
+</svg>

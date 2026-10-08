@@ -142,42 +142,97 @@
 <header id="brief"><span id="must-do" aria-hidden="true"></span><span id="rules" aria-hidden="true"></span><span id="budget" aria-hidden="true"></span>
 <p class="eyebrow">Go Infra Track · Challenge 04</p>
 <h1>Build a Tiny TSDB</h1>
-<p class="lede">Store a stream of metric samples, recover it after a crash, and answer time-range queries without keeping the whole history in memory.</p>
-<p>Build a single-node time-series database in Go using only the standard library. Metrics arrive as timestamp/value pairs grouped by labels. Your database will acknowledge durable writes, compress samples, move older data into immutable files, and expire those files by retention.</p>
-<p>Allow <strong>16–20 hours of implementation</strong>, plus time to learn. Experience with the <a href="go-telemetry-ingest-take-home.html">Ingest Relay</a> helps, but this is a separate program. Pair with AI throughout: ask it to explain an unfamiliar idea, predict a small experiment together, and test the resulting code. AI may write code; you should understand and be able to change it.</p>
-<p>Package structure, concurrency design, series IDs, and file formats are yours to choose. PromQL, aggregation, remote-write, block compaction, downsampling, histograms, exemplars, staleness markers, replication, and authentication are outside scope.</p>
+<p class="lede">Store a stream of metric samples. Recover the stream after a crash. Answer time-range queries without the whole history in memory.</p>
+<p>Build a single-node time-series database in Go. Use only the standard library. Metrics arrive as timestamp/value pairs, grouped by labels. Your database will do these tasks:</p>
+<ul>
+<li>Acknowledge durable writes.</li>
+<li>Compress samples.</li>
+<li>Move older data into immutable files.</li>
+<li>Expire those files by retention.</li>
+</ul>
+<p>Allow <strong>16–20 hours of implementation</strong>, plus time to learn. Experience with the <a href="go-telemetry-ingest-take-home.html">Ingest Relay</a> helps, but this is a separate program. Pair with AI through all steps:</p>
+<ul>
+<li>Ask it to explain an unfamiliar idea.</li>
+<li>Predict a small experiment together.</li>
+<li>Test the resulting code.</li>
+</ul>
+<p>AI may write code. You should understand that code and be able to change it.</p>
+<p>You choose the package structure, the concurrency design, the series IDs and the file formats. These features are outside scope: PromQL, aggregation, remote-write, block compaction, downsampling, histograms, exemplars, staleness markers, replication and authentication.</p>
+<h3>Glossary</h3>
+<p>This brief uses each term below with one meaning only.</p>
+<ul>
+<li><strong>Sample</strong>: one timestamp/value pair. The timestamp is a signed 64-bit integer in milliseconds. The value is a finite float64.</li>
+<li><strong>Label set</strong>: the complete set of label names and values of a series, including <code>__name__</code>.</li>
+<li><strong>Series</strong>: the samples that share one label set. The label set is the identity of the series.</li>
+<li><strong>Batch</strong>: the samples in the JSON Lines body of one write request.</li>
+<li><strong>Selector</strong>: the <code>match</code> expression that selects series by label equality.</li>
+<li><strong>Head</strong>: the in-memory store of recent samples that are not yet in immutable blocks.</li>
+<li><strong>WAL</strong> (write-ahead log): the log on disk where the server appends each batch before it acknowledges the batch.</li>
+<li><strong>Acknowledge</strong>: return 204 for a write. An acknowledged write is a write that got 204.</li>
+<li><strong>Chunk</strong>: a compressed group of at most 120 samples from one series.</li>
+<li><strong>Window</strong>: a half-open time range [start, end). Windows align to multiples of <code>-block-duration</code> since the Unix epoch.</li>
+<li><strong>Seal</strong>: move the samples of one window from the head into one immutable block.</li>
+<li><strong>Block</strong>: the immutable, compressed files for one sealed window.</li>
+<li><strong>Retention</strong>: the rule that deletes old blocks. The <code>-retention</code> flag sets its duration. Step 6 gives the exact rule.</li>
+</ul>
+<h3>The write path</h3>
+<figure><img class="motion-animated" src="assets/tiny-tsdb/write-path-animated.svg" alt="Write path: POST /api/v1/write, validate every line, append the batch to the WAL, keep samples in head chunks, seal a window into a block, then delete old blocks by retention. The highlights stop after 4.8 seconds." width="340"><img class="motion-static" src="assets/tiny-tsdb/write-path.svg" alt="Write path: POST /api/v1/write, validate every line, append the batch to the WAL, keep samples in head chunks, seal a window into a block, then delete old blocks by retention." width="340"><figcaption>The write path from one request to retention. The highlights stop after 4.8 seconds. If reduced motion is on, a static diagram shows instead.</figcaption></figure>
+<ol>
+<li>A client sends one JSON Lines batch to <code>POST /api/v1/write</code>. A body over 1 MiB gets 413.</li>
+<li>The server validates every line. An invalid line gets 400, and the server stores nothing.</li>
+<li>The server appends the batch to the WAL. With <code>-wal-fsync=true</code>, it also syncs the WAL. It returns 204 only after this step. A WAL failure returns a 5xx and stores nothing.</li>
+<li>The head keeps recent samples in compressed chunks. A chunk holds at most 120 samples of one series.</li>
+<li>When the newest head sample reaches <code>end + block-duration / 2</code>, the window seals into an immutable block. The block appears atomically. Delete WAL data only after blocks persist everything that it covers.</li>
+<li>Retention deletes a block when its window end is ≤ <code>newest stored timestamp − retention</code>. It runs after every seal and at startup. It never deletes the head.</li>
+</ol>
 </header>
 <nav class="contents" aria-label="Contents"><a href="#session-1">1. Model</a><a href="#session-2">2. HTTP</a><a href="#session-3">3. Recovery</a><a href="#session-4">4. Compression</a><a href="#session-5">5. Blocks</a><a href="#session-6">6. Retention</a><a href="#hand-in">Deliverables</a></nav>
-<p class="caption">Commands assume Bash, curl, and jq. Output blocks are expected results for the stated fixtures, not measurements from an implementation supplied here. JSON whitespace and equivalent number formatting may differ.</p>
+<p class="caption">Commands assume Bash, curl and jq. Output blocks show expected results for the stated fixtures. They are not measurements from an implementation supplied here. JSON whitespace and equivalent number formatting may differ.</p>
 <section class="session" id="session-1"><span id="MOD-1" aria-hidden="true"></span><span id="MOD-2" aria-hidden="true"></span><span id="MOD-3" aria-hidden="true"></span><span id="TST-1" aria-hidden="true"></span><span id="spec-model" aria-hidden="true"></span><span id="sessions" aria-hidden="true"></span><span id="reference" aria-hidden="true"></span>
 <h2>Step 1: Give each series an identity</h2>
-<p>Build an in-memory head: the recent samples that have not yet moved into immutable blocks. A series is identified by its complete label set, including <code>__name__</code>. Changing label order must not change identity; changing any name or value must.</p>
-<p>Label names must match <code>[a-zA-Z_][a-zA-Z0-9_]*</code>, be unique within a set, and include <code>__name__</code>. Label values must be nonempty UTF-8. Timestamps are signed 64-bit integers in milliseconds; sample values are finite float64 JSON numbers. Within each series, timestamps must increase strictly. Reject a timestamp equal to or earlier than its last stored timestamp.</p>
+<p>Build an in-memory head. The head holds the recent samples that are not yet in immutable blocks. The complete label set of a series, including <code>__name__</code>, identifies the series. If the label order changes, the identity must not change. If any label name or value changes, the identity must change.</p>
+<p>Label names must:</p>
+<ul>
+<li>match <code>[a-zA-Z_][a-zA-Z0-9_]*</code></li>
+<li>be unique within a set</li>
+<li>include <code>__name__</code></li>
+</ul>
+<p>Label values must be nonempty UTF-8. Timestamps are signed 64-bit integers in milliseconds. Sample values are finite float64 JSON numbers. Within each series, timestamps must increase strictly. Reject a timestamp that is equal to or earlier than the last stored timestamp of its series.</p>
 <h3>Try it</h3>
-<p>Write a test that applies these operations to an empty head. The notation below describes test inputs, not a public Go API you must implement.</p>
+<p>Write a test that applies these operations to an empty head. The notation below describes test inputs. It is not a public Go API that you must implement.</p>
 <div class="table-wrap"><table><thead><tr><th>Operation</th><th>Expected result</th></tr></thead><tbody>
 <tr><td>Append <code>{__name__="up",host="a"}</code> at 1000 → 1</td><td>One series, one sample</td></tr>
 <tr><td>Append <code>{host="a",__name__="up"}</code> at 2000 → 2</td><td>Same series, two samples</td></tr>
-<tr><td>Append that series at 2000 or 1500</td><td>Rejected; state unchanged</td></tr>
+<tr><td>Append that series at 2000 or 1500</td><td>Rejected. The state does not change.</td></tr>
 <tr><td>Append <code>{__name__="up",host="b"}</code> at 1000 → 1</td><td>Second series</td></tr>
 <tr><td>Append a label set without <code>__name__</code></td><td>Rejected</td></tr>
 <tr><td>Query host a over [0, 1999]</td><td>Only [1000, 1]</td></tr>
 </tbody></table></div>
 <pre data-lang="sh"><code>go test ./...</code></pre>
-<p>Also test invalid and duplicate label names, empty or invalid UTF-8 values, independent series ordering, and inclusive range bounds: samples at 1000 through 5000 queried over [2000, 4000] return exactly 2000, 3000, 4000 in ascending order. An empty range returns no samples. Ask your AI partner to find two different label sets that could collide under your proposed identity representation.</p>
+<p>Also test these cases:</p>
+<ul>
+<li>Invalid and duplicate label names.</li>
+<li>Empty or invalid UTF-8 values.</li>
+<li>Independent series ordering.</li>
+<li>Inclusive range bounds. Query samples at 1000 through 5000 over [2000, 4000]. The query returns exactly 2000, 3000, 4000 in ascending order.</li>
+</ul>
+<p>An empty range returns no samples. Ask your AI partner to find two different label sets that could collide under your proposed identity representation.</p>
+<h3>AI mentor prompt</h3>
+<blockquote>I am on Step 1, series identity in the head. Ask me how my identity representation handles a change in label order. Then ask me to find two label sets that could collide under it. Give one hint at a time. Do not edit files. Do not show the solution unless I ask for it.</blockquote>
 </section>
 <section class="session" id="session-2"><span id="API-1" aria-hidden="true"></span><span id="API-2" aria-hidden="true"></span><span id="API-3" aria-hidden="true"></span><span id="API-4" aria-hidden="true"></span><span id="API-5" aria-hidden="true"></span><span id="OPS-1" aria-hidden="true"></span><span id="OPS-2" aria-hidden="true"></span><span id="TST-2" aria-hidden="true"></span><span id="spec-api" aria-hidden="true"></span><span id="spec-ops" aria-hidden="true"></span><span id="conventions" aria-hidden="true"></span>
 <h2>Step 2: Write and query over HTTP</h2>
-<p>Add these endpoints. A write is atomic across its entire JSON Lines body, including ordering between lines in that body and concurrent requests. Validate before exposing any part of a rejected batch.</p>
+<p>Add these endpoints. A write is atomic across its entire JSON Lines body, including ordering between lines in that body and concurrent requests. Validate before you expose any part of a rejected batch.</p>
 <div class="table-wrap"><table><thead><tr><th>Request</th><th>Contract</th></tr></thead><tbody>
-<tr><td><code>POST /api/v1/write</code></td><td>One <code>{"labels":{…},"t":int,"v":number}</code> per line. Body limit 1 MiB (1,048,576 bytes). Return 204 for a stored batch, 400 naming the first invalid line and reason with nothing stored, or 413 for an oversized body.</td></tr>
-<tr><td><code>GET /api/v1/query</code></td><td>Required <code>match</code>, <code>start</code>, <code>end</code>; inclusive millisecond bounds. Return 200 with the shape below. Sort series by canonical label set and samples by ascending time. No matches returns <code>{"series":[]}</code>.</td></tr>
+<tr><td><code>POST /api/v1/write</code></td><td>One <code>{"labels":{…},"t":int,"v":number}</code> per line. Body limit 1 MiB (1,048,576 bytes). Return 204 for a stored batch. Return 400 that names the first invalid line and the reason, with nothing stored. Return 413 for an oversized body.</td></tr>
+<tr><td><code>GET /api/v1/query</code></td><td>Required parameters: <code>match</code>, <code>start</code>, <code>end</code>. The bounds are inclusive, in milliseconds. Return 200 with the shape below. Sort series by canonical label set. Sort samples by ascending time. If nothing matches, return <code>{"series":[]}</code>.</td></tr>
 <tr><td><code>GET /api/v1/series?match=SEL</code></td><td>Return 200 with <code>{"series":[{labels},…]}</code>.</td></tr>
-<tr><td><code>GET /healthz</code></td><td>200 when serving.</td></tr>
-<tr><td><code>GET /stats</code></td><td>200 with <code>series</code>, <code>samples_ingested</code>, <code>head_samples</code>, <code>blocks</code>, <code>chunk_bytes</code>, <code>chunk_samples</code>, and <code>wal_bytes</code>. Extra fields are allowed.</td></tr>
+<tr><td><code>GET /healthz</code></td><td>Return 200 when serving.</td></tr>
+<tr><td><code>GET /stats</code></td><td>Return 200 with <code>series</code>, <code>samples_ingested</code>, <code>head_samples</code>, <code>blocks</code>, <code>chunk_bytes</code>, <code>chunk_samples</code>, and <code>wal_bytes</code>. The response can contain extra fields.</td></tr>
 </tbody></table></div>
-<p>Selectors support equality only: <code>up</code>, <code>up{host="a"}</code>, or <code>{host="a"}</code>. Values need double quotes and there must be at least one matcher overall. Invalid selectors or parameters, including <code>start &gt; end</code>, return 400. Wrong methods return 405; unknown paths return 404. Error response wording is your choice.</p>
-<p>Support the following flags as their capabilities are added. Invalid values must name the flag on stderr and exit nonzero before serving.</p>
+<p>Selectors support equality only: <code>up</code>, <code>up{host="a"}</code>, or <code>{host="a"}</code>. Values need double quotes. There must be at least one matcher overall. Return 400 for invalid selectors or parameters, including <code>start &gt; end</code>. Return 405 for wrong methods. Return 404 for unknown paths.</p>
+<p>You choose the wording of error responses.</p>
+<p>Support each flag below when you add its capability. For an invalid value, the program must name the flag on stderr and exit nonzero before serving.</p>
 <div class="table-wrap"><table><thead><tr><th>Flag</th><th>Default</th><th>Valid values</th></tr></thead><tbody>
 <tr><td><code>-listen</code></td><td><code>127.0.0.1:9201</code></td><td>Nonempty HTTP address</td></tr>
 <tr><td><code>-data-dir</code></td><td><code>data</code></td><td>Nonempty path</td></tr>
@@ -186,7 +241,7 @@
 <tr><td><code>-wal-fsync</code></td><td><code>true</code></td><td>Boolean</td></tr>
 </tbody></table></div>
 <h3>Try it</h3>
-<p>Build and start the server in terminal 1. Keep the printed data path for restart experiments. Use a new temporary directory whenever a scenario asks for fresh data.</p>
+<p>In terminal 1, run these commands to build and start the server. Keep the printed data path for restart experiments. Use a new temporary directory whenever a scenario asks for fresh data.</p>
 <pre data-lang="sh"><code>go build -o tsdb .
 TSDB_DATA=$(mktemp -d)
 printf '%s\n' "$TSDB_DATA"
@@ -202,18 +257,34 @@ curl -sS -G --data-urlencode 'match=up{host="a"}' \
   http://127.0.0.1:9201/api/v1/query</code></pre>
 <pre class="output"><code>204
 {"series":[{"labels":{"__name__":"up","host":"a"},"samples":[[1000,1],[2000,2]]}]}</code></pre>
-<p>Now submit a batch containing timestamps 3000 then 2000 for that series. Expect 400 identifying line 2; the query must still contain only the original two samples. Test the same failure at line 7 of a ten-line batch. Before any restart, <code>/stats</code> must show <code>series: 1</code> and <code>samples_ingested: 2</code>. Add tests for selector parsing, atomicity, every status above, and the later WAL failure status. Document counter behavior across restarts rather than assuming these lifetime counters persist.</p>
+<p>Now submit a batch with timestamps 3000 then 2000 for that series. Expect 400 that identifies line 2. The query must still contain only the original two samples. Test the same failure at line 7 of a ten-line batch. Before any restart, <code>/stats</code> must show <code>series: 1</code> and <code>samples_ingested: 2</code>.</p>
+<p>Add tests for these items:</p>
+<ul>
+<li>Selector parsing.</li>
+<li>Atomicity.</li>
+<li>Every status above.</li>
+<li>The later WAL failure status.</li>
+</ul>
+<p>Document the counter behavior across restarts. Do not assume that these lifetime counters persist.</p>
+<h3>AI mentor prompt</h3>
+<blockquote>I am on Step 2, the HTTP contract. Ask me how my write handler keeps a batch atomic when requests are concurrent. Then ask me which status each bad request gets. Give one hint at a time. Do not edit files. Do not show the solution unless I ask for it.</blockquote>
 </section>
 <section class="session" id="session-3"><span id="WAL-1" aria-hidden="true"></span><span id="WAL-2" aria-hidden="true"></span><span id="WAL-3" aria-hidden="true"></span><span id="WAL-4" aria-hidden="true"></span><span id="TST-3" aria-hidden="true"></span><span id="spec-wal" aria-hidden="true"></span>
 <h2>Step 3: Recover acknowledged writes</h2>
-<p>Add a write-ahead log (WAL). Return 204 only after appending the entire batch and, with the default <code>-wal-fsync=true</code>, syncing it to storage. A WAL failure returns a 5xx and stores nothing. Recovery must never apply a fraction of a batch.</p>
-<p>With fsync enabled, acknowledged writes must survive crashes, subject to the storage device honoring synchronization. With it disabled, acknowledgement means appended, without a per-request sync guarantee: a machine crash can lose acknowledged data. Choose and document whether and when you sync in that mode. Killing only the process tests replay; it does not simulate loss of the operating system's write cache.</p>
+<p>Add a write-ahead log (WAL). Return 204 only after these actions:</p>
+<ol>
+<li>Append the entire batch to the WAL.</li>
+<li>With the default <code>-wal-fsync=true</code>, sync the batch to storage.</li>
+</ol>
+<p>A WAL failure returns a 5xx and stores nothing. Recovery must never apply a fraction of a batch.</p>
+<p>With fsync enabled, acknowledged writes must survive crashes, subject to the storage device honoring synchronization. With fsync disabled, acknowledgement means that the server appended the batch. It gives no per-request sync guarantee. A machine crash can lose acknowledged data. Choose whether and when you sync in that mode. Document your choice.</p>
+<p>A kill of only the process tests replay. It does not simulate loss of the operating system's write cache.</p>
 <h3>Try it</h3>
-<p>Use a fresh directory. In terminal 1, start your built binary in the background and record its PID:</p>
+<p>Use a fresh directory. In terminal 1, start your built binary in the background. Record its PID:</p>
 <pre data-lang="sh"><code>TSDB_DATA=$(mktemp -d)
 ./tsdb -data-dir "$TSDB_DATA" &amp;
 TSDB_PID=$!</code></pre>
-<p>Wait until <code>/healthz</code> succeeds. In terminal 2, write and query two samples:</p>
+<p>Wait until <code>/healthz</code> succeeds. In terminal 2, run these commands to write two samples and query them:</p>
 <pre data-lang="sh"><code>curl -sS -o /dev/null -w '%{http_code}\n' \
   --data-binary @- http://127.0.0.1:9201/api/v1/write &lt;&lt;'JSONL'
 {"labels":{"__name__":"up","host":"a"},"t":1000,"v":1}
@@ -222,21 +293,40 @@ JSONL
 curl -sS -G --data-urlencode 'match=up{host="a"}' \
   --data-urlencode start=1000 --data-urlencode end=2000 \
   http://127.0.0.1:9201/api/v1/query</code></pre>
-<p>Expect 204 and both samples. After observing that acknowledgement, run this in terminal 1:</p>
+<p>Expect 204 and both samples. After you see that acknowledgement, run this in terminal 1:</p>
 <pre data-lang="sh"><code>kill -KILL "$TSDB_PID"
 wait "$TSDB_PID" # A nonzero status is expected after SIGKILL.
 ./tsdb -data-dir "$TSDB_DATA"</code></pre>
-<p>After readiness, repeat the query. Both samples must remain:</p>
+<p>When the server is ready, repeat the query. Both samples must remain:</p>
 <pre class="output"><code>{"series":[{"labels":{"__name__":"up","host":"a"},"samples":[[1000,1],[2000,2]]}]}</code></pre>
-<p>Write recovery tests using two batches of 50 increasing samples each. A healthy replay returns 100. Stop the process and truncate three bytes from the final batch record: restart must keep the first 50 and discard the incomplete second batch completely. Also test a checksum-failing final record. Truncate the WAL to its last valid record and log the number of dropped bytes. These deliberately damaged-file tests do not promise recovery of data you removed.</p>
-<p>A checksum failure in any nonfinal record must instead stop startup with an error naming the WAL. Include a failing writer test that returns 5xx and exposes no batch data. You choose the record layout and tail-detection method; explain how it distinguishes an incomplete final record from corruption earlier in the log.</p>
+<p>Write recovery tests that use two batches of 50 increasing samples each. A healthy replay returns 100. Then test an incomplete final record:</p>
+<ol>
+<li>Stop the process.</li>
+<li>Truncate three bytes from the final batch record.</li>
+<li>Restart. The restart must keep the first 50 and discard the incomplete second batch completely.</li>
+</ol>
+<p>Also test a checksum-failing final record. Truncate the WAL to its last valid record. Log the number of dropped bytes. These tests damage files on purpose. They do not promise recovery of data that you deleted.</p>
+<p>A checksum failure in any nonfinal record must instead stop startup with an error that names the WAL. Include a failing writer test that returns 5xx and exposes no batch data.</p>
+<p>You choose the record layout and the tail-detection method. Explain how your layout and method distinguish an incomplete final record from corruption earlier in the log.</p>
+<h3>AI mentor prompt</h3>
+<blockquote>I am on Step 3, the WAL and recovery. Ask me when my server returns 204 in each fsync mode. Then ask me how my recovery tells an incomplete final record from corruption earlier in the log. Give one hint at a time. Do not edit files. Do not show the solution unless I ask for it.</blockquote>
 </section>
 <section class="session" id="session-4"><span id="CHK-1" aria-hidden="true"></span><span id="CHK-2" aria-hidden="true"></span><span id="CHK-3" aria-hidden="true"></span><span id="TST-4" aria-hidden="true"></span><span id="spec-chunks" aria-hidden="true"></span>
 <h2>Step 4: Compress the samples</h2>
-<p>Store samples in chunks of at most 120 per series, using Gorilla's delta-of-delta timestamps and XOR-encoded float values. Decoding must reproduce every timestamp and float bit exactly. Within an active sequence of chunks, only the newest may be partly filled; sealing a time window may end its last chunk early. Keep blocks compressed too.</p>
-<p>Test bit I/O across byte boundaries, irregular timestamps, negative delta-of-deltas, repeated and fractional values, large values, signed zero, and NaN payloads at the encoder level. NaN remains invalid at the HTTP boundary. With 250 samples in one window, expect chunk sizes 120, 120, 10 and a query returning all 250.</p>
+<p>Store samples in chunks of at most 120 per series. Use Gorilla's delta-of-delta timestamps and XOR-encoded float values. Decoding must reproduce every timestamp and float bit exactly. Within an active sequence of chunks, only the newest may be partly filled. Sealing a time window may end its last chunk early. Keep blocks compressed too.</p>
+<p>Test these cases:</p>
+<ul>
+<li>Bit I/O across byte boundaries.</li>
+<li>Irregular timestamps.</li>
+<li>Negative delta-of-deltas.</li>
+<li>Repeated and fractional values.</li>
+<li>Large values.</li>
+<li>Signed zero.</li>
+<li>NaN payloads at the encoder level.</li>
+</ul>
+<p>NaN remains invalid at the HTTP boundary. With 250 samples in one window, expect chunk sizes 120, 120, 10. Expect a query to return all 250.</p>
 <h3>Try it</h3>
-<p>Use these exact reference datasets: 2,880 samples, 15 seconds apart. Define the generator in your request terminal. The gauge values are rounded to two decimals.</p>
+<p>Use these exact reference datasets: 2,880 samples, 15 seconds apart. Define the generator in your request terminal. The generator rounds the gauge values to two decimals.</p>
 <pre data-lang="sh"><code>gen() {
   LC_ALL=C awk -v name="$1" -v n="$2" -v mode="$3" 'BEGIN {
     t0 = 1700000000000; s = 0
@@ -252,18 +342,21 @@ wait "$TSDB_PID" # A nonzero status is expected after SIGKILL.
 gen up 2880 counter | curl -sS -o /dev/null -w '%{http_code}\n' \
   --data-binary @- http://127.0.0.1:9201/api/v1/write
 curl -sS http://127.0.0.1:9201/stats | jq '.chunk_bytes / .chunk_samples'</code></pre>
-<p>Run each mode against fresh data with default flags, stopping the previous server first. Expect 204 and a ratio satisfying:</p>
+<p>For each mode, stop the previous server first. Then run the mode against fresh data with default flags. Expect 204 and a ratio that satisfies these limits:</p>
 <div class="table-wrap"><table><thead><tr><th>Mode</th><th>Maximum bytes/sample</th><th>Maximum chunk bytes for 2,880 samples</th></tr></thead><tbody>
 <tr><td><code>const</code></td><td>1.0</td><td>2,880</td></tr>
 <tr><td><code>counter</code></td><td>2.5</td><td>7,200</td></tr>
 <tr><td><code>gauge</code></td><td>10</td><td>28,800</td></tr>
 </tbody></table></div>
-<p>Count encoded chunk bytes, including chunk headers, across head and blocks; do not divide only a selected subset by the full sample count. WAL and index bytes are separate. These are limits, not claimed benchmark results. The counter's last sample is <code>[1700043185000,8634]</code>. Read <a href="https://www.vldb.org/pvldb/vol8/p1816-teller.pdf">Gorilla, section 4.1</a> with your AI partner, then explain why the three datasets compress differently before measuring.</p>
+<p>Count encoded chunk bytes, including chunk headers, across head and blocks. Do not divide only a selected subset by the full sample count. WAL and index bytes are separate. These are limits, not claimed benchmark results. The last sample of the counter is <code>[1700043185000,8634]</code>.</p>
+<p>Read <a href="https://www.vldb.org/pvldb/vol8/p1816-teller.pdf">Gorilla, section 4.1</a> with your AI partner. Before you measure, explain why the three datasets compress differently.</p>
+<h3>AI mentor prompt</h3>
+<blockquote>I am on Step 4, chunk compression. Ask me to predict the bytes per sample for each dataset before I measure. Then ask me how delta-of-delta and XOR encoding affect each dataset. Give one hint at a time. Do not edit files. Do not show the solution unless I ask for it.</blockquote>
 </section>
 <section class="session" id="session-5"><span id="BLK-1" aria-hidden="true"></span><span id="BLK-2" aria-hidden="true"></span><span id="BLK-3" aria-hidden="true"></span><span id="BLK-4" aria-hidden="true"></span><span id="MOD-4" aria-hidden="true"></span><span id="WAL-5" aria-hidden="true"></span><span id="TST-5" aria-hidden="true"></span><span id="spec-blocks" aria-hidden="true"></span>
 <h2>Step 5: Seal immutable blocks</h2>
-<p>Align time windows to multiples of <code>-block-duration</code> since the Unix epoch. A window is half-open: [start, end). Seal it when the newest head sample reaches <code>end + block-duration / 2</code>. Its immutable block must appear atomically. An interrupted seal must expose no partial block and lose no data. Only remove WAL data once everything it covers is persisted in blocks.</p>
-<p>At startup, load existing blocks. Queries must merge blocks and head in order without duplicates. Keep memory proportional to the head, not the full sample history. Once a window seals, reject timestamps before the head's lower bound as out of bounds, even for a previously unseen series.</p>
+<p>Align time windows to multiples of <code>-block-duration</code> since the Unix epoch. A window is half-open: [start, end). Seal a window when the newest head sample reaches <code>end + block-duration / 2</code>. Its immutable block must appear atomically. An interrupted seal must expose no partial block and lose no data. Delete WAL data only after blocks persist everything that it covers.</p>
+<p>At startup, load existing blocks. Queries must merge blocks and head in order, without duplicates. Keep memory proportional to the head, not to the full sample history. After a window seals, reject timestamps before the lower bound of the head as out of bounds. Reject them even for a previously unseen series.</p>
 <h3>Try it</h3>
 <p>Start with fresh data and <code>-block-duration 1m -retention 2m</code>. Submit:</p>
 <pre data-lang="sh"><code>curl -sS -o /dev/null -w '%{http_code}\n' \
@@ -278,29 +371,103 @@ curl -sS -G --data-urlencode match=up --data-urlencode start=0 \
 <pre class="output"><code>204
 {"blocks":1,"head_samples":2}
 {"series":[{"labels":{"__name__":"up"},"samples":[[0,1],[60000,2],[90000,3]]}]}</code></pre>
-<p>The first window ends at 60000 and seals at 90000. Repeat the query after a restart: the same three samples must appear. A new series at 30000 now gets 400. Test immediately before and exactly at the seal threshold, an interrupted seal, WAL reclamation, and merged queries.</p>
-<p>Also rerun the 2,880-sample counter fixture with default flags on fresh data. Expect <code>blocks: 5</code>, <code>head_samples: 533</code>, and 2,880 queried samples before and after restart. The first window begins at 1699999200000; sealed windows end through 1700035200000. The remaining 533 samples begin at that boundary or later. Query bounds 0 through 9999999999999 include the whole fixture.</p>
+<p>The first window ends at 60000 and seals at 90000. Repeat the query after a restart. The same three samples must appear. A new series at 30000 now gets 400.</p>
+<p>Test these cases:</p>
+<ul>
+<li>Immediately before and exactly at the seal threshold.</li>
+<li>An interrupted seal.</li>
+<li>WAL reclamation.</li>
+<li>Merged queries.</li>
+</ul>
+<p>Also rerun the 2,880-sample counter fixture with default flags on fresh data. Expect <code>blocks: 5</code>, <code>head_samples: 533</code>, and 2,880 queried samples before and after restart. The first window starts at 1699999200000. The last sealed window ends at 1700035200000. The remaining 533 samples start at that boundary or later. Query bounds 0 through 9999999999999 include the whole fixture.</p>
+<h3>AI mentor prompt</h3>
+<blockquote>I am on Step 5, sealing blocks. Ask me to calculate the seal threshold of a window from my flags. Then ask me how my seal stays atomic after an interruption. Give one hint at a time. Do not edit files. Do not show the solution unless I ask for it.</blockquote>
 </section>
 <section class="session" id="session-6"><span id="RET-1" aria-hidden="true"></span><span id="OPS-3" aria-hidden="true"></span><span id="TST-6" aria-hidden="true"></span><span id="spec-tests" aria-hidden="true"></span>
 <h2>Step 6: Expire history and stop cleanly</h2>
-<p>Delete a block when its window end is ≤ <code>newest stored timestamp − retention</code>. Evaluate this after every seal and at startup. Use data time, not the wall clock, and never delete the head. Queries already reading a block must remain safe while retention runs.</p>
+<p>Delete a block when its window end is ≤ <code>newest stored timestamp − retention</code>. Evaluate this rule after every seal and at startup. Use data time, not the wall clock. Never delete the head. A query that already reads a block must remain safe while retention runs.</p>
 <h3>Try it</h3>
-<p>For a boundary test, use fresh data, one-minute blocks, two-minute retention, and one series with timestamps 0, 90000, 179999 and values 1, 2, 3. Two windows seal. Restart, then append timestamp 180000 with value 4 and restart again. No new seal is needed for the second startup to check retention:</p>
+<p>For a boundary test, use this setup:</p>
+<ul>
+<li>Fresh data.</li>
+<li>One-minute blocks.</li>
+<li>Two-minute retention.</li>
+<li>One series with timestamps 0, 90000, 179999 and values 1, 2, 3.</li>
+</ul>
+<p>Two windows seal. Then do these steps:</p>
+<ol>
+<li>Restart the server.</li>
+<li>Append timestamp 180000 with value 4.</li>
+<li>Restart the server again.</li>
+</ol>
+<p>The second startup evaluates retention. It does not need a new seal:</p>
 <div class="table-wrap"><table><thead><tr><th>Newest timestamp</th><th>Retention cutoff</th><th>Expected after restart</th></tr></thead><tbody>
-<tr><td>179999</td><td>59999</td><td>2 blocks; sample at 0 remains</td></tr>
-<tr><td>180000</td><td>60000</td><td>1 block; sample at 0 removed; 90000, 179999, 180000 remain</td></tr>
+<tr><td>179999</td><td>59999</td><td>2 blocks. The sample at 0 remains.</td></tr>
+<tr><td>180000</td><td>60000</td><td>1 block. The sample at 0 is deleted. 90000, 179999, 180000 remain.</td></tr>
 </tbody></table></div>
-<p>Repeat the reference counter on fresh data with <code>-retention 6h</code> and default two-hour blocks. Expect two blocks and 1,493 samples, starting at 1700020805000. The cutoff is 1700021585000; the three blocks ending at or before 1700020800000 expire. Retention operates on whole windows, so a query can include samples older than the cutoff.</p>
-<p>On SIGINT or SIGTERM, stop accepting requests, finish in-flight writes, close the WAL, log final stats, and exit 0. All phases share a five-second budget; failure or timeout must log an error and exit nonzero. Restart should recover only the head from the remaining WAL, alongside the blocks.</p>
-<p>Add a programmatic crash loop: on fresh default storage, perform 20 rounds of start, wait for health with a bounded readiness check, write the next 100 samples of the counter dataset, observe 204, kill the process, and wait for it to exit. After a final restart, query all samples. Fail the test on any unsuccessful request rather than counting it as acknowledged.</p>
+<figure><img src="assets/tiny-tsdb/window-timeline.svg" alt="Two timelines. Top: with 1m blocks, the half-open window [0, 60000) seals when a sample reaches 60000 + 30000 = 90000. Bottom: with 2m retention and newest timestamp 180000, the cutoff is 60000. Block [0, 60000) is deleted because its end 60000 is at or before the cutoff. Block [60000, 120000) and the head stay." width="340"><figcaption>The Step 5 seal and the Step 6 retention boundary on one time axis, with 1m blocks and 2m retention.</figcaption></figure>
+<ol>
+<li>One minute is 60000 ms. Windows are [0, 60000), [60000, 120000) and so on. A window is half-open, so 60000 belongs to the second window.</li>
+<li>Step 5: the seal threshold of [0, 60000) is 60000 + 30000 = 90000. The sample at 90000 seals it. The result is 1 block and 2 head samples.</li>
+<li>Step 6: the newest timestamp is 180000. The retention is 120000 ms. The cutoff is 180000 − 120000 = 60000.</li>
+<li>Block [0, 60000) ends at 60000, and 60000 ≤ 60000. Retention deletes the block, and the sample at 0 with it.</li>
+<li>Block [60000, 120000) ends at 120000, after the cutoff. It stays. Retention never deletes the head.</li>
+</ol>
+<p>Repeat the reference counter on fresh data with <code>-retention 6h</code> and default two-hour blocks. Expect two blocks and 1,493 samples, starting at 1700020805000. The cutoff is 1700021585000. The three blocks that end at or before 1700020800000 expire. Because retention operates on whole windows, a query can include samples older than the cutoff.</p>
+<p>On SIGINT or SIGTERM, do these steps:</p>
+<ol>
+<li>Stop accepting requests.</li>
+<li>Finish in-flight writes.</li>
+<li>Close the WAL.</li>
+<li>Log final stats.</li>
+<li>Exit 0.</li>
+</ol>
+<p>All phases share a five-second budget. On failure or timeout, the program must log an error and exit nonzero. Restart should recover only the head from the remaining WAL, alongside the blocks.</p>
+<p>Add a programmatic crash loop. Use fresh default storage. Run 20 rounds of these steps:</p>
+<ol>
+<li>Start the server.</li>
+<li>Wait for health with a bounded readiness probe.</li>
+<li>Write the next 100 samples of the counter dataset.</li>
+<li>Observe 204.</li>
+<li>Kill the process.</li>
+<li>Wait for it to exit.</li>
+</ol>
+<p>After a final restart, query all samples. Fail the test on any unsuccessful request. Do not count that request as acknowledged.</p>
 <pre class="output"><code>acked=2000 stored=2000</code></pre>
-<p>That line is the required result of this controlled test. Record actual results from your implementation. Run retention-boundary tests and the complete suite:</p>
+<p>That line is the required result of this controlled test. Record the actual results from your implementation. Run the retention-boundary tests and the complete suite:</p>
 <pre data-lang="sh"><code>go test -race ./...</code></pre>
+<h3>AI mentor prompt</h3>
+<blockquote>I am on Step 6, retention and clean shutdown. Ask me to calculate the retention cutoff for the boundary test before I restart. Then ask me which blocks my rule deletes, and why. Give one hint at a time. Do not edit files. Do not show the solution unless I ask for it.</blockquote>
 </section>
 <section id="hand-in"><span id="evaluation" aria-hidden="true"></span>
 <h2>What to hand in</h2>
-<p>Include runnable Go source, <code>go.mod</code>, meaningful tests for each step, and a short README explaining how to run them. Document every on-disk format byte by byte, series identity and hashing choices, the write and recovery paths, both fsync modes, measured compression results, memory cost per series/sample, limitations, and remaining work.</p>
-<p>Review focuses on correct queries and atomic writes, crash recovery, concurrency safety, compression and bounded memory, and a design you can explain and modify. A reader should be able to write a file reader from your documentation.</p>
+<p>Include these items:</p>
+<ul>
+<li>Runnable Go source.</li>
+<li><code>go.mod</code>.</li>
+<li>Meaningful tests for each step.</li>
+<li>A short README that explains how to run them.</li>
+</ul>
+<p>Document these topics:</p>
+<ul>
+<li>Every on-disk format, byte by byte.</li>
+<li>Series identity and hashing choices.</li>
+<li>The write and recovery paths.</li>
+<li>Both fsync modes.</li>
+<li>Measured compression results.</li>
+<li>Memory cost per series/sample.</li>
+<li>Limitations.</li>
+<li>Remaining work.</li>
+</ul>
+<p>Review focuses on these areas:</p>
+<ul>
+<li>Correct queries and atomic writes.</li>
+<li>Crash recovery.</li>
+<li>Concurrency safety.</li>
+<li>Compression and bounded memory.</li>
+<li>A design that you can explain and change.</li>
+</ul>
+<p>A reader should be able to write a file reader from your documentation.</p>
 </section>
 <footer>Tiny TSDB · <a href="index.html">Go Infra Track</a> · Independent practice material, not issued by any company.</footer>
 
