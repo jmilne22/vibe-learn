@@ -148,12 +148,32 @@
 <nav class="contents" aria-label="Contents"><a href="#brief">Setup</a><a href="#session-1">1. Deploy</a><a href="#session-2">2. Define the API</a><a href="#session-3">3. Reconcile</a><a href="#session-4">4. Roll out</a><a href="#session-5">5. Report status</a><a href="#session-6">6. Package</a></nav>
 <section aria-labelledby="brief">
 <h2 id="brief"><span id="must-do" aria-hidden="true"></span><span id="rules" aria-hidden="true"></span><span id="budget" aria-hidden="true"></span>The challenge</h2>
-<p>Your <a href="go-telemetry-ingest-take-home.html">Ingest Relay</a> works locally. Now run one relay on each worker node, writing logs to that node’s disk. An <code>IngestRelay</code> custom resource will describe the desired configuration; your operator will maintain a DaemonSet and a node-local Service for it.</p>
-<p>Use Go, Docker, kind, kubectl, Kubebuilder v4, and Helm. Podman is also fine if you adapt the container commands. Use the Go/tool versions supported by your chosen Kubebuilder release and record them. The allowed modules are controller-runtime, client-go, apimachinery, and scaffold dependencies. See the <a href="https://book.kubebuilder.io/quick-start">Kubebuilder setup guide</a> for tool installation.</p>
-<p>Pair with AI for explanations, implementation, and debugging. Before changing cluster objects, predict what the controller should observe and change. Webhooks, API conversion, leader election tuning, high availability, OLM bundles, publishing, multi-cluster management, and production hardening are outside the challenge. Your design choices remain yours; explain them in the README.</p>
-<p>Outputs below are representative targets, not captured test runs. Names match the examples; hashes, ages, timings, image sizes, and condition messages will vary. Wait for observable readiness rather than copying a fixed sleep.</p>
+<p>Your <a href="go-telemetry-ingest-take-home.html">Ingest Relay</a> works locally. Now run one relay on each worker node. Each relay writes logs to the disk of its own node. An <code>IngestRelay</code> custom resource will describe the desired configuration. Your operator will maintain a DaemonSet and a node-local Service for it.</p>
+<figure><img src="assets/relay-operator/operator-layout.svg" alt="Target layout: the controller reads the IngestRelay CR relay and writes the DaemonSet relay and the ClusterIP Service relay in the default namespace. In the kind cluster relay-lab, each of the two workers runs one relay pod that writes /var/lib/ingest-relay/events.jsonl. The control-plane node runs no relay pod." width="340"><figcaption>The target layout after Step 3. The controller maintains two owned objects. The DaemonSet runs one relay pod on each worker node.</figcaption></figure>
+<ol><li>The controller reads the <code>IngestRelay</code> CR <code>relay</code>.</li><li>The controller writes two owned objects in the default namespace: the DaemonSet <code>relay</code> and the ClusterIP Service <code>relay</code>. The Service uses <code>internalTrafficPolicy: Local</code>.</li><li>The kind cluster <code>relay-lab</code> has two workers, <code>relay-lab-worker</code> and <code>relay-lab-worker2</code>. Each worker runs one relay pod.</li><li>Each relay pod writes <code>events.jsonl</code> in <code>/var/lib/ingest-relay</code> on the disk of its node.</li><li>The control-plane node runs no relay pod. The relay pods have no control-plane toleration.</li></ol>
+<p>Use Go, Docker, kind, kubectl, Kubebuilder v4 and Helm. You can also use Podman if you adapt the container commands. See the <a href="https://book.kubebuilder.io/quick-start">Kubebuilder setup guide</a> for tool installation. Follow these rules for versions and modules:</p>
+<ul><li>Use the Go and tool versions that your chosen Kubebuilder release supports. Record these versions.</li><li>The allowed modules are controller-runtime, client-go, apimachinery and the scaffold dependencies.</li></ul>
+<p>Pair with AI for explanations, implementation and debugging. Before you change cluster objects, predict what the controller should observe and change. Your design choices remain yours. Explain them in the README.</p>
+<p>These topics are outside the challenge: webhooks, API conversion, leader election tuning, high availability, OLM bundles, publishing, multi-cluster management and production hardening.</p>
+<p>The outputs below are representative targets, not captured test runs. Names match the examples. Hashes, ages, timings, image sizes and condition messages will vary. Wait for observable readiness. Do not copy a fixed sleep.</p>
+<h3>Glossary</h3>
+<p>This brief uses each term below with one meaning only.</p>
+<ul>
+<li><strong>CR</strong>: an <code>IngestRelay</code> custom resource, for example <code>relay</code> in <code>relay.yaml</code>.</li>
+<li><strong>Desired state</strong>: the configuration that the spec of a CR describes.</li>
+<li><strong>Operator</strong>: the separate project that you create in Step 2, and the image that you build from it in Step 6. It contains the <code>IngestRelay</code> API types and the controller.</li>
+<li><strong>Controller</strong>: the operator code that reconciles each CR. You run it with <code>make run</code> until Step 6. In Step 6, the Helm chart runs it.</li>
+<li><strong>Reconcile</strong>: make the owned objects of a CR match its desired state.</li>
+<li><strong>Owned object</strong>: the DaemonSet or the Service that the controller creates for a CR. Each owned object carries <code>app.kubernetes.io/managed-by=relay-operator</code> and a controller owner reference to the CR.</li>
+<li><strong>Owned field</strong>: a field that the controller sets on an owned object. Another controller may maintain other metadata on the same object.</li>
+<li><strong>Drift</strong>: a value in an owned field that differs from the desired state, for example after a manual change.</li>
+<li><strong>Rollout</strong>: the DaemonSet replaces its pods after a change to the pod template.</li>
+<li><strong>Acknowledged event</strong>: an event whose request received 202. Rejected or disconnected requests are not acknowledgements.</li>
+<li><strong>Condition</strong>: one of the CR status entries <code>Available</code>, <code>Progressing</code> and <code>Degraded</code>. Each condition has a CamelCase reason and a message.</li>
+<li><strong>Pair</strong>: the AI assistant that you work with.</li>
+</ul>
 <h3 id="conventions">Prepare a local cluster</h3>
-<p>Save this as <code>kind.yaml</code>. The two untainted workers let you observe a rollout across nodes.</p>
+<p>Save this file as <code>kind.yaml</code>. It has two untainted workers, so you can observe a rollout across nodes.</p>
 <pre data-lang="yaml"><code>kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
@@ -163,24 +183,25 @@ nodes:
 <pre data-lang="sh"><code>kind create cluster --name relay-lab --config kind.yaml
 kubectl config use-context kind-relay-lab
 kubectl get nodes</code></pre>
-<p>Expect three Ready nodes, including <code>relay-lab-worker</code> and <code>relay-lab-worker2</code>. Commands below use the default namespace for relays. Run the controller separately when a command says to keep it running.</p>
+<p>Expect three Ready nodes, including <code>relay-lab-worker</code> and <code>relay-lab-worker2</code>. The commands below use the default namespace for relays. When a step tells you to keep the controller running, run it separately.</p>
 </section>
 <div id="sessions">
 <section class="session" aria-labelledby="session-1">
 <h3 id="session-1"><span id="IMG-1" aria-hidden="true"></span><span id="IMG-2" aria-hidden="true"></span><span id="IMG-3" aria-hidden="true"></span><span id="spec-image" aria-hidden="true"></span><span id="reference" aria-hidden="true"></span>Step 1 — Put the relay on both workers</h3>
-<p>In your relay project, write a multi-stage Dockerfile that produces a static binary and a final image smaller than 50 MB. Use a version tag, never <code>latest</code>. Build and load it into your local cluster:</p>
+<p>In your relay project, write a multi-stage Dockerfile. It must produce a static binary and a final image smaller than 50 MB. Use a version tag. Never use <code>latest</code>. Build the image and load it into your local cluster:</p>
 <pre data-lang="sh"><code>docker build -t ingest-relay:v0.1.0 .
 kind load docker-image ingest-relay:v0.1.0 --name relay-lab
 docker image inspect ingest-relay:v0.1.0 --format '{{.Size}}'</code></pre>
-<p>The last command must print fewer than 50,000,000 bytes. Choose a runtime image and filesystem permissions that let the relay write its node-local directory; document whether you use an init container, root, or another approach.</p>
-<p>Write <code>relay-demo.yaml</code> containing a DaemonSet named <code>relay-demo</code>. Make it listen on <code>0.0.0.0:8080</code>, mount a <code>hostPath</code> at <code>/var/lib/ingest-relay</code>, and write <code>events.jsonl</code> there. Add readiness and liveness probes on <code>/healthz</code>, at least ten seconds of termination grace, and no control-plane toleration. Use <code>IfNotPresent</code> for the loaded image and label its pods <code>app=relay-demo</code> for the commands below.</p>
+<p>The last command must print fewer than 50,000,000 bytes. Choose a runtime image and filesystem permissions that let the relay write its node-local directory. Document whether you use an init container, root or another approach.</p>
+<p>Write <code>relay-demo.yaml</code>. It contains a DaemonSet named <code>relay-demo</code>. Give the DaemonSet these properties:</p>
+<ul><li>Make it listen on <code>0.0.0.0:8080</code>.</li><li>Mount a <code>hostPath</code> at <code>/var/lib/ingest-relay</code>. Write <code>events.jsonl</code> there.</li><li>Add readiness and liveness probes on <code>/healthz</code>.</li><li>Set at least ten seconds of termination grace.</li><li>Do not add a control-plane toleration.</li><li>Use <code>IfNotPresent</code> for the loaded image.</li><li>Label its pods <code>app=relay-demo</code>. The commands below use this label.</li></ul>
 <pre data-lang="sh"><code>kubectl apply -f relay-demo.yaml
 kubectl rollout status daemonset/relay-demo --timeout=120s
 kubectl get daemonset relay-demo</code></pre>
 <p class="example-label">Expected columns after readiness</p>
 <pre class="output"><code>NAME         DESIRED   CURRENT   READY
 relay-demo   2         2         2</code></pre>
-<p>In another terminal, select a specific pod so you know which node's file to inspect. Keep this port-forward running:</p>
+<p>In another terminal, select a specific pod. Then you know which node's file to inspect. Keep this port-forward running:</p>
 <pre data-lang="sh"><code>RELAY_POD=$(kubectl get pods -l app=relay-demo -o jsonpath='{.items[0].metadata.name}')
 RELAY_NODE=$(kubectl get pod "$RELAY_POD" -o jsonpath='{.spec.nodeName}')
 kubectl port-forward "pod/$RELAY_POD" 8080:8080</code></pre>
@@ -189,29 +210,35 @@ kubectl port-forward "pod/$RELAY_POD" 8080:8080</code></pre>
   --data-binary '{"id":"operator-1","service":"checkout","level":"info","message":"running on kind"}' \
   http://127.0.0.1:8080/events</code></pre>
 <p class="example-label">Expected</p><pre class="output"><code>202</code></pre>
-<p>After the flush interval, stop the forward with Ctrl+C. In that same terminal, inspect the selected node container:</p>
+<p>Wait for the flush interval. Then stop the port-forward with Ctrl+C. In that same terminal, inspect the selected node container:</p>
 <pre data-lang="sh"><code>docker exec "$RELAY_NODE" cat /var/lib/ingest-relay/events.jsonl</code></pre>
-<p>Expect a JSON record preserving the four submitted event fields, plus the UTC receive-time field you chose in the relay. The timestamp varies. This is the node container's filesystem, not a path on your laptop. Follow the pod's logs while deleting it from another terminal: expect the relay's clean-exit totals before replacement. Delete <code>relay-demo.yaml</code> before Step 3 so it cannot share the operator's files.</p>
+<p>Expect a JSON record that preserves the four submitted event fields. The record also has the UTC receive-time field that you chose in the relay. The timestamp varies. This file is in the filesystem of the node container, not on your laptop.</p>
+<p>Test a clean exit:</p>
+<ol><li>Follow the logs of the pod. Keep this command running.</li><li>In another terminal, delete the pod.</li><li>Expect the clean-exit totals of the relay before the replacement.</li></ol>
+<p>Delete <code>relay-demo.yaml</code> before Step 3, so that it cannot share the operator's files.</p>
+<h3>AI mentor prompt</h3><blockquote>I am on Step 1, putting the relay on both workers. Ask me to explain how my image gets from Docker to the kind nodes. Ask me why the event file is on the node container and not on my laptop. Give one hint at a time. Do not edit files. Do not show the solution unless I ask for it.</blockquote>
 </section>
 <section class="session" aria-labelledby="session-2">
 <h3 id="session-2"><span id="API-1" aria-hidden="true"></span><span id="API-2" aria-hidden="true"></span><span id="API-3" aria-hidden="true"></span><span id="API-4" aria-hidden="true"></span><span id="spec-api" aria-hidden="true"></span>Step 2 — Give the workload an API</h3>
-<p>Create a separate operator project. These commands scaffold types and a controller; they do not implement reconciliation:</p>
+<p>Create a separate operator project. These commands scaffold types and a controller. They do not implement the reconcile logic:</p>
 <pre data-lang="sh"><code>mkdir relay-operator
 cd relay-operator
 kubebuilder init --domain example.com --repo example.com/relay-operator
 kubebuilder create api --group telemetry --version v1alpha1 --kind IngestRelay</code></pre>
-<p>Answer yes to resource and controller creation. Define a namespaced <code>telemetry.example.com/v1alpha1</code> kind <code>IngestRelay</code> with a status subresource. Generate schema validation and defaults for these fields:</p>
+<p>When Kubebuilder asks whether to create the resource and the controller, answer yes to both. Define a namespaced <code>telemetry.example.com/v1alpha1</code> kind <code>IngestRelay</code> with a status subresource. Generate schema validation and defaults for these fields:</p>
 <div class="table-wrap"><table><thead><tr><th>Spec field</th><th>Type and rule</th><th>Default</th></tr></thead><tbody>
 <tr><td><code>image</code></td><td>Required, non-empty string</td><td>None</td></tr>
 <tr><td><code>queueSize</code></td><td>int32 ≥ 1</td><td>128</td></tr>
 <tr><td><code>batchSize</code></td><td>int32 ≥ 1</td><td>16</td></tr>
-<tr><td><code>flushInterval</code></td><td>Positive Go duration string; pattern validation</td><td>1s</td></tr>
+<tr><td><code>flushInterval</code></td><td>Positive Go duration string, with pattern validation</td><td>1s</td></tr>
 <tr><td><code>port</code></td><td>int32, 1024–65535</td><td>8080</td></tr>
 <tr><td><code>hostPath</code></td><td>Absolute path string</td><td>/var/lib/ingest-relay</td></tr>
 <tr><td><code>resources</code></td><td>Optional ResourceRequirements</td><td>None</td></tr>
 </tbody></table></div>
-<p>Keep the duration validation consistent with the relay: accept examples such as <code>500ms</code> and <code>2s</code>, reject nonpositive values, and document the supported syntax. Add field descriptions and printer columns IMAGE, DESIRED, READY, and AGE.</p>
-<p>Run <code>make generate manifests install</code>. Save this as <code>relay.yaml</code>:</p>
+<p>Keep the duration validation consistent with the relay:</p>
+<ul><li>Accept examples such as <code>500ms</code> and <code>2s</code>.</li><li>Reject nonpositive values.</li><li>Document the supported syntax.</li></ul>
+<p>Add field descriptions. Add the printer columns IMAGE, DESIRED, READY and AGE.</p>
+<p>Run <code>make generate manifests install</code>. Save this file as <code>relay.yaml</code>:</p>
 <pre data-lang="yaml"><code>apiVersion: telemetry.example.com/v1alpha1
 kind: IngestRelay
 metadata:
@@ -222,13 +249,18 @@ spec:
 kubectl get ingestrelay relay -o jsonpath='{.spec.queueSize}{" "}{.spec.batchSize}{" "}{.spec.flushInterval}{"\n"}'
 kubectl explain ingestrelay.spec</code></pre>
 <p class="example-label">Expected defaults</p><pre class="output"><code>128 16 1s</code></pre>
-<p>The explanation should describe every field. A copy of the resource with <code>queueSize: 0</code> must be rejected by the API server. At this step the CR can exist without creating any pods; that is the next capability.</p>
+<p>The explanation should describe every field. The API server must reject a copy of the resource with <code>queueSize: 0</code>. At this step, the CR can exist without any pods. The next step adds that capability.</p>
+<h3>AI mentor prompt</h3><blockquote>I am on Step 2, giving the workload an API. Ask me where the defaults and the schema validation for each spec field come from. Ask me to predict what happens when I apply a CR with queueSize: 0. Give one hint at a time. Do not edit files. Do not show the solution unless I ask for it.</blockquote>
 </section>
 <section class="session" aria-labelledby="session-3">
 <h3 id="session-3"><span id="REC-1" aria-hidden="true"></span><span id="REC-2" aria-hidden="true"></span><span id="REC-3" aria-hidden="true"></span><span id="REC-4" aria-hidden="true"></span><span id="REC-5" aria-hidden="true"></span><span id="TST-1" aria-hidden="true"></span><span id="TST-3" aria-hidden="true"></span><span id="spec-reconcile" aria-hidden="true"></span>Step 3 — Reconcile desired state</h3>
-<p>Implement reconciliation and keep <code>make run</code> running in the operator project. For each CR, create exactly one DaemonSet and one ClusterIP Service, both in its namespace and named after it. Both carry <code>app.kubernetes.io/managed-by=relay-operator</code> and a controller owner reference to the CR.</p>
-<p>The pod inherits the image, resource requirements, port, hostPath, queue size, batch size, and flush interval from the spec. Set <code>-listen</code> to all interfaces on the chosen port, <code>-out</code> to <code>&lt;hostPath&gt;/events.jsonl</code>, and <code>-queue-size</code>, <code>-batch-size</code>, and <code>-flush-interval</code> to their corresponding spec values. Keep the probes, volume, and termination grace from Step 1. Use per-CR pod labels so each Service selects only its own relay. The Service uses the configured port and <code>internalTrafficPolicy: Local</code>.</p>
-<p>Revert drift in owned fields and recreate deleted objects within 30 seconds. Let garbage collection remove the DaemonSet and Service when the CR is deleted; do not add a finalizer. Distinguish owned fields from metadata another controller may maintain.</p>
+<p>Implement the reconcile logic in the controller. Keep <code>make run</code> running in the operator project. For each CR, create exactly one DaemonSet and one ClusterIP Service. Create both in the namespace of the CR. Name both after the CR. Both carry <code>app.kubernetes.io/managed-by=relay-operator</code> and a controller owner reference to the CR.</p>
+<figure><img class="motion-animated" src="assets/relay-operator/reconcile-loop-animated.svg" alt="One reconcile pass: a CR changes, the controller reads the desired state, creates or updates one DaemonSet and one ClusterIP Service, observes the DaemonSet, then writes the CR status. An arrow returns to the read step. The highlights stop after 4.8 seconds." width="340"><img class="motion-static" src="assets/relay-operator/reconcile-loop.svg" alt="One reconcile pass: a CR changes, the controller reads the desired state, creates or updates one DaemonSet and one ClusterIP Service, observes the DaemonSet, then writes the CR status. An arrow returns to the read step." width="340"><figcaption>One reconcile pass, from a CR change to the CR status. You add parts 4 and 5 in Step 5. The highlights stop after 4.8 seconds. If reduced motion is on, a static diagram shows instead.</figcaption></figure>
+<ol><li>You apply or patch a CR. Its spec is the desired state.</li><li>The controller reads the spec of the CR.</li><li>The controller creates or updates one DaemonSet and one ClusterIP Service.</li><li>From Step 5: the controller reads <code>desiredNumberScheduled</code> and <code>numberReady</code> from the DaemonSet.</li><li>From Step 5: the controller writes the CR status. The status has <code>status.observedGeneration</code>, the counts and the conditions.</li><li>The controller reconciles again. It reverts drift and recreates deleted objects within 30 seconds. An unchanged desired state produces no DaemonSet or Service writes.</li></ol>
+<p>The pod inherits these values from the spec: the image, resource requirements, port, hostPath, queue size, batch size and flush interval. Set the relay flags as follows:</p>
+<ul><li>Set <code>-listen</code> to all interfaces on the chosen port.</li><li>Set <code>-out</code> to <code>&lt;hostPath&gt;/events.jsonl</code>.</li><li>Set <code>-queue-size</code>, <code>-batch-size</code> and <code>-flush-interval</code> to their corresponding spec values.</li></ul>
+<p>Keep the probes, the volume and the termination grace from Step 1. Use per-CR pod labels, so that each Service selects only its own relay. The Service uses the configured port and <code>internalTrafficPolicy: Local</code>.</p>
+<p>Revert drift in owned fields and recreate deleted objects within 30 seconds. When you delete the CR, let garbage collection delete the DaemonSet and the Service. Do not add a finalizer. Distinguish owned fields from metadata that another controller may maintain.</p>
 <pre data-lang="sh"><code>kubectl rollout status daemonset/relay --timeout=120s
 kubectl get service relay -o jsonpath='{.spec.type}{" "}{.spec.internalTrafficPolicy}{"\n"}'
 kubectl get daemonset relay -o jsonpath='{.metadata.ownerReferences[0].kind}{"\n"}'</code></pre>
@@ -237,38 +269,50 @@ IngestRelay</code></pre>
 <p>Delete the Service and watch for its replacement:</p>
 <pre data-lang="sh"><code>kubectl delete service relay
 kubectl get service relay --watch</code></pre>
-<p>Expect a new Service within the bound; stop the watch with Ctrl+C. Repeat with an owned field changed manually and verify restoration. In envtest, check creation, selectors, translated arguments, owner references, and drift repair. Use the scaffold’s test target to provision its API-server test binaries; envtest has no kubelet and will not make relay pods Ready for you. Test CR deletion on kind, where garbage collection actually runs, then reapply <code>relay.yaml</code>.</p>
+<p>Expect a new Service within the 30-second bound. Stop the watch with Ctrl+C. Repeat the test: change an owned field manually and check that the controller restores it.</p>
+<p>In envtest, check these behaviors:</p>
+<ul><li>object creation</li><li>selectors</li><li>translated arguments</li><li>owner references</li><li>drift repair</li></ul>
+<p>Use the scaffold’s test target to provision its API-server test binaries. envtest has no kubelet. It will not make relay pods Ready for you. Test CR deletion on kind, where garbage collection actually runs. Then apply <code>relay.yaml</code> again.</p>
+<h3>AI mentor prompt</h3><blockquote>I am on Step 3, reconciling desired state. Ask me what the controller reads and writes for one CR, and why each Service selects only its own relay. Ask me to predict what happens when I delete the Service. Give one hint at a time. Do not edit files. Do not show the solution unless I ask for it.</blockquote>
 </section>
 <section class="session" aria-labelledby="session-4">
 <h3 id="session-4"><span id="REC-6" aria-hidden="true"></span><span id="REC-7" aria-hidden="true"></span><span id="TST-2" aria-hidden="true"></span>Step 4 — Change configuration safely</h3>
-<p>A spec change should update the pod template and roll the DaemonSet one pod at a time. Choose and document rollout settings such as <code>maxUnavailable</code>. With healthy storage and graceful pod termination, events acknowledged with 202 must survive the rollout in node-local files. This does not promise survival of node failure or deletion of the kind cluster.</p>
+<p>A spec change should update the pod template and roll the DaemonSet one pod at a time. Choose rollout settings such as <code>maxUnavailable</code>. Document them. With healthy storage and graceful pod termination, events acknowledged with 202 must survive the rollout in node-local files. This requirement does not promise that events survive a node failure or the deletion of the kind cluster.</p>
 <pre data-lang="sh"><code>kubectl patch ingestrelay relay --type=merge -p '{"spec":{"queueSize":256}}'
 kubectl rollout status daemonset/relay --timeout=120s
 kubectl get daemonset relay -o jsonpath='{.spec.template.spec.containers[0].args}{"\n"}'</code></pre>
-<p class="example-label">Expected argument excerpt; formatting and argument order are yours</p><pre class="output"><code>-queue-size 256</code></pre>
-<p>For the drain check, send uniquely identified events through a port-forward, record which requests received 202, then trigger a rollout. The forward may disconnect when its pod disappears; reconnect as needed. Wait for completion and compare the accepted IDs against records on both worker disks. Rejected or disconnected requests are not acknowledgements.</p>
-<p>Reconciliation must also be quiet when nothing changes. In a controlled envtest, reconcile an already-correct resource again and compare the DaemonSet and Service resourceVersions: they must be unchanged. Test a spec update separately and assert that its intended template fields change. A live cluster’s status updates can change versions independently, so it is not a reliable no-op test.</p>
+<p class="example-label">Expected argument excerpt. The formatting and the argument order are yours.</p><pre class="output"><code>-queue-size 256</code></pre>
+<p>Do the drain check:</p>
+<ol><li>Send uniquely identified events through a port-forward.</li><li>Record which requests received 202.</li><li>Trigger a rollout.</li><li>Wait for the rollout to complete.</li><li>Compare the accepted IDs against the records on both worker disks.</li></ol>
+<p>The port-forward may disconnect when its pod disappears. Reconnect it as needed. Rejected or disconnected requests are not acknowledgements.</p>
+<p>Reconciliation must also be quiet when nothing changes. Test this in a controlled envtest:</p>
+<ol><li>Reconcile an already-correct resource again.</li><li>Compare the resourceVersions of the DaemonSet and the Service. They must be unchanged.</li></ol>
+<p>Test a spec update separately. Assert that its intended template fields change. On a live cluster, status updates can change versions independently. So a live cluster is not a reliable no-op test.</p>
+<h3>AI mentor prompt</h3><blockquote>I am on Step 4, changing configuration safely. Ask me to predict how the DaemonSet changes after I patch queueSize to 256. Ask me how I prove that acknowledged events survive the rollout, and that a no-op reconcile writes nothing. Give one hint at a time. Do not edit files. Do not show the solution unless I ask for it.</blockquote>
 </section>
 <section class="session" aria-labelledby="session-5">
 <h3 id="session-5"><span id="STS-1" aria-hidden="true"></span><span id="STS-2" aria-hidden="true"></span><span id="STS-3" aria-hidden="true"></span><span id="STS-4" aria-hidden="true"></span><span id="TST-4" aria-hidden="true"></span><span id="spec-status" aria-hidden="true"></span>Step 5 — Report what is happening</h3>
-<p>Populate <code>status.observedGeneration</code> with the generation successfully reconciled, and mirror the DaemonSet’s <code>desiredNumberScheduled</code> and <code>numberReady</code>. Give each condition a CamelCase reason and a useful message:</p>
+<p>Populate <code>status.observedGeneration</code> with the generation that the controller reconciled successfully. Mirror the DaemonSet’s <code>desiredNumberScheduled</code> and <code>numberReady</code> in the CR status. Give each condition a CamelCase reason and a useful message:</p>
 <ul><li><code>Available=True</code> when desired is greater than zero and ready equals desired.</li><li><code>Progressing=True</code> while the DaemonSet’s observed generation or updated counts lag the current template.</li><li><code>Degraded=True</code> after a reconcile failure, or under your documented broader failure definition.</li></ul>
-<p>Do not treat an API update succeeding as evidence that replacement pods are healthy. Use envtest to supply DaemonSet status and check the CR’s counts, conditions, and observed generation.</p>
+<p>Do not treat a successful API update as evidence that replacement pods are healthy. Use envtest to supply DaemonSet status. Then check the counts, the conditions and the observed generation in the CR.</p>
 <pre data-lang="sh"><code>kubectl wait --for=condition=Available ingestrelay/relay --timeout=120s
 kubectl get ingestrelays</code></pre>
 <p class="example-label">Expected after reconciliation and readiness</p><pre class="output"><code>NAME    IMAGE                   DESIRED   READY   AGE
 relay   ingest-relay:v0.1.0      2         2       2m</code></pre>
-<p>Try an unavailable image, inspect pod events and CR conditions, then restore the working version:</p>
+<p>Try an unavailable image. Inspect the pod events and the CR conditions. Then restore the working version:</p>
 <pre data-lang="sh"><code>kubectl patch ingestrelay relay --type=merge -p '{"spec":{"image":"ingest-relay:missing"}}'
 kubectl get ingestrelay relay -o yaml
 kubectl patch ingestrelay relay --type=merge -p '{"spec":{"image":"ingest-relay:v0.1.0"}}'
 kubectl rollout status daemonset/relay --timeout=120s</code></pre>
-<p>Once a replacement cannot start, expect a rollout in progress and counts reflecting reality. Report Degraded according to your documented rule; never invent readiness. Conditions can be briefly stale while changes propagate.</p>
+<p>Once a replacement cannot start, expect a rollout in progress. Expect counts that reflect reality. Report Degraded according to your documented rule. Never invent readiness. Conditions can be briefly stale while changes propagate.</p>
+<h3>AI mentor prompt</h3><blockquote>I am on Step 5, reporting what is happening. Ask me when Available, Progressing and Degraded are true for my operator. Ask me why a successful API update does not prove that replacement pods are healthy. Give one hint at a time. Do not edit files. Do not show the solution unless I ask for it.</blockquote>
 </section>
 <section class="session" aria-labelledby="session-6">
 <h3 id="session-6"><span id="SHIP-1" aria-hidden="true"></span><span id="SHIP-2" aria-hidden="true"></span><span id="SHIP-3" aria-hidden="true"></span><span id="SHIP-4" aria-hidden="true"></span><span id="TST-5" aria-hidden="true"></span><span id="spec-ship" aria-hidden="true"></span><span id="spec-tests" aria-hidden="true"></span>Step 6 — Package a repeatable installation</h3>
-<p>Build an operator image and a Helm chart at <code>charts/relay-operator</code>. Install the CRD, required RBAC, and operator in its own namespace under its own service account. Make the operator image and resources configurable through values. For these examples, expose <code>image.repository</code> and <code>image.tag</code>, and use IfNotPresent for local images.</p>
-<p>Grant only the permissions reconciliation needs: IngestRelay resources and their status, DaemonSets, Services, and events if emitted. Run one controller replica for this exercise; avoid requiring cluster-admin. Stop the local <code>make run</code> process before starting the packaged controller.</p>
+<p>Build an operator image and a Helm chart at <code>charts/relay-operator</code>. Install the CRD, the required RBAC and the operator. Install the operator in its own namespace, under its own service account. Make the operator image and resources configurable through values. For these examples, expose <code>image.repository</code> and <code>image.tag</code>. Use IfNotPresent for local images.</p>
+<p>Grant only the permissions that reconciliation needs:</p>
+<ul><li>IngestRelay resources and their status</li><li>DaemonSets</li><li>Services</li><li>events, if the controller emits them</li></ul>
+<p>Run one controller replica for this exercise. Avoid requiring cluster-admin. Stop the local <code>make run</code> process before you start the packaged controller.</p>
 <pre data-lang="sh"><code>make docker-build IMG=relay-operator:v0.1.0
 kind load docker-image relay-operator:v0.1.0 --name relay-lab
 helm lint charts/relay-operator
@@ -277,19 +321,26 @@ helm upgrade --install relay-operator charts/relay-operator \
   --set image.repository=relay-operator --set image.tag=v0.1.0
 kubectl wait --for=condition=Available ingestrelay/relay --timeout=120s</code></pre>
 <p class="example-label">Expected final command output</p><pre class="output"><code>ingestrelay.telemetry.example.com/relay condition met</code></pre>
-<p>Check the packaged controller by keeping this forward running:</p>
+<p>To check the packaged controller, keep this port-forward running:</p>
 <pre data-lang="sh"><code>kubectl port-forward daemonset/relay 8080:8080</code></pre>
 <p>In a second terminal, send a new event:</p>
 <pre data-lang="sh"><code>curl -sS -o /dev/null -w '%{http_code}\n' \
   --data-binary '{"id":"packaged-1","service":"checkout","level":"info","message":"installed with Helm"}' \
   http://127.0.0.1:8080/events</code></pre>
-<p>Expect 202 and a matching stored record on the selected worker. Then script the complete installation on a fresh kind cluster: create it, load both images, install the chart, apply the CR, wait for Available=True, send an event, and verify its record. Give readiness checks a timeout and fail clearly when any command fails. A successful install into a cluster that already has your CRD is not sufficient.</p>
-<p>Document Helm upgrade/uninstall effects on CRDs and existing CRs. Helm’s <code>crds/</code> directory installs definitions but does not normally upgrade or delete them; make your chosen handling explicit. See <a href="https://helm.sh/docs/chart_best_practices/custom_resource_definitions/">Helm’s CRD guidance</a>.</p>
+<p>Expect 202 and a matching stored record on the selected worker. Then script the complete installation on a fresh kind cluster. Make the script do these steps:</p>
+<ol><li>Create the cluster.</li><li>Load both images.</li><li>Install the chart.</li><li>Apply the CR.</li><li>Wait for Available=True.</li><li>Send an event.</li><li>Check its record.</li></ol>
+<p>Give readiness checks a timeout. Make the script fail clearly when any command fails. A successful install into a cluster that already has your CRD is not sufficient.</p>
+<p>Document the effects of Helm upgrade and uninstall on CRDs and existing CRs. Helm’s <code>crds/</code> directory installs definitions. It does not normally upgrade or delete them. Make your chosen handling explicit. See <a href="https://helm.sh/docs/chart_best_practices/custom_resource_definitions/">Helm’s CRD guidance</a>.</p>
 <h4 id="hand-in"><span id="evaluation" aria-hidden="true"></span>Finish</h4>
 <pre data-lang="sh"><code>make test
 helm lint charts/relay-operator</code></pre>
-<p>Expect the controller tests to pass and the chart to be lint-clean. Keep a separate end-to-end result showing the real cluster reached readiness. In the rollout test, track response statuses as well as file contents; a client connection failure must not quietly become a missing “accepted” event.</p>
-<p>Provide the relay Dockerfile, operator source and tests, chart, and an end-to-end script. The README should get a fresh cluster to Available=True and explain the API defaults, ownership, drift repair, rollouts, conditions, RBAC, filesystem permissions, Helm behavior, and unfinished work. Review with your pair why reconciliation converges and why an unchanged desired state produces no resource writes.</p>
+<p>Expect the controller tests to pass. Expect the chart to be lint-clean. Keep a separate end-to-end result that shows the real cluster reached readiness. In the rollout test, track response statuses as well as file contents. A client connection failure must not quietly become a missing “accepted” event.</p>
+<p>Provide these items:</p>
+<ul><li>the relay Dockerfile</li><li>the operator source and tests</li><li>the chart</li><li>an end-to-end script</li></ul>
+<p>The README should get a fresh cluster to Available=True. It should also explain these topics:</p>
+<ul><li>the API defaults</li><li>ownership</li><li>drift repair</li><li>rollouts</li><li>conditions</li><li>RBAC</li><li>filesystem permissions</li><li>Helm behavior</li><li>unfinished work</li></ul>
+<p>Review with your pair why reconciliation converges. Also review why an unchanged desired state produces no resource writes.</p>
+<h3>AI mentor prompt</h3><blockquote>I am on Step 6, packaging a repeatable installation. Ask me which RBAC permissions my controller needs, and why it needs each one. Ask me what Helm upgrade and uninstall do to my CRD and existing CRs. Give one hint at a time. Do not edit files. Do not show the solution unless I ask for it.</blockquote>
 </section>
 </div>
 <footer>Independent practice material. Part of the <a href="index.html">Go Infra Track</a>. Local-cluster commands follow the <a href="https://kind.sigs.k8s.io/docs/user/quick-start/">kind documentation</a>.</footer>
