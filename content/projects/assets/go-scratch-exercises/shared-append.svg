@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="340" height="396" viewBox="0 0 340 396" role="img" aria-labelledby="title desc">
+<title id="title">Two appends, one backing array</title><desc id="desc">Three slice headers: original with length 3 and capacity 4, u with length 4, and v with length 4. All three point to the same backing array of capacity 4, which holds a, b, c, e. Slot 3 held d. Then e replaced it. Step 1: append d to original, and slot 3 gets d. Step 2: append e to original, and slot 3 gets e. Step 3: u and v both show a b c e.</desc>
+<style>.box{fill:#fbf9f4;stroke:#d8d1c3}.title{font:600 18px sans-serif;fill:#1c1a16}.label{font:600 16px sans-serif;fill:#1c1a16}.note{font:14px sans-serif;fill:#3f3b34}.arrow{stroke:#66615a;stroke-width:2;fill:none}.slot{fill:#f3e6cc;stroke:#b9975a}@media (prefers-color-scheme:dark){[fill="#f5f2ea"]{fill:#1b1a17}.box{fill:#22201c;stroke:#57524a}text,.title,.label{fill:#ebe6da}.note{fill:#cfc9bc}.arrow{stroke:#a29c8f}[fill="#66615a"]{fill:#a29c8f}.slot{fill:#3a3022;stroke:#8a7346}}</style>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#66615a"/></marker></defs>
+<rect width="340" height="396" rx="8" fill="#f5f2ea"/>
+<text x="20" y="32" class="title">Two appends, one backing array</text>
+<text x="10" y="60" class="note">Slice headers</text>
+<rect x="10" y="70" width="104" height="62" rx="7" class="box"/>
+<text x="18" y="95" class="label">original</text>
+<text x="18" y="118" class="note">len 3, cap 4</text>
+<rect x="118" y="70" width="104" height="62" rx="7" class="box"/>
+<text x="126" y="95" class="label">u</text>
+<text x="126" y="118" class="note">len 4</text>
+<rect x="226" y="70" width="104" height="62" rx="7" class="box"/>
+<text x="234" y="95" class="label">v</text>
+<text x="234" y="118" class="note">len 4</text>
+<path d="M62 134 L58 186" class="arrow" marker-end="url(#arrow)"/>
+<path d="M170 134 L72 186" class="arrow" marker-end="url(#arrow)"/>
+<path d="M278 134 L86 186" class="arrow" marker-end="url(#arrow)"/>
+<rect x="30" y="192" width="70" height="48" class="box"/>
+<rect x="100" y="192" width="70" height="48" class="box"/>
+<rect x="170" y="192" width="70" height="48" class="box"/>
+<rect x="240" y="192" width="70" height="48" class="slot"/>
+<text x="65" y="222" class="label" text-anchor="middle">a</text>
+<text x="135" y="222" class="label" text-anchor="middle">b</text>
+<text x="205" y="222" class="label" text-anchor="middle">c</text>
+<text x="275" y="222" class="label" text-anchor="middle">e</text>
+<text x="65" y="258" class="note" text-anchor="middle">0</text>
+<text x="135" y="258" class="note" text-anchor="middle">1</text>
+<text x="205" y="258" class="note" text-anchor="middle">2</text>
+<text x="275" y="258" class="note" text-anchor="middle">3</text>
+<text x="30" y="282" class="note">Backing array, capacity 4</text>
+<text x="30" y="302" class="note">Slot 3 held d. Then e replaced it.</text>
+<text x="20" y="336" class="note">1. Append d to original: slot 3 gets d.</text>
+<text x="20" y="358" class="note">2. Append e to original: slot 3 gets e.</text>
+<text x="20" y="380" class="note">3. u and v both show [a b c e].</text>
+</svg>
