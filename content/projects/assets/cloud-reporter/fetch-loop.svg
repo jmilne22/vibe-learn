@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="340" height="931" viewBox="0 0 340 931" role="img" aria-labelledby="title desc">
+<title id="title">Fetch all pages first</title><desc id="desc">1 Request a page. Start with page=1. Later, request the next URL. 2 Check and decode. Check the HTTP status first. Decode the repository array. Keep the first copy of an ID. 3 Read the Link header. Find the URL with rel=&quot;next&quot;. Row counts do not decide. 4 Next link present? Yes: check the URL, then go back to step 1 and request it. No: all pages are fetched. 5 Calculate the report. The summary uses all repositories. Then sort and limit the rows. 6 Write one format: table, JSON or CSV to stdout. Then exit 0. A failed write exits 1. If any page fails in steps 1 to 4 (bad status, rate limit, invalid JSON, timeout, Ctrl+C or a rejected next URL): stop, write the error to stderr, leave stdout empty and exit 1.</desc>
+<style>.box{fill:#fbf9f4;stroke:#d8d1c3}.fail{fill:#f3e6cc;stroke:#b9975a}.title{font:600 18px sans-serif;fill:#1c1a16}.label{font:600 16px sans-serif;fill:#1c1a16}.note{font:14px sans-serif;fill:#3f3b34}.code{font:14px monospace;fill:#3f3b34}.arrow{stroke:#66615a;stroke-width:2;fill:none}.dash{stroke:#b9975a;stroke-width:2;fill:none;stroke-dasharray:5 4}.highlight{fill:#cfe0d2;opacity:0}.loophl{stroke:#23523e;stroke-width:3;fill:none;opacity:0}.page{opacity:0}@media (prefers-color-scheme:dark){[fill="#f5f2ea"]{fill:#1b1a17}.box{fill:#22201c;stroke:#57524a}.fail{fill:#3a3022;stroke:#8a7346}text,.title,.label{fill:#ebe6da}.note,.code{fill:#cfc9bc}.arrow{stroke:#a29c8f}.dash{stroke:#8a7346}[fill="#66615a"]{fill:#a29c8f}[fill="#b9975a"]{fill:#8a7346}.highlight{fill:#34493b}.loophl{stroke:#9bc4a8}}</style>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#66615a"/></marker><marker id="arrowfail" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#b9975a"/></marker></defs>
+<rect width="340" height="931" rx="8" fill="#f5f2ea"/>
+<text x="20" y="32" class="title">Fetch all pages first</text>
+<rect x="34" y="52" width="262" height="79" rx="7" class="box"/>
+<text x="46" y="77" class="label">1  Request a page</text>
+<text x="46" y="97" class="note">Start with page=1.</text>
+<text x="46" y="117" class="note">Later, request the next URL.</text>
+<path d="M165 134 V157" class="arrow" marker-end="url(#arrow)"/>
+<rect x="34" y="161" width="262" height="99" rx="7" class="box"/>
+<text x="46" y="186" class="label">2  Check and decode</text>
+<text x="46" y="206" class="note">Check the HTTP status first.</text>
+<text x="46" y="226" class="note">Decode the repository array.</text>
+<text x="46" y="246" class="note">Keep the first copy of an ID.</text>
+<path d="M165 263 V286" class="arrow" marker-end="url(#arrow)"/>
+<rect x="34" y="290" width="262" height="79" rx="7" class="box"/>
+<text x="46" y="315" class="label">3  Read the Link header</text>
+<text x="46" y="335" class="note">Find the URL with rel="next".</text>
+<text x="46" y="355" class="note">Row counts do not decide.</text>
+<path d="M165 372 V395" class="arrow" marker-end="url(#arrow)"/>
+<rect x="34" y="399" width="262" height="99" rx="7" class="box"/>
+<text x="46" y="424" class="label">4  Next link present?</text>
+<text x="46" y="444" class="note">Yes: check the URL. Then go</text>
+<text x="46" y="464" class="note">back to step 1 and request it.</text>
+<text x="46" y="484" class="note">No: all pages are fetched.</text>
+<path d="M165 501 V524" class="arrow" marker-end="url(#arrow)"/>
+<text x="173" y="518" class="note">no</text>
+<rect x="34" y="528" width="262" height="79" rx="7" class="box"/>
+<text x="46" y="553" class="label">5  Calculate the report</text>
+<text x="46" y="573" class="note">Summary: all repositories.</text>
+<text x="46" y="593" class="note">Then sort and limit the rows.</text>
+<path d="M165 610 V633" class="arrow" marker-end="url(#arrow)"/>
+<rect x="34" y="637" width="262" height="99" rx="7" class="box"/>
+<text x="46" y="662" class="label">6  Write one format</text>
+<text x="46" y="682" class="note">Table, JSON or CSV to stdout.</text>
+<text x="46" y="702" class="note">Then exit 0.</text>
+<text x="46" y="722" class="note">A failed write: exit 1.</text>
+<path d="M298 448 H326 V92 H300" class="arrow" marker-end="url(#arrow)"/>
+<text x="299" y="441.5" class="note">yes</text>
+<rect x="34" y="772" width="262" height="139" rx="7" class="fail"/>
+<text x="46" y="797" class="label">If any page fails</text>
+<text x="46" y="817" class="note">Bad status, rate limit,</text>
+<text x="46" y="837" class="note">invalid JSON, timeout, Ctrl+C</text>
+<text x="46" y="857" class="note">or a rejected next URL:</text>
+<text x="46" y="877" class="note">stop. Error goes to stderr.</text>
+<text x="46" y="897" class="note">stdout stays empty. Exit 1.</text>
+<path d="M32 92 H17" class="dash"/>
+<path d="M32 210 H17" class="dash"/>
+<path d="M32 330 H17" class="dash"/>
+<path d="M32 448 H17" class="dash"/>
+<path d="M17 92 V842 H31" class="dash" marker-end="url(#arrowfail)"/>
+</svg>
