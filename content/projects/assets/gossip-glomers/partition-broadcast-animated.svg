@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="340" height="938" viewBox="0 0 340 938" role="img" aria-labelledby="title desc">
+<title id="title">Broadcast and a partition</title><desc id="desc">Five steps with three nodes, n1, n2 and n3. 1: A client broadcasts 7 to n1. n1 stores 7 and returns broadcast_ok. 2: n1 shares 7 with n2. n2 stores 7. n3 does not have 7 yet. 3: A partition starts. n2 cannot deliver 7 to n3. A read on n3 has no 7 yet. 4: The partition heals. n3 eventually receives the missed 7. Your design decides how. 5: All nodes converge. Every read returns read_ok with messages [7]. The highlights stop after 4.8 seconds.</desc>
+<style>.box{fill:#fbf9f4;stroke:#d8d1c3}.title{font:600 18px sans-serif;fill:#1c1a16}.label{font:600 16px sans-serif;fill:#1c1a16}.group{font:600 14px sans-serif;fill:#1c1a16;letter-spacing:.04em}.note{font:14px sans-serif;fill:#3f3b34}.nid{font:600 15px sans-serif;fill:#1c1a16}.arrow{stroke:#66615a;stroke-width:2;fill:none}.node{fill:#fbf9f4;stroke:#66615a;stroke-width:1.5}.has{fill:#e3eae1;stroke:#23523e;stroke-width:2}.cut{stroke:#9a5b12;stroke-width:2.5;fill:none}.highlight{fill:#cfe0d2;opacity:0}@keyframes phase0{0%,0.0%{opacity:0}0.1%,18.0%{opacity:1}18.1%,100%{opacity:0}}.p0{animation:phase0 4.8s linear 1;}@keyframes phase1{0%,20.0%{opacity:0}20.1%,38.0%{opacity:1}38.1%,100%{opacity:0}}.p1{animation:phase1 4.8s linear 1;}@keyframes phase2{0%,40.0%{opacity:0}40.1%,58.0%{opacity:1}58.1%,100%{opacity:0}}.p2{animation:phase2 4.8s linear 1;}@keyframes phase3{0%,60.0%{opacity:0}60.1%,78.0%{opacity:1}78.1%,100%{opacity:0}}.p3{animation:phase3 4.8s linear 1;}@keyframes phase4{0%,80.0%{opacity:0}80.1%,98.0%{opacity:1}98.1%,100%{opacity:0}}.p4{animation:phase4 4.8s linear 1;}@media(prefers-reduced-motion:reduce){.highlight{animation:none!important;opacity:0!important}}@media (prefers-color-scheme:dark){[fill="#f5f2ea"]{fill:#1b1a17}.box{fill:#22201c;stroke:#57524a}text,.title,.label,.group{fill:#ebe6da}.note{fill:#cfc9bc}.arrow,.wire{stroke:#a29c8f}[fill="#66615a"]{fill:#a29c8f}[stroke="#66615a"]{stroke:#a29c8f}.highlight{fill:#34493b}[fill="#ede8dd"]{fill:#2a2823}[stroke="#d8d1c3"]{stroke:#57524a}[fill="#e3eae1"]{fill:#26332c}[stroke="#9bb5a3"]{stroke:#4f6b5a}.node{fill:#22201c;stroke:#a29c8f}.has{fill:#26332c;stroke:#9bc4a8}.cut{stroke:#d9a65a}}</style>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#66615a"/></marker></defs>
+<rect width="340" height="938" rx="8" fill="#f5f2ea"/>
+<text x="18" y="32" class="title">Broadcast and a partition</text>
+<rect x="18" y="52" width="304" height="162" rx="7" class="box"/>
+<rect x="19" y="53" width="302" height="160" rx="7" class="highlight p0"/>
+<text x="30" y="76" class="label">1  Client broadcasts 7 to n1</text>
+<circle cx="78" cy="114" r="19" class="has"/>
+<text x="78" y="119" class="nid" text-anchor="middle">n1</text>
+<text x="78" y="154" class="note" text-anchor="middle">{7}</text>
+<circle cx="170" cy="114" r="19" class="node"/>
+<text x="170" y="119" class="nid" text-anchor="middle">n2</text>
+<text x="170" y="154" class="note" text-anchor="middle">{ }</text>
+<circle cx="262" cy="114" r="19" class="node"/>
+<text x="262" y="119" class="nid" text-anchor="middle">n3</text>
+<text x="262" y="154" class="note" text-anchor="middle">{ }</text>
+<text x="30" y="180" class="note">n1 stores 7 and returns</text>
+<text x="30" y="200" class="note">broadcast_ok.</text>
+<rect x="18" y="228" width="304" height="162" rx="7" class="box"/>
+<rect x="19" y="229" width="302" height="160" rx="7" class="highlight p1"/>
+<text x="30" y="252" class="label">2  n1 shares 7 with n2</text>
+<path d="M99 290 H147" class="arrow" marker-end="url(#arrow)"/>
+<circle cx="78" cy="290" r="19" class="has"/>
+<text x="78" y="295" class="nid" text-anchor="middle">n1</text>
+<text x="78" y="330" class="note" text-anchor="middle">{7}</text>
+<circle cx="170" cy="290" r="19" class="has"/>
+<text x="170" y="295" class="nid" text-anchor="middle">n2</text>
+<text x="170" y="330" class="note" text-anchor="middle">{7}</text>
+<circle cx="262" cy="290" r="19" class="node"/>
+<text x="262" y="295" class="nid" text-anchor="middle">n3</text>
+<text x="262" y="330" class="note" text-anchor="middle">{ }</text>
+<text x="30" y="356" class="note">n2 stores 7.</text>
+<text x="30" y="376" class="note">n3 does not have 7 yet.</text>
+<rect x="18" y="404" width="304" height="162" rx="7" class="box"/>
+<rect x="19" y="405" width="302" height="160" rx="7" class="highlight p2"/>
+<text x="30" y="428" class="label">3  A partition starts</text>
+<path d="M216 442 V492" class="cut" stroke-dasharray="5 4"/>
+<path d="M191 466 H208" class="arrow"/>
+<path d="M203 460 L215 472 M215 460 L203 472" class="cut"/>
+<circle cx="78" cy="466" r="19" class="has"/>
+<text x="78" y="471" class="nid" text-anchor="middle">n1</text>
+<text x="78" y="506" class="note" text-anchor="middle">{7}</text>
+<circle cx="170" cy="466" r="19" class="has"/>
+<text x="170" y="471" class="nid" text-anchor="middle">n2</text>
+<text x="170" y="506" class="note" text-anchor="middle">{7}</text>
+<circle cx="262" cy="466" r="19" class="node"/>
+<text x="262" y="471" class="nid" text-anchor="middle">n3</text>
+<text x="262" y="506" class="note" text-anchor="middle">{ }</text>
+<text x="30" y="532" class="note">n2 cannot deliver 7 to n3.</text>
+<text x="30" y="552" class="note">A read on n3 has no 7 yet.</text>
+<rect x="18" y="580" width="304" height="162" rx="7" class="box"/>
+<rect x="19" y="581" width="302" height="160" rx="7" class="highlight p3"/>
+<text x="30" y="604" class="label">4  The partition heals</text>
+<path d="M191 642 H239" class="arrow" marker-end="url(#arrow)"/>
+<circle cx="78" cy="642" r="19" class="has"/>
+<text x="78" y="647" class="nid" text-anchor="middle">n1</text>
+<text x="78" y="682" class="note" text-anchor="middle">{7}</text>
+<circle cx="170" cy="642" r="19" class="has"/>
+<text x="170" y="647" class="nid" text-anchor="middle">n2</text>
+<text x="170" y="682" class="note" text-anchor="middle">{7}</text>
+<circle cx="262" cy="642" r="19" class="has"/>
+<text x="262" y="647" class="nid" text-anchor="middle">n3</text>
+<text x="262" y="682" class="note" text-anchor="middle">{7}</text>
+<text x="30" y="708" class="note">n3 eventually receives the missed 7.</text>
+<text x="30" y="728" class="note">Your design decides how.</text>
+<rect x="18" y="756" width="304" height="162" rx="7" class="box"/>
+<rect x="19" y="757" width="302" height="160" rx="7" class="highlight p4"/>
+<text x="30" y="780" class="label">5  All nodes converge</text>
+<circle cx="78" cy="818" r="19" class="has"/>
+<text x="78" y="823" class="nid" text-anchor="middle">n1</text>
+<text x="78" y="858" class="note" text-anchor="middle">{7}</text>
+<circle cx="170" cy="818" r="19" class="has"/>
+<text x="170" y="823" class="nid" text-anchor="middle">n2</text>
+<text x="170" y="858" class="note" text-anchor="middle">{7}</text>
+<circle cx="262" cy="818" r="19" class="has"/>
+<text x="262" y="823" class="nid" text-anchor="middle">n3</text>
+<text x="262" y="858" class="note" text-anchor="middle">{7}</text>
+<text x="30" y="884" class="note">Every read returns read_ok</text>
+<text x="30" y="904" class="note">with messages [7].</text>
+</svg>

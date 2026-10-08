@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="340" height="676" viewBox="0 0 340 676" role="img" aria-labelledby="title desc">
+<title id="title">Maelstrom and your nodes</title><desc id="desc">Maelstrom runs clients and a simulated network. Clients send requests to the nodes. The simulated network carries messages between nodes and injects network faults, not process crashes. JSON protocol messages go in both directions between Maelstrom and your nodes. Each node is one process that runs your Go binary. stdout carries protocol messages only, and stderr carries diagnostics. After the run, the Maelstrom checker checks the history and writes store/latest/results.edn. Inspect it with the node logs and the message diagrams.</desc>
+<style>.box{fill:#fbf9f4;stroke:#d8d1c3}.title{font:600 18px sans-serif;fill:#1c1a16}.label{font:600 16px sans-serif;fill:#1c1a16}.group{font:600 14px sans-serif;fill:#1c1a16;letter-spacing:.04em}.note{font:14px sans-serif;fill:#3f3b34}.nid{font:600 15px sans-serif;fill:#1c1a16}.arrow{stroke:#66615a;stroke-width:2;fill:none}.node{fill:#fbf9f4;stroke:#66615a;stroke-width:1.5}.has{fill:#e3eae1;stroke:#23523e;stroke-width:2}.cut{stroke:#9a5b12;stroke-width:2.5;fill:none}.highlight{fill:#cfe0d2;opacity:0}@media (prefers-color-scheme:dark){[fill="#f5f2ea"]{fill:#1b1a17}.box{fill:#22201c;stroke:#57524a}text,.title,.label,.group{fill:#ebe6da}.note{fill:#cfc9bc}.arrow,.wire{stroke:#a29c8f}[fill="#66615a"]{fill:#a29c8f}[stroke="#66615a"]{stroke:#a29c8f}.highlight{fill:#34493b}[fill="#ede8dd"]{fill:#2a2823}[stroke="#d8d1c3"]{stroke:#57524a}[fill="#e3eae1"]{fill:#26332c}[stroke="#9bb5a3"]{stroke:#4f6b5a}.node{fill:#22201c;stroke:#a29c8f}.has{fill:#26332c;stroke:#9bc4a8}.cut{stroke:#d9a65a}}</style>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#66615a"/></marker></defs>
+<rect width="340" height="676" rx="8" fill="#f5f2ea"/>
+<text x="18" y="32" class="title">Maelstrom and your nodes</text>
+<rect x="18" y="48" width="304" height="198" rx="8" fill="#ede8dd" stroke="#d8d1c3"/>
+<text x="32" y="70" class="group">MAELSTROM</text>
+<rect x="32" y="82" width="276" height="52" rx="6" class="box"/>
+<text x="46" y="104" class="label">Clients</text>
+<text x="46" y="124" class="note">Send requests to the nodes</text>
+<rect x="32" y="144" width="276" height="90" rx="6" class="box"/>
+<text x="46" y="166" class="label">Simulated network</text>
+<text x="46" y="186" class="note">Carries messages between nodes</text>
+<text x="46" y="206" class="note">Injects network faults,</text>
+<text x="46" y="224" class="note">not process crashes</text>
+<path d="M60 250 V294" class="arrow" marker-end="url(#arrow)"/>
+<path d="M90 294 V250" class="arrow" marker-end="url(#arrow)"/>
+<text x="108" y="277" class="note">JSON protocol messages</text>
+<rect x="18" y="300" width="304" height="186" rx="8" fill="#e3eae1" stroke="#9bb5a3"/>
+<text x="32" y="322" class="group">YOUR NODES</text>
+<rect x="32" y="334" width="84" height="48" rx="6" class="box"/>
+<text x="74" y="363" class="nid" text-anchor="middle">Node 1</text>
+<rect x="128" y="334" width="84" height="48" rx="6" class="box"/>
+<text x="170" y="363" class="nid" text-anchor="middle">Node 2</text>
+<rect x="224" y="334" width="84" height="48" rx="6" class="box"/>
+<text x="266" y="363" class="nid" text-anchor="middle">Node 3</text>
+<text x="32" y="408" class="note">Each node is one process that</text>
+<text x="32" y="428" class="note">runs your Go binary.</text>
+<text x="32" y="454" class="note">stdout: protocol messages only</text>
+<text x="32" y="474" class="note">stderr: diagnostics</text>
+<path d="M170 490 V526" class="arrow" marker-end="url(#arrow)"/>
+<text x="182" y="513" class="note">after the run</text>
+<rect x="18" y="532" width="304" height="124" rx="8" fill="#ede8dd" stroke="#d8d1c3"/>
+<text x="32" y="554" class="group">MAELSTROM CHECKER</text>
+<text x="32" y="578" class="note">Checks the history of the run.</text>
+<text x="32" y="600" class="note">Writes store/latest/results.edn.</text>
+<text x="32" y="622" class="note">Inspect it with the node logs</text>
+<text x="32" y="642" class="note">and the message diagrams.</text>
+</svg>
