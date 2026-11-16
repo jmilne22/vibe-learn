@@ -1,6 +1,6 @@
 # Content authoring
 
-Content is authored in this repository, bundled with the application, and published to the content update channel by the existing Pages workflow. Desktop users can download the current catalog from Settings after deployment. `courses/` is intentionally empty; the bundled catalog currently contains six standalone projects.
+Content is authored in this repository, bundled with the application, and published to the content update channel by the existing Pages workflow. Desktop users can download the current catalog from Settings after deployment. `courses/` is intentionally empty; the bundled catalog currently contains seven standalone projects.
 
 Run `npm run new-course -- my-topic`. Edit `courses/<slug>/course.yaml` and Markdown under `content/lessons`. Run `npm run validate:content`, then `npm run build` or `npm run app`.
 
@@ -21,6 +21,8 @@ Author ordinary Markdown with fenced examples, links and optional hints/solution
 Courses can include prepared-file exercises and optional flashcards using the schemas below. These features do not require restoring any retired course content.
 
 Course-linked Markdown projects may be declared with `id`, `title`, `file` (a lesson-folder stem), optional `description` and `afterModule` for a related lesson link. Standalone project documents live in `content/projects`; the compiler maps their HTML sections into stable stages with project-specific prerequisites and checks. Created workspaces write each stage to `steps/NN-<stageId>.md`, so keep stage ids stable, put hints and answers inside `<details><summary>`, and prefer ordinary HTML (headings, paragraphs, lists, tables, `pre > code`) that converts cleanly to Markdown. Relay Operator remains guided.
+
+A standalone project is a Go project unless the compiler sets `language: "python"` on it, as it does for the Python Cloud Resource Reporter. The field selects the test command and the documentation that the generated AGENTS.md names; NOTES.md and MENTOR-NOTES.md are the same for every language. The app has no pytest runner, so a Python project registers no checks: its brief tells the learner to run `uv run pytest -q` in a terminal, and workspace creation writes no `go.mod`. A project cannot supply `pyproject.toml`, so the brief has the learner run `uv init`. Keep a language variant's stage ids and contract examples equal to the original; `tests/v2/reporter-python-content.test.ts` compares the two reporter briefs and runs the supplied `doctor.py` against `tests/v2/fixtures/reporter_doctor_test.py` with the runner's `python3`.
 
 ## Supplied project files
 

@@ -118,7 +118,7 @@ describe("downloaded content", () => {
   it("accepts the published catalog and sanitizes downloaded HTML", () => {
     expect(
       validateDownloadedCatalog(JSON.stringify(compileCatalog())).items,
-    ).toHaveLength(6);
+    ).toHaveLength(7);
     const pkg = makePackage();
     const data = JSON.parse(pkg.data) as Catalog;
     data.items[0]!.stages[0]!.html =

@@ -202,6 +202,15 @@ async function main(): Promise<void> {
     expect(restoredHelpers.skipped).toContain("Taskfile.yml");
     expect(await fs.readFile(path.join(lab.path, "Taskfile.yml"), "utf8"))
       .toBe("# My tasks\n");
+    const pythonReporter = catalog.items.find((i) => i.id === "project:cloud-reporter-python")!;
+    const py = (await call({
+      type: "workspace", itemId: pythonReporter.id, action: "create", mode: "mentor",
+    })) as { path: string };
+    expect(await fs.readFile(path.join(py.path, "AGENTS.md"), "utf8"))
+      .toContain("(for Python: `uv run pytest -q`)");
+    expect(await fs.readFile(path.join(py.path, "doctor.py"), "utf8"))
+      .toContain("def main(argv=None");
+    await expect(fs.access(path.join(py.path, "go.mod"))).rejects.toThrow();
     expect(((await call({ type: "state" })) as AppState).runs).toHaveLength(1);
     await expect(
       call({ type: "run", itemId: operator.id, checkId: "go-test" }),

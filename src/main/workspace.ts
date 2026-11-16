@@ -4,6 +4,7 @@ import {
   ProjectSupportFilesSchema,
   type AssistantMode,
   type Item,
+  type ProjectLanguage,
   type Stage,
 } from "../shared/model";
 import { htmlToMarkdown } from "../content/markdown-out";
@@ -85,13 +86,29 @@ Conversational and short. No lectures, no walls of text.
 `;
 const HELPERS =
   "- README.md lists the helper files supplied with this project. You may read them and run their read-only checks, such as diagnostics, to see where I am.\n";
-const mentor = (helpers: string) => `## Your role
+// The commands and the documentation that the assistant instructions name.
+const TOOLING: Record<
+  ProjectLanguage,
+  { read: string; run: string; docs: string }
+> = {
+  go: {
+    read: "run the build and tests (for Go: `go build`, `go vet`, `go test ./...`)",
+    run: "Run the build and tests after each (for Go: `go build`, `go vet`, `go test ./...`)",
+    docs: "go.dev/doc, pkg.go.dev",
+  },
+  python: {
+    read: "run the tests (for Python: `uv run pytest -q`)",
+    run: "Run the tests after each (for Python: `uv run pytest -q`)",
+    docs: "docs.python.org, the Requests and pytest documentation",
+  },
+};
+const mentor = (helpers: string, tooling = TOOLING.go) => `## Your role
 
 You are a patient, friendly senior engineer pairing with me. I am learning by building. I write every line of code; you never write or edit my project files. The only exceptions are NOTES.md and MENTOR-NOTES.md, as described above, and only after I agree.
 
 ### How to help
 
-- Read my code and run the build and tests (for Go: \`go build\`, \`go vet\`, \`go test ./...\`) to see where I am, but don't fix anything. When you run a command, show it so I learn it too.
+- Read my code and ${tooling.read} to see where I am, but don't fix anything. When you run a command, show it so I learn it too.
 ${helpers}- Lead with questions: what do I expect to happen, what did I try, what is the error telling me?
 - Give the smallest hint that gets me unstuck, and escalate only if I'm still stuck:
   1. name the concept or the part of the error to look at
@@ -100,7 +117,7 @@ ${helpers}- Lead with questions: what do I expect to happen, what did I try, wha
   4. a short snippet of a *different*, analogous example
 - Never paste the code I'm meant to write unless I explicitly say "show me". Even then, show the smallest piece and have me type it in.
 - If I'm stuck at an empty file, offer guided edits: one exact action at a time (the file, the place and a short fragment for me to type), then check the file before the next one.
-- Link official sources when useful, such as go.dev/doc, pkg.go.dev, and the docs the step references.
+- Link official sources when useful, such as ${tooling.docs}, and the docs the step references.
 
 ### Reviewing my work
 
@@ -108,18 +125,18 @@ ${helpers}- Lead with questions: what do I expect to happen, what did I try, wha
 - If I ask "is this good?", be honest the way a good friend is: specific, kind, no flattery.
 - Prefer the standard library and simple code. Don't push patterns I haven't needed yet.
 `;
-const pair = (helpers: string) => `## Your role
+const pair = (helpers: string, tooling = TOOLING.go) => `## Your role
 
 You are a patient senior engineer pair-programming with me. I am learning by building, so the goal is my understanding, not just working code.
 
 ### How to help
 
 - Before you change code, say in a sentence or two what you plan to change and why, and wait for my OK.
-- Make small changes, one idea at a time. Run the build and tests after each (for Go: \`go build\`, \`go vet\`, \`go test ./...\`) and show the commands.
+- Make small changes, one idea at a time. ${tooling.run} and show the commands.
 ${helpers}- Explain each change briefly: what it does and why it's the idiomatic choice.
 - When a step is teaching a concept, offer to let me write that part while you give hints instead.
 - Don't write code for later steps, and don't add features the step doesn't ask for.
-- Link official sources when useful, such as go.dev/doc, pkg.go.dev, and the docs the step references.
+- Link official sources when useful, such as ${tooling.docs}, and the docs the step references.
 
 ### Reviewing
 
@@ -136,7 +153,7 @@ function agents(item: Item, mode: AssistantMode, helpers: string): string {
 ${intro}
 
 ${STEPS_SECTION}
-${(mode === "mentor" ? mentor : pair)(helpers)}
+${(mode === "mentor" ? mentor : pair)(helpers, TOOLING[(item.kind === "project" && item.language) || "go"])}
 ${TONE}`;
 }
 // Task loads the first of these it finds, so a learner's own taskfile wins

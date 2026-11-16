@@ -13,6 +13,7 @@ import {
 const catalog = compileCatalog();
 const projects = catalog.items.filter((i) => i.kind === "project");
 const reporter = catalog.items.find((i) => i.id === "project:cloud-reporter")!;
+const pythonReporter = catalog.items.find((i) => i.id === "project:cloud-reporter-python")!;
 const operator = catalog.items.find((i) => i.id === "project:relay-operator")!;
 const admission = catalog.items.find((i) => i.id === "project:kubernetes-admission-lab")!;
 const temps: string[] = [];
@@ -208,6 +209,24 @@ describe("creating and extending workspaces", () => {
     const notes = workspaceFiles(single, "pair");
     expect(contents(notes, "README.md")).toContain("- `notes.txt`\n\n## Working");
     expect(contents(notes, "README.md")).not.toContain("task --list");
+  });
+  it("names the commands and documentation of the project's language in AGENTS.md", () => {
+    const agents = (item: typeof reporter, mode: "mentor" | "pair") =>
+      workspaceFiles(item, mode).find((f) => f.path === "AGENTS.md")!.contents;
+    for (const mode of ["mentor", "pair"] as const) {
+      const python = agents(pythonReporter, mode);
+      expect(python).toContain("(for Python: `uv run pytest -q`)");
+      expect(python).toContain("such as docs.python.org, the Requests and pytest documentation, and the docs the step references.");
+      expect(python).not.toMatch(/\bgo (build|vet|test)\b|go\.dev/);
+      // A project without a language is a Go project, as before.
+      for (const item of [reporter, operator, admission]) {
+        expect(agents(item, mode)).toContain("(for Go: `go build`, `go vet`, `go test ./...`)");
+        expect(agents(item, mode)).toContain("such as go.dev/doc, pkg.go.dev, and the docs the step references.");
+        expect(agents(item, mode)).not.toContain("pytest");
+      }
+    }
+    expect(agents(pythonReporter, "mentor")).toContain("Read my code and run the tests (for Python");
+    expect(agents(pythonReporter, "pair")).toContain("Run the tests after each (for Python");
   });
   it("creates a new named folder each time and never reuses one", () => {
     const parent = temp();

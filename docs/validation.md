@@ -1,5 +1,14 @@
 # Rebuild validation
 
+## Cloud Resource Reporter in Python — 16 November 2026
+
+- `nix-shell --run 'npm run verify'` passed: types, lint, content validation (7 items / 61 sections), 76 platform tests, production builds and 7 browser tests. The development `npm run smoke:desktop` passed, and now creates the Python workspace and checks its doctor.py, the Python wording in AGENTS.md and the absence of go.mod. Outside the Nix shell, the Rust exercise test still needs a default rustup toolchain.
+- The Python claims in the brief were checked with a reference implementation that is not in the repository (Python 3.13, uv 0.13.7, requests 2.34.2, pytest 9.2.0). Its 41 pytest cases ran against a local `http.server` and covered the request shape, `response.links`, relative and repeated next links, deduplication, the fixed table, JSON and CSV examples, the seven-day boundary, each row of the failure table, the per-read timeout, `KeyboardInterrupt` and a failing output stream. `uv init --package` in a folder that already has the generated README.md kept that file.
+- Live runs against a public organisation wrote all three formats and exited 0. An unknown organisation exited 1 with empty stdout, and an invalid `--org` exited 2. A live response selected API version `2026-03-10`. `GET /rate_limit` did not lower the remaining count.
+- The supplied doctor.py passes 8 fixture cases with the runner's `python3`: a new folder, an old Python, a missing uv, a missing Task, the package lines of pyproject.toml, the online budget, no network, and slow or missing commands. Each case also checks that the folder is unchanged.
+- Project items can carry `language: "python"`. It selects the test command and documentation that AGENTS.md names. The six existing items do not set it, and their content versions did not change. The app version is 2.3.1. The minimum content version stays 2.3.0: an older app accepts the catalog but writes the Go wording into the AGENTS.md of the Python project.
+- Not run: the packaged smoke, macOS and Windows. No browser test opens the Python brief; the content tests cover its stages, images and mentor prompts.
+
 ## Admission lab in Go, STE100 wording — 8 October 2026
 
 - `nix-shell --run 'npm run verify'` passed: types, lint, content validation (6 items / 54 sections), 69 platform tests, production builds and 7 browser tests. `npm run smoke:desktop` passed with doctor.go as the supplied helper. Outside the Nix shell, the Rust exercise test needs a default rustup toolchain.
