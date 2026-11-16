@@ -153,6 +153,7 @@ export function compileCatalog(base = root): Catalog {
     "gossip-glomers",
     "tiny-tsdb",
     "cloud-reporter",
+    "cloud-reporter-python",
     "kubernetes-admission-lab",
   ];
   for (const file of projectFiles) {
@@ -211,6 +212,9 @@ export function compileCatalog(base = root): Catalog {
       kind: "project",
       title,
       ...(supportFiles.length ? { supportFiles } : {}),
+      ...(file === "cloud-reporter-python"
+        ? { language: "python" as const }
+        : {}),
       description:
         main.find("header p").not(".eyebrow,.meta").first().text() ||
         "Build, experiment, and understand the result.",
@@ -242,6 +246,12 @@ export function compileCatalog(base = root): Catalog {
         "Go. Live GitHub requests need internet access. The local HTTP tests work offline.",
       ];
       item.checks = [learnerCheck()];
+    } else if (file === "cloud-reporter-python") {
+      // No checks: the app has no pytest runner, and any check adds a go.mod.
+      item.prerequisites = [
+        "Python 3.11 or later, and uv. Workspace creation adds the Taskfile and the doctor.py diagnostics. Live GitHub requests need internet access. The local HTTP tests work offline.",
+        "You run your own pytest suite in your terminal. The app has no automated suite for this project.",
+      ];
     } else {
       item.prerequisites = [
         "Go. Learner tests with the race detector also need a supported C compiler.",

@@ -7,13 +7,14 @@ import { markdown } from "../../src/content/render";
 import { load } from "cheerio";
 const catalog = compileCatalog();
 describe("content compatibility and independent paths", () => {
-  it("ships six standalone projects, with optional experiments inside the relay", () => {
+  it("ships seven standalone projects, with optional experiments inside the relay", () => {
     expect(catalog.items.map((i) => i.id)).toEqual([
       "project:ingest-relay",
       "project:relay-operator",
       "project:gossip-glomers",
       "project:tiny-tsdb",
       "project:cloud-reporter",
+      "project:cloud-reporter-python",
       "project:kubernetes-admission-lab",
     ]);
     expect(

@@ -89,6 +89,8 @@ export const ProjectSupportFilesSchema = z
     (files) => new Set(files.map((f) => f.path.toLowerCase())).size === files.length,
     "Duplicate project support filename",
   );
+export const ProjectLanguageSchema = z.enum(["go", "python"]);
+export type ProjectLanguage = z.infer<typeof ProjectLanguageSchema>;
 export const ExerciseSchema = z.object({
   id: Id,
   title: z.string(),
@@ -134,6 +136,8 @@ export const ItemSchema = z.discriminatedUnion("kind", [
     ...common,
     kind: z.literal("project"),
     supportFiles: ProjectSupportFilesSchema.optional(),
+    // Selects the commands and documentation that AGENTS.md names. Go when absent.
+    language: ProjectLanguageSchema.optional(),
   }),
 ]);
 export const CatalogSchema = z.object({

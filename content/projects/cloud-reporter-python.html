@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Cloud Resource Reporter (Python)</title></head>
+<body>
+<main>
+<header>
+<h1>Cloud Resource Reporter (Python)</h1>
+<p>Build a Python CLI that lists the GitHub repositories of an organisation. The CLI calculates summary statistics and writes table, JSON, or CSV reports.</p>
+<h3>Glossary</h3>
+<p>This brief uses each term below with one meaning only.</p>
+<ul>
+<li><strong>Organisation</strong>: the GitHub organisation whose repositories the command lists. <code>--org</code> takes its name.</li>
+<li><strong>Repository</strong>: one item in the array that the API returns. The command keeps only some of its fields.</li>
+<li><strong>Full name</strong>: the organisation name and the repository name together, for example <code>example-org/alpha</code>.</li>
+<li><strong>Page</strong>: one API response. Each request asks for 100 repositories per page.</li>
+<li><strong>Link header</strong>: the response header that contains the pagination URLs.</li>
+<li><strong>Next link</strong>: the URL marked <code>rel="next"</code> in the Link header. If it is absent, there are no more pages.</li>
+<li><strong>Rate limit</strong>: the number of requests that GitHub accepts in a time window. Responses report the remaining count and the reset time in headers.</li>
+<li><strong>Token</strong>: an optional GitHub credential. The core command does not need a token.</li>
+<li><strong>Session</strong>: one <code>requests.Session</code> object. The command sends every request through it.</li>
+<li><strong>Local API</strong>: the HTTP server that your tests start on <code>127.0.0.1</code>. It replaces GitHub in tests.</li>
+<li><strong>Summary</strong>: the statistics for all collected repositories: counts, stars, languages, and recent updates.</li>
+<li><strong>Displayed rows</strong>: the repositories that the report displays after sort and limit.</li>
+<li><strong>Report</strong>: the complete output of one run, in one output format.</li>
+<li><strong>Output format</strong>: <code>table</code>, <code>json</code>, or <code>csv</code>. <code>--format</code> selects it.</li>
+<li><strong>Stretch item</strong>: an optional requirement. The core command is complete without it.</li>
+</ul>
+</header>
+<h2>The command</h2>
+<pre><code>uv run cloudreport repos --org kubernetes
+uv run cloudreport repos --org hashicorp --sort stars --limit 20
+uv run cloudreport repos --org prometheus --format json
+uv run cloudreport repos --org grafana --format csv &gt; repos.csv</code></pre>
+<p>Use <code>requests</code> for HTTP and <code>pytest</code> for tests. Use the Python standard library for all other work. Start with a sequential HTTP client. Test it against a local API. The live command reads public GitHub data. It needs internet access, but no account or token. Do not put live requests in your test suite.</p>
+<table>
+<thead><tr><th>Flag</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td><code>--org</code></td><td>Required. One organisation name, not a URL or an owner/repository pair.</td></tr>
+<tr><td><code>--format</code></td><td>Default: <code>table</code>. <code>table</code>, <code>json</code>, or <code>csv</code>.</td></tr>
+<tr><td><code>--sort</code></td><td>Default: <code>stars</code>. <code>stars</code>, <code>forks</code>, and <code>updated</code> sort in descending order. <code>name</code> sorts in ascending order. Break ties by full repository name, in ascending order.</td></tr>
+<tr><td><code>--limit</code></td><td>Default: <code>20</code>. The maximum number of displayed rows. Zero displays all rows. Negative values are errors. Always fetch all pages before you apply the limit.</td></tr>
+<tr><td><code>--timeout</code></td><td>Default: <code>30</code>. A positive integer number of seconds for each HTTP request. <code>requests</code> applies this time to the connection, and then to each read of the response. It is not a limit for the full request.</td></tr>
+</tbody>
+</table>
+<p>Use these exit statuses:</p>
+<ul>
+<li>0: the command wrote a complete report.</li>
+<li>2: the arguments are invalid. <code>argparse</code> uses this status for its own errors.</li>
+<li>1: a fetch, cancellation, or output error occurred.</li>
+</ul>
+<p>Write reports to stdout. Write diagnostics to stderr. A failed fetch must leave stdout empty, even when earlier pages succeeded.</p>
+<p>The core path is the first four stages: fetch one page, fetch the remaining pages, calculate the report, and write the output. If your time is short, do those stages first. The failures stage and all stretch items are optional.</p>
+<h2>Start a workspace</h2>
+<p>Choose <strong>Workspace → Create workspace</strong> in the desktop app. The app writes the brief, the assistant instructions, <code>Taskfile.yml</code> and <code>doctor.py</code>. To use a folder that you already have, attach it and choose <strong>Add missing workspace files</strong>. The app does not replace your files.</p>
+<p>You can read both supplied files below. If you use only the browser preview, copy them into your folder by hand.</p>
+<details><summary>Included file — Taskfile.yml (written by the app)</summary><pre data-file="Taskfile.yml" data-workspace-file="Taskfile.yml"><code class="language-yaml">version: '3'
+tasks:
+  doctor:
+    desc: Run read-only setup checks. Add "-- --online" to ask GitHub how many requests remain
+    cmds:
+      - python3 doctor.py {{.CLI_ARGS}}
+  test:
+    desc: Run your pytest suite
+    cmds:
+      - uv run pytest -q {{.CLI_ARGS}}</code></pre></details>
+<details><summary>Included file — doctor.py (written by the app)</summary><p>The doctor uses only the Python standard library, so it runs before you install packages.</p><pre data-file="doctor.py" data-workspace-file="doctor.py"><code class="language-python">#!/usr/bin/env python3
+"""Read-only checks for the Cloud Resource Reporter workspace.
+
+This program installs nothing and changes no files. With --online it sends one
+request to GitHub. That request does not count against your rate limit.
+"""
+import argparse
+import json
+import shutil
+import subprocess
+import sys
+import urllib.request
+from pathlib import Path
+
+MINIMUM = (3, 11)
+# FAIL when a required command is missing. WARN when an optional one is.
+TOOLS = {'uv': ('FAIL', ['--version']), 'task': ('WARN', ['--version'])}
+RATE_URL = 'https://api.github.com/rate_limit'
+LOW = 10
+
+
+def run(args, timeout=10):
+    """Return (exit status, first line of output) of a command."""
+    try:
+        done = subprocess.run(args, capture_output=True, text=True, timeout=timeout)
+    except (OSError, subprocess.TimeoutExpired) as error:
+        return 1, str(error)
+    lines = (done.stdout or done.stderr).strip().splitlines()
+    return done.returncode, lines[0] if lines else ''
+
+
+def rate_limit(timeout=10):
+    """Return (remaining, limit) for requests without a token."""
+    request = urllib.request.Request(RATE_URL, headers={
+        'Accept': 'application/vnd.github+json',
+        'User-Agent': 'cloudreport-doctor',
+    })
+    with urllib.request.urlopen(request, timeout=timeout) as response:
+        core = json.load(response)['resources']['core']
+    return int(core['remaining']), int(core['limit'])
+
+
+def main(argv=None, folder=None, version=None):
+    parser = argparse.ArgumentParser(description='Read-only setup checks.')
+    parser.add_argument('--online', action='store_true',
+                        help='ask GitHub how many requests remain')
+    args = parser.parse_args(argv)
+    folder = Path(folder) if folder else Path(__file__).resolve().parent
+    version = tuple(version or sys.version_info[:3])
+    failed = False
+
+    def report(level, message):
+        nonlocal failed
+        failed = failed or level == 'FAIL'
+        print(f'{level:&lt;4} {message}')
+
+    label = '.'.join(str(part) for part in version)
+    if version &gt;= MINIMUM:
+        report('OK', f'python3: {label}')
+    else:
+        report('FAIL', f'python3: {label}. Use Python 3.11 or later.')
+
+    for tool, (level, flags) in TOOLS.items():
+        if not shutil.which(tool):
+            report(level, f'{tool}: not found on PATH')
+            continue
+        status, line = run([tool, *flags])
+        report('OK' if status == 0 else level, f'{tool}: {line}')
+
+    project = folder / 'pyproject.toml'
+    if not project.is_file():
+        report('NEXT', 'pyproject.toml: not found. Do the setup in README.md.')
+    else:
+        text = project.read_text(encoding='utf-8', errors='replace')
+        for package in ('requests', 'pytest'):
+            if package in text:
+                report('OK', f'pyproject.toml: lists {package}')
+            else:
+                report('NEXT', f'pyproject.toml: does not list {package} yet')
+
+    if args.online:
+        try:
+            remaining, limit = rate_limit()
+        except (OSError, ValueError, KeyError, TypeError) as error:
+            report('WARN', f'GitHub: no answer ({error}). Local tests work offline.')
+        else:
+            level = 'OK' if remaining &gt;= LOW else 'WARN'
+            report(level, f'GitHub: {remaining} of {limit} requests remain this hour')
+
+    return 1 if failed else 0
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())</code></pre></details>
+<p>Use Python 3.11 or later, <a href="https://docs.astral.sh/uv/">uv</a> and, optionally, <a href="https://taskfile.dev/">Task</a>. Run these commands in the workspace folder:</p>
+<pre><code class="language-sh">python3 doctor.py
+uv init --package --name cloudreport
+uv add requests
+uv add --dev pytest
+uv run cloudreport
+python3 doctor.py --online</code></pre>
+<ol>
+<li>The first doctor run reports NEXT for <code>pyproject.toml</code>, because the project does not exist yet.</li>
+<li><code>uv init</code> keeps the <code>README.md</code> that is already in the folder. It creates <code>pyproject.toml</code> and <code>src/cloudreport/__init__.py</code>.</li>
+<li><code>uv add</code> records each package in <code>pyproject.toml</code> and installs it into <code>.venv</code>.</li>
+<li><code>uv run cloudreport</code> calls the <code>main</code> function in <code>src/cloudreport/__init__.py</code>. The generated function prints a greeting.</li>
+<li>The second doctor run sends one request to GitHub. It prints how many requests remain this hour. That request does not count against your rate limit.</li>
+</ol>
+<p>Each doctor check prints one of these levels:</p>
+<ul>
+<li><strong>OK</strong>: the check passed.</li>
+<li><strong>WARN</strong>: an optional item is absent, or a count is low. You can continue.</li>
+<li><strong>NEXT</strong>: the item does not exist yet. A later step creates it.</li>
+<li><strong>FAIL</strong>: a blocking problem. The doctor continues with the other checks, then exits with status 1.</li>
+</ul>
+<p>These parts are enough to start:</p>
+<ul>
+<li>a <code>main</code> function that returns the exit status</li>
+<li>a function that fetches one page</li>
+<li>a function that calculates the report</li>
+<li>one function for each output format</li>
+</ul>
+<p>Choose names and file boundaries as the program grows. The stages below include test cases. You write those tests yourself, in a <code>tests</code> folder. Run them with <code>uv run pytest -q</code> or <code>task test</code>. Vibe Learn has no automated checker for this project.</p>
+<details><summary>Hint: how the exit status leaves Python</summary>
+<p>The <code>cloudreport</code> command that uv installs calls <code>sys.exit(main())</code>. Return an integer from <code>main</code>. Give <code>main</code> an optional list of arguments, and pass that list to <code>parse_args</code>. Then a test can call <code>main</code> directly.</p>
+</details>
+<h3>AI mentor prompt</h3>
+<blockquote>I am on the overview and setup stage. Ask me to explain each flag and each exit status. Ask me why a failed fetch leaves stdout empty. Ask me what each setup command changed in my folder. Give one hint at a time. Do not edit files. Do not show the solution unless I ask for it.</blockquote>
+
+<section class="session" id="fetch-page">
+<h2>Fetch one page</h2>
+<p>Make one <code>GET</code> request. Decode the response into typed Python values. Use this endpoint and these request headers:</p>
+<pre><code>GET https://api.github.com/orgs/{org}/repos?type=public&amp;sort=full_name&amp;direction=asc&amp;per_page=100&amp;page=1
+Accept: application/vnd.github+json
+User-Agent: cloudreport
+X-GitHub-Api-Version: 2026-03-10</code></pre>
+<p>Accept only an organisation name in <code>--org</code>. Reject these values:</p>
+<ul>
+<li>a blank value</li>
+<li>a value that contains whitespace</li>
+<li>a value that contains <code>/</code>, <code>\</code>, <code>?</code>, <code>#</code>, <code>:</code>, or <code>@</code></li>
+</ul>
+<p>Pass the query values in the <code>params</code> argument of <code>requests</code>. Do not build the query string by hand. Make the API base URL a parameter, so that tests can use a local API.</p>
+<p>Send every request through one session. Pass <code>timeout</code> on every request. <code>requests</code> has no default timeout.</p>
+<p>Keep the repository ID, name, full name, stars, forks, language, description, and update time. GitHub calls the count fields <code>stargazers_count</code> and <code>forks_count</code>. Language and description can be null. JSON null becomes <code>None</code> in Python. Use <code>str | None</code> in a dataclass to keep that distinction. The report displays a missing language as <code>Unknown</code>. It displays a missing description as an empty string.</p>
+<p>Decode <code>updated_at</code> with <code>datetime.fromisoformat</code>. The result is a timezone-aware <code>datetime</code> in UTC. A malformed timestamp or JSON body is a fetch error. Ignore unknown JSON fields. Check the HTTP status before you decode the repository array.</p>
+<h3>First test</h3>
+<ol>
+<li>Write a pytest fixture that starts a local API on <code>127.0.0.1</code>.</li>
+<li>Make its handler record the request path, query parameters, and headers.</li>
+<li>Make the handler return one repository.</li>
+<li>Assert the recorded request. Then assert the decoded name, count, and timestamp of that repository.</li>
+<li>Add a case with an empty array.</li>
+<li>Add a case with a repository that has a null language and a null description.</li>
+</ol>
+<details><summary>Hint: separate fetching from printing</summary>
+<p>A function such as <code>fetch_page(session, url, timeout)</code> can return a list of repositories and the next-page URL. Let its caller do the formatting. Accept the session as a parameter, so that the command and the tests use the same code.</p>
+</details>
+<details><summary>Hint: a local API in a fixture</summary>
+<p>The standard library has all the parts:</p>
+<ol>
+<li>Write a subclass of <code>http.server.BaseHTTPRequestHandler</code> with a <code>do_GET</code> method.</li>
+<li>Create <code>http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)</code>. Port 0 lets the operating system select a free port.</li>
+<li>Read the selected port from <code>server.server_address</code>.</li>
+<li>Run <code>server.serve_forever</code> in a daemon thread.</li>
+<li><code>yield</code> the server to the test.</li>
+<li>After the <code>yield</code>, call <code>server.shutdown()</code> and <code>server.server_close()</code>.</li>
+</ol>
+<p>Keep the canned responses and the recorded requests as attributes of the server object. Then each test can set a response and read the requests. Give the handler an empty <code>log_message</code> method to keep the test output quiet.</p>
+</details>
+<p>References: <a href="https://docs.github.com/en/rest/repos/repos#list-organization-repositories">List organisation repositories</a>, the <a href="https://requests.readthedocs.io/en/latest/user/quickstart/">Requests quickstart</a>, <a href="https://docs.pytest.org/en/stable/how-to/fixtures.html">pytest fixtures</a> and <a href="https://docs.python.org/3/library/http.server.html">http.server</a>. A live response on 16 November 2026 selected API version <code>2026-03-10</code>. GitHub lists its versions in the <a href="https://docs.github.com/en/rest/about-the-rest-api/api-versions">version documentation</a>.</p>
+<h3>AI mentor prompt</h3>
+<blockquote>I am on the stage "Fetch one page". Ask me which <code>--org</code> values my code rejects, and why. Ask me why I check the HTTP status before I decode the array. Ask me how my dataclass keeps a null language different from an empty string. Give one hint at a time. Do not edit files. Do not show the solution unless I ask for it.</blockquote>
+</section>
+
+<section class="session" id="pagination">
+<h2>Fetch the remaining pages</h2>
+<p>Follow the URL marked <code>rel="next"</code> in the <code>Link</code> header of the response. Stop when it is absent. The number of returned rows does not tell you whether another page exists.</p>
+<pre><code>Link: &lt;https://api.github.com/orgs/example-org/repos?page=2&amp;per_page=100&gt;; rel="next", &lt;https://api.github.com/orgs/example-org/repos?page=4&amp;per_page=100&gt;; rel="last"</code></pre>
+<figure><img class="motion-animated" src="assets/cloud-reporter-python/fetch-loop-animated.svg" alt="Fetch loop: request a page, check the status and decode it, read the Link header, and follow the next link back to step 1. With no next link, calculate the report and write one format. Any page failure stops with an error on stderr, empty stdout and exit 1. The highlights stop after 4.8 seconds." width="340"><img class="motion-static" src="assets/cloud-reporter-python/fetch-loop.svg" alt="Fetch loop: request a page, check the status and decode it, read the Link header, and follow the next link back to step 1. With no next link, calculate the report and write one format. Any page failure stops with an error on stderr, empty stdout and exit 1." width="340"><figcaption>The fetch loop for two pages, then the report. The highlights go through steps 1 to 4 for page 1 and page 2, then steps 5 and 6. They stop after 4.8 seconds. If reduced motion is on, a static diagram appears instead.</figcaption></figure>
+<ol>
+<li>Request page 1.</li>
+<li>Check the HTTP status. Decode the repository array. Keep the first copy of each repository ID.</li>
+<li>Read the Link header. Find the URL marked <code>rel="next"</code>. The number of rows does not decide.</li>
+<li>If a next link exists, check it. Then go back to step 1 and request it.</li>
+<li>If there is no next link, the client has every page. Calculate the report.</li>
+<li>Write the report in one output format to stdout. Then exit 0. If the write fails, exit 1.</li>
+<li>If any page fails, stop. Write the error to stderr. Leave stdout empty. Exit 1.</li>
+</ol>
+<p><code>response.links</code> is the parsed Link header. It is a dictionary with one entry for each <code>rel</code> value. Apply these pagination rules:</p>
+<ol>
+<li>Fetch pages in order.</li>
+<li>Request the next link as it is. Do not add <code>params</code> to it again.</li>
+<li>Resolve relative links against the current page, with <code>urllib.parse.urljoin</code>.</li>
+<li>Do not follow redirects. Pass <code>allow_redirects=False</code>. A redirect is then a non-200 response, and the command stops.</li>
+</ol>
+<p>These two rules are stretch items:</p>
+<ol>
+<li>Allow only the configured API origin and the same organisation-repositories path.</li>
+<li>Reject a repeated next link.</li>
+</ol>
+<p>Deduplicate repositories by ID. Keep the first observation of each ID. GitHub data can change between requests. Pagination does not give a transactionally consistent snapshot. Sorting by full name reduces movement caused by star or update changes. But repositories can still be added, deleted, or renamed during the run.</p>
+<h3>Tests to write</h3>
+<ul>
+<li>Two pages: the first has a next link and the second has none. Assert that the client fetched both pages.</li>
+<li>A short first page still has a next link. A full final page has none.</li>
+<li>The header contains <code>prev</code>, <code>last</code>, and <code>next</code> in a different order.</li>
+<li>An ID appears on both pages. The report contains it once, with its first values.</li>
+<li>Page two returns 500 or invalid JSON. Return an error and no partial report.</li>
+<li>Stretch item: a next link repeats a visited URL or points at another origin. Return an error without requesting it.</li>
+</ul>
+<details><summary>Hint: make the loop's state visible</summary>
+<p>Track the next URL, the visited URLs, and the IDs that you already collected. Fetch and check one page before you update those collections. Keep this loop separate from sorting and output limits.</p>
+</details>
+<details><summary>Hint: which URL did requests send?</summary>
+<p><code>response.url</code> is the URL that <code>requests</code> sent, with the query string from <code>params</code>. The URL that you passed for page 1 has no query string. To find a repeated next link, compare it with <code>response.url</code> of each visited page.</p>
+</details>
+<p>Reference: <a href="https://docs.github.com/en/rest/using-the-rest-api/using-pagination-in-the-rest-api">GitHub pagination</a>.</p>
+<h3>AI mentor prompt</h3>
+<blockquote>I am on the stage "Fetch the remaining pages". Ask me why the row count cannot tell me that another page exists. Ask me what <code>response.links</code> contains on the last page. Ask me what my loop tracks between pages. Give one hint at a time. Do not edit files. Do not show the solution unless I ask for it.</blockquote>
+</section>
+
+<section class="session" id="aggregate">
+<h2>Calculate the report</h2>
+<p>Calculate these summary values:</p>
+<ul>
+<li>the total repository count</li>
+<li>the total stars</li>
+<li>the repositories per language</li>
+<li>the count of repositories updated within the last seven days</li>
+</ul>
+<p>Use all collected repositories for the summary. Then sort and limit the displayed rows.</p>
+<p>Read the current time once per run, with <code>datetime.now(timezone.utc)</code>. Pass it into the calculation. Count timestamps from <code>now - timedelta(days=7)</code> through <code>now</code>, inclusive. Exclude future timestamps. Use ordinary string ordering for names and language labels. Use the full name to break numeric or timestamp ties.</p>
+<p>Keep every <code>datetime</code> timezone-aware. Python cannot compare an aware <code>datetime</code> with a naive one. It raises <code>TypeError</code>.</p>
+<h3>A fixed example</h3>
+<p>The following is a constructed dataset. In tests, set <code>now</code> to <code>2026-09-23T12:00:00Z</code>.</p>
+<pre><code>[
+  {"id":1,"name":"alpha","full_name":"example-org/alpha","stargazers_count":8,"forks_count":2,"language":"Go","description":"API, workers","updated_at":"2026-09-22T12:00:00Z"},
+  {"id":2,"name":"beta","full_name":"example-org/beta","stargazers_count":8,"forks_count":4,"language":null,"description":null,"updated_at":"2026-09-01T12:00:00Z"},
+  {"id":3,"name":"gamma","full_name":"example-org/gamma","stargazers_count":3,"forks_count":1,"language":"Go","description":"Queue tools","updated_at":"2026-09-20T12:00:00Z"}
+]</code></pre>
+<p>With <code>--sort stars --limit 2</code>, display alpha then beta. The summary is still <strong>3 repositories, 19 stars, Go: 2, Unknown: 1, and 2 recently updated</strong>.</p>
+<figure><img src="assets/cloud-reporter-python/summary-then-rows.svg" alt="The fixed example: the summary uses all 3 repositories. Then --sort stars --limit 2 displays alpha and beta. The full name breaks their tie at 8 stars. The limit never changes the summary." width="340"><figcaption>The summary uses all collected repositories. The sort and the limit change only the displayed rows.</figcaption></figure>
+<ol>
+<li>The fixed example has 3 repositories: alpha, beta, and gamma.</li>
+<li>The summary uses all 3: 3 repositories, 19 stars, Go: 2, Unknown: 1, and 2 recently updated.</li>
+<li><code>--sort stars --limit 2</code> selects the displayed rows. alpha and beta both have 8 stars. The full name breaks the tie. gamma is not displayed.</li>
+<li>All output formats use the same displayed rows: alpha, then beta.</li>
+</ol>
+<h3>Tests to write</h3>
+<p>Write test cases for these inputs:</p>
+<ul>
+<li>every sort mode</li>
+<li>ties</li>
+<li>a zero limit</li>
+<li>a limit larger than the dataset</li>
+<li>empty input</li>
+<li>timestamps exactly at the seven-day boundary and just outside it</li>
+<li>a future timestamp</li>
+</ul>
+<p>Check that a change to the display limit never changes the summary totals. <code>pytest.mark.parametrize</code> runs one test function with many inputs.</p>
+<details><summary>Hint: test this without HTTP</summary>
+<p>Pass a list of repositories and a fixed time directly into the report function. <code>sorted</code> returns a new list, so the input keeps its order. Use a key function that returns a tuple. Put the value that decides first, and the full name second. For a descending number, negate it. <code>collections.Counter</code> counts the language labels.</p>
+</details>
+<h3>AI mentor prompt</h3>
+<blockquote>I am on the stage "Calculate the report". Ask me to calculate the summary of the fixed example by hand. Ask me why the display limit must not change the summary. Ask me how my code treats a timestamp exactly at the seven-day boundary. Give one hint at a time. Do not edit files. Do not show the solution unless I ask for it.</blockquote>
+</section>
+
+<section class="session" id="formats">
+<h2>Write table, JSON, and CSV output</h2>
+<p>All formats use the same displayed rows. Only the presentation changes. The examples below use the fixed dataset and <code>--sort stars --limit 2</code>.</p>
+<p>Give each format function a text stream parameter. The command passes <code>sys.stdout</code>. Tests pass <code>io.StringIO</code>.</p>
+<h3>Table</h3>
+<pre><code>Repository report: example-org
+Repositories: 3 (showing 2)
+
+NAME   STARS  FORKS  LANGUAGE  UPDATED
+alpha  8      2      Go        2026-09-22
+beta   8      4      Unknown   2026-09-01
+
+Total stars: 19
+Languages: Go (2), Unknown (1)
+Updated in last 7 days: 2</code></pre>
+<p>Use UTC dates. Align the columns. You choose the spacing. Sort language labels alphabetically. <code>str.ljust</code> pads a cell to a width. Calculate each column width from the longest cell in that column.</p>
+<h3>JSON</h3>
+<pre><code>{
+  "org": "example-org",
+  "summary": {
+    "total_repos": 3,
+    "total_stars": 19,
+    "languages": {"Go": 2, "Unknown": 1},
+    "updated_last_7_days": 2
+  },
+  "repos": [
+    {"name":"alpha","full_name":"example-org/alpha","stars":8,"forks":2,"language":"Go","description":"API, workers","updated_at":"2026-09-22T12:00:00Z"},
+    {"name":"beta","full_name":"example-org/beta","stars":8,"forks":4,"language":"Unknown","description":"","updated_at":"2026-09-01T12:00:00Z"}
+  ]
+}</code></pre>
+<p>Use these field names and types. Write an empty array if there are no repositories. Write an empty object if there are no languages. Pretty-print the result with the <code>indent</code> argument of <code>json.dumps</code>. The order of object keys is not important. Your line breaks can differ from the example.</p>
+<p>Keep timestamps in UTC RFC3339 format with a <code>Z</code> suffix. <code>datetime.isoformat</code> writes <code>+00:00</code> for UTC. Use <code>strftime</code> to write the <code>Z</code> form.</p>
+<h3>CSV</h3>
+<pre><code>name,full_name,stars,forks,language,updated_at,description
+alpha,example-org/alpha,8,2,Go,2026-09-22T12:00:00Z,"API, workers"
+beta,example-org/beta,8,4,Unknown,2026-09-01T12:00:00Z,</code></pre>
+<p>The CSV output contains only a header and repository rows. Use the <code>csv</code> module to handle commas, quotes, and newlines in descriptions. Its default line ending is <code>\r\n</code>. Pass <code>lineterminator="\n"</code> to write the line endings of the example. For an empty organisation, write only the header.</p>
+<h3>Tests to write</h3>
+<ol>
+<li>Decode the JSON output before you compare values.</li>
+<li>Parse the CSV output back into records with <code>csv.reader</code>.</li>
+<li>Check the row order and the totals in the table.</li>
+<li>Add descriptions that contain commas, double quotes, and newlines.</li>
+<li>Supply a stream whose <code>write</code> method raises <code>OSError</code>. Check that the command reports the error and returns 1.</li>
+</ol>
+<p>A stream can fail after it writes some text. Report that failure on stderr. Exit 1. A successful fetch does not make a command with a failed write successful.</p>
+<details><summary>Hint: read CSV text that contains newlines</summary>
+<p>A quoted description can contain a newline. Do not split the output into lines yourself. Give <code>csv.reader</code> an <code>io.StringIO</code> that you create with <code>newline=""</code>. The reader then joins the lines of one quoted field.</p>
+</details>
+<h3>AI mentor prompt</h3>
+<blockquote>I am on the stage "Write table, JSON, and CSV output". Ask me how my CSV output handles commas, quotes, and newlines in a description. Ask me what my command does when the stream fails after some text. Give one hint at a time. Do not edit files. Do not show the solution unless I ask for it.</blockquote>
+</section>
+
+<section class="session" id="failures">
+<h2>Handle failures and cancellation</h2>
+<p>A one-shot report can stop and explain an API failure. The core command does not automatically retry or wait for a rate-limit window.</p>
+<table>
+<thead><tr><th>Response or failure</th><th>Command behaviour</th></tr></thead>
+<tbody>
+<tr><td>401</td><td>Report an authentication error.</td></tr>
+<tr><td>404</td><td>Report that the organisation was not found or is inaccessible.</td></tr>
+<tr><td>403 or 429 with rate-limit details</td><td>Report the limit and any retry time that GitHub supplies. Stop fetching.</td></tr>
+<tr><td>Other non-200 response</td><td>Report the status and a bounded excerpt of its message. A 403 without rate-limit evidence may be an access error.</td></tr>
+<tr><td>Invalid JSON, interrupted body, timeout, or connection failure</td><td>Identify the failed page. Return the error.</td></tr>
+<tr><td>Ctrl+C</td><td>Stop fetching. Write one line to stderr. Leave stdout empty. Exit 1.</td></tr>
+</tbody>
+</table>
+<p><code>requests.RequestException</code> is the base class for timeouts, connection failures, interrupted bodies and invalid JSON bodies. Catch it where you request a page. Do not catch <code>Exception</code>. A programming error must show its traceback.</p>
+<p>Ctrl+C raises <code>KeyboardInterrupt</code> in the main thread. <code>KeyboardInterrupt</code> is not a subclass of <code>Exception</code>. Catch it by name in <code>main</code>.</p>
+<p>Limit the error excerpt, for example to the first 4096 characters of <code>response.text</code>. Then an HTML error page does not flood the terminal.</p>
+<h3>Stretch item: the remaining count</h3>
+<p>Unauthenticated requests normally share an IP-based budget of 60 requests per hour. Read <code>X-RateLimit-Remaining</code> and <code>X-RateLimit-Reset</code> from responses. The reset value is a Unix timestamp. <code>Retry-After</code> supplies a delay in seconds. Secondary limits can occur with a nonzero remaining count. Missing or invalid headers should not crash the client.</p>
+<ul>
+<li>If a successful response reports fewer than ten remaining requests, write a warning to stderr.</li>
+<li>If the count is zero and the command needs another page, stop with an error.</li>
+<li>If there are no more pages, the report is complete and the command can print it.</li>
+</ul>
+<h3>Tests to write</h3>
+<p>Use local responses for each status row in the table. Assert that rate-limit errors never cause another request. Assert that no warning appears on stdout.</p>
+<p>For the timeout row, do these steps:</p>
+<ol>
+<li>Call your fetch function directly with a short timeout, for example 0.2 seconds.</li>
+<li>Make the handler sleep for a longer time before it answers.</li>
+<li>Assert that the function raises your fetch error.</li>
+</ol>
+<p>For the connection failure row, use a base URL with a closed port, for example <code>http://127.0.0.1:1</code>.</p>
+<p>For Ctrl+C, do these steps:</p>
+<ol>
+<li>Use the <code>monkeypatch</code> fixture to replace <code>requests.Session.get</code>.</li>
+<li>Make the replacement raise <code>KeyboardInterrupt</code>.</li>
+<li>Call <code>main</code>. Assert that it returns 1 and that stdout is empty.</li>
+</ol>
+<details><summary>Hint: capture stdout and stderr in a test</summary>
+<p>The <code>capsys</code> fixture of pytest captures both streams. Call <code>capsys.readouterr()</code> after <code>main</code> returns. The result has an <code>out</code> attribute and an <code>err</code> attribute.</p>
+</details>
+<p>References: <a href="https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api">GitHub rate limits</a>, <a href="https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api">API request guidance</a> and <a href="https://requests.readthedocs.io/en/latest/user/quickstart/#errors-and-exceptions">Requests errors and exceptions</a>.</p>
+<h3>AI mentor prompt</h3>
+<blockquote>I am on the stage "Handle failures and cancellation". Ask me what my command does for each row in the failure table. Ask me why a rate-limit error never causes another request. Ask me why <code>except Exception</code> does not catch Ctrl+C. Give one hint at a time. Do not edit files. Do not show the solution unless I ask for it.</blockquote>
+</section>
+
+<section class="session" id="review">
+<h2>Run and review the command</h2>
+<pre><code class="language-sh">uv run pytest -q
+uv run cloudreport repos --org kubernetes --format table --limit 5
+echo $?
+uv run cloudreport repos --org kubernetes --format json --limit 5 &gt; report.json
+uv run cloudreport repos --org kubernetes --format csv --limit 5 &gt; repos.csv
+uv run cloudreport repos --org no-such-organisation-0000
+echo $?</code></pre>
+<p>Make the live calls after the local tests pass. Repository counts and timestamps will differ from the constructed example. Check the process exit status and the files. In PowerShell, read the exit status from <code>$LASTEXITCODE</code>.</p>
+<p>Each live run uses one request for each 100 repositories. <code>python3 doctor.py --online</code> prints how many requests remain this hour. You run all tests in your terminal. Vibe Learn has no automated checker for this project.</p>
+<h3>Review questions</h3>
+<details><summary>Why fetch every page when the limit is five?</summary>
+<p>The display sort may differ from the API order. The summary covers the whole organisation. If the command stops after five records, it could miss the highest-starred repository. It would also undercount the totals.</p>
+</details>
+<details><summary>Why use a fixed time in tests?</summary>
+<p>A repository can cross the seven-day boundary between test runs. If you pass a time into the calculation, you can test that boundary. The test then does not depend on the clock of the machine.</p>
+</details>
+<details><summary>Why pass a timeout on every request?</summary>
+<p><code>requests</code> has no default timeout. Without one, a server that stops sending data blocks the command with no time limit. The timeout applies to the connection and to each read. A slow response that continues to send data can take longer than the timeout.</p>
+</details>
+<details><summary>Would concurrent page requests help?</summary>
+<p>Each next URL arrives with the preceding page. More requests can encounter secondary limits. Start with sequential requests. For multiple organisations, a bounded <code>ThreadPoolExecutor</code> may help. Keep pagination sequential within each organisation. Sort the merged results before you print them.</p>
+</details>
+<h3>Optional extensions</h3>
+<ul>
+<li><strong>Authentication:</strong> Read <code>GITHUB_TOKEN</code> from <code>os.environ</code>. Send it as a bearer token only to the configured API origin. Keep the public-repositories filter. Exclude the token from errors and reports.</li>
+<li><strong>Caching:</strong> Save response bodies with their ETags. Send conditional requests. For a 304 response, read the cached body. Cache each page with its pagination information.</li>
+<li><strong>Diff reports:</strong> Add repository IDs to the saved report format. Then compare reports by ID. Display added, removed, and renamed repositories, and changed counts.</li>
+<li><strong>Multiple organisations:</strong> Add bounded concurrency with <code>concurrent.futures</code>, cancellation, and tests with controlled handlers.</li>
+<li><strong>History:</strong> Save dated reports. Plot star changes from those observations. The repository endpoint gives the current count. It does not give a star-history series.</li>
+<li><strong>Lint and types:</strong> Run <code>uvx ruff check</code> and <code>uvx mypy src</code>. Both commands download their tool on first use.</li>
+</ul>
+<h3>AI mentor prompt</h3>
+<blockquote>I am on the stage "Run and review the command". Ask me the review questions one at a time. Ask me to explain the exit status of one live run. Give one hint at a time. Do not edit files. Do not show the solution unless I ask for it.</blockquote>
+</section>
+</main>
+</body>
+</html>
