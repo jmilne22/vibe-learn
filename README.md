@@ -1,74 +1,75 @@
 # Vibe Learn
 
-A desktop app for your learning material. Author courses and project briefs, work through exercises in your own editor, and keep notes and progress locally. Courses and projects can be used independently.
+Vibe Learn creates step-by-step project workspaces for your editor, terminal, and coding agent (Claude Code, Codex, Gemini CLI, OpenCode, or Zed).
 
-The desktop app stores reading positions, bookmarks, notes, and flashcard reviews in SQLite. Code and learner-written tests stay in ordinary folders opened in your own editor. Copy a project or stage's context into an external AI tool when useful; the app does not send code anywhere.
+Install the skill from GitHub to generate a project for anything you want to build, or download one of the curated projects on [vibe-learn.ai](https://vibe-learn.ai/) as a `.zip`.
 
-The [website](https://vibe-learn.ai/) is a read-only preview with a [desktop download link](https://github.com/jmilne22/vibe-learn/releases/latest). Vibe Learn 2.0.3 adds content updates from Settings, and 2.1.0 adds app updates; earlier installations need an app upgrade first.
+## Quick start
 
-## Development
+```sh
+# Install the skill directly from GitHub
+npx skills add jmilne22/vibe-learn
+```
 
-Use Node.js 24+, npm, Go, and a configured Rust toolchain (Cargo/rustc/linker) for the full platform test suite. Native SQLite builds may require Python and your platform's C/C++ build tools.
+Then open an empty folder in your coding agent and tell it what you want to learn to build.
+
+If you want cross-project mentor preferences, create `~/.vibe-learn/profile.md` from [skills/vibe-learn/references/learner-profile-template.md](skills/vibe-learn/references/learner-profile-template.md).
+
+## Workspace files
+
+Each project workspace is an ordinary folder:
+
+- `README.md` — overview, Glossary (one meaning per term), source map, and step index.
+- `steps/NN-*.md` — running-first steps split into small sub-pieces with before/after examples, tests to write, folded `<details>` hints, and an AI mentor prompt.
+- `NOTES.md` — your own log and step checklist.
+- `MENTOR-NOTES.md` — the assistant's handoff log between sessions (what clicked, weak spots to revisit, analogies that worked, next step).
+- `AGENTS.md`, `CLAUDE.md`, `GEMINI.md` — mentor or pair instructions for coding agents.
+- `.claude/settings.local.json` (Mentor mode) — asks for approval before edits so project code stays yours while allowing agreed updates to `NOTES.md` and `MENTOR-NOTES.md`.
+- Optional read-only helpers such as `Taskfile.yml` and `doctor.go`.
+
+## Curated projects
+
+- **Ingest Relay** — HTTP event ingest, bounded queues, batching, and graceful draining in Go (plus optional Go warm-up experiments).
+- **Relay Operator** — containerize the relay and build a Kubernetes operator.
+- **Gossip Glomers** — distributed systems challenges with Fly.io's Maelstrom harness.
+- **Tiny TSDB** — time-series storage engine with HTTP API, WAL recovery, chunks, and retention.
+- **Cloud Resource Reporter** — GitHub API CLI with Link-header pagination, summaries, and table/JSON/CSV output.
+- **Kubernetes Admission Lab** — Go mutating webhook on `k3d` with offline diagrams, `doctor.go`, and nine failure drills.
+
+## Local development & repo CLI
+
+Requires Node.js 24+ (and Go for the Admission Lab Go content tests). On NixOS, enter `nix-shell` first.
 
 ```sh
 npm ci
 npx playwright install chromium
-npm run app
+npm run dev       # compile catalog + Vite dev server
+npm run verify    # typecheck, lint, content validation, tests, builds, Playwright tests
+npm run preview   # preview the built static site locally
 ```
 
-Development uses `Vibe Learn 2 Dev` in the OS application-data directory; packaged builds use `Vibe Learn 2`. Neither reuses the old app's profile or `practice/` folder. `VIBE_USER_DATA_DIR` overrides the profile for isolated testing.
+From a local checkout, you can also run the helper CLI directly:
 
 ```sh
-npm run verify          # TypeScript, ESLint, content validation, unit/integration and browser tests
-npm run smoke:desktop   # Real Electron: exercises, flashcards, IPC and persistence; build first
-npm run package:desktop # Unpacked application with catalog, SQLite and Go
-npm run smoke:desktop -- --packaged
-npm run make:desktop    # Windows installer, macOS DMG/ZIP, Linux ZIP
-npm run preview        # Local read-only preview
-npm run new-course -- my-topic
+npm run cli -- list
+npm run cli -- init kubernetes-admission-lab ./work --mode mentor
+npm run cli -- new my-project ./work --lang go --mode mentor
+npm run cli -- mentor ./existing-repo --lang python
+npm run cli -- validate ./work/my-project
+npm run cli -- profile --init
 ```
-
-Linux headless desktop testing needs an X server (`xvfb-run -a npm run smoke:desktop`). `ELECTRON_PATH` and `CHROMIUM_PATH` can select system-compatible test executables. On NixOS, enter `nix-shell` first, then run the npm commands; the included shell selects a Nix-compatible Electron and native SQLite libraries. Generic Electron downloads need an FHS environment or the Nix Electron runtime; manual and release-tag builds package on standard Linux, Windows, and macOS runners.
-
-## What's included
-
-- Download content updates from Settings and keep them locally for offline reading.
-- Update the app itself from Settings (**Update app**, then restart). Changes merged to `main` arrive without a new installer unless they change Electron or native packages.
-- Independent Courses and Projects libraries, Continue, offline search, collapsible navigation and keyboard access.
-- Six standalone projects with stages, examples and resource links. The old courses and samples were removed; the Courses library is intentionally empty.
-- Course framework: Go/Rust starter-file exercises with visible tests, hints, solutions and explicit runs; optional flashcard browsing and local spaced review. New courses must supply their own content.
-- Optional project reference examples, per-item notes with Markdown export, bookmarks and JSON backup/import. Future courses can use the Markdown/YAML authoring framework.
-- Create or attach workspaces on demand. A created project workspace contains the brief as numbered Markdown steps, the learner's NOTES.md with a step checklist, a MENTOR-NOTES.md handoff log for the assistant, and AGENTS.md instructions for an external AI assistant (Mentor: hints only, or Pair: may edit) that name the test command and documentation of the project's language, plus supplied project helper files and a minimal Go module for Go projects. **Add missing workspace files** adds any missing ones to an attached folder without overwriting. Explicit runs stream output, support cancellation and timeouts, and retain logs and artifacts.
-- Ingest Relay: optional HTTP/storage checkpoints and final public-behavior checks.
-- Tiny TSDB: optional HTTP/recovery/final checks, with internal design and storage invariants left to learner tests and review.
-- Gossip Glomers: integration with the existing Maelstrom harness and saved reports. Install its additional tools separately.
-- Cloud Resource Reporter: a GitHub API CLI project with pagination, summaries, table/JSON/CSV output, and learner-written HTTP tests.
-- Kubernetes Admission Lab: read the assigned article first, then build a Go webhook with k3d, k9s, offline diagrams, short animations, laptop diagnostics and failure drills. Guided terminal verification.
-- Relay Operator: guided experiments and expected observations. **No app-owned automated suite.**
-
-Provided checks and learner tests are separate. A passing run records exactly what was checked, the source fingerprint, content version, suite version, and unchecked requirements. It never gates navigation or claims to verify later edits.
-
-Packaged Go exercises use the bundled toolchain; development uses Go from PATH. Course exercises run offline and need cached dependencies. Project checks may download Go modules when online; race tests need a C compiler. Rust exercises need an externally installed Cargo/Rust toolchain and linker. Maelstrom and Kubernetes tooling are detected or described, not silently installed. Reading and saved state require no network.
 
 ## Code layout
 
 | Directory | Responsibility |
 | --- | --- |
-| `src/content` | Markdown/YAML/HTML import, sanitization, link resolution, versioned catalog |
-| `src/shared` | Zod models and the desktop command contract |
-| `src/main` | Application services, SQLite, workspaces and task execution |
-| `src/preload` | Narrow validated IPC bridge and change notifications |
-| `src/renderer` | React/Router, TanStack Query, CSS Modules, Radix dialogs |
-| `courses` | Course authoring sources |
-| `content/projects` | Imported project source documents |
-| `tests/v2` | Platform tests and acceptance-harness fixtures |
+| `skills/vibe-learn` | Agent skill for designing projects and mentoring across sessions |
+| `src/shared` | Zod models for projects, catalog, and browser state |
+| `src/workspace` | Browser-safe workspace generator, Node filesystem helpers, and workspace validator |
+| `src/cli` | Local helper CLI (`list`, `init`, `new`, `mentor`, `validate`, `profile`, `install-skill`) |
+| `src/content` | Compiles HTML and Markdown projects into `build/content/catalog.json` |
+| `src/renderer` | Static web app (`vibe-learn.ai`): reader, `/new` prompt builder, `.zip` exporter, `localStorage` state |
+| `content/projects` | Curated project briefs and SVG illustrations |
+| `tests/v2` | Content, workspace, CLI, ZIP, and Playwright browser tests |
 
-There is no localhost production daemon, automatic code watcher, general-purpose plugin system, cloud sync, integrated editor/terminal/AI chat, or productivity/scoring machinery.
-
-## Content and CI
-
-Content is authored in the repository, bundled with the app, and published through GitHub Pages. Use **Settings & backups → Update content** to download the latest catalog. There is no arbitrary course-package importer. Start with `npm run new-course -- my-topic`, then follow [authoring](docs/authoring.md). JSON import in Settings restores saved app data, not content packages. The public landing page describes the platform; the linked preview reads the bundled catalog.
-
-Automatic CI runs one Linux verification job. Main-branch pushes deploy the website after it passes. Installer builds run only manually or for release tags. See [CI and releases](docs/ci.md).
-
-More: [architecture](docs/architecture.md), [backups](docs/backups.md), [desktop packaging](docs/desktop-packaging.md), and [validation results](docs/validation.md).
+More: [architecture](docs/architecture.md), [authoring](docs/authoring.md), [CI](docs/ci.md), and [validation](docs/validation.md).

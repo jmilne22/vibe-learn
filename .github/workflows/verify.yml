@@ -15,7 +15,7 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -26,7 +26,6 @@ jobs:
         with:
           go-version: '1.26.x'
           cache: false
-      - run: rustup default stable
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npm run verify
@@ -40,11 +39,6 @@ jobs:
             test-results/
           if-no-files-found: ignore
           retention-days: 7
-      - name: Publish signed app update
-        if: github.event_name == 'push'
-        run: npm run publish:app-update
-        env:
-          APP_UPDATE_SIGNING_KEY: ${{ secrets.APP_UPDATE_SIGNING_KEY }}
       - name: Upload website
         if: github.event_name == 'push'
         uses: actions/upload-pages-artifact@v4

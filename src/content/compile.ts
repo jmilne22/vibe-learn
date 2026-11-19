@@ -7,15 +7,15 @@ import { load } from "cheerio";
 import { z } from "zod";
 import {
   CatalogSchema,
+  ProjectLanguageSchema,
   ProjectSupportFilesSchema,
   type Catalog,
-  type Item,
+  type Project,
   type Stage,
-  type Check,
 } from "../shared/model";
-import { activities } from "./activities";
-import { writeContentPackage } from "./publish";
+import { htmlToMarkdown } from "./markdown-out";
 import { clean, escape, htmlText, markdown } from "./render";
+
 const root = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "../..",
@@ -23,155 +23,100 @@ const root = path.resolve(
 const read = (p: string): string => fs.readFileSync(p, "utf8");
 const digest = (v: string): string =>
   crypto.createHash("sha256").update(v).digest("hex").slice(0, 16);
-const text = z.union([z.string(), z.number()]).transform(String);
-const ModuleSchema = z.object({
-  id: text.optional(),
-  title: z.string(),
-  file: z.string().optional(),
+
+const MarkdownProjectManifest = z.object({
+  title: z.string().min(1),
+  description: z.string().default("Build, experiment, and understand the result."),
+  language: ProjectLanguageSchema.default("go"),
+  prerequisites: z.array(z.string()).default([]),
+  supportFiles: z.array(z.string()).default([]),
 });
-const CourseManifest = z.object({
-  course: z.object({
-    name: z.string(),
-    slug: z.string(),
-    description: z.string().default(""),
-  }),
-  modules: z.array(ModuleSchema),
-  projects: z
-    .array(
-      z.object({
-        id: text,
-        title: z.string(),
-        file: z.string(),
-        description: z.string().default(""),
-        afterModule: z.number().optional(),
-      }),
-    )
-    .default([]),
-});
+
+const HTML_PROJECTS = [
+  "go-telemetry-ingest-take-home",
+  "relay-operator",
+  "gossip-glomers",
+  "tiny-tsdb",
+  "cloud-reporter",
+  "kubernetes-admission-lab",
+];
+
+function within(dir: string, file: string): boolean {
+  const relative = path.relative(dir, file);
+  return (
+    relative !== "" &&
+    !relative.startsWith(".." + path.sep) &&
+    relative !== ".." &&
+    !path.isAbsolute(relative)
+  );
+}
+
+function embedLocalImage(
+  assetRoot: string,
+  assetPath: string,
+  src: string,
+): string {
+  if (src.includes("\\") || !within(assetRoot, assetPath))
+    throw new Error(`Project illustration escapes its asset directory: ${src}`);
+  if (!fs.existsSync(assetPath))
+    throw new Error(`Missing project illustration: ${src}`);
+  if (!within(fs.realpathSync(assetRoot), fs.realpathSync(assetPath)))
+    throw new Error(`Project illustration escapes its asset directory: ${src}`);
+  const mime = {
+    ".svg": "image/svg+xml",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+  }[path.extname(assetPath).toLowerCase()];
+  if (!mime) throw new Error(`Unsupported project illustration: ${src}`);
+  return `data:${mime};base64,${fs.readFileSync(assetPath).toString("base64")}`;
+}
+
 function stage(
   id: string,
   title: string,
   html: string,
-  moduleId?: string,
+  rawMarkdown?: string,
 ): Stage {
-  return { id, title, html: clean(html), text: htmlText(html), moduleId };
+  const sanitized = clean(html);
+  return {
+    id,
+    title,
+    html: sanitized,
+    markdown: rawMarkdown ?? "",
+    text: htmlText(sanitized),
+  };
 }
+
 export function compileCatalog(base = root): Catalog {
-  const items: Item[] = [];
+  const items: Project[] = [];
   const sources = new Map<string, { itemId: string; stageId: string }>();
   const addSource = (key: string, itemId: string, stageId: string) =>
     sources.set(key, { itemId, stageId });
-  const courseRoot = path.join(base, "courses");
-  for (const slug of fs.existsSync(courseRoot)
-    ? fs.readdirSync(courseRoot).sort()
-    : []) {
-    const dir = path.join(courseRoot, slug);
-    if (!fs.existsSync(path.join(dir, "course.yaml"))) continue;
-    const config = CourseManifest.parse(
-      yaml.load(read(path.join(dir, "course.yaml"))),
-    );
-    const id = `course:${slug}`;
-    const stages: Stage[] = [];
-    const lessons = path.join(dir, "content/lessons");
-    for (const [index, mod] of config.modules.entries()) {
-      const moduleId = mod.id ?? String(index);
-      const stem = mod.file || `module${moduleId}`;
-      const location = path.join(lessons, stem);
-      const files =
-        fs.existsSync(location) && fs.statSync(location).isDirectory()
-          ? fs
-              .readdirSync(location)
-              .filter((f) => f.endsWith(".md"))
-              .sort()
-              .map((f) => path.join(location, f))
-          : [location + ".md"];
-      for (const [n, file] of files.entries()) {
-        if (!fs.existsSync(file)) throw new Error(`Missing lesson: ${file}`);
-        const md = read(file);
-        const title = md.match(/^##?\s+(.+)$/m)?.[1] || mod.title;
-        const stageId = `${stem}-${path.basename(file, ".md")}`;
-        stages.push(stage(stageId, title, markdown(md), moduleId));
-        addSource(`${slug}/${stem}-${n + 1}.html`, id, stageId);
-        addSource(`${slug}/${path.relative(lessons, file)}`, id, stageId);
-        if (n === 0) addSource(`${slug}/${stem}.html`, id, stageId);
-      }
-    }
-    const item: Item = {
-      id,
-      kind: "course",
-      ...activities(dir, stages),
-      title: config.course.name,
-      description: config.course.description,
-      stages,
-      related: [],
-      prerequisites: [],
-      checks: [],
-      source: `courses/${slug}`,
-      version: "",
-    };
-    items.push(item);
-    addSource(`${slug}/index.html`, id, stages[0]!.id);
-    for (const project of config.projects) {
-      const projectId = `project:${slug}-${project.id}`;
-      const file = path.join(lessons, project.file + ".md");
-      if (!fs.existsSync(file)) throw new Error(`Missing project: ${file}`);
-      const related =
-        project.afterModule === undefined
-          ? []
-          : stages
-              .filter(
-                (s) =>
-                  s.moduleId === String(project.afterModule) &&
-                  !s.id.endsWith("-examples"),
-              )
-              .slice(0, 1)
-              .map((s) => ({ itemId: id, stageId: s.id, label: modLabel(s) }));
-      const p: Item = {
-        id: projectId,
-        kind: "project",
-        title: project.title,
-        description: project.description,
-        stages: [stage("brief", project.title, markdown(read(file)))],
-        related,
-        prerequisites: [],
-        checks: [],
-        source: `courses/${slug}/${project.file}.md`,
-        version: "",
-      };
-      // Operator and privileged container work stay guided; other projects may run learner tests explicitly.
-      if (!/operator|container/i.test(project.title))
-        p.checks.push(learnerCheck());
-      items.push(p);
-      addSource(`${slug}/${project.file}.html`, projectId, "brief");
-      addSource(`${slug}/${project.file}.md`, projectId, "brief");
-      item.related.push({ itemId: projectId, label: project.title });
-    }
-  }
-  const projectFiles = [
-    "go-telemetry-ingest-take-home",
-    "relay-operator",
-    "gossip-glomers",
-    "tiny-tsdb",
-    "cloud-reporter",
-    "kubernetes-admission-lab",
-  ];
-  for (const file of projectFiles) {
-    const location = path.join(base, "content/projects", file + ".html");
+  const projectsDir = path.join(base, "content/projects");
+
+  // 1. Existing HTML project briefs
+  for (const file of HTML_PROJECTS) {
+    const location = path.join(projectsDir, file + ".html");
+    if (!fs.existsSync(location)) continue;
     const document = read(location);
     const $ = load(document);
     const main = $("main").first();
     main.find("script,style,nav,footer,.toolbar").remove();
     const title = main.find("h1").first().text();
     const supportFiles = ProjectSupportFilesSchema.parse(
-      main.find("pre[data-workspace-file]").toArray().map((el) => {
-        const name = $(el).attr("data-workspace-file");
-        const contents = $(el).children("code").text().trimEnd();
-        if (!contents.trim())
-          throw new Error(
-            `Supplied file ${name} in ${location} needs a non-empty <code> block`,
-          );
-        return { path: name, contents: contents + "\n" };
-      }),
+      main
+        .find("pre[data-workspace-file]")
+        .toArray()
+        .map((el) => {
+          const name = $(el).attr("data-workspace-file");
+          const contents = $(el).children("code").text().trimEnd();
+          if (!contents.trim())
+            throw new Error(
+              `Supplied file ${name} in ${location} needs a non-empty <code> block`,
+            );
+          return { path: name, contents: contents + "\n" };
+        }),
     );
     const stages: Stage[] = [];
     const sessions = main.find("section.session");
@@ -191,10 +136,12 @@ export function compileCatalog(base = root): Catalog {
       section.remove();
     });
     stages.unshift(stage("overview", "Overview & setup", main.html() || ""));
-    const id = `project:${file === "go-telemetry-ingest-take-home" ? "ingest-relay" : file}`;
+    const slug =
+      file === "go-telemetry-ingest-take-home" ? "ingest-relay" : file;
+    const id = `project:${slug}`;
     if (file === "go-telemetry-ingest-take-home") {
       const reference = load(
-        read(path.join(base, "content/projects/go-scratch-exercises.html")),
+        read(path.join(projectsDir, "go-scratch-exercises.html")),
       );
       reference("main").find("script,style,nav,footer,.toolbar").remove();
       stages.push(
@@ -206,17 +153,17 @@ export function compileCatalog(base = root): Catalog {
       );
       addSource("take-home/go-scratch-exercises.html", id, "go-experiments");
     }
-    const item: Item = {
+    const item: Project = {
       id,
-      kind: "project",
+      slug,
       title,
+      language: "go",
       ...(supportFiles.length ? { supportFiles } : {}),
       description:
         main.find("header p").not(".eyebrow,.meta").first().text() ||
         "Build, experiment, and understand the result.",
       stages,
       related: [],
-      checks: [],
       prerequisites: [],
       source: `take-home/${file}.html`,
       version: "",
@@ -225,47 +172,98 @@ export function compileCatalog(base = root): Catalog {
       stages[0]!.title = "Step 0 — Read the assigned article";
       item.prerequisites = [
         "Read the assigned article first. Then use Go, Docker, k3d, kubectl, k9s, Go Task, OpenSSL and curl. Workspace creation adds the Taskfile and the doctor.go diagnostics.",
-        "Guided experiments on a local cluster, and Go tests that you run yourself. The app has no automated suite for this project.",
+        "Guided experiments on a local cluster, and Go tests that you run yourself in your terminal.",
       ];
-    } else if (file === "relay-operator")
+    } else if (file === "relay-operator") {
       item.prerequisites = [
         "A workspace with a working Ingest Relay.",
         "Go, a container runtime, kind, kubectl, Kubebuilder and Helm. Do the guided checks on your own local cluster.",
       ];
-    else if (file === "gossip-glomers") {
-      item.prerequisites = [
-        "Go, a compatible JDK, Maelstrom, Graphviz and gnuplot. The overview gives the setup commands.",
-      ];
-      item.checks = maelstromChecks(stages);
-    } else if (file === "cloud-reporter") {
-      item.prerequisites = [
-        "Go. Live GitHub requests need internet access. The local HTTP tests work offline.",
-      ];
-      item.checks = [learnerCheck()];
-    } else {
-      item.prerequisites = [
-        "Go. Learner tests with the race detector also need a supported C compiler.",
-      ];
-      item.checks = [
-        learnerCheck(),
-        {
-          ...learnerCheck(),
-          id: "go-race",
-          title: "Your tests · race detector",
-          description: "Run your own tests with the Go race detector.",
-        },
-        ...acceptanceChecks(file === "tiny-tsdb" ? "tsdb" : "relay"),
-      ];
-    }
-    if (file === "relay-operator")
       item.related.push({
         itemId: "project:ingest-relay",
         label: "Build the Ingest Relay",
       });
+    } else if (file === "gossip-glomers") {
+      item.prerequisites = [
+        "Go, a compatible JDK, Maelstrom, Graphviz and gnuplot. The overview gives the setup commands.",
+      ];
+    } else if (file === "cloud-reporter") {
+      item.prerequisites = [
+        "Go. Live GitHub requests need internet access. The local HTTP tests work offline.",
+      ];
+    } else {
+      item.prerequisites = [
+        "Go. Learner tests with the race detector also need a supported C compiler.",
+      ];
+    }
     items.push(item);
     addSource(`take-home/${file}.html`, id, "overview");
   }
-  // Resolve authored relative links and anchors against the compiled catalog.
+
+  // 2. Folder-based Markdown projects (content/projects/<slug>/project.yaml)
+  if (fs.existsSync(projectsDir)) {
+    for (const entry of fs.readdirSync(projectsDir).sort()) {
+      if (entry === "assets") continue;
+      const dir = path.join(projectsDir, entry);
+      if (!fs.statSync(dir).isDirectory()) continue;
+      const manifestFile = path.join(dir, "project.yaml");
+      if (!fs.existsSync(manifestFile)) continue;
+      const config = MarkdownProjectManifest.parse(
+        yaml.load(read(manifestFile)),
+      );
+      const slug = entry;
+      const id = `project:${slug}`;
+      const readmePath = path.join(dir, "README.md");
+      if (!fs.existsSync(readmePath))
+        throw new Error(`Missing README.md in ${dir}`);
+      const readmeMd = read(readmePath);
+      const stages: Stage[] = [
+        stage("overview", "Overview & setup", markdown(readmeMd), readmeMd),
+      ];
+      const stepsDir = path.join(dir, "steps");
+      if (fs.existsSync(stepsDir) && fs.statSync(stepsDir).isDirectory()) {
+        for (const stepFile of fs
+          .readdirSync(stepsDir)
+          .filter((f) => f.endsWith(".md"))
+          .sort()) {
+          const md = read(path.join(stepsDir, stepFile));
+          const stem = path
+            .basename(stepFile, ".md")
+            .replace(/^\d+-/, "");
+          const title =
+            md.match(/^#{1,2}\s+(.+)$/m)?.[1]?.trim() || stem;
+          stages.push(stage(stem, title, markdown(md), md));
+          addSource(`${slug}/steps/${stepFile}`, id, stem);
+        }
+      }
+      const supportFiles = config.supportFiles.length
+        ? ProjectSupportFilesSchema.parse(
+            config.supportFiles.map((name) => {
+              const filePath = path.join(dir, name);
+              if (!within(dir, filePath) || !fs.existsSync(filePath))
+                throw new Error(`Missing support file ${name} in ${dir}`);
+              return { path: name, contents: read(filePath) };
+            }),
+          )
+        : [];
+      items.push({
+        id,
+        slug,
+        title: config.title,
+        description: config.description,
+        language: config.language,
+        stages,
+        related: [],
+        prerequisites: config.prerequisites,
+        ...(supportFiles.length ? { supportFiles } : {}),
+        source: `markdown/${slug}`,
+        version: "",
+      });
+      addSource(`${slug}/README.md`, id, "overview");
+    }
+  }
+
+  // 3. Resolve authored relative links, anchors, embedded images, and stage Markdown
   const anchors = new Map<string, string>();
   for (const item of items)
     for (const s of item.stages) {
@@ -274,12 +272,12 @@ export function compileCatalog(base = root): Catalog {
         anchors.set(`${item.id}#${$(el).attr("id")}`, s.id);
       });
     }
-  for (const item of items)
+
+  for (const item of items) {
+    const isHtmlProject = item.source.startsWith("take-home/");
+    const namespace = isHtmlProject ? "take-home" : item.slug;
     for (const s of item.stages) {
       const $ = load(s.html);
-      const namespace = item.source.startsWith("take-home/")
-        ? "take-home"
-        : item.source.split("/")[1]!;
       $("a[href]").each((_, el) => {
         const a = $(el);
         const href = a.attr("href")!;
@@ -302,6 +300,7 @@ export function compileCatalog(base = root): Catalog {
           a.attr("href", "#/projects");
         else a.removeAttr("href");
       });
+
       $("img[src]").each((_, el) => {
         const img = $(el);
         const src = img.attr("src")!;
@@ -311,75 +310,33 @@ export function compileCatalog(base = root): Catalog {
           );
           return;
         }
-        if (namespace === "take-home") {
-          // The Go experiments stage comes from its own source file.
+        if (isHtmlProject) {
           const stem =
             s.id === "go-experiments"
               ? "go-scratch-exercises"
               : path.basename(item.source, ".html");
-          const assetRoot = path.resolve(base, "content/projects/assets", stem);
-          const asset = path.resolve(base, "content/projects", src);
-          const within = (root: string, file: string) => {
-            const relative = path.relative(root, file);
-            return (
-              relative !== "" &&
-              !relative.startsWith(".." + path.sep) &&
-              relative !== ".." &&
-              !path.isAbsolute(relative)
-            );
-          };
-          if (src.includes("\\") || !within(assetRoot, asset))
-            throw new Error(`Project illustration escapes its asset directory: ${src}`);
-          if (!fs.existsSync(asset))
-            throw new Error(`Missing project illustration: ${src}`);
-          if (
-            !within(
-              path.join(fs.realpathSync(base), "content/projects/assets", stem),
-              fs.realpathSync(asset),
-            )
-          )
-            throw new Error(`Project illustration escapes its asset directory: ${src}`);
-          const mime = {
-            ".svg": "image/svg+xml",
-            ".png": "image/png",
-            ".jpg": "image/jpeg",
-            ".jpeg": "image/jpeg",
-          }[path.extname(asset).toLowerCase()];
-          if (!mime) throw new Error(`Unsupported project illustration: ${src}`);
-          img.attr(
-            "src",
-            `data:${mime};base64,${fs.readFileSync(asset).toString("base64")}`,
-          );
-          return;
+          const assetRoot = path.resolve(projectsDir, "assets", stem);
+          const assetPath = path.resolve(projectsDir, src);
+          img.attr("src", embedLocalImage(assetRoot, assetPath, src));
+        } else {
+          const assetRoot = path.resolve(projectsDir, item.slug, "assets");
+          const assetPath = path.resolve(projectsDir, item.slug, src);
+          img.attr("src", embedLocalImage(assetRoot, assetPath, src));
         }
-        const asset = path.resolve(
-          base,
-          "courses",
-          namespace,
-          "content/assets",
-          path.basename(src),
-        );
-        const assetRoot =
-          path.resolve(base, "courses", namespace, "content/assets") + path.sep;
-        if (asset.startsWith(assetRoot) && fs.existsSync(asset)) {
-          const ext = path.extname(asset);
-          const mime =
-            ext === ".svg"
-              ? "image/svg+xml"
-              : ext === ".png"
-                ? "image/png"
-                : "image/jpeg";
-          img.attr(
-            "src",
-            `data:${mime};base64,${fs.readFileSync(asset).toString("base64")}`,
-          );
-        } else img.remove();
       });
+
       s.html = clean($("body").html() || "");
       s.text = htmlText(s.html);
+      if (!s.markdown) {
+        s.markdown = htmlToMarkdown(s.html, (href) =>
+          /^(https?:|mailto:|#\/read\/)/.test(href) ? href : null,
+        );
+      }
     }
+  }
+
   for (const item of items) item.version = digest(JSON.stringify(item));
-  const catalog = CatalogSchema.parse({ formatVersion: 2, items });
+  const catalog = CatalogSchema.parse({ formatVersion: 3, items });
   const ids = new Set<string>();
   for (const item of catalog.items) {
     if (ids.has(item.id)) throw new Error(`Duplicate item ${item.id}`);
@@ -398,78 +355,21 @@ export function compileCatalog(base = root): Catalog {
   }
   return catalog;
 }
-function modLabel(s: Stage): string {
-  return `Related lesson: ${s.title}`;
-}
-function learnerCheck(): Check {
-  return {
-    id: "go-test",
-    title: "Your tests",
-    kind: "learner",
-    suiteVersion: "go-test-v1",
-    description:
-      "Run go vet and your own go test suite. No tests is reported as unchecked.",
-    unchecked: [
-      "Passing your tests does not certify all project requirements.",
-    ],
-  };
-}
-function acceptanceChecks(kind: "relay" | "tsdb"): Check[] {
-  return ["http", "storage", "final"].map((part) => ({
-    id: `${kind}-${part}`,
-    title:
-      part === "final"
-        ? "Final acceptance checks"
-        : part === "http"
-          ? "Checkpoint · HTTP contract"
-          : "Checkpoint · storage behavior",
-    kind: "acceptance",
-    suiteVersion: `${kind}-1`,
-    description:
-      "Build your executable and exercise its public interface in a temporary directory. Your source and tests are not modified.",
-    stageId:
-      part === "http"
-        ? "session-2"
-        : part === "storage"
-          ? kind === "relay"
-            ? "session-4"
-            : "session-3"
-          : undefined,
-    unchecked:
-      kind === "relay"
-        ? [
-            "Internal batching, deterministic overload, injected write failures, and ownership require your tests and design review.",
-          ]
-        : [
-            "Compression limits, block sealing, WAL corruption handling, retention boundaries, and storage failure injection require your tests and review.",
-          ],
-  }));
-}
-function maelstromChecks(stages: Stage[]): Check[] {
-  return stages
-    .filter((s) => s.id.startsWith("challenge-"))
-    .map((s) => ({
-      id: `maelstrom-${s.id.replace("challenge-", "")}`,
-      title: `Maelstrom · ${s.title}`,
-      kind: "maelstrom",
-      suiteVersion: "maelstrom-0.2.3-v1",
-      stageId: s.id,
-      description:
-        "Build the stage binary and run the documented workload. Histories and reports are retained per run.",
-      unchecked: [
-        "Passing sampled histories is not a proof of all executions; inspect results and explain tradeoffs.",
-      ],
-    }));
-}
+
 if (
   process.argv[1] &&
   path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
 ) {
   const catalog = compileCatalog();
   if (!process.argv.includes("--check")) {
-    writeContentPackage(catalog, path.join(root, "build/content"), root);
+    const outDir = path.join(root, "build/content");
+    fs.mkdirSync(outDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(outDir, "catalog.json"),
+      JSON.stringify(catalog),
+    );
   }
   console.log(
-    `Validated ${catalog.items.length} items, ${catalog.items.reduce((n, i) => n + i.stages.length, 0)} sections.`,
+    `Validated ${catalog.items.length} projects, ${catalog.items.reduce((n, i) => n + i.stages.length, 0)} sections.`,
   );
 }
