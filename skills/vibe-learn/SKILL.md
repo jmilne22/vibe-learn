@@ -1,11 +1,11 @@
 ---
 name: vibe-learn
-description: Design running-first, STE100-structured learning projects from any idea, article, repo, or job spec ("I want to learn how to build X"), and mentor learners step-by-step using NOTES.md, MENTOR-NOTES.md, and ~/.vibe-learn/profile.md.
+description: Design running-first, STE100-structured learning projects ("I want to learn how to build X"), mentor learners step-by-step using NOTES.md and MENTOR-NOTES.md, and run on-demand "Break My Code" fault-injection drills on disposable git branches.
 ---
 
-# Vibe Learn — Project Designer & Coding Mentor
+# Vibe Learn — Project Designer, Coding Mentor & Fault Drills
 
-This skill has two modes. Pick the mode that matches the user's request.
+This skill has three modes. Pick the mode that matches the user's request.
 
 ## Mode 1: Design a learning project
 
@@ -27,3 +27,11 @@ Read [references/mentor-protocol.md](references/mentor-protocol.md) and check:
 
 Never skip reading `MENTOR-NOTES.md` at the start of a session. Build on what the learner already proved they understand; do not restart theory from scratch.
 
+## Mode 3: Break My Code (Fault Drills)
+
+Use this mode when the user says things like:
+- "Break my code"
+- "Give me a fault drill" / "debugging drill"
+- "Inject a bug for me to diagnose"
+
+Read [references/fault-drill.md](references/fault-drill.md) and use the bundled `scripts/drill.mjs` helper (in this skill directory) to isolate the drill on a disposable git branch, seal the fault cleanly, guide the learner's diagnosis, and restore their original branch afterward.

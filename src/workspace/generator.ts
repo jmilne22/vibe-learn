@@ -83,6 +83,7 @@ The brief is README.md (step 01) and the files in steps/.
 - MENTOR-NOTES.md is your handoff log for the next session: where I am, what I understand, my weak spots and how I like to be helped. Read it at the start of every session and build on it instead of starting again from scratch. At the end of a step or a session, offer to update it, and write only after I say yes. Follow the format at the top of the file.
 - If \`~/.vibe-learn/profile.md\` exists, read it at the start of a session for my cross-project learning preferences.
 - A step is done when its "tests to write" pass and I'm happy with the code. When a step is done, ask whether to tick it in NOTES.md.
+- After finishing a step, I may ask "break my code" to run a fault-injection debugging drill on a disposable git branch.
 `;
 
 const STANDALONE_SECTION = `## Working together in this repository
@@ -91,6 +92,7 @@ const STANDALONE_SECTION = `## Working together in this repository
 - MENTOR-NOTES.md is your handoff log for the next session: where I am, what I understand, my weak spots and how I like to be helped. Read it at the start of every session and build on it instead of starting again from scratch. At the end of a session, offer to update it, and write only after I say yes. Follow the format at the top of the file.
 - If \`~/.vibe-learn/profile.md\` exists, read it at the start of a session for my cross-project learning preferences.
 - Ask what specific goal, file, or bug I want to focus on before giving advice.
+- I may ask "break my code" to run a fault-injection debugging drill on a disposable git branch.
 `;
 
 const TONE = `### Tone

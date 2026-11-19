@@ -13,6 +13,8 @@ npx skills add jmilne22/vibe-learn
 
 Then open an empty folder in your coding agent and tell it what you want to learn to build.
 
+Once you have working code in a git repo, say **"break my code"** to run a fault-injection drill: the agent forks a disposable git branch (using `skills/vibe-learn/scripts/drill.mjs`), injects one realistic compiling bug, seals it so `git diff` stays clean, mentors you through diagnosing and fixing it, and restores your original branch afterward.
+
 If you want cross-project mentor preferences, create `~/.vibe-learn/profile.md` from [skills/vibe-learn/references/learner-profile-template.md](skills/vibe-learn/references/learner-profile-template.md).
 
 ## Workspace files
