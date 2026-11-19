@@ -2,9 +2,12 @@
 
 Follow this blueprint whenever the learner asks to learn how to build something. The goal is a concrete, running-first, STE100-clear project workspace — never a textbook essay or a vague list of chores.
 
-## 1. Read the learner profile first
+## 1. Read the learner's profile and cross-project memory first
 
-Check if `~/.vibe-learn/profile.md` exists. If it does, read it silently before asking intake questions so you do not ask things the learner already told you (language background, analogy preferences, editor setup, pacing).
+Run `node <skill-dir>/scripts/memory.mjs read` (or check `~/.vibe-learn/profile.md` and `~/.vibe-learn/memory.md` directly) before asking intake questions:
+- Do not ask things `profile.md` already answers (language background, analogy preferences, editor setup, pacing).
+- Skip re-teaching concepts already listed under `Solid` in `memory.md`; reference them briefly instead.
+- If `memory.md` lists open `Weak spots to revisit` that naturally fit this project (for example HTTP anatomy or TLS trust), weave 1–2 concrete live checks for them into relevant steps.
 
 ## 2. Short intake (at most 4 concrete questions)
 

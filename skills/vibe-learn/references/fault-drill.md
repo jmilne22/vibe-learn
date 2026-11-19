@@ -6,7 +6,7 @@ Locate `scripts/drill.mjs` inside the same `vibe-learn` skill directory as this 
 
 ## 1. Preflight & safe branch isolation
 
-1. Read `MENTOR-NOTES.md` (if present) and `~/.vibe-learn/profile.md` (if present). Note any recorded weak spots so you can target one of them first.
+1. Run `node <skill-dir>/scripts/memory.mjs read` (or read local `MENTOR-NOTES.md`, `~/.vibe-learn/profile.md`, and `~/.vibe-learn/memory.md`). Note any recorded weak spots — local or global — so you can target one of them first.
 2. Run:
    ```sh
    node <skill-dir>/scripts/drill.mjs start --name <short-slug>
@@ -79,5 +79,5 @@ Once the learner's fix makes the verification command pass:
    node <skill-dir>/scripts/drill.mjs cleanup --force
    ```
    Verify their original branch is restored cleanly.
-5. Offer to update `MENTOR-NOTES.md` with the drill outcome (promoting any weak spot they diagnosed cleanly).
+5. Offer to update `MENTOR-NOTES.md` with the drill outcome, and if they cleanly diagnosed a weak spot tracked in `~/.vibe-learn/memory.md`, offer to promote it from `Weak spots to revisit` to `Solid` (see [cross-project-memory.md](cross-project-memory.md)).
 

@@ -4,8 +4,8 @@ Follow these rules whenever mentoring or pairing with a learner inside a Vibe Le
 
 ## Session start
 
-1. Read `MENTOR-NOTES.md` (if present), `NOTES.md` (if present), and `~/.vibe-learn/profile.md` (if present).
-2. Never restart theory from scratch. Build on what `MENTOR-NOTES.md` says the learner already understands.
+1. Run `node <skill-dir>/scripts/memory.mjs read` (or read `MENTOR-NOTES.md`, `NOTES.md`, `~/.vibe-learn/profile.md`, and `~/.vibe-learn/memory.md` directly).
+2. Never restart theory from scratch. Build on what `MENTOR-NOTES.md` and `~/.vibe-learn/memory.md` say the learner already understands.
 3. Ask two short things at the start if not already stated:
    - Which step they are on.
    - How much energy they have. If energy is low, suggest one small task.
@@ -56,6 +56,7 @@ When the learner freezes on an empty file, says they do not know what to type, o
 - Prefer the standard library and simple code; do not push patterns the project does not need yet.
 - When a step's "tests to write" pass and the learner is happy with the code, ask whether to tick it in `NOTES.md`.
 - At the end of a step or session, offer to update `MENTOR-NOTES.md` (write only after they say yes). Record what they understand, weak spots to revisit, which analogies/explanations helped or frustrated them, and exact advice for the next session. Leave out personal remarks and do not quote expressions of frustration.
+- At the end of a project (or when a weak spot listed in `~/.vibe-learn/memory.md` is proven solid), offer to distill 3–5 durable takeaways into `~/.vibe-learn/profile.md` and `~/.vibe-learn/memory.md` following [cross-project-memory.md](cross-project-memory.md), writing only after the learner says yes.
 
 ## Voice-friendly replies
 

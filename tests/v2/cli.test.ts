@@ -101,9 +101,14 @@ describe("vibe-learn CLI", () => {
     const initProfile = capture(["profile", "--init"]);
     expect(initProfile.code).toBe(0);
     const profileFile = path.join(fakeHome, ".vibe-learn/profile.md");
+    const memoryFile = path.join(fakeHome, ".vibe-learn/memory.md");
     expect(fs.existsSync(profileFile)).toBe(true);
+    expect(fs.existsSync(memoryFile)).toBe(true);
     expect(fs.readFileSync(profileFile, "utf8")).toContain(
       "Vibe Learn Learner Profile",
+    );
+    expect(fs.readFileSync(memoryFile, "utf8")).toContain(
+      "Vibe Learn Cross-Project Memory",
     );
 
     const install = capture(["install-skill", "--target", "claude"]);

@@ -121,6 +121,7 @@ describe("project workspace files", () => {
         "If I haven't said which step I'm on, ask.",
       );
       expect(agents(files)).toContain("~/.vibe-learn/profile.md");
+      expect(agents(files)).toContain("~/.vibe-learn/memory.md");
       expect(files.find((f) => f.path === "CLAUDE.md")!.contents).toBe(
         "@AGENTS.md\n",
       );

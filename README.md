@@ -15,7 +15,11 @@ Then open an empty folder in your coding agent and tell it what you want to lear
 
 Once you have working code in a git repo, say **"break my code"** to run a fault-injection drill: the agent forks a disposable git branch (using `skills/vibe-learn/scripts/drill.mjs`), injects one realistic compiling bug, seals it so `git diff` stays clean, mentors you through diagnosing and fixing it, and restores your original branch afterward.
 
-If you want cross-project mentor preferences, create `~/.vibe-learn/profile.md` from [skills/vibe-learn/references/learner-profile-template.md](skills/vibe-learn/references/learner-profile-template.md).
+To carry mentor notes across projects, Vibe Learn uses two small local Markdown files under `~/.vibe-learn/` (managed by `skills/vibe-learn/scripts/memory.mjs`, always updated only after you say yes):
+- `~/.vibe-learn/profile.md` — how you learn (analogies that land, pacing, stuck protocol, editor setup).
+- `~/.vibe-learn/memory.md` — distilled technical ledger (projects, `Solid` concepts, open `Weak spots to revisit`, recurring habits).
+
+Say **"sync my mentor notes"** or **"import mentor notes from `<path>`"** to distill any existing `MENTOR-NOTES.md` into `~/.vibe-learn/`. If you want cross-machine sync, put `~/.vibe-learn/` in a private git repo or your dotfiles.
 
 ## Workspace files
 

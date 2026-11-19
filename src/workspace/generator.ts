@@ -81,7 +81,7 @@ The brief is README.md (step 01) and the files in steps/.
 - The \`<details>\` blocks in each step are hints and review answers. Never reveal them unprompted. When I'm stuck, give the smallest nudge first, and use a hint only after that, one at a time.
 - NOTES.md is my own log. Read it if it's there. Don't edit it, except to tick a step or copy in my own words when I ask.
 - MENTOR-NOTES.md is your handoff log for the next session: where I am, what I understand, my weak spots and how I like to be helped. Read it at the start of every session and build on it instead of starting again from scratch. At the end of a step or a session, offer to update it, and write only after I say yes. Follow the format at the top of the file.
-- If \`~/.vibe-learn/profile.md\` exists, read it at the start of a session for my cross-project learning preferences.
+- If \`~/.vibe-learn/profile.md\` or \`~/.vibe-learn/memory.md\` exist, read them at the start of a session for my cross-project learning preferences, solid concepts, and open weak spots. At the end of a project, offer to distill 3–5 durable takeaways from MENTOR-NOTES.md into \`~/.vibe-learn/\` and write only after I say yes.
 - A step is done when its "tests to write" pass and I'm happy with the code. When a step is done, ask whether to tick it in NOTES.md.
 - After finishing a step, I may ask "break my code" to run a fault-injection debugging drill on a disposable git branch.
 `;
@@ -90,7 +90,7 @@ const STANDALONE_SECTION = `## Working together in this repository
 
 - NOTES.md is my own log. Read it if it's there. Don't edit it, except to tick a goal or copy in my own words when I ask.
 - MENTOR-NOTES.md is your handoff log for the next session: where I am, what I understand, my weak spots and how I like to be helped. Read it at the start of every session and build on it instead of starting again from scratch. At the end of a session, offer to update it, and write only after I say yes. Follow the format at the top of the file.
-- If \`~/.vibe-learn/profile.md\` exists, read it at the start of a session for my cross-project learning preferences.
+- If \`~/.vibe-learn/profile.md\` or \`~/.vibe-learn/memory.md\` exist, read them at the start of a session for my cross-project learning preferences, solid concepts, and open weak spots.
 - Ask what specific goal, file, or bug I want to focus on before giving advice.
 - I may ask "break my code" to run a fault-injection debugging drill on a disposable git branch.
 `;

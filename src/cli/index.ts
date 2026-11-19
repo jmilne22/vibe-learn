@@ -216,33 +216,39 @@ export function runCli(argv: string[]): number {
         },
       });
       const home = process.env.VIBE_HOME || os.homedir();
-      const profilePath = path.join(home, ".vibe-learn/profile.md");
+      const vibeDir = path.join(home, ".vibe-learn");
+      const profilePath = path.join(vibeDir, "profile.md");
+      const memoryPath = path.join(vibeDir, "memory.md");
       if (values.path) {
         console.log(profilePath);
         return 0;
       }
       if (values.init) {
-        if (fs.existsSync(profilePath)) {
-          console.log(`Learner profile already exists at ${profilePath}`);
-          return 0;
+        fs.mkdirSync(vibeDir, { recursive: true });
+        const skillSrc = resolveSkillSource();
+        const pairs: [string, string][] = [
+          [profilePath, "references/learner-profile-template.md"],
+          [memoryPath, "references/memory-template.md"],
+        ];
+        for (const [target, relTemplate] of pairs) {
+          if (fs.existsSync(target)) {
+            console.log(`Already exists: ${target}`);
+          } else {
+            const template = fs.readFileSync(
+              path.join(skillSrc, relTemplate),
+              "utf8",
+            );
+            fs.writeFileSync(target, template, "utf8");
+            console.log(`Created: ${target}`);
+          }
         }
-        const template = fs.readFileSync(
-          path.join(
-            resolveSkillSource(),
-            "references/learner-profile-template.md",
-          ),
-          "utf8",
-        );
-        fs.mkdirSync(path.dirname(profilePath), { recursive: true });
-        fs.writeFileSync(profilePath, template, "utf8");
-        console.log(`Created learner profile at ${profilePath}`);
         return 0;
       }
       if (fs.existsSync(profilePath)) {
         console.log(fs.readFileSync(profilePath, "utf8"));
       } else {
         console.log(
-          `No learner profile yet at ${profilePath}. Run \`vibe-learn profile --init\` to create one.`,
+          `No learner profile yet at ${profilePath}. Run \`vibe-learn profile --init\` to create profile.md and memory.md.`,
         );
       }
       return 0;
