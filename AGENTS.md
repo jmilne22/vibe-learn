@@ -1,27 +1,22 @@
 # Vibe Learn
 
-Offline desktop app built with strict TypeScript, React, Electron, SQLite and validated IPC. The browser is a read-only preview. Read README.md and docs/architecture.md for the current design.
+Lightweight AI coding mentor skill (`skills/vibe-learn/`), browser-safe workspace generator, local helper CLI, and static web reader (`vibe-learn.ai`) built with strict TypeScript, React, Vite, and Zod. Read `README.md` and `docs/architecture.md` for the v3 design.
 
 ## Commands
-- `npm run app` — isolated desktop development app
-- `npm run build` — compile content, desktop bundles and static preview
-- `npm run verify` — type checks, lint, content validation and platform/browser tests
-- `npm run package:desktop` — package with the local Go toolchain
-- `npm run smoke:desktop -- --packaged` — packaged persistence and Go execution test
-- `npm run new-course -- <slug>` — scaffold Markdown/YAML course sources
-- Automatic CI is one Linux `verify` job; installers run manually or on release tags. See docs/ci.md.
-- On NixOS, enter `nix-shell` before the npm commands.
+- `npm run dev` — compile catalog and start Vite dev server
+- `npm run build` — compile catalog, static web app (`dist/`), and local CLI bundle (`build/cli/index.js`)
+- `npm run verify` — type checks, lint, content validation, Vitest tests, production builds, and Playwright browser tests
+- `npm run cli -- <args>` — run the local helper CLI from source with `tsx`
+- On NixOS, enter `nix-shell` before running npm commands.
 
 ## Boundaries
-- `src/content/` compiles authoring sources into a versioned catalog.
-- `src/renderer/` owns UI only; no filesystem, process or database imports.
-- `src/main/` owns storage, workspaces, task execution and validated IPC.
-- `courses/` is currently empty; old infrastructure and sample courses were removed.
-- `content/projects/` contains the standalone project briefs. Optional Go experiments are a relay reference section.
+- `skills/vibe-learn/` owns the agent skill instructions for on-demand project generation and cross-session mentoring (installed via `npx skills add jmilne22/vibe-learn`).
+- `src/workspace/generator.ts` is strictly browser-safe (no `node:*` imports) so the local CLI and browser `.zip` exporter produce identical workspace files.
+- `src/renderer/` owns the static web UI only; ESLint blocks `node:*`, `src/cli/`, `src/content/`, `src/workspace/fs.ts`, and `src/workspace/validate.ts` imports.
+- `src/cli/` owns the local Node CLI commands. `package.json` stays `"private": true`.
+- `src/content/` compiles curated projects (HTML briefs or Markdown project folders under `content/projects/`) into `build/content/catalog.json`.
 
 ## Product
-Courses and projects are independent; reading is never gated. Workspaces remain learner-owned and checks run only on explicit request. The Relay Operator has guided verification and no app-owned automated suite.
+Learners work in their own editor and terminal alongside their coding agent. Reading is never gated. Workspaces remain learner-owned, and generated files never overwrite existing learner files.
 
-Courses support focused Go/Rust starter-file exercises with explicit supplied checks, and optional flashcards with local FSRS reviews. See docs/authoring.md for schemas. Do not restore the previous daily-practice, scoring, difficulty, timer or plugin systems.
-
-For content authoring, read STARTER_PROMPT.md and docs/authoring.md. Keep stable IDs and section filenames. Do not modify platform code merely to add lesson content.
+For authoring or promoting a project track, read `STARTER_PROMPT.md` and `docs/authoring.md`. Keep stable project IDs and step filenames.

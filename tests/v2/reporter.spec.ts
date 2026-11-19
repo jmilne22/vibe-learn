@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-test("the restored reporter opens independently, navigates stages, and is searchable offline", async ({
+test("cloud reporter opens independently and navigates stages offline", async ({
   page,
 }) => {
   const errors: string[] = [];
@@ -31,20 +31,6 @@ test("the restored reporter opens independently, navigates stages, and is search
     .getByRole("link", { name: /Write table, JSON, and CSV output/ })
     .click();
   await expect(page.locator("article")).toContainText('"total_repos": 3');
-  await page
-    .getByRole("navigation")
-    .getByRole("link", { name: "Search", exact: true })
-    .click();
-  await page
-    .getByLabel("Search lessons and project briefs")
-    .fill("cloudreport");
-  await expect(
-    page
-      .locator("main")
-      .getByRole("link")
-      .filter({ hasText: "Cloud Resource Reporter" })
-      .first(),
-  ).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/#/read/project%3Acloud-reporter/formats");
   await expect(page.locator("article")).toContainText("API, workers");

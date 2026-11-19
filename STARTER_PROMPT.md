@@ -1,9 +1,15 @@
-# Create a Vibe Learn course
+# Design a Vibe Learn Project
 
-Ask what topic, existing experience and practical goal the learner has. Then create a course with `npm run new-course -- <slug>` and follow `docs/authoring.md`.
+Install the skill with `npx skills add jmilne22/vibe-learn` (reads `skills/vibe-learn/SKILL.md`), or follow these rules directly:
 
-Author Markdown explanations with concrete examples, optional exercises, immediately available hints and solutions. Use stable module IDs, short named sections and YAML manifests. Keep platform code separate from course content. Reference concepts from project briefs through optional links. State genuine tool or project prerequisites, never completion gates.
+1. Read `~/.vibe-learn/profile.md` if it exists.
+2. Ask at most four short intake questions: what working artifact to build (and any article/repo/spec), target language + known language for analogies, time budget, and Mentor vs. Pair mode.
+3. Design a running-first track:
+   - `README.md` with a Glossary (one meaning per term), step/budget table, and short source map.
+   - `steps/02-*.md` with a read-only `doctor` check and the smallest runnable skeleton so something runs within 30 minutes.
+   - Subsequent `steps/NN-*.md` split into small sub-pieces with before/after examples, tests to write, folded `<details>` hints/solutions, and a step-specific AI mentor prompt.
+   - Optional final step with realistic failure/diagnosis drills.
+4. Follow ASD-STE100 structural clarity: imperative short instructions, active voice, no semicolons in procedures, exact object/field/command names.
+5. Write `README.md`, `steps/NN-*.md`, `NOTES.md`, `MENTOR-NOTES.md`, `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, and `.claude/settings.local.json` (in Mentor mode).
 
-Learners write implementations and their own tests in external workspaces. Include commands and expected observations where helpful. For courses, author small prepared Go or Rust exercises with focused supplied tests using `content/exercises.yaml` and the schema in `docs/authoring.md`. Project acceptance suites remain optional and separate. Optionally author concise explanatory flashcards in `content/flashcards.yaml`; browsing and spaced reviews are voluntary. Do not create daily sessions, scores, difficulty modes, forced reflection forms, timers, or unlock rules.
-
-Do not modify runtime code merely to add course content. Validate with `npm run validate:content` and inspect the read-only preview. Preserve existing IDs and filenames when updating a course.
+To add a finished Markdown project to the curated web catalog, copy it into `content/projects/<slug>/` with a `project.yaml` manifest (see `docs/authoring.md`) and run `npm run validate:content`.

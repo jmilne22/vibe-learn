@@ -1,5 +1,6 @@
 import js from "@eslint/js";
 import ts from "typescript-eslint";
+
 export default ts.config(
   js.configs.recommended,
   ...ts.configs.recommended,
@@ -20,10 +21,10 @@ export default ts.config(
         {
           patterns: [
             "node:*",
-            "electron",
-            "better-sqlite3",
-            "../main/*",
+            "../cli/*",
             "../content/*",
+            "../workspace/fs",
+            "../workspace/validate",
           ],
         },
       ],

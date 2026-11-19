@@ -54,9 +54,9 @@
 <h3>The article's code is a starting point, not a model</h3><p>The repository for the article runs, but not correctly on your cluster. In the optional stage after Step 2, you run it without changes and find out why. Then you write your own webhook. An interview can start in the same way: "Here is the code. Make it run."</p>
 <p>Optional later discussion: Helm packaging, certificate rotation, availability, observability, and mutation compared with reconciliation. A webhook changes one request. An operator reconciles state again and again. This project does not include Terraform infrastructure, eBPF, an operator or a full telemetry stack.</p>
 <section class="session" id="doctor"><h2>Step 1 — Check your laptop</h2>
-<p>After you read the article, choose <strong>Workspace → Create workspace</strong> in the desktop app. The app creates the brief, the assistant instructions, <code>Taskfile.yml</code> and <code>doctor.go</code>. To use a folder that you already have, attach it and choose <strong>Add missing workspace files</strong>. The app does not replace your files. Choose Mentor mode to get hints.</p>
-<p>The app numbers the exported step files from 01. The headings in those files keep the numbers of this lab, Step 0 to Step 7. When you ask the mentor for help, give the heading.</p>
-<p>Run the doctor from the workspace root. You can read both files below. If you use only the browser preview, copy them into your folder by hand.</p>
+<p>After you read the article, open <strong>Workspace</strong> and choose <strong>Download workspace (.zip)</strong>. Unzip the folder. It contains the brief, the assistant instructions, <code>Taskfile.yml</code> and <code>doctor.go</code>. Choose Mentor mode to get hints.</p>
+<p>The exported step files are numbered from 01. The headings in those files keep the numbers of this lab, Step 0 to Step 7. When you ask the mentor for help, give the heading.</p>
+<p>Run the doctor from the workspace root. You can read both files below.</p>
 <details><summary>Included file — Taskfile.yml (written by the app)</summary><pre data-file="Taskfile.yml" data-workspace-file="Taskfile.yml"><code class="language-yaml">version: &#x27;3&#x27;
 tasks:
   doctor:
