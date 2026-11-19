@@ -1,11 +1,17 @@
 ---
 name: vibe-learn
-description: Design running-first, STE100-structured learning projects ("I want to learn how to build X"), mentor learners step-by-step using NOTES.md and MENTOR-NOTES.md, and run on-demand "Break My Code" fault-injection drills on disposable git branches.
+description: Design running-first, STE100-structured learning projects ("I want to learn how to build X"), mentor learners step-by-step with cross-project memory (~/.vibe-learn/profile.md and memory.md), and run on-demand "Break My Code" fault-injection drills on disposable git branches.
 ---
 
 # Vibe Learn — Project Designer, Coding Mentor & Fault Drills
 
-This skill has three modes. Pick the mode that matches the user's request.
+This skill has three modes plus cross-project memory sync. Pick what matches the user's request.
+
+## Cross-project memory (`~/.vibe-learn/`)
+
+Before starting any mode, run `node <skill-dir>/scripts/memory.mjs read` (from this skill directory) to load `~/.vibe-learn/profile.md`, `~/.vibe-learn/memory.md`, the active step in `NOTES.md`, and recent local `MENTOR-NOTES.md` sections.
+
+When the user says things like *"sync my mentor notes"*, *"import mentor notes from `<path>`"*, or *"update my vibe-learn memory"*, read [references/cross-project-memory.md](references/cross-project-memory.md) and run `scripts/memory.mjs inspect <path>` before proposing edits.
 
 ## Mode 1: Design a learning project
 
@@ -14,16 +20,16 @@ Use this mode when the user says things like:
 - "Turn this article / repo / job spec into a learning project"
 - "Generate a Vibe Learn project for X"
 
-Read [references/design-project.md](references/design-project.md) before asking questions or writing files. Also check `~/.vibe-learn/profile.md` if it exists (template in [references/learner-profile-template.md](references/learner-profile-template.md)).
+Read [references/design-project.md](references/design-project.md) before asking questions or writing files. Use `~/.vibe-learn/profile.md` and `~/.vibe-learn/memory.md` (templates in [references/learner-profile-template.md](references/learner-profile-template.md) and [references/memory-template.md](references/memory-template.md)) so you do not re-teach solid concepts or repeat intake questions.
 
 ## Mode 2: Mentor through a project
 
 Use this mode when the user is working inside a workspace that has `steps/`, `NOTES.md`, or `MENTOR-NOTES.md`, or asks you to mentor or pair with them on a codebase.
 
-Read [references/mentor-protocol.md](references/mentor-protocol.md) and check:
-1. `MENTOR-NOTES.md` in the workspace root (handoff log from previous sessions).
-2. `NOTES.md` in the workspace root (the learner's own log and step checklist).
-3. `~/.vibe-learn/profile.md` (optional cross-project learner preferences).
+Read [references/mentor-protocol.md](references/mentor-protocol.md) and run `node <skill-dir>/scripts/memory.mjs read` so you load:
+1. `~/.vibe-learn/profile.md` and `~/.vibe-learn/memory.md` (cross-project preferences, solid concepts, and open weak spots).
+2. Local `MENTOR-NOTES.md` (handoff log from previous sessions in this project).
+3. Local `NOTES.md` (the learner's own log and step checklist).
 
 Never skip reading `MENTOR-NOTES.md` at the start of a session. Build on what the learner already proved they understand; do not restart theory from scratch.
 

@@ -2,7 +2,7 @@
 
 Vibe Learn has three small layers and zero native dependencies:
 
-1. **Agent Skill (`skills/vibe-learn/`):** Installed directly from GitHub (`npx skills add jmilne22/vibe-learn`). Teaches coding agents (Claude Code, Codex, Gemini CLI, OpenCode, Zed) how to design running-first STE100 learning projects (`references/design-project.md`), mentor across sessions (`references/mentor-protocol.md`) using `MENTOR-NOTES.md`, `NOTES.md`, and `~/.vibe-learn/profile.md`, and run "Break My Code" fault-injection drills (`references/fault-drill.md` + zero-dependency git sandbox helper `scripts/drill.mjs`).
+1. **Agent Skill (`skills/vibe-learn/`):** Installed directly from GitHub (`npx skills add jmilne22/vibe-learn`). Teaches coding agents (Claude Code, Codex, Gemini CLI, OpenCode, Zed) how to design running-first STE100 learning projects (`references/design-project.md`), mentor across sessions (`references/mentor-protocol.md`), carry distilled mentor notes across projects via `~/.vibe-learn/profile.md` + `~/.vibe-learn/memory.md` (`references/cross-project-memory.md` + `scripts/memory.mjs`), and run "Break My Code" fault-injection drills (`references/fault-drill.md` + `scripts/drill.mjs`).
 2. **Workspace Engine & Local CLI (`src/workspace/`, `src/cli/`):**
    - `src/workspace/generator.ts` is pure, browser-safe TypeScript that builds `README.md`, `steps/NN-*.md`, `NOTES.md`, `MENTOR-NOTES.md`, `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.claude/settings.local.json`, and validated root-level support files.
    - `src/workspace/fs.ts` writes files exclusively (`flag: "wx"`) so existing learner files, symlinks, and Taskfiles are never overwritten.
