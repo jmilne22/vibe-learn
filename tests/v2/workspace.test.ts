@@ -13,8 +13,9 @@ import {
 const catalog = compileCatalog();
 const projects = catalog.items.filter((i) => i.kind === "project");
 const reporter = catalog.items.find((i) => i.id === "project:cloud-reporter")!;
-const pythonReporter = catalog.items.find((i) => i.id === "project:cloud-reporter-python")!;
 const operator = catalog.items.find((i) => i.id === "project:relay-operator")!;
+// No bundled project is in Python, so the language cases use a constructed item.
+const pythonProject = { ...operator, language: "python" as const };
 const admission = catalog.items.find((i) => i.id === "project:kubernetes-admission-lab")!;
 const temps: string[] = [];
 const temp = () => {
@@ -214,7 +215,7 @@ describe("creating and extending workspaces", () => {
     const agents = (item: typeof reporter, mode: "mentor" | "pair") =>
       workspaceFiles(item, mode).find((f) => f.path === "AGENTS.md")!.contents;
     for (const mode of ["mentor", "pair"] as const) {
-      const python = agents(pythonReporter, mode);
+      const python = agents(pythonProject, mode);
       expect(python).toContain("(for Python: `uv run pytest -q`)");
       expect(python).toContain("such as docs.python.org, the Requests and pytest documentation, and the docs the step references.");
       expect(python).not.toMatch(/\bgo (build|vet|test)\b|go\.dev/);
@@ -225,8 +226,16 @@ describe("creating and extending workspaces", () => {
         expect(agents(item, mode)).not.toContain("pytest");
       }
     }
-    expect(agents(pythonReporter, "mentor")).toContain("Read my code and run the tests (for Python");
-    expect(agents(pythonReporter, "pair")).toContain("Run the tests after each (for Python");
+    expect(agents(pythonProject, "mentor")).toContain("Read my code and run the tests (for Python");
+    expect(agents(pythonProject, "pair")).toContain("Run the tests after each (for Python");
+    // The field survives a downloaded catalog, and a project without checks gets no Go module.
+    const downloaded = validateDownloadedCatalog(
+      JSON.stringify({ formatVersion: 2, items: [{ ...pythonProject, related: [] }] }),
+    ).items[0]!;
+    expect(downloaded.kind === "project" && downloaded.language).toBe("python");
+    const folder = createWorkspace(temp(), downloaded, "mentor");
+    expect(fs.readFileSync(path.join(folder, "AGENTS.md"), "utf8")).toContain("(for Python: `uv run pytest -q`)");
+    expect(fs.existsSync(path.join(folder, "go.mod"))).toBe(false);
   });
   it("creates a new named folder each time and never reuses one", () => {
     const parent = temp();

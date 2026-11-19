@@ -1,5 +1,12 @@
 # Rebuild validation
 
+## Python reporter removed — 19 November 2026
+
+- The Python Cloud Resource Reporter brief, its diagrams, its content test and its doctor fixture are removed. The catalog has six projects again (6 items / 54 sections), and the content versions of those six did not change. The entry below records the project as it was added.
+- The optional `language` field on project items stays, with the Python wording for AGENTS.md. No bundled project sets it. A workspace test uses a constructed Python item to check both wordings, that the field survives a downloaded catalog, and that a project without checks gets no go.mod.
+- `nix-shell --run 'npm run verify'` passed: types, lint, content validation, 71 platform tests, production builds and 7 browser tests. The development `npm run smoke:desktop` passed.
+- The app version stays 2.3.1. An installed catalog loses the project at its next content update. Workspaces that learners already created are ordinary folders and are not changed. Not run: the packaged smoke, macOS and Windows.
+
 ## Cloud Resource Reporter in Python — 16 November 2026
 
 - `nix-shell --run 'npm run verify'` passed: types, lint, content validation (7 items / 61 sections), 76 platform tests, production builds and 7 browser tests. The development `npm run smoke:desktop` passed, and now creates the Python workspace and checks its doctor.py, the Python wording in AGENTS.md and the absence of go.mod. Outside the Nix shell, the Rust exercise test still needs a default rustup toolchain.

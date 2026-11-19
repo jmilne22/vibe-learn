@@ -35,7 +35,7 @@ Linux headless desktop testing needs an X server (`xvfb-run -a npm run smoke:des
 - Download content updates from Settings and keep them locally for offline reading.
 - Update the app itself from Settings (**Update app**, then restart). Changes merged to `main` arrive without a new installer unless they change Electron or native packages.
 - Independent Courses and Projects libraries, Continue, offline search, collapsible navigation and keyboard access.
-- Seven standalone projects with stages, examples and resource links. The old courses and samples were removed; the Courses library is intentionally empty.
+- Six standalone projects with stages, examples and resource links. The old courses and samples were removed; the Courses library is intentionally empty.
 - Course framework: Go/Rust starter-file exercises with visible tests, hints, solutions and explicit runs; optional flashcard browsing and local spaced review. New courses must supply their own content.
 - Optional project reference examples, per-item notes with Markdown export, bookmarks and JSON backup/import. Future courses can use the Markdown/YAML authoring framework.
 - Create or attach workspaces on demand. A created project workspace contains the brief as numbered Markdown steps, the learner's NOTES.md with a step checklist, a MENTOR-NOTES.md handoff log for the assistant, and AGENTS.md instructions for an external AI assistant (Mentor: hints only, or Pair: may edit) that name the test command and documentation of the project's language, plus supplied project helper files and a minimal Go module for Go projects. **Add missing workspace files** adds any missing ones to an attached folder without overwriting. Explicit runs stream output, support cancellation and timeouts, and retain logs and artifacts.
@@ -43,7 +43,6 @@ Linux headless desktop testing needs an X server (`xvfb-run -a npm run smoke:des
 - Tiny TSDB: optional HTTP/recovery/final checks, with internal design and storage invariants left to learner tests and review.
 - Gossip Glomers: integration with the existing Maelstrom harness and saved reports. Install its additional tools separately.
 - Cloud Resource Reporter: a GitHub API CLI project with pagination, summaries, table/JSON/CSV output, and learner-written HTTP tests.
-- Cloud Resource Reporter (Python): the same command contract with requests, uv and pytest, a supplied Taskfile and a read-only doctor.py. Learner tests run in the terminal; the app registers no checks for it.
 - Kubernetes Admission Lab: read the assigned article first, then build a Go webhook with k3d, k9s, offline diagrams, short animations, laptop diagnostics and failure drills. Guided terminal verification.
 - Relay Operator: guided experiments and expected observations. **No app-owned automated suite.**
 
